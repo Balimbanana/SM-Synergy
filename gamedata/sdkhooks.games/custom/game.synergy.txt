@@ -12,13 +12,13 @@
 			}
 			"FireBullets"
 			{
-				"windows"	"113"
+				"windows"	"112"
 				"linux"		"113"
 				"mac"		"113"
 			}
 			"GroundEntChanged"
 			{
-				"windows"	"178"
+				"windows"	"177"
 				"linux"		"179"
 				"mac"		"179"
 			}
@@ -30,31 +30,31 @@
 			}
 			"PreThink"
 			{
-				"windows"	"337"
+				"windows"	"336"
 				"linux"		"337"
 				"mac"		"337"
 			}
 			"PostThink"
 			{
-				"windows"	"338"
+				"windows"	"337"
 				"linux"		"338"
 				"mac"		"338"
 			}
 			"Reload"
 			{
-				"windows"	"269"
+				"windows"	"268"
 				"linux"		"269"
 				"mac"		"269"
 			}
 			"SetTransmit"
 			{
-				"windows"	"21"
+				"windows"	"20"
 				"linux"		"21"
 				"mac"		"21"
 			}
 			"ShouldCollide"
 			{
-				"windows"	"17"
+				"windows"	"16"
 				"linux"		"17"
 				"mac"		"17"
 			}
@@ -72,61 +72,61 @@
 			}
 			"Think"
 			{
-				"windows"	"48"
+				"windows"	"47"
 				"linux"		"48"
 				"mac"		"48"
 			}
 			"Touch"
 			{
-				"windows"	"100"
+				"windows"	"99"
 				"linux"		"100"
 				"mac"		"100"
 			}
 			"TraceAttack"
 			{
-				"windows"	"61"
+				"windows"	"60"
 				"linux"		"61"
 				"mac"		"61"
 			}
 			"Use"
 			{
-				"windows"	"98"
+				"windows"	"97"
 				"linux"		"98"
 				"mac"		"98"
 			}
 			"VPhysicsUpdate"
 			{
-				"windows"	"158"
+				"windows"	"157"
 				"linux"		"158"
 				"mac"		"158"
 			}
 			"Weapon_CanSwitchTo"
 			{
-				"windows"	"266"
+				"windows"	"265"
 				"linux"		"266"
 				"mac"		"266"
 			}
 			"Weapon_CanUse"
 			{
-				"windows"	"260"
+				"windows"	"259"
 				"linux"		"260"
 				"mac"		"260"
 			}
 			"Weapon_Drop"
 			{
-				"windows"	"263"
+				"windows"	"262"
 				"linux"		"263"
 				"mac"		"263"
 			}
 			"Weapon_Equip"
 			{
-				"windows"	"261"
+				"windows"	"260"
 				"linux"		"261"
 				"mac"		"261"
 			}
 			"Weapon_Switch"
 			{
-				"windows"	"264"
+				"windows"	"263"
 				"linux"		"264"
 				"mac"		"264"
 			}
