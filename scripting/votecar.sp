@@ -97,8 +97,6 @@ public void OnMapStart()
 	if (restrictbyvehon)
 		plyhasenteredvehicle = false;
 	//PrintToServer("APC: %i, Jalopy %i",useapc,usejal);
-	//Override no apc use
-	useapc = false;
 	if (DirExists("custom/vehiclepack/models"))
 	{
 		char sbuf[128];
@@ -322,7 +320,6 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 		percent = GetVotePercent(votes, totalVotes);
 
 		// A multi-argument vote is "always successful", but have to check if its a Yes/No vote.
-		//PrintToServer("%f %f %i",percent,perclimit,FloatCompare(percent,perclimit));
 		if ((strcmp(item, VOTE_YES) == 0 && FloatCompare(percent,perclimit) < 0 && param1 == 0) || (strcmp(item, VOTE_NO) == 0 && param1 == 1))
 		{
 			PrintToChatAll("%t","Vote Failed", RoundToNearest(100.0*perclimit), RoundToNearest(100.0*percent), totalVotes);
@@ -396,14 +393,6 @@ bool:CCreateVehicle(client,char[] vehiclemodel)
 		TR_GetEndPosition(fhitpos,hhitpos);
 		fhitpos[2] += 10.0;
 		float chkdist = GetVectorDistance(PlayerOrigin,fhitpos,false);
-		/*
-		int flare = CreateEntityByName("prop_physics");
-		DispatchKeyValue(flare,"model","models/props_junk/flare.mdl");
-		DispatchKeyValue(flare,"spawnflags","8");
-		DispatchSpawn(flare);
-		ActivateEntity(flare);
-		TeleportEntity(flare,fhitpos,clangles,NULL_VECTOR);
-		*/
 		if ((RoundFloat(chkdist) >= 80) && (RoundFloat(chkdist) <= 500))
 		{
 			float fhitposx[3];
@@ -415,49 +404,15 @@ bool:CCreateVehicle(client,char[] vehiclemodel)
 			TR_TraceRay(fhitpos,clanglesx,MASK_SOLID_BRUSHONLY,RayType_Infinite);
 			TR_GetEndPosition(fhitposx,hhitpos);
 			chkdist = GetVectorDistance(fhitpos,fhitposx,false);
-			
-			/*
-			flare = CreateEntityByName("prop_physics");
-			DispatchKeyValue(flare,"model","models/props_junk/flare.mdl");
-			DispatchKeyValue(flare,"spawnflags","8");
-			DispatchSpawn(flare);
-			ActivateEntity(flare);
-			TeleportEntity(flare,fhitposx,clangles,NULL_VECTOR);
-			*/
-			
-			//char distb[128];
-			//Format(distb,sizeof(distb),"Dist from hitpos forward %i",RoundFloat(chkdist));
 			if (RoundFloat(chkdist) >= 65)
 			{
 				clanglesx[1] += 90.0;
 				TR_TraceRay(fhitpos,clanglesx,MASK_SOLID_BRUSHONLY,RayType_Infinite);
 				TR_GetEndPosition(fhitposx,hhitpos);
-				/*
-				//left
-				int flare = CreateEntityByName("prop_physics");
-				DispatchKeyValue(flare,"model","models/props_junk/flare.mdl");
-				DispatchKeyValue(flare,"spawnflags","8");
-				DispatchSpawn(flare);
-				ActivateEntity(flare);
-				TeleportEntity(flare,fhitposx,clangles,NULL_VECTOR);
-				//Format(distb,sizeof(distb),"%s, Dist from hitpos left %i",distb,RoundFloat(chkdistl));
-				*/
 				float chkdistl = GetVectorDistance(fhitpos,fhitposx,false);
-				
 				clanglesx[1] -= 180.0;
 				TR_TraceRay(fhitpos,clanglesx,MASK_SOLID_BRUSHONLY,RayType_Infinite);
 				TR_GetEndPosition(fhitposx,hhitpos);
-				/*
-				//right
-				flare = CreateEntityByName("prop_physics");
-				DispatchKeyValue(flare,"model","models/props_junk/flare.mdl");
-				DispatchKeyValue(flare,"spawnflags","8");
-				DispatchSpawn(flare);
-				ActivateEntity(flare);
-				TeleportEntity(flare,fhitposx,clangles,NULL_VECTOR);
-				//Format(distb,sizeof(distb),"%s, Dist from hitpos right %i",distb,RoundFloat(chkdistr));
-				//PrintToChat(client,distb);
-				*/
 				float chkdistr = GetVectorDistance(fhitpos,fhitposx,false);
 				
 				float tmpforward[3];
@@ -469,29 +424,10 @@ bool:CCreateVehicle(client,char[] vehiclemodel)
 				TR_GetEndPosition(fhitposx,hhitpos);
 				float chkdistfr = GetVectorDistance(tmpforward,fhitposx,false);
 				
-				/*int flare = CreateEntityByName("prop_physics");
-				DispatchKeyValue(flare,"model","models/props_junk/flare.mdl");
-				DispatchKeyValue(flare,"spawnflags","8");
-				DispatchSpawn(flare);
-				ActivateEntity(flare);
-				TeleportEntity(flare,fhitposx,clangles,NULL_VECTOR);
-				*/
 				clanglesx[1] -= 180.0;
 				TR_TraceRay(tmpforward,clanglesx,MASK_SOLID_BRUSHONLY,RayType_Infinite);
 				TR_GetEndPosition(fhitposx,hhitpos);
 				float chkdistfl = GetVectorDistance(tmpforward,fhitposx,false);
-				
-				/*flare = CreateEntityByName("prop_physics");
-				DispatchKeyValue(flare,"model","models/props_junk/flare.mdl");
-				DispatchKeyValue(flare,"spawnflags","8");
-				DispatchSpawn(flare);
-				ActivateEntity(flare);
-				TeleportEntity(flare,fhitposx,clangles,NULL_VECTOR);
-				*/
-				
-				//PrintToChat(client,"Left %i Right %i FL %i FR %i",RoundFloat(chkdistl),RoundFloat(chkdistr),RoundFloat(chkdistfr),RoundFloat(chkdistfl));
-				
-				
 				if ((RoundFloat(chkdistl) > 60) && (RoundFloat(chkdistr) > 60) && (RoundFloat(chkdistfl) > 60) && (RoundFloat(chkdistfr) > 60))
 				{
 					vehholo[client] = CreateEntityByName("prop_dynamic");
@@ -543,7 +479,6 @@ bool:CCreateVehicle(client,char[] vehiclemodel)
 		}
 		else if (RoundFloat(chkdist) <= 80)
 			PrintToChat(client,"%T","tooclosetofront",client);
-		//PrintToChat(client,"Player at %i %i %i, spawn vehicle at %i %i %i",RoundFloat(PlayerOrigin[0]),RoundFloat(PlayerOrigin[1]),RoundFloat(PlayerOrigin[2]),RoundFloat(fhitpos[0]),RoundFloat(fhitpos[1]),RoundFloat(fhitpos[2]));
 	}
 	else
 		PrintToChat(client,"%T","cannotspawn",client);
