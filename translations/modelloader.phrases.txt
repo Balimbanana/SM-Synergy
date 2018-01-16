@@ -1,0 +1,79 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"#format"		"{1:s}"
+		"en"			"Set model to {1}"
+	}
+	
+	"OCM"
+	{
+		"en"			"Other Custom Models"
+	}
+	
+	"CIT"
+	{
+		"en"			"Citizen "
+	}
+	
+	"Hero"
+	{
+		"#format"		"{1:s}"
+		"en"			"Hero {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"#format"		"{1:i}"
+		"en"			"Female {1}"
+	}
+	
+	"MaleNum"
+	{
+		"#format"		"{1:i}"
+		"en"			"Male {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"en"			"You must be a donator to use this model"
+	}
+	
+	"NoCustomModels"
+	{
+		"en"			"No custom models on server."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"#format"		"{1:s}"
+		"en"			"Found multiple models with name you provided, these are the models:{1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"en"			"Found multiple models with name you provided, the model names are in your console."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"#format"		"{1:s}"
+		"en"			"These are the models that have similar names to what you entered:{1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"#format"		"{1:s}"
+		"en"			"Couldn't find a model that contains {1}"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"en"			"Select model group:"
+	}
+	
+	"ModelMenu"
+	{
+		"en"			"Select model you wish to be:"
+	}
+}

@@ -1,0 +1,28 @@
+"Phrases"
+{
+	"cannotspawn"
+	{
+		"en"			"You cannot spawn vehicles at this time."
+	}
+	
+	"tooclosetoleft"
+	{
+		"en"			"Too close to left wall."
+	}
+	
+	"tooclosetoright"
+	{
+		"en"			"Too close to right wall."
+	}
+	
+	"tooclosetofront"
+	{
+		"en"			"Too close to wall in front of you."
+	}
+	
+	"delaytovote"
+	{
+		"#format"		"{1:i}"
+		"en"			"You must wait {1} seconds."
+	}
+}

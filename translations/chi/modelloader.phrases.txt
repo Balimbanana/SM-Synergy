@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"chi"			"设置模型为 {1}"
+	}
+	
+	"OCM"
+	{
+		"chi"			"其他自定义模型"
+	}
+	
+	"CIT"
+	{
+		"chi"			"市民"
+	}
+	
+	"Hero"
+	{
+		"chi"			"英雄 {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"chi"			"女性 {1}"
+	}
+	
+	"MaleNum"
+	{
+		"chi"			"男性 {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"chi"			"你必须是会员才可以使用这个模型"
+	}
+	
+	"NoCustomModels"
+	{
+		"chi"			"此服务器没有自定义模型."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"chi"			"发现多个你提供的模型, 模型列表:{1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"chi"			"发现多个你提供的模型, 模型名字将在控制台显示."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"chi"			"这些你键入的模型拥有类似的名字:{1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"chi"			"不能找到包含 {1} 的模型"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"chi"			"选择模型组:"
+	}
+	
+	"ModelMenu"
+	{
+		"chi"			"选择你想要的模型:"
+	}
+}
