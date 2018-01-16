@@ -155,7 +155,6 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 	{
 		char info[128];
 		menu.GetItem(param2, info, sizeof(info));
-		PrintToServer(info);
 		if ((StringToInt(info) > 0) && (StringToInt(info) < 8))
 			vehiclemdltype[param1] = StringToInt(info);
 		else
