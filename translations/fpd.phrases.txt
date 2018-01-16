@@ -1,0 +1,20 @@
+"Phrases"
+{
+	"TurnedOn"
+	{
+		"en"			"Turned on first person deaths."
+	}
+	"TurnedOff"
+	{
+		"en"			"Turned off first person deaths."
+	}
+	"InfDisplay"
+	{
+		"en"			"Set first person death mode on or off, or 1 or 0."
+	}
+	"InfCurSet"
+	{
+		"#format"		"{1:s}"
+		"en"			"Currently set to {1}"
+	}
+}
