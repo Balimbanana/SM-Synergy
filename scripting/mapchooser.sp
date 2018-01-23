@@ -989,6 +989,18 @@ public Action:Timer_ChangeMap(Handle:hTimer, Handle:dp)
 		ReadPackString(dp, map, sizeof(map));		
 	}
 	
+	for (int i = 1; i<MaxClients+1; i++)
+	{
+		if (IsClientConnected(i) && IsValidEntity(i) && IsClientInGame(i))
+		{
+			if (GetEntityRenderFx(i) == RENDERFX_DISTORT)
+			{
+				PrintToChatAll("Map change prevented due to map change already in progress.");
+				return Plugin_Handled;
+			}
+		}
+	}
+	
 	new String:mapch[64];
 	ServerCommand("changelevel %s", map);
 	Format(mapch,sizeof(mapch),"custom %s",map);
