@@ -376,7 +376,7 @@ bool:CCreateVehicle(client,char[] vehiclemodel)
 	else
 		isvehiclemap = true;
 	int vck = GetEntProp(client, Prop_Send, "m_hVehicle");
-	if ((isvehiclemap) && (vck == -1) && (!IsInView(client)) && (GetEntityRenderFx(client) == RENDERFX_DISTORT))
+	if ((isvehiclemap) && (vck == -1) && (!IsInView(client)) && (!(GetEntityRenderFx(client) == RENDERFX_DISTORT)))
 	{
 		float PlayerOrigin[3];
 		float Location[3];
