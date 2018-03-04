@@ -27,6 +27,8 @@ int vehiclemdltype[MAXPLAYERS];
 int clused = 0;
 char vehicletype[64];
 
+char mapbuf[64];
+
 bool BoatsHaveGuns = false;
 bool JeepsHaveGuns = false;
 
@@ -50,7 +52,7 @@ public void OnPluginStart()
 	globalsarr = CreateArray(16);
 	vehiclecustomdir = CreateArray(64);
 	RegConsoleCmd("votecar",votecar);
-	Handle restrictbyvehh = CreateConVar("sm_votecarrestrict", "1", "Restrict voting for cars on non-vehicle maps. 1 is by info_global_settings and 2 is by first entering vehicle.", _, true, 0.0, true, 2.0);
+	Handle restrictbyvehh = CreateConVar("sm_votecarrestrict", "1", "Restrict voting for cars on non-vehicle maps. 0 is unrestricted, 1 is by info_global_settings and 2 is by first entering vehicle.", _, true, 0.0, true, 2.0);
 	if (GetConVarInt(restrictbyvehh) == 0)
 	{
 		restrictbyveh = false;
@@ -85,6 +87,7 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
+	GetCurrentMap(mapbuf, sizeof(mapbuf));
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	if (restrictbyveh)
 	{
@@ -361,7 +364,11 @@ bool:CCreateVehicle(client,char[] vehiclemodel)
 				{
 					int state = GetEntProp(glo,Prop_Data,"m_bIsVehicleMap");
 					if (state == 1)
+					{
 						isvehiclemap = true;
+						if (StrEqual(mapbuf,"ep2_outland_02",false))
+							isvehiclemap = false;
+					}
 					else if (state == 0)
 						isvehiclemap = false;
 				}
@@ -673,7 +680,7 @@ CreateVehicle(client)
 				DispatchKeyValue(veh, "skin","0");
 				DispatchSpawn(veh);
 				ActivateEntity(veh);
-				SetEntData(veh, collisiongroup, 5, 4, true);
+				SetEntData(veh, collisiongroup, 4, 4, true);
 			}
 		}
 	}
