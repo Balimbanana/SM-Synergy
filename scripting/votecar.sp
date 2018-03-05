@@ -680,7 +680,7 @@ CreateVehicle(client)
 				DispatchKeyValue(veh, "skin","0");
 				DispatchSpawn(veh);
 				ActivateEntity(veh);
-				SetEntData(veh, collisiongroup, 4, 4, true);
+				SetEntData(veh, collisiongroup, 5, 4, true);
 			}
 		}
 	}
