@@ -102,6 +102,7 @@ public void OnMapStart()
 	//PrintToServer("APC: %i, Jalopy %i",useapc,usejal);
 	//Override no apc use
 	useapc = false;
+	ClearArray(vehiclecustomdir);
 	if (DirExists("custom/vehiclepack/models"))
 	{
 		char sbuf[128];
