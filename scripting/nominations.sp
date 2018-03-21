@@ -52,6 +52,9 @@ ConVar g_Cvar_ExcludeCurrent;
 Menu g_MapMenu = null;
 Handle g_MapList = null;
 //int g_mapFileSerial = -1;
+char currentMap[32];
+int passedcl = 0;
+bool r24m,lcm,ep1m,ep2m,metam,calm,citm,ci7m,upm,ram,dwm,prem,c2am,ep3m,offm,radm,cdm,ntm,opm,mim,smm,s2em,rhm,snm,mprm,cem,mpm,el87m,alm,esm,dfm,stm,btm,llm,dhm,lum,thm,ddm,amm;
 
 #define MAPSTATUS_ENABLED (1<<0)
 #define MAPSTATUS_DISABLED (1<<1)
@@ -187,7 +190,7 @@ public void OnClientSayCommand_Post(int client, const char[] command, const char
 	{
 		ReplySource old = SetCmdReplySource(SM_REPLY_TO_CHAT);
 		
-		AttemptNominate(client);
+		AttemptNominate(client,0);
 		
 		SetCmdReplySource(old);
 	}
@@ -202,7 +205,7 @@ public Action Command_Nominate(int client, int args)
 	
 	if (args == 0)
 	{
-		AttemptNominate(client);
+		AttemptNominate(client,0);
 		return Plugin_Handled;
 	}
 	
@@ -268,7 +271,213 @@ public Action Command_Nominate(int client, int args)
 	return Plugin_Continue;
 }
 
-void AttemptNominate(int client)
+public Action AttemptNominate(int client, int args)
+{
+	if (client == 0)
+		return Plugin_Handled;
+	Menu menu = new Menu(MenuHandlersub);
+	menu.SetTitle("%T", "Nominate Title", client);
+	menu.AddItem("syn", "Synergy/Custom");
+	menu.AddItem("half-life 2", "Half-Life 2");
+	if (ep1m) menu.AddItem("episode 1", "HL2 Episode 1");
+	if (ep2m) menu.AddItem("episode 2", "HL2 Episode 2");
+	if (r24m) menu.AddItem("rock 24", "Rock 24");
+	if (lcm) menu.AddItem("lost coast", "Lost Coast");
+	if (metam) menu.AddItem("minerva", "Minerva: Metastasis");
+	if (calm) menu.AddItem("calamity", "Calamity");
+	if (citm) menu.AddItem("the citizen returns", "The Citizen Returns");
+	if (ci7m) menu.AddItem("city 7: toronto conflict", "City 7: Toronto Conflict");
+	if (upm) menu.AddItem("uncertainty principle", "Uncertainty Principle");
+	if (ram) menu.AddItem("riot act", "Riot Act");
+	if (dwm) menu.AddItem("dangerous world", "Dangerous World");
+	if (prem) menu.AddItem("precursor", "Precursor");
+	if (c2am) menu.AddItem("coastline to atmosphere", "Coastline To Atmosphere");
+	if (ep3m) menu.AddItem("episode 3: the closure", "Episode 3: The Closure");
+	if (offm) menu.AddItem("offshore", "Offshore");
+	if (radm) menu.AddItem("research & development", "Research & Development");
+	if (cdm) menu.AddItem("combine destiny", "Combine Destiny");
+	if (ntm) menu.AddItem("neotokyo", "Neotokyo");
+	if (opm) menu.AddItem("omega prison", "Omega Prison");
+	if (mim) menu.AddItem("mission improbable", "Mission Improbable");
+	if (smm) menu.AddItem("strider mountain", "Strider Mountain");
+	if (s2em) menu.AddItem("slums 2: extended", "Slums 2: Extended");
+	if (rhm) menu.AddItem("ravenholm", "Ravenholm");
+	if (snm) menu.AddItem("spherical nightmares", "Spherical Nightmares");
+	if (mprm) menu.AddItem("the masked prisoner", "The Masked Prisoner");
+	if (cem) menu.AddItem("causality effect", "Causality Effect");
+	if (mpm) menu.AddItem("mistake of pythagoras", "Mistake of Pythagoras");
+	if (el87m) menu.AddItem("1187", "1187");
+	if (alm) menu.AddItem("alchemilla", "Silent Hill: Alchemilla");
+	if (esm) menu.AddItem("eye of the storm", "Eye of The Storm");
+	if (dfm) menu.AddItem("downfall", "DownFall");
+	if (stm) menu.AddItem("steam tracks trouble and riddles", "Steam Tracks Trouble and Riddles");
+	if (btm) menu.AddItem("below the ice", "Below The Ice");
+	if (llm) menu.AddItem("liberation", "Liberation");
+	if (dhm) menu.AddItem("day hard", "Day Hard");
+	if (lum) menu.AddItem("lost under the snow", "Lost Under The Snow");
+	if (thm) menu.AddItem("they hunger again", "They Hunger Again");
+	if (ddm) menu.AddItem("deep down", "Deep Down");
+	if (amm) menu.AddItem("aftermath", "Aftermath");
+	menu.AddItem("allmaps", "All Maps");
+	menu.ExitButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
+	return Plugin_Handled;
+}
+
+public int MenuHandlersub(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_Select)
+	{
+		char info[128];
+		menu.GetItem(param2, info, sizeof(info));
+		if (StrEqual(info,"allmaps",false))
+		{
+			AttemptNominateAllMP(param1);
+			return;
+		}
+		int arraySize = ByteCountToCells(33);
+		Handle tmparr = CreateArray(arraySize);
+		for (int i = 0; i<GetArraySize(g_MapList); i++)
+		{
+			char tmp[64];
+			GetArrayString(g_MapList,i,tmp,sizeof(tmp));
+			GetMapTag(tmp);
+			if (StrContains(info,maptag,false) != -1)
+				PushArrayString(tmparr,tmp);
+		}
+		tmpmenu(param1,tmparr,info);
+	}
+	else if (action == MenuAction_Cancel)
+	{
+		
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+	else
+	{
+		
+	}
+}
+
+void tmpmenu(int client, Handle tmparr, char[] menutitle)
+{
+	menutitle[0] &= ~(1 << 5);
+	Menu menu = new Menu(MenuHandler);
+	menu.SetTitle(menutitle);
+	for (int k;k<GetArraySize(tmparr);k++)
+	{
+		char ktmp[64];
+		GetArrayString(tmparr, k, ktmp, sizeof(ktmp));
+		int status;
+		g_mapTrie.GetValue(ktmp, status);
+		if (status & MAPSTATUS_EXCLUDE_CURRENT)
+		{
+			char ktmpd[64];
+			Format(ktmpd,sizeof(ktmpd),"%s (Current Map)",ktmp);
+			menu.AddItem(ktmp, ktmpd, ITEMDRAW_DISABLED);
+		}
+		else
+			menu.AddItem(ktmp, ktmp);
+	}
+	ClearArray(tmparr);
+	CloseHandle(tmparr);
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
+	passedcl = client;
+}
+
+public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_Select)
+	{
+		char mapname[64];
+		menu.GetItem(param2, mapname, sizeof(mapname));
+		int status;
+		if (!g_mapTrie.GetValue(mapname, status))
+		{
+			ReplyToCommand(param1, "%t", "Map was not found", mapname);
+			return 0;
+		}
+		
+		if ((status & MAPSTATUS_DISABLED) == MAPSTATUS_DISABLED)
+		{
+			if ((status & MAPSTATUS_EXCLUDE_CURRENT) == MAPSTATUS_EXCLUDE_CURRENT)
+			{
+				ReplyToCommand(param1, "[SM] %t", "Can't Nominate Current Map");
+			}
+			
+			if ((status & MAPSTATUS_EXCLUDE_PREVIOUS) == MAPSTATUS_EXCLUDE_PREVIOUS)
+			{
+				ReplyToCommand(param1, "[SM] %t", "Map in Exclude List");
+			}
+			
+			if ((status & MAPSTATUS_EXCLUDE_NOMINATED) == MAPSTATUS_EXCLUDE_NOMINATED)
+			{
+				ReplyToCommand(param1, "[SM] %t", "Map Already Nominated");
+			}
+			
+			return 0;
+		}
+		
+		NominateResult result = NominateMap(mapname, false, param1);
+		
+		if (result > Nominate_Replaced)
+		{
+			if (result == Nominate_AlreadyInVote)
+			{
+				ReplyToCommand(param1, "%t", "Map Already In Vote", mapname);
+			}
+			else
+			{
+				ReplyToCommand(param1, "[SM] %t", "Map Already Nominated");
+			}
+			
+			return 0;
+		}
+		
+		/* Map was nominated! - Disable the menu item and update the trie */
+		
+		g_mapTrie.SetValue(mapname, MAPSTATUS_DISABLED|MAPSTATUS_EXCLUDE_NOMINATED);
+		
+		char name[64];
+		GetClientName(param1, name, sizeof(name));
+		char map[64];
+		Format(map,sizeof(map),"%s",mapname);
+		GetMapTag(map);
+		char translate[128];
+		Format(translate,sizeof(translate),"[SM] %t","Map Nominated", name, map);
+		PrintToChatAll("%s (%s)", translate, maptag);
+	}
+	else if (action == MenuAction_DisplayItem)
+	{
+		char info[32];
+		menu.GetItem(param2, info, sizeof(info));
+		if (StrEqual(info,currentMap,false))
+		{
+			PrintToServer("map eq");
+			return ITEMDRAW_DISABLED;
+		}
+	}
+	else if (action == MenuAction_Cancel)
+	{
+		
+	}
+	else if (action == MenuAction_End)
+	{
+		if ((param1 == MenuEnd_ExitBack) && (IsClientInGame(passedcl)))
+			AttemptNominate(passedcl,0);
+		delete menu;
+	}
+	else
+	{
+		
+	}
+	return 0;
+}
+
+void AttemptNominateAllMP(int client)
 {
 	g_MapMenu.SetTitle("%T", "Nominate Title", client);
 	g_MapMenu.Display(client, MENU_TIME_FOREVER);
@@ -287,7 +496,6 @@ void BuildMapMenu()
 	char map[64];
 	
 	ArrayList excludeMaps;
-	char currentMap[32];
 	
 	if (g_Cvar_ExcludeOld.BoolValue)
 	{	
@@ -445,6 +653,7 @@ public Action GetMapTag(const char[] map)
 {
 	if ((StrEqual(map,"d1_overboard_01",false)) || (StrEqual(map,"d1_wakeupcall_02",false)) || (StrEqual(map,"d2_breakout_03",false)) || (StrEqual(map,"d2_surfacing_04",false)) || (StrEqual(map,"d3_theescape_05",false)) || (StrEqual(map,"d3_extraction_06",false)))
 	{
+		r24m = true;
 		Format(maptag, sizeof(maptag), "Rock 24");
 	}
 	else if (StrContains(map,"d1_",false) == 0)
@@ -453,6 +662,7 @@ public Action GetMapTag(const char[] map)
 	}
 	else if (StrEqual(map,"d2_lostcoast",false))
 	{
+		lcm = true;
 		Format(maptag, sizeof(maptag), "Lost Coast");
 	}
 	else if (StrContains(map,"d2_",false) == 0)
@@ -465,146 +675,187 @@ public Action GetMapTag(const char[] map)
 	}
 	else if (StrContains(map,"ep1_",false) == 0)
 	{
+		ep1m = true;
 		Format(maptag, sizeof(maptag), "Episode 1");
 	}
 	else if (StrContains(map,"ep2_outland_",false) == 0)
 	{
+		ep2m = true;
 		Format(maptag, sizeof(maptag), "Episode 2");
 	}
 	else if (StrContains(map,"meta",false) == 0)
 	{
+		metam = true;
 		Format(maptag, sizeof(maptag), "Minerva");
 	}
 	else if (StrContains(map,"sp_c14_",false) == 0)
 	{
+		calm = true;
 		Format(maptag, sizeof(maptag), "Calamity");
 	}
 	else if (StrContains(map,"sp_",false) == 0)
 	{
+		citm = true;
 		Format(maptag, sizeof(maptag), "The Citizen Returns");
 	}
 	else if ((StrEqual(map,"mel_lastman_square_f",false)) || (StrEqual(map,"shuter_st_f",false)) || (StrContains(map,"st_michaels_",false) == 0) || (StrEqual(map,"yonge_st_f",false)) || (StrEqual(map,"dundas_square_f",false)) || (StrEqual(map,"subway_system_f",false)))
 	{
+		ci7m = true;
 		Format(maptag, sizeof(maptag), "City 7: Toronto Conflict");
 	}
 	else if (StrContains(map,"up_",false) == 0)
 	{
+		upm = true;
 		Format(maptag, sizeof(maptag), "Uncertainty Principle");
 	}
 	else if (StrContains(map,"ra_c1l",false) == 0)
 	{
+		ram = true;
 		Format(maptag, sizeof(maptag), "Riot Act");
 	}
 	else if (StrContains(map,"dw_",false) == 0)
 	{
+		dwm = true;
 		Format(maptag, sizeof(maptag), "Dangerous World");
 	}
 	else if (StrContains(map,"r_map",false) == 0)
 	{
+		prem = true;
 		Format(maptag, sizeof(maptag), "Precursor");
 	}
 	else if ((StrContains(map,"leonhl2",false) == 0) || (StrEqual(map,"final_credits",false)))
 	{
+		c2am = true;
 		Format(maptag, sizeof(maptag), "Coastline To Atmosphere");
 	}
 	else if (StrContains(map,"spymap_ep3",false) != -1)
 	{
+		ep3m = true;
 		Format(maptag, sizeof(maptag), "Episode 3: The Closure");
 	}
 	else if (StrContains(map,"island",false) == 0)
 	{
+		offm = true;
 		Format(maptag, sizeof(maptag), "Offshore");
 	}
 	else if (StrContains(map,"level_",false) == 0)
 	{
+		radm = true;
 		Format(maptag, sizeof(maptag), "Research & Development");
 	}
 	else if (StrContains(map,"cd",false) == 0)
 	{
+		cdm = true;
 		Format(maptag, sizeof(maptag), "Combine Destiny");
 	}
 	else if (StrContains(map,"nt_",false) == 0)
 	{
+		ntm = true;
 		Format(maptag, sizeof(maptag), "Neotokyo");
 	}
 	else if (StrContains(map,"po_",false) == 0)
 	{
+		opm = true;
 		Format(maptag, sizeof(maptag), "Omega Prison");
 	}
 	else if (StrContains(map,"mimp",false) == 0)
 	{
+		mim = true;
 		Format(maptag, sizeof(maptag), "Mission Improbable");
 	}
 	else if (StrContains(map,"_sm_",false) != -1)
 	{
+		smm = true;
 		Format(maptag, sizeof(maptag), "Strider Mountain");
 	}
 	else if (StrContains(map,"slums_",false) == 0)
 	{
+		s2em = true;
 		Format(maptag, sizeof(maptag), "Slums 2: Extended");
 	}
 	else if (StrContains(map,"ravenholm",false) == 0)
 	{
+		rhm = true;
 		Format(maptag, sizeof(maptag), "Ravenholm");
 	}
 	else if (StrContains(map,"sn_",false) == 0)
 	{
+		snm = true;
 		Format(maptag, sizeof(maptag), "Spherical Nightmares");
 	}
 	else if (StrContains(map,"ks_mop_",false) == 0)
 	{
+		mpm = true;
 		Format(maptag, sizeof(maptag), "Mistake of Pythagoras");
 	}
 	else if (StrContains(map,"ce_0",false) == 0)
 	{
+		cem = true;
 		Format(maptag, sizeof(maptag), "Causality Effect");
 	}
 	else if (StrContains(map,"1187",false) == 0)
 	{
+		el87m = true;
 		Format(maptag, sizeof(maptag), "1187");
 	}
 	else if (StrContains(map,"sh_alchemilla",false) == 0)
 	{
-		Format(maptag, sizeof(maptag), "Alchemilla");
+		alm = true;
+		Format(maptag, sizeof(maptag), "Silent Hill: Alchemilla");
 	}
 	else if (StrContains(map,"eots_1",false) == 0)
 	{
+		esm = true;
 		Format(maptag, sizeof(maptag), "Eye of The Storm");
 	}
 	else if (StrContains(map,"mpr_0",false) == 0)
 	{
+		mprm = true;
 		Format(maptag, sizeof(maptag), "The Masked Prisoner");
 	}
 	else if (StrContains(map, "dwn0", false) == 0)
 	{
+		dfm = true;
 		Format(maptag, sizeof(maptag), "DownFall");
+	}
+	else if (StrContains(map, "sttr_ch", false) == 0)
+	{
+		stm = true;
+		Format(maptag, sizeof(maptag), "Steam Tracks Trouble and Riddles");
 	}
 	else if ((StrContains(map, "belowice", false) == 0) || (StrEqual(map,"memory",false)))
 	{
+		btm = true;
 		Format(maptag, sizeof(maptag), "Below The Ice");
 	}
 	else if ((StrContains(map, "lifelostprison_0", false) == 0) || (StrContains(map, "bonus_earlyprison_0", false) == 0))
 	{
+		llm = true;
 		Format(maptag, sizeof(maptag), "Liberation");
 	}
-	else if ((StrContains(map, "dayhardpart", false) == 0) || (StrEqual(map,"dayhard_menu",false)) || (StrEqual(map,"voyage",false)) || (StrEqual(map,"redrum",false)) || (StrEqual(map,"finale",false)) || (StrEqual(map,"breencave",false)))
+	else if ((StrContains(map, "dayhardpart", false) == 0) || (StrEqual(map,"dayhard_menu",false)) || (StrEqual(map,"voyage",false)) || (StrEqual(map,"redrum",false)) || (StrEqual(map,"finale",false)) || (StrEqual(map,"breencave",false)) || (StrEqual(map,"dojo",false)))
 	{
+		dhm = true;
 		Format(maptag, sizeof(maptag), "Day Hard");
 	}
 	else if ((StrContains(map,"intro0",false) == 0) || (StrContains(map,"mines0",false) == 0) || (StrEqual(map,"sewer01",false)) || (StrContains(map,"scape0",false) == 0) || (StrEqual(map,"ldtd01",false)) || StrEqual(map, "tull01", false) || StrEqual(map, "surreal01", false) || StrEqual(map, "outside01", false) || StrEqual(map, "ending01", false))
 	{
+		lum = true;
 		Format(maptag, sizeof(maptag), "Lost Under The Snow");
 	}
 	else if ((StrEqual(map,"th_intro",false)) || (StrEqual(map,"drainage",false)) || (StrEqual(map,"church",false)) || (StrEqual(map,"basement",false)) || (StrEqual(map,"cabin",false)) || (StrEqual(map,"cave",false)) || (StrEqual(map,"rift",false)) || (StrEqual(map,"volcano",false)) || (StrEqual(map,"train",false)))
 	{
+		thm = true;
 		Format(maptag, sizeof(maptag), "They Hunger Again");
 	}
 	else if (StrContains(map,"ep2_deepdown_",false) == 0)
 	{
+		ddm = true;
 		Format(maptag, sizeof(maptag), "Deep Down");
 	}
 	else if ((StrEqual(map,"am2",false)) || (StrEqual(map,"am3",false)) || (StrEqual(map,"am4",false)))
 	{
+		amm = true;
 		Format(maptag, sizeof(maptag), "Aftermath");
 	}
 	else
