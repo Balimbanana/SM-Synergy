@@ -378,6 +378,12 @@ void tmpmenu(int client, Handle tmparr, char[] menutitle)
 			Format(ktmpd,sizeof(ktmpd),"%s (Current Map)",ktmp);
 			menu.AddItem(ktmp, ktmpd, ITEMDRAW_DISABLED);
 		}
+		else if ((status & MAPSTATUS_EXCLUDE_NOMINATED) == MAPSTATUS_EXCLUDE_NOMINATED)
+		{
+			char ktmpd[64];
+			Format(ktmpd,sizeof(ktmpd),"%s (Nominated)",ktmp);
+			menu.AddItem(ktmp, ktmpd, ITEMDRAW_DISABLED);
+		}
 		else
 			menu.AddItem(ktmp, ktmp);
 	}
