@@ -838,7 +838,7 @@ remvh(int client, int ent)
 						AcceptEntityInput(ent,"kill");
 						plyvehicle[client] = 0;
 					}
-					else
+					else if (IsClientConnected(client))
 						PrintToChat(client,"%T","CannotRemove");
 				}
 			}
