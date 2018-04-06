@@ -25,4 +25,14 @@
 		"#format"		"{1:i}"
 		"en"			"You must wait {1} seconds."
 	}
+	
+	"CannotRemove"
+	{
+		"en"			"There are currently passengers in the vehicle you want to remove."
+	}
+	
+	"NoVehicle"
+	{
+		"en"			"You do not have any spawned vehicles."
+	}
 }
