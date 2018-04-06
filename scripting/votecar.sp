@@ -8,6 +8,7 @@ bool isvehiclemap = false;
 bool restrictbyveh = true;
 bool restrictbyvehon = false;
 bool plyhasenteredvehicle = false;
+int restrictrm = 0;
 
 Menu g_hVoteMenu = null;
 #define VOTE_NO "###no###"
@@ -24,6 +25,7 @@ float vehspawnangz[MAXPLAYERS];
 float votetime[MAXPLAYERS];
 int vehholo[MAXPLAYERS];
 int vehiclemdltype[MAXPLAYERS];
+int plyvehicle[MAXPLAYERS];
 int clused = 0;
 char vehicletype[64];
 
@@ -31,10 +33,11 @@ char mapbuf[64];
 
 bool BoatsHaveGuns = false;
 bool JeepsHaveGuns = false;
+int vehsetown = 0;
 
 int useapc = 0;
 int usejal = 0;
-int collisiongroup = -1;
+//int collisiongroup = -1;
 
 public Plugin:myinfo = 
 {
@@ -52,6 +55,7 @@ public void OnPluginStart()
 	globalsarr = CreateArray(16);
 	vehiclecustomdir = CreateArray(64);
 	RegConsoleCmd("votecar",votecar);
+	RegConsoleCmd("votecarremove",removeclvehicle);
 	Handle restrictbyvehh = CreateConVar("sm_votecarrestrict", "1", "Restrict voting for cars on non-vehicle maps. 0 is unrestricted, 1 is by info_global_settings and 2 is by first entering vehicle.", _, true, 0.0, true, 2.0);
 	if (GetConVarInt(restrictbyvehh) == 0)
 	{
@@ -78,6 +82,14 @@ public void OnPluginStart()
 	delaylimit = GetConVarFloat(votedelayvehh);
 	HookConVarChange(votedelayvehh, restrictvehdelch);
 	CloseHandle(votedelayvehh);
+	Handle vcarownh = CreateConVar("sm_votecarowner", "0", "Sets cars created by votecar to be owned by the creator.", _, true, 0.0, true, 1.0);
+	vehsetown = GetConVarInt(vcarownh);
+	HookConVarChange(vcarownh, restrictvehownch);
+	CloseHandle(vcarownh);
+	Handle vcarrmresh = CreateConVar("sm_votecarremove", "0", "0 allows removing of vehicles while there are passengers, 1 requires vehicle has no passengers to remove.", _, true, 0.0, true, 1.0);
+	restrictrm = GetConVarInt(vcarrmresh);
+	HookConVarChange(vcarrmresh, restrictvehrmresch);
+	CloseHandle(vcarrmresh);
 	HookEntityOutput("prop_vehicle_jeep","PlayerOn",EntityOutput:playeron);
 	HookEntityOutput("prop_vehicle_jeep_episodic","PlayerOn",EntityOutput:playeron);
 	HookEntityOutput("prop_vehicle_airboat","PlayerOn",EntityOutput:playeron);
@@ -88,7 +100,7 @@ public void OnPluginStart()
 public void OnMapStart()
 {
 	GetCurrentMap(mapbuf, sizeof(mapbuf));
-	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
+	//collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	if (restrictbyveh)
 	{
 		isvehiclemap = false;
@@ -109,6 +121,8 @@ public void OnMapStart()
 		Format(sbuf, sizeof(sbuf), "custom/vehiclepack");
 		recursion(sbuf);
 	}
+	for (int i = 0; i<MaxClients+1; i++)
+		plyvehicle[i] = 0;
 }
 
 public Action votecar(int client, int args)
@@ -125,6 +139,8 @@ public Action votecar(int client, int args)
 		menu.AddItem("6","Jalopy");
 	if (useapc)
 		menu.AddItem("7","APC");
+	if (plyvehicle[client])
+		menu.AddItem("remvh","Remove Vehicle");
 	
 	if (GetArraySize(vehiclecustomdir) > 0)
 	{
@@ -157,10 +173,24 @@ new voteType:g_voteType = voteType:question;
 public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 {
 	float Time = GetTickedTime();
+	char info[128];
+	if (action == MenuAction_Select)
+	{
+		menu.GetItem(param2, info, sizeof(info));
+		if (StrEqual(info,"remvh",false))
+		{
+			remvh(param1,plyvehicle[param1]);
+			return 0;
+		}
+	}
 	if ((action == MenuAction_Select) && (votetime[param1] <= Time))
 	{
-		char info[128];
 		menu.GetItem(param2, info, sizeof(info));
+		if (StrEqual(info,"remvh",false))
+		{
+			remvh(param1,plyvehicle[param1]);
+			delete menu;
+		}
 		if ((StringToInt(info) > 0) && (StringToInt(info) < 8))
 			vehiclemdltype[param1] = StringToInt(info);
 		else
@@ -245,6 +275,7 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 	{
 		
 	}
+	return 0;
 }
 
 public recursion(const String:sbuf[128])
@@ -534,6 +565,20 @@ public restrictvehdelch(Handle convar, const char[] oldValue, const char[] newVa
 	delaylimit = StringToFloat(newValue);
 }
 
+public restrictvehownch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	int nval = StringToInt(newValue);
+	if ((nval < 2) && (nval > -1))
+		vehsetown = nval;
+}
+
+public restrictvehrmresch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	int nval = StringToInt(newValue);
+	if ((nval < 2) && (nval > -1))
+		restrictrm = nval;
+}
+
 bool:IsInView(client)
 {
 	new m_hViewEntity = GetEntPropEnt(client, Prop_Data, "m_hViewEntity");
@@ -681,7 +726,10 @@ CreateVehicle(client)
 				DispatchKeyValue(veh, "skin","0");
 				DispatchSpawn(veh);
 				ActivateEntity(veh);
-				SetEntData(veh, collisiongroup, 5, 4, true);
+				//SetEntData(veh, collisiongroup, 5, 4, true);
+				if (vehsetown)
+					SetEntProp(veh,Prop_Data,"m_iOnlyUser",client);
+				plyvehicle[client] = veh;
 			}
 		}
 	}
@@ -691,6 +739,8 @@ CreateVehicle(client)
 public Action playeron(const char[] output, int caller, int activator, float delay)
 {
 	plyhasenteredvehicle = true;
+	if (GetEntProp(caller,Prop_Send,"m_iPassengerCount") > 1)
+		SetEntProp(caller,Prop_Data,"m_iOnlyUser",-1);
 	return Plugin_Continue;
 }
 
@@ -750,6 +800,55 @@ public initcl(client)
 		AcceptEntityInput(vehholo[client],"kill");
 	vehholo[client] = 0;
 	vehiclemdltype[client] = 0;
+	if (plyvehicle[client] != 0)
+		remvh(client,plyvehicle[client]);
+	plyvehicle[client] = 0;
+}
+
+public Action removeclvehicle(int client, int args)
+{
+	if (plyvehicle[client] != 0)
+	{
+		remvh(client,plyvehicle[client]);
+	}
+	else
+		PrintToChat(client,"%T",client,"NoVehicle");
+	return Plugin_Handled;
+}
+
+remvh(int client, int ent)
+{
+	if ((ent != 0) && IsValidEntity(ent) && IsEntNetworkable(ent))
+	{
+		char clsname[32];
+		GetEntityClassname(ent,clsname,sizeof(clsname));
+		if (StrContains(clsname,"prop_vehicle",false) != -1)
+		{
+			if (restrictrm)
+			{
+				char netname[64];
+				GetEntityNetClass(ent,netname,sizeof(netname));
+				int vehoffs = FindSendPropInfo(netname, "m_hPlayer");
+				int plyinvehicle;
+				if (vehoffs != -1)
+				{
+					plyinvehicle = GetEntDataEnt2(ent, vehoffs);
+					if (plyinvehicle == -1)
+					{
+						AcceptEntityInput(ent,"kill");
+						plyvehicle[client] = 0;
+					}
+					else
+						PrintToChat(client,"%T","CannotRemove");
+				}
+			}
+			else
+			{
+				AcceptEntityInput(ent,"kill");
+				plyvehicle[client] = 0;
+			}
+		}
+	}
 }
 
 Float:GetVotePercent(votes, totalVotes)
