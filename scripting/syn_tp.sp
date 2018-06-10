@@ -64,8 +64,8 @@ public teleportcdch(Handle convar, const char[] oldValue, const char[] newValue)
 
 public Action savepos(int client, int args)
 {
-	if ((client == 0) && (!IsPlayerAlive(client)))
-		return Plugin_Handled;
+	if (client == 0) return Plugin_Handled;
+	if (!IsPlayerAlive(client)) return Plugin_Handled;
 	if (saveset[client])
 	{
 		if (citshowcl[client] != 0)
@@ -110,8 +110,8 @@ public Action savepos(int client, int args)
 
 public Action teleport(int client, int args)
 {
-	if ((client == 0) && (!IsPlayerAlive(client)))
-		return Plugin_Handled;
+	if (client == 0) return Plugin_Handled;
+	if (!IsPlayerAlive(client)) return Plugin_Handled;
 	float Time = GetTickedTime();
 	if ((saveset[client]) && (antispamchk[client] <= Time+0.1))
 	{
