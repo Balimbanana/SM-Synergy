@@ -141,6 +141,7 @@ public OnClientDisconnect(int client)
 	saveangx[client] = 0.0;
 	saveangy[client] = 0.0;
 	saveangz[client] = 0.0;
+	antispamchk[client] = 0.0;
 	if (citshowcl[client] != 0)
 	{
 		AcceptEntityInput(citshowcl[client],"kill");
@@ -154,5 +155,6 @@ public void OnMapStart()
 	{
 		saveset[i] = false;
 		citshowcl[i] = 0;
+		antispamchk[i] = 0.0;
 	}
 }
