@@ -28,6 +28,7 @@ public void OnPluginStart()
 	RegConsoleCmd("s", savepos);
 	RegConsoleCmd("t", teleport);
 	Handle citshowh = CreateConVar("savetp_effect","models/effects/portalfunnel.mdl","Change the effect that shows where players saves are, none or 0 to disable.");
+	GetConVarString(citshowh,citeffect,sizeof(citeffect));
 	HookConVarChange(citshowh, citshowch);
 	CloseHandle(citshowh);
 	Handle teleportcdh = CreateConVar("savetp_cooldown","1.0","Sets cooldown time to stop spamming teleport.", _, true, 0.0, true, 120.0);
@@ -43,7 +44,7 @@ public citshowch(Handle convar, const char[] oldValue, const char[] newValue)
 	}
 	else
 	{
-		if (FileExists(citeffect))
+		if (FileExists(newValue,true,NULL_STRING))
 		{
 			Format(citeffect,sizeof(citeffect),newValue);
 			citshowset = true;
@@ -86,7 +87,7 @@ public Action savepos(int client, int args)
 	saveset[client] = true;
 	if (citshowset)
 	{
-		if (FileExists(citeffect))
+		if (FileExists(citeffect,true,NULL_STRING))
 		{
 			int citshow = CreateEntityByName("prop_dynamic");
 			DispatchKeyValue(citshow,"model",citeffect);
