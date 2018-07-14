@@ -271,6 +271,13 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 	else if (StrEqual(clsname,"alyx",false)) Format(clsname,sizeof(clsname),"Alyx Vance");
 	else if (StrEqual(clsname,"eli",false)) Format(clsname,sizeof(clsname),"Eli Vance");
 	else if (StrEqual(clsname,"antlionworker",false)) Format(clsname,sizeof(clsname),"Antlion Worker");
+	else if (StrEqual(clsname,"cscanner",false)) Format(clsname,sizeof(clsname),"City Scanner");
+	else if (StrContains(clsname,"_",false) != -1)
+	{
+		int upper = ReplaceStringEx(clsname,sizeof(clsname),"_"," ");
+		if (upper != -1)
+			clsname[upper] &= ~(1 << 5);
+	}
 	if (bclcookie2[client])
 		Format(hudbuf,sizeof(hudbuf),"%s (%i)",clsname,curh);
 	else
