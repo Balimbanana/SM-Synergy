@@ -1,7 +1,8 @@
 #include <sourcemod>
 #include <sdktools>
+#include <clientprefs>
 
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION "1.1"
 
 public Plugin:myinfo = 
 {
@@ -13,30 +14,162 @@ public Plugin:myinfo =
 }
 
 int showenonly = true;
-int showtype = 0;
-bool numtype = false;
 Handle airelarr = INVALID_HANDLE;
 Handle htarr = INVALID_HANDLE;
 float antispamchk[MAXPLAYERS+1];
+
+Handle bclcookieh = INVALID_HANDLE;
+Handle bclcookie2h = INVALID_HANDLE;
+int bclcookie[MAXPLAYERS+1];
+int bclcookie2[MAXPLAYERS+1];
 
 public void OnPluginStart()
 {
 	Handle cvarh = CreateConVar("sm_healthshow_enemies", "1", "Only show enemy health", _, true, 0.0, true, 1.0);
 	HookConVarChange(cvarh, cvarch);
-	cvarh = CreateConVar("sm_healthshow_type", "0", "Change the type of message used to show health, 3 is disabled", _, true, 0.0, true, 3.0);
-	HookConVarChange(cvarh, cvarht);
-	cvarh = CreateConVar("sm_healthshow_num", "0", "Change how health is shown, 0 is percent, 1 is exact health", _, true, 0.0, true, 1.0);
-	HookConVarChange(cvarh, cvarhn);
 	CloseHandle(cvarh);
 	airelarr = CreateArray(64);
 	htarr = CreateArray(64);
 	AutoExecConfig(true,"healthshow");
+	bclcookieh = RegClientCookie("HealthShowType", "HealthShow type Settings", CookieAccess_Private);
+	bclcookie2h = RegClientCookie("HealthShowNum", "HealthShow num Settings", CookieAccess_Private);
+	RegConsoleCmd("sm_healthtype",sethealthtype);
+	RegConsoleCmd("sm_healthnum",sethealthnum);
 }
 
 public void OnMapStart()
 {
 	ClearArray(airelarr);
 	ClearArray(htarr);
+	CreateTimer(1.0,reloadclcookies);
+}
+
+public Action sethealthtype(int client, int args)
+{
+	if (client == 0) return Plugin_Handled;
+	if (args < 1)
+	{
+		PrintToChat(client,"Usage: sm_healthtype <1-4>");
+		PrintToChat(client,"Sets the type of message that is displayed for health stats.\n4 disables.");
+		return Plugin_Handled;
+	}
+	else if (args == 1)
+	{
+		char h[4];
+		GetCmdArg(1,h,sizeof(h));
+		int numset = StringToInt(h);
+		if (numset == 0)
+		{
+			PrintToChat(client,"Invalid number");
+		}
+		else if (numset == 1)
+		{
+			PrintToChat(client,"Set HealthShow to show HudText.");
+			bclcookie[client] = 0;
+			SetClientCookie(client, bclcookieh, "0");
+		}
+		else if (numset == 2)
+		{
+			PrintToChat(client,"Set HealthShow to show Hint.");
+			bclcookie[client] = 1;
+			SetClientCookie(client, bclcookieh, "1");
+		}
+		else if (numset == 3)
+		{
+			PrintToChat(client,"Set HealthShow to show CenterText.");
+			bclcookie[client] = 2;
+			SetClientCookie(client, bclcookieh, "2");
+		}
+		else
+		{
+			PrintToChat(client,"Disabled HealthShow.");
+			bclcookie[client] = 3;
+			SetClientCookie(client, bclcookieh, "3");
+		}
+	}
+	return Plugin_Handled;
+}
+
+public Action sethealthnum(int client, int args)
+{
+	if (client == 0) return Plugin_Handled;
+	if (args < 1)
+	{
+		PrintToChat(client,"Usage: sm_healthnum <1-2>");
+		PrintToChat(client,"Sets the way health is shown, 1 is percent, 2 is hit points.");
+		return Plugin_Handled;
+	}
+	else if (args == 1)
+	{
+		char h[4];
+		GetCmdArg(1,h,sizeof(h));
+		int numset = StringToInt(h);
+		if (numset == 0)
+		{
+			PrintToChat(client,"Invalid number");
+		}
+		else if (numset == 1)
+		{
+			PrintToChat(client,"Set HealthShow to show percentage.");
+			bclcookie2[client] = 0;
+			SetClientCookie(client, bclcookie2h, "0");
+		}
+		else if (numset == 2)
+		{
+			PrintToChat(client,"Set HealthShow to show hit points.");
+			bclcookie2[client] = 1;
+			SetClientCookie(client, bclcookie2h, "1");
+		}
+	}
+	return Plugin_Handled;
+}
+
+public Action reloadclcookies(Handle timer)
+{
+	for (int client = 1;client<MaxClients;client++)
+	{
+		if (IsClientConnected(client))
+		{
+			char sValue[4];
+			GetClientCookie(client, bclcookieh, sValue, sizeof(sValue));
+			if (strlen(sValue) < 1)
+			{
+				bclcookie[client] = 0;
+				SetClientCookie(client, bclcookieh, "0");
+			}
+			else
+				bclcookie[client] = StringToInt(sValue);
+			GetClientCookie(client, bclcookie2h, sValue, sizeof(sValue));
+			if (strlen(sValue) < 1)
+			{
+				bclcookie2[client] = 0;
+				SetClientCookie(client, bclcookie2h, "0");
+			}
+			else
+				bclcookie2[client] = StringToInt(sValue);
+		}
+	}
+}
+
+public OnClientCookiesCached(int client)
+{
+	char sValue[4];
+	GetClientCookie(client, bclcookieh, sValue, sizeof(sValue));
+	if (strlen(sValue) < 1)
+	{
+		bclcookie[client] = 0;
+		SetClientCookie(client, bclcookieh, "0");
+	}
+	else
+		bclcookie[client] = StringToInt(sValue);
+	GetClientCookie(client, bclcookie2h, sValue, sizeof(sValue));
+	if (strlen(sValue) < 1)
+	{
+		bclcookie2[client] = 0;
+		SetClientCookie(client, bclcookie2h, "0");
+	}
+	else
+		bclcookie2[client] = StringToInt(sValue);
 }
 
 public cvarch(Handle convar, const char[] oldValue, const char[] newValue)
@@ -45,22 +178,6 @@ public cvarch(Handle convar, const char[] oldValue, const char[] newValue)
 		showenonly = true;
 	else
 		showenonly = false;
-}
-
-public cvarht(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if ((StringToInt(newValue) >= 1) && (StringToInt(newValue) <= 3))
-		showtype = StringToInt(newValue);
-	else
-		showtype = 0;
-}
-
-public cvarhn(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if (StringToInt(newValue) == 1)
-		numtype = true;
-	else
-		numtype = false;
 }
 
 bool IsInViewCtrl(int client)
@@ -154,22 +271,22 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 	else if (StrEqual(clsname,"alyx",false)) Format(clsname,sizeof(clsname),"Alyx Vance");
 	else if (StrEqual(clsname,"eli",false)) Format(clsname,sizeof(clsname),"Eli Vance");
 	else if (StrEqual(clsname,"antlionworker",false)) Format(clsname,sizeof(clsname),"Antlion Worker");
-	if (numtype)
+	if (bclcookie2[client])
 		Format(hudbuf,sizeof(hudbuf),"%s (%i)",clsname,curh);
 	else
 		Format(hudbuf,sizeof(hudbuf),"%s (%1.f%%)",clsname,(FloatDiv(float(curh),float(maxh))*100));
-	if (showtype == 0)
+	if (bclcookie[client] == 0)
 	{
 		SetHudTextParams(-1.0, 0.55, 0.1, 255, 255, 0, 255, 0, 0.1, 0.0, 0.1);
 		ShowHudText(client,0,"%s",hudbuf);
 	}
-	else if (showtype == 1)
+	else if (bclcookie[client] == 1)
 	{
 		float Time = GetTickedTime();
 		antispamchk[client] = Time + 0.5;
 		PrintHintText(client,hudbuf);
 	}
-	else if (showtype == 2)
+	else if (bclcookie[client] == 2)
 	{
 		PrintCenterText(client,hudbuf);
 	}
@@ -178,6 +295,8 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 public OnClientDisconnect(int client)
 {
 	antispamchk[client] = 0.0;
+	bclcookie[client] = 0;
+	bclcookie2[client] = 0;
 }
 
 bool GetNPCAlly(char[] clsname)
