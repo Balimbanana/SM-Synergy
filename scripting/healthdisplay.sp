@@ -361,7 +361,7 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 			clsname[upper] &= ~(1 << 5);
 	}
 	if (bclcookie2[client])
-		Format(hudbuf,sizeof(hudbuf),"%s (%i)",clsname,curh);
+		Format(hudbuf,sizeof(hudbuf),"%s (%i HP)",clsname,curh);
 	else
 		Format(hudbuf,sizeof(hudbuf),"%s (%1.f%%)",clsname,RoundToCeil(FloatDiv(float(curh),float(maxh))*100));
 	if (bclcookie[client] == 0)
