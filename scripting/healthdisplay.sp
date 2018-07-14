@@ -49,7 +49,7 @@ public Action showinf(int client, int args)
 	if (client == 0) return Plugin_Handled;
 	PrintToChat(client,"sm_healthtype <1-4>");
 	PrintToChat(client,"Sets the type of message that is displayed for health stats. 4 disables.");
-	PrintToChat(client,"sm_healthfriend <0-1>");
+	PrintToChat(client,"sm_healthfriendlies <0-1>");
 	PrintToChat(client,"Sets whether or not to show friendly npc health.");
 	PrintToChat(client,"sm_healthnum <1-2>");
 	PrintToChat(client,"Sets the way health is shown, 1 is percent, 2 is hit points.");
@@ -363,7 +363,9 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 	if (bclcookie2[client])
 		Format(hudbuf,sizeof(hudbuf),"%s (%i HP)",clsname,curh);
 	else
-		Format(hudbuf,sizeof(hudbuf),"%s (%1.f%%)",clsname,RoundToCeil(FloatDiv(float(curh),float(maxh))*100));
+	{
+		Format(hudbuf,sizeof(hudbuf),"%s (%1.f%%)",clsname,FloatDiv(float(curh),float(maxh))*100);
+	}
 	if (bclcookie[client] == 0)
 	{
 		SetHudTextParams(-1.0, 0.55, 0.1, 255, 255, 0, 255, 0, 0.1, 0.0, 0.1);
