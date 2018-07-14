@@ -13,28 +13,29 @@ public Plugin:myinfo =
 	url = "http://forums.alliedmods.net/showthread.php?p=1141375#post1141375"
 }
 
-int showenonly = true;
 Handle airelarr = INVALID_HANDLE;
 Handle htarr = INVALID_HANDLE;
 float antispamchk[MAXPLAYERS+1];
 
 Handle bclcookieh = INVALID_HANDLE;
 Handle bclcookie2h = INVALID_HANDLE;
+Handle bclcookie3h = INVALID_HANDLE;
 int bclcookie[MAXPLAYERS+1];
 int bclcookie2[MAXPLAYERS+1];
+bool bclcookie3[MAXPLAYERS+1];
 
 public void OnPluginStart()
 {
-	Handle cvarh = CreateConVar("sm_healthshow_enemies", "1", "Only show enemy health", _, true, 0.0, true, 1.0);
-	HookConVarChange(cvarh, cvarch);
-	CloseHandle(cvarh);
 	airelarr = CreateArray(64);
 	htarr = CreateArray(64);
 	AutoExecConfig(true,"healthshow");
 	bclcookieh = RegClientCookie("HealthShowType", "HealthShow type Settings", CookieAccess_Private);
 	bclcookie2h = RegClientCookie("HealthShowNum", "HealthShow num Settings", CookieAccess_Private);
+	bclcookie3h = RegClientCookie("HealthShowFriend", "HealthShow friend Settings", CookieAccess_Private);
+	RegConsoleCmd("sm_healthdisplay",showinf);
 	RegConsoleCmd("sm_healthtype",sethealthtype);
 	RegConsoleCmd("sm_healthnum",sethealthnum);
+	RegConsoleCmd("sm_healthfriendlies",sethealthfriendly);
 }
 
 public void OnMapStart()
@@ -42,6 +43,18 @@ public void OnMapStart()
 	ClearArray(airelarr);
 	ClearArray(htarr);
 	CreateTimer(1.0,reloadclcookies);
+}
+
+public Action showinf(int client, int args)
+{
+	if (client == 0) return Plugin_Handled;
+	PrintToChat(client,"sm_healthtype <1-4>");
+	PrintToChat(client,"Sets the type of message that is displayed for health stats. 4 disables.");
+	PrintToChat(client,"sm_healthfriend <0-1>");
+	PrintToChat(client,"Sets whether or not to show friendly npc health.");
+	PrintToChat(client,"sm_healthnum <1-2>");
+	PrintToChat(client,"Sets the way health is shown, 1 is percent, 2 is hit points.");
+	return Plugin_Handled;
 }
 
 public Action sethealthtype(int client, int args)
@@ -90,6 +103,40 @@ public Action sethealthtype(int client, int args)
 	return Plugin_Handled;
 }
 
+public Action sethealthfriendly(int client, int args)
+{
+	if (client == 0) return Plugin_Handled;
+	if (args < 1)
+	{
+		PrintToChat(client,"Usage: sm_healthfriend <0-1>");
+		PrintToChat(client,"Sets whether or not to show friendly npc health.");
+		return Plugin_Handled;
+	}
+	else if (args == 1)
+	{
+		char h[4];
+		GetCmdArg(1,h,sizeof(h));
+		int numset = StringToInt(h);
+		if (numset == 0)
+		{
+			PrintToChat(client,"Set HealthShow to hide friendly npcs health.");
+			bclcookie3[client] = false;
+			SetClientCookie(client, bclcookie3h, "0");
+		}
+		else if (numset == 1)
+		{
+			PrintToChat(client,"Set HealthShow to show friendly npcs health.");
+			bclcookie3[client] = true;
+			SetClientCookie(client, bclcookie3h, "1");
+		}
+		else
+		{
+			PrintToChat(client,"Invalid number");
+		}
+	}
+	return Plugin_Handled;
+}
+
 public Action sethealthnum(int client, int args)
 {
 	if (client == 0) return Plugin_Handled;
@@ -104,7 +151,7 @@ public Action sethealthnum(int client, int args)
 		char h[4];
 		GetCmdArg(1,h,sizeof(h));
 		int numset = StringToInt(h);
-		if (numset == 0)
+		if ((numset == 0) || (numset > 2))
 		{
 			PrintToChat(client,"Invalid number");
 		}
@@ -147,6 +194,14 @@ public Action reloadclcookies(Handle timer)
 			}
 			else
 				bclcookie2[client] = StringToInt(sValue);
+			GetClientCookie(client, bclcookie3h, sValue, sizeof(sValue));
+			if (strlen(sValue) < 1)
+			{
+				bclcookie3[client] = false;
+				SetClientCookie(client, bclcookie3h, "0");
+			}
+			else if (StringToInt(sValue) == 1)
+				bclcookie3[client] = true;
 		}
 	}
 }
@@ -170,14 +225,14 @@ public OnClientCookiesCached(int client)
 	}
 	else
 		bclcookie2[client] = StringToInt(sValue);
-}
-
-public cvarch(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if (StringToInt(newValue) == 1)
-		showenonly = true;
-	else
-		showenonly = false;
+	GetClientCookie(client, bclcookie3h, sValue, sizeof(sValue));
+	if (strlen(sValue) < 1)
+	{
+		bclcookie3[client] = false;
+		SetClientCookie(client, bclcookie3h, "0");
+	}
+	else if (StringToInt(sValue) == 1)
+		bclcookie3[client] = true;
 }
 
 bool IsInViewCtrl(int client)
@@ -204,13 +259,27 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 			GetEntityClassname(targ,clsname,sizeof(clsname));
 			if ((StrContains(clsname,"npc_",false) != -1) && (!StrEqual(clsname,"npc_furniture")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)))
 			{
-				if (showenonly)
+				if (!bclcookie3[client])
 				{
 					if (GetNPCAlly(clsname))
 					{
-						int maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
 						int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
 						ReplaceString(clsname,sizeof(clsname),"npc_","");
+						int maxh = 20;
+						if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
+						{
+							maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
+							if (maxh == 0)
+							{
+								char cvarren[32];
+								Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
+								Handle cvarchk = FindConVar(cvarren);
+								if (cvarchk == INVALID_HANDLE)
+									maxh = 20;
+								else
+									maxh = GetConVarInt(cvarchk);
+							}
+						}
 						clsname[0] &= ~(1 << 5);
 						float Time = GetTickedTime();
 						if ((antispamchk[client] <= Time) && (curh > 0))
@@ -233,9 +302,23 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 				}
 				else
 				{
-					int maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
 					int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
 					ReplaceString(clsname,sizeof(clsname),"npc_","");
+					int maxh = 20;
+					if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
+					{
+						maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
+						if (maxh == 0)
+						{
+							char cvarren[32];
+							Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
+							Handle cvarchk = FindConVar(cvarren);
+							if (cvarchk == INVALID_HANDLE)
+								maxh = 20;
+							else
+								maxh = GetConVarInt(cvarchk);
+						}
+					}
 					clsname[0] &= ~(1 << 5);
 					float Time = GetTickedTime();
 					if ((antispamchk[client] <= Time) && (curh > 0))
@@ -304,6 +387,7 @@ public OnClientDisconnect(int client)
 	antispamchk[client] = 0.0;
 	bclcookie[client] = 0;
 	bclcookie2[client] = 0;
+	bclcookie3[client] = false;
 }
 
 bool GetNPCAlly(char[] clsname)
