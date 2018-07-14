@@ -28,7 +28,6 @@ public void OnPluginStart()
 {
 	airelarr = CreateArray(64);
 	htarr = CreateArray(64);
-	AutoExecConfig(true,"healthshow");
 	bclcookieh = RegClientCookie("HealthShowType", "HealthShow type Settings", CookieAccess_Private);
 	bclcookie2h = RegClientCookie("HealthShowNum", "HealthShow num Settings", CookieAccess_Private);
 	bclcookie3h = RegClientCookie("HealthShowFriend", "HealthShow friend Settings", CookieAccess_Private);
