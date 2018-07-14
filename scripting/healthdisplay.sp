@@ -268,7 +268,9 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 						if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
 						{
 							maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
-							if (maxh == 0)
+							if (StrEqual(clsname,"combine_camera",false))
+								maxh = 50;
+							else if (maxh == 0)
 							{
 								char cvarren[32];
 								Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
@@ -307,7 +309,9 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 					if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
 					{
 						maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
-						if (maxh == 0)
+						if (StrEqual(clsname,"combine_camera",false))
+							maxh = 50;
+						else if (maxh == 0)
 						{
 							char cvarren[32];
 							Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
