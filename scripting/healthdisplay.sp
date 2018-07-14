@@ -2,7 +2,7 @@
 #include <sdktools>
 #include <clientprefs>
 
-#define PLUGIN_VERSION "1.1"
+#define PLUGIN_VERSION "1.2"
 
 public Plugin:myinfo = 
 {
@@ -191,7 +191,7 @@ public Action reloadclcookies(Handle timer)
 				bclcookie2[client] = false;
 				SetClientCookie(client, bclcookie2h, "0");
 			}
-			else
+			else if (StringToInt(sValue) == 1)
 				bclcookie2[client] = true;
 			GetClientCookie(client, bclcookie3h, sValue, sizeof(sValue));
 			if (strlen(sValue) < 1)
@@ -247,6 +247,17 @@ bool IsInViewCtrl(int client)
 	return false;
 }
 
+public bool TraceEntityFilter(int entity, int mask, any data){
+	if ((entity != -1) && (IsValidEntity(entity)))
+	{
+		char clsname[32];
+		GetEntityClassname(entity,clsname,sizeof(clsname));
+		if (StrEqual(clsname,"func_vehicleclip",false))
+			return false;
+	}
+	return true;
+}
+
 public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float angles[3], &weapon)
 {
 	if (IsPlayerAlive(client) && !IsFakeClient(client))
@@ -256,7 +267,34 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 		{
 			char clsname[32];
 			GetEntityClassname(targ,clsname,sizeof(clsname));
-			if ((StrContains(clsname,"npc_",false) != -1) && (!StrEqual(clsname,"npc_furniture")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)))
+			int vck = GetEntProp(client,Prop_Send,"m_hVehicle");
+			if ((StrContains(clsname,"clip",false) != -1) || ((StrContains(clsname,"prop_vehicle",false) != -1) && (vck != -1)))
+			{
+				float PlayerOrigin[3];
+				float Location[3];
+				float clang[3];
+				GetClientEyePosition(client, Location);
+				GetClientEyeAngles(client,clang);
+				PlayerOrigin[0] = (Location[0] + (60 * Cosine(DegToRad(clang[1]))));
+				PlayerOrigin[1] = (Location[1] + (60 * Sine(DegToRad(clang[1]))));
+				PlayerOrigin[2] = (Location[2] + 10);
+				Location[0] = (PlayerOrigin[0] + (10 * Cosine(DegToRad(clang[1]))));
+				Location[1] = (PlayerOrigin[1] + (10 * Sine(DegToRad(clang[1]))));
+				Location[2] = (PlayerOrigin[2] + 10);
+				if (vck != -1)
+				{
+					Location[0] = (PlayerOrigin[0] - (10 * Cosine(DegToRad(clang[1]))));
+					Location[1] = (PlayerOrigin[1] - (10 * Sine(DegToRad(clang[1]))));
+					Location[2] = (PlayerOrigin[2] - 10);
+				}
+				Handle hhitpos = INVALID_HANDLE;
+				TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter);
+				targ = TR_GetEntityIndex(hhitpos);
+				CloseHandle(hhitpos);
+				if (targ != -1)
+					GetEntityClassname(targ,clsname,sizeof(clsname));
+			}
+			if ((targ != -1) && (StrContains(clsname,"npc_",false) != -1) && (!StrEqual(clsname,"npc_furniture")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
 			{
 				if (!bclcookie3[client])
 				{
@@ -358,6 +396,8 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 	else if (StrEqual(clsname,"eli",false)) Format(clsname,sizeof(clsname),"Eli Vance");
 	else if (StrEqual(clsname,"antlionworker",false)) Format(clsname,sizeof(clsname),"Antlion Worker");
 	else if (StrEqual(clsname,"cscanner",false)) Format(clsname,sizeof(clsname),"City Scanner");
+	else if (StrEqual(clsname,"combinegunship",false)) Format(clsname,sizeof(clsname),"Combine Gunship");
+	else if (StrEqual(clsname,"prop_vehicle_apc",false)) Format(clsname,sizeof(clsname),"Combine APC");
 	else if (StrContains(clsname,"_",false) != -1)
 	{
 		int upper = ReplaceStringEx(clsname,sizeof(clsname),"_"," ");
