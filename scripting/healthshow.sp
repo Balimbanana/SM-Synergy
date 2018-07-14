@@ -98,6 +98,17 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 						float Time = GetTickedTime();
 						if ((antispamchk[client] <= Time) && (curh > 0))
 						{
+							if (StrEqual(clsname,"combine_s",false))
+							{
+								char cmodel[64];
+								GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+								if (StrContains( cmodel, "models/combine_super_soldier.mdl") != -1) //Elite
+									Format(clsname,sizeof(clsname),"Combine Elite");
+								else if (StrContains( cmodel, "models/combine_soldier_prisonguard.mdl") != -1) //Shotgunner
+									Format(clsname,sizeof(clsname),"Combine Prison Guard");
+								else
+									Format(clsname,sizeof(clsname),"Combine Soldier");
+							}
 							antispamchk[client] = Time + 0.07;
 							PrintTheMsg(client,curh,maxh,clsname);
 						}
@@ -112,6 +123,17 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 					float Time = GetTickedTime();
 					if ((antispamchk[client] <= Time) && (curh > 0))
 					{
+						if (StrEqual(clsname,"combine_s",false))
+						{
+							char cmodel[64];
+							GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+							if (StrContains( cmodel, "models/combine_super_soldier.mdl") != -1) //Elite
+								Format(clsname,sizeof(clsname),"Combine Elite");
+							else if (StrContains( cmodel, "models/combine_soldier_prisonguard.mdl") != -1) //Shotgunner
+								Format(clsname,sizeof(clsname),"Combine Prison Guard");
+							else
+								Format(clsname,sizeof(clsname),"Combine Soldier");
+						}
 						antispamchk[client] = Time + 0.07;
 						PrintTheMsg(client,curh,maxh,clsname);
 					}
