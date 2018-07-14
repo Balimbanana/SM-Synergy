@@ -153,6 +153,7 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 	else if (StrEqual(clsname,"breen",false)) Format(clsname,sizeof(clsname),"Dr Breen");
 	else if (StrEqual(clsname,"alyx",false)) Format(clsname,sizeof(clsname),"Alyx Vance");
 	else if (StrEqual(clsname,"eli",false)) Format(clsname,sizeof(clsname),"Eli Vance");
+	else if (StrEqual(clsname,"antlionworker",false)) Format(clsname,sizeof(clsname),"Antlion Worker");
 	if (numtype)
 		Format(hudbuf,sizeof(hudbuf),"%s (%i)",clsname,curh);
 	else
