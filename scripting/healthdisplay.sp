@@ -3,7 +3,7 @@
 #include <sdkhooks>
 #include <clientprefs>
 
-#define PLUGIN_VERSION "1.2"
+#define PLUGIN_VERSION "1.3"
 
 public Plugin:myinfo = 
 {
@@ -23,9 +23,13 @@ float antispamchk[MAXPLAYERS+1];
 Handle bclcookieh = INVALID_HANDLE;
 Handle bclcookie2h = INVALID_HANDLE;
 Handle bclcookie3h = INVALID_HANDLE;
+Handle bclcookie4h = INVALID_HANDLE;
+Handle bclcookie4fh = INVALID_HANDLE;
 int bclcookie[MAXPLAYERS+1];
 bool bclcookie2[MAXPLAYERS+1];
 int bclcookie3[MAXPLAYERS+1];
+int bclcookie4[MAXPLAYERS+1][3];
+int bclcookie4f[MAXPLAYERS+1][3];
 
 public void OnPluginStart()
 {
@@ -35,10 +39,15 @@ public void OnPluginStart()
 	bclcookieh = RegClientCookie("HealthDisplayType", "HealthDisplay type Settings", CookieAccess_Private);
 	bclcookie2h = RegClientCookie("HealthDisplayNum", "HealthDisplay num Settings", CookieAccess_Private);
 	bclcookie3h = RegClientCookie("HealthDisplayFriend", "HealthDisplay friend Settings", CookieAccess_Private);
+	bclcookie4h = RegClientCookie("HealthDisplayColors", "HealthDisplay color Settings", CookieAccess_Private);
+	bclcookie4fh = RegClientCookie("HealthDisplayEnemyColors", "HealthDisplay enemy color Settings", CookieAccess_Private);
 	RegConsoleCmd("sm_healthdisplay",showinf);
 	RegConsoleCmd("sm_healthtype",sethealthtype);
 	RegConsoleCmd("sm_healthnum",sethealthnum);
 	RegConsoleCmd("sm_healthfriendlies",sethealthfriendly);
+	RegConsoleCmd("sm_healthcolor",Display_HudSelect);
+	RegConsoleCmd("sm_healthfriendcol",Display_HudFriendSelect);
+	RegConsoleCmd("sm_healthenemycol",Display_HudEnemySelect);
 	CreateTimer(10.0,cleararr,_,TIMER_REPEAT);
 }
 
@@ -190,7 +199,7 @@ public Action reloadclcookies(Handle timer)
 	{
 		if (IsClientConnected(client))
 		{
-			char sValue[4];
+			char sValue[32];
 			GetClientCookie(client, bclcookieh, sValue, sizeof(sValue));
 			if (strlen(sValue) < 1)
 			{
@@ -219,6 +228,38 @@ public Action reloadclcookies(Handle timer)
 				bclcookie3[client] = 1;
 			else if (StringToInt(sValue) == 2)
 				bclcookie3[client] = 2;
+			GetClientCookie(client, bclcookie4h, sValue, sizeof(sValue));
+			if (strlen(sValue) < 1)
+			{
+				bclcookie4[client][0] = 255;
+				bclcookie4[client][1] = 255;
+				bclcookie4[client][2] = 0;
+				SetClientCookie(client, bclcookie4h, "255 255 0");
+			}
+			else
+			{
+				char tmpc[3][8];
+				ExplodeString(sValue," ",tmpc,3,8);
+				bclcookie4[client][0] = StringToInt(tmpc[0]);
+				bclcookie4[client][1] = StringToInt(tmpc[1]);
+				bclcookie4[client][2] = StringToInt(tmpc[2]);
+			}
+			GetClientCookie(client, bclcookie4fh, sValue, sizeof(sValue));
+			if (strlen(sValue) < 1)
+			{
+				bclcookie4f[client][0] = 255;
+				bclcookie4f[client][1] = 255;
+				bclcookie4f[client][2] = 0;
+				SetClientCookie(client, bclcookie4fh, "255 255 0");
+			}
+			else
+			{
+				char tmpc[3][8];
+				ExplodeString(sValue," ",tmpc,3,8);
+				bclcookie4f[client][0] = StringToInt(tmpc[0]);
+				bclcookie4f[client][1] = StringToInt(tmpc[1]);
+				bclcookie4f[client][2] = StringToInt(tmpc[2]);
+			}
 		}
 	}
 }
@@ -231,7 +272,7 @@ public Action cleararr(Handle timer)
 
 public OnClientCookiesCached(int client)
 {
-	char sValue[4];
+	char sValue[32];
 	GetClientCookie(client, bclcookieh, sValue, sizeof(sValue));
 	if (strlen(sValue) < 1)
 	{
@@ -260,6 +301,39 @@ public OnClientCookiesCached(int client)
 		bclcookie3[client] = 1;
 	else if (StringToInt(sValue) == 2)
 		bclcookie3[client] = 2;
+	GetClientCookie(client, bclcookie4h, sValue, sizeof(sValue));
+	if (strlen(sValue) < 1)
+	{
+		bclcookie4[client][0] = 255;
+		bclcookie4[client][1] = 255;
+		bclcookie4[client][2] = 0;
+		SetClientCookie(client, bclcookie4h, "255 255 0");
+	}
+	else
+	{
+		char tmpc[3][8];
+		ExplodeString(sValue," ",tmpc,3,8);
+		//PrintToServer("%s %s %s Original: %s",tmpc[0],tmpc[1],tmpc[2],sValue);
+		bclcookie4[client][0] = StringToInt(tmpc[0]);
+		bclcookie4[client][1] = StringToInt(tmpc[1]);
+		bclcookie4[client][2] = StringToInt(tmpc[2]);
+	}
+	GetClientCookie(client, bclcookie4fh, sValue, sizeof(sValue));
+	if (strlen(sValue) < 1)
+	{
+		bclcookie4f[client][0] = 255;
+		bclcookie4f[client][1] = 255;
+		bclcookie4f[client][2] = 0;
+		SetClientCookie(client, bclcookie4fh, "255 255 0");
+	}
+	else
+	{
+		char tmpc[3][8];
+		ExplodeString(sValue," ",tmpc,3,8);
+		bclcookie4f[client][0] = StringToInt(tmpc[0]);
+		bclcookie4f[client][1] = StringToInt(tmpc[1]);
+		bclcookie4f[client][2] = StringToInt(tmpc[2]);
+	}
 }
 
 bool IsInViewCtrl(int client)
@@ -478,7 +552,7 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 	}
 	if (bclcookie[client] == 0)
 	{
-		SetHudTextParams(-1.0, 0.55, 0.1, 255, 255, 0, 255, 0, 0.1, 0.0, 0.1);
+		SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4[client][0], bclcookie4[client][1], bclcookie4[client][2], 255, 0, 0.1, 0.0, 0.1);
 		ShowHudText(client,0,"%s",hudbuf);
 	}
 	else if (bclcookie[client] == 1)
@@ -586,7 +660,10 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 	}
 	if (bclcookie[client] == 0)
 	{
-		SetHudTextParams(-1.0, 0.55, 0.1, 255, 255, 0, 255, 0, 0.1, 0.0, 0.1);
+		if (StrContains(clsname,"enemy",false) != -1)
+			SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4[client][0], bclcookie4[client][1], bclcookie4[client][2], 255, 0, 0.1, 0.0, 0.1);
+		else
+			SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4f[client][0], bclcookie4f[client][1], bclcookie4f[client][2], 255, 0, 0.1, 0.0, 0.1);
 		ShowHudText(client,0,"%s",hudbuf);
 	}
 	else if (bclcookie[client] == 1)
@@ -607,6 +684,12 @@ public OnClientDisconnect(int client)
 	bclcookie[client] = 0;
 	bclcookie2[client] = false;
 	bclcookie3[client] = false;
+	bclcookie4[client][0] = 255;
+	bclcookie4[client][1] = 255;
+	bclcookie4[client][2] = 0;
+	bclcookie4f[client][0] = 255;
+	bclcookie4f[client][1] = 255;
+	bclcookie4f[client][2] = 0;
 }
 
 bool GetCopAlly()
@@ -796,4 +879,197 @@ public Action findairel(int ent, char[] clsname)
 		findairel(thisent++,clsname);
 	}
 	return Plugin_Handled;
+}
+
+public Action Display_HudSelect(int client, int args)
+{
+	if (client == 0) return Plugin_Handled;
+	if (bclcookie[client] != 0)
+	{
+		PrintToChat(client,"Colors only apply to !healthtype 1");
+		return Plugin_Handled;
+	}
+	if (bclcookie3[client] != 2) PrintToChat(client,"Friendlies colors only applies to !healthfriendlies 2");
+	Menu menu = new Menu(PanelHandlerDisplayt);
+	menu.SetTitle("HealthDisplay Colors");
+	menu.AddItem("friendlies","Friendlies Colors");
+	menu.AddItem("enemies","Enemies Colors");
+	menu.ExitButton = true;
+	menu.Display(client, 120);
+	return Plugin_Handled;
+}
+
+public Action Display_HudFriendSelect(int client, int args)
+{
+	if (client == 0) return Plugin_Handled;
+	if (bclcookie[client] != 0)
+	{
+		PrintToChat(client,"Colors only apply to !healthtype 1");
+		return Plugin_Handled;
+	}
+	Menu menu = new Menu(PanelHandlerDisplay);
+	menu.SetTitle("HealthDisplay Friendlies Color");
+	menu.AddItem("ff red","Red");
+	menu.AddItem("ff green","Green");
+	menu.AddItem("ff blue","Blue");
+	menu.AddItem("ff yellow","Yellow");
+	menu.AddItem("ff white","White");
+	menu.AddItem("ff purple","Purple");
+	menu.AddItem("back","Back");
+	menu.ExitButton = true;
+	menu.Display(client, 120);
+	return Plugin_Handled;
+}
+
+public Action Display_HudEnemySelect(int client, int args)
+{
+	if (client == 0) return Plugin_Handled;
+	if (bclcookie[client] != 0)
+	{
+		PrintToChat(client,"Colors only apply to !healthtype 1");
+		return Plugin_Handled;
+	}
+	Menu menu = new Menu(PanelHandlerDisplay);
+	menu.SetTitle("HealthDisplay Enemy Color");
+	menu.AddItem("en red","Red");
+	menu.AddItem("en green","Green");
+	menu.AddItem("en blue","Blue");
+	menu.AddItem("en yellow","Yellow");
+	menu.AddItem("en white","White");
+	menu.AddItem("en purple","Purple");
+	menu.AddItem("back","Back");
+	menu.ExitButton = true;
+	menu.Display(client, 120);
+	return Plugin_Handled;
+}
+
+public PanelHandlerDisplayt(Menu menu, MenuAction action, int param1, int param2)
+{
+	char info[128];
+	menu.GetItem(param2, info, sizeof(info));
+	if (action == MenuAction_Select)
+	{
+		if (StrEqual(info,"friendlies",false))
+		{
+			Display_HudFriendSelect(param1,0);
+		}
+		else if (StrEqual(info,"enemies",false))
+		{
+			Display_HudEnemySelect(param1,0);
+		}
+	}
+	else if (action == MenuAction_Cancel)
+	{
+		
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+}
+
+public PanelHandlerDisplay(Menu menu, MenuAction action, int param1, int param2)
+{
+	char info[128];
+	menu.GetItem(param2, info, sizeof(info));
+	if (action == MenuAction_Select)
+	{
+		if (StrEqual(info,"back",false))
+			Display_HudSelect(param1,0);
+		if (StrEqual(info,"en red",false))
+		{
+			bclcookie4[param1][0] = 255;
+			bclcookie4[param1][1] = 0;
+			bclcookie4[param1][2] = 0;
+			SetClientCookie(param1, bclcookie4h, "255 0 0");
+		}
+		else if (StrEqual(info,"en green",false))
+		{
+			bclcookie4[param1][0] = 0;
+			bclcookie4[param1][1] = 255;
+			bclcookie4[param1][2] = 0;
+			SetClientCookie(param1, bclcookie4h, "0 255 0");
+		}
+		else if (StrEqual(info,"en blue",false))
+		{
+			bclcookie4[param1][0] = 0;
+			bclcookie4[param1][1] = 0;
+			bclcookie4[param1][2] = 255;
+			SetClientCookie(param1, bclcookie4h, "0 0 255");
+		}
+		else if (StrEqual(info,"en yellow",false))
+		{
+			bclcookie4[param1][0] = 255;
+			bclcookie4[param1][1] = 255;
+			bclcookie4[param1][2] = 0;
+			SetClientCookie(param1, bclcookie4h, "255 255 0");
+		}
+		else if (StrEqual(info,"en white",false))
+		{
+			bclcookie4[param1][0] = 255;
+			bclcookie4[param1][1] = 255;
+			bclcookie4[param1][2] = 255;
+			SetClientCookie(param1, bclcookie4h, "255 255 255");
+		}
+		else if (StrEqual(info,"en purple",false))
+		{
+			bclcookie4[param1][0] = 255;
+			bclcookie4[param1][1] = 0;
+			bclcookie4[param1][2] = 255;
+			SetClientCookie(param1, bclcookie4h, "255 0 255");
+		}
+		else if (StrEqual(info,"ff red",false))
+		{
+			bclcookie4f[param1][0] = 255;
+			bclcookie4f[param1][1] = 0;
+			bclcookie4f[param1][2] = 0;
+			SetClientCookie(param1, bclcookie4fh, "255 0 0");
+		}
+		else if (StrEqual(info,"ff green",false))
+		{
+			bclcookie4f[param1][0] = 0;
+			bclcookie4f[param1][1] = 255;
+			bclcookie4f[param1][2] = 0;
+			SetClientCookie(param1, bclcookie4fh, "0 255 0");
+		}
+		else if (StrEqual(info,"ff blue",false))
+		{
+			bclcookie4f[param1][0] = 0;
+			bclcookie4f[param1][1] = 0;
+			bclcookie4f[param1][2] = 255;
+			SetClientCookie(param1, bclcookie4fh, "0 0 255");
+		}
+		else if (StrEqual(info,"ff yellow",false))
+		{
+			bclcookie4f[param1][0] = 255;
+			bclcookie4f[param1][1] = 255;
+			bclcookie4f[param1][2] = 0;
+			SetClientCookie(param1, bclcookie4fh, "255 255 0");
+		}
+		else if (StrEqual(info,"ff white",false))
+		{
+			bclcookie4f[param1][0] = 255;
+			bclcookie4f[param1][1] = 255;
+			bclcookie4f[param1][2] = 255;
+			SetClientCookie(param1, bclcookie4fh, "255 255 255");
+		}
+		else if (StrEqual(info,"ff purple",false))
+		{
+			bclcookie4f[param1][0] = 255;
+			bclcookie4f[param1][1] = 0;
+			bclcookie4f[param1][2] = 255;
+			SetClientCookie(param1, bclcookie4fh, "255 0 255");
+		}
+		if (StrContains(info,"ff ",false) != -1) Display_HudFriendSelect(param1,0);
+		else if (StrContains(info,"en ",false) != -1) Display_HudEnemySelect(param1,0);
+		else Display_HudSelect(param1,0);
+	}
+	else if (action == MenuAction_Cancel)
+	{
+		
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
 }
