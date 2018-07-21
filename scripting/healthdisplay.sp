@@ -1,5 +1,6 @@
 #include <sourcemod>
 #include <sdktools>
+#include <sdkhooks>
 #include <clientprefs>
 
 #define PLUGIN_VERSION "1.2"
@@ -15,6 +16,8 @@ public Plugin:myinfo =
 
 Handle airelarr = INVALID_HANDLE;
 Handle htarr = INVALID_HANDLE;
+Handle globalsarr = INVALID_HANDLE;
+bool bugbaitpicked = false;
 float antispamchk[MAXPLAYERS+1];
 
 Handle bclcookieh = INVALID_HANDLE;
@@ -22,12 +25,13 @@ Handle bclcookie2h = INVALID_HANDLE;
 Handle bclcookie3h = INVALID_HANDLE;
 int bclcookie[MAXPLAYERS+1];
 bool bclcookie2[MAXPLAYERS+1];
-bool bclcookie3[MAXPLAYERS+1];
+int bclcookie3[MAXPLAYERS+1];
 
 public void OnPluginStart()
 {
 	airelarr = CreateArray(64);
 	htarr = CreateArray(64);
+	globalsarr = CreateArray(16);
 	bclcookieh = RegClientCookie("HealthDisplayType", "HealthDisplay type Settings", CookieAccess_Private);
 	bclcookie2h = RegClientCookie("HealthDisplayNum", "HealthDisplay num Settings", CookieAccess_Private);
 	bclcookie3h = RegClientCookie("HealthDisplayFriend", "HealthDisplay friend Settings", CookieAccess_Private);
@@ -35,23 +39,27 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_healthtype",sethealthtype);
 	RegConsoleCmd("sm_healthnum",sethealthnum);
 	RegConsoleCmd("sm_healthfriendlies",sethealthfriendly);
+	CreateTimer(10.0,cleararr,_,TIMER_REPEAT);
 }
 
 public void OnMapStart()
 {
 	ClearArray(airelarr);
 	ClearArray(htarr);
+	ClearArray(globalsarr);
+	bugbaitpicked = false;
 	CreateTimer(1.0,reloadclcookies);
+	HookEntityOutput("weapon_bugbait", "OnPlayerPickup", EntityOutput:onbugbaitpickup);
 }
 
 public Action showinf(int client, int args)
 {
 	if (client == 0) return Plugin_Handled;
-	PrintToChat(client,"sm_healthtype <1-4>");
+	PrintToChat(client,"!healthtype <1-4>");
 	PrintToChat(client,"Sets the type of message that is displayed for health stats. 4 disables.");
-	PrintToChat(client,"sm_healthfriendlies <0-1>");
+	PrintToChat(client,"!healthfriendlies <0-2>");
 	PrintToChat(client,"Sets whether or not to show friendly npc health.");
-	PrintToChat(client,"sm_healthnum <1-2>");
+	PrintToChat(client,"!healthnum <1-2>");
 	PrintToChat(client,"Sets the way health is shown, 1 is percent, 2 is hit points.");
 	return Plugin_Handled;
 }
@@ -61,7 +69,7 @@ public Action sethealthtype(int client, int args)
 	if (client == 0) return Plugin_Handled;
 	if (args < 1)
 	{
-		PrintToChat(client,"Usage: sm_healthtype <1-4>");
+		PrintToChat(client,"Usage: !healthtype <1-4>");
 		PrintToChat(client,"Sets the type of message that is displayed for health stats.\n4 disables.");
 		return Plugin_Handled;
 	}
@@ -107,8 +115,8 @@ public Action sethealthfriendly(int client, int args)
 	if (client == 0) return Plugin_Handled;
 	if (args < 1)
 	{
-		PrintToChat(client,"Usage: sm_healthfriend <0-1>");
-		PrintToChat(client,"Sets whether or not to show friendly npc health.");
+		PrintToChat(client,"Usage: !healthfriendlies <0-2>");
+		PrintToChat(client,"Sets whether or not to show friendly npc health. 2 shows Friend: name or Enemy: name");
 		return Plugin_Handled;
 	}
 	else if (args == 1)
@@ -119,14 +127,20 @@ public Action sethealthfriendly(int client, int args)
 		if (numset == 0)
 		{
 			PrintToChat(client,"Set HealthDisplay to hide friendly npcs health.");
-			bclcookie3[client] = false;
+			bclcookie3[client] = 0;
 			SetClientCookie(client, bclcookie3h, "0");
 		}
 		else if (numset == 1)
 		{
 			PrintToChat(client,"Set HealthDisplay to show friendly npcs health.");
-			bclcookie3[client] = true;
+			bclcookie3[client] = 1;
 			SetClientCookie(client, bclcookie3h, "1");
+		}
+		else if (numset == 2)
+		{
+			PrintToChat(client,"Set HealthDisplay to show friendly npcs health with friend: or enemy:.");
+			bclcookie3[client] = 2;
+			SetClientCookie(client, bclcookie3h, "2");
 		}
 		else
 		{
@@ -141,7 +155,7 @@ public Action sethealthnum(int client, int args)
 	if (client == 0) return Plugin_Handled;
 	if (args < 1)
 	{
-		PrintToChat(client,"Usage: sm_healthnum <1-2>");
+		PrintToChat(client,"Usage: !healthnum <1-2>");
 		PrintToChat(client,"Sets the way health is shown, 1 is percent, 2 is hit points.");
 		return Plugin_Handled;
 	}
@@ -186,23 +200,33 @@ public Action reloadclcookies(Handle timer)
 			else
 				bclcookie[client] = StringToInt(sValue);
 			GetClientCookie(client, bclcookie2h, sValue, sizeof(sValue));
-			if (strlen(sValue) < 1)
+			if (StringToInt(sValue) == 0)
+				bclcookie2[client] = false;
+			else if (StringToInt(sValue) == 1)
+				bclcookie2[client] = true;
+			else
 			{
 				bclcookie2[client] = false;
 				SetClientCookie(client, bclcookie2h, "0");
 			}
-			else if (StringToInt(sValue) == 1)
-				bclcookie2[client] = true;
 			GetClientCookie(client, bclcookie3h, sValue, sizeof(sValue));
 			if (strlen(sValue) < 1)
 			{
-				bclcookie3[client] = false;
+				bclcookie3[client] = 0;
 				SetClientCookie(client, bclcookie3h, "0");
 			}
 			else if (StringToInt(sValue) == 1)
-				bclcookie3[client] = true;
+				bclcookie3[client] = 1;
+			else if (StringToInt(sValue) == 2)
+				bclcookie3[client] = 2;
 		}
 	}
+}
+
+public Action cleararr(Handle timer)
+{
+	//This is to force recheck of ai relationships as the lowest impact check possible.
+	ClearArray(htarr);
 }
 
 public OnClientCookiesCached(int client)
@@ -217,21 +241,25 @@ public OnClientCookiesCached(int client)
 	else
 		bclcookie[client] = StringToInt(sValue);
 	GetClientCookie(client, bclcookie2h, sValue, sizeof(sValue));
-	if (strlen(sValue) < 1)
+	if (StringToInt(sValue) == 0)
+		bclcookie2[client] = false;
+	else if (StringToInt(sValue) == 1)
+		bclcookie2[client] = true;
+	else
 	{
 		bclcookie2[client] = false;
 		SetClientCookie(client, bclcookie2h, "0");
 	}
-	else
-		bclcookie2[client] = true;
 	GetClientCookie(client, bclcookie3h, sValue, sizeof(sValue));
 	if (strlen(sValue) < 1)
 	{
-		bclcookie3[client] = false;
+		bclcookie3[client] = 0;
 		SetClientCookie(client, bclcookie3h, "0");
 	}
 	else if (StringToInt(sValue) == 1)
-		bclcookie3[client] = true;
+		bclcookie3[client] = 1;
+	else if (StringToInt(sValue) == 2)
+		bclcookie3[client] = 2;
 }
 
 bool IsInViewCtrl(int client)
@@ -260,7 +288,7 @@ public bool TraceEntityFilter(int entity, int mask, any data){
 
 public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float angles[3], &weapon)
 {
-	if (IsPlayerAlive(client) && !IsFakeClient(client))
+	if (IsPlayerAlive(client) && !IsFakeClient(client) && (bclcookie[client] != 3))
 	{
 		int targ = GetClientAimTarget(client,false);
 		if ((targ != -1) && (targ > MaxClients))
@@ -294,7 +322,7 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 				if (targ != -1)
 					GetEntityClassname(targ,clsname,sizeof(clsname));
 			}
-			if ((targ != -1) && (StrContains(clsname,"npc_",false) != -1) && (!StrEqual(clsname,"npc_furniture")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
+			if ((targ != -1) && (StrContains(clsname,"npc_",false) != -1) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
 			{
 				if (!bclcookie3[client])
 				{
@@ -330,7 +358,7 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 								if (StrContains( cmodel, "models/combine_super_soldier.mdl") != -1) //Elite
 									Format(clsname,sizeof(clsname),"Combine Elite");
 								else if (StrContains( cmodel, "models/combine_soldier_prisonguard.mdl") != -1) //Shotgunner
-									Format(clsname,sizeof(clsname),"Combine Prison Guard");
+									Format(clsname,sizeof(clsname),"Combine Guard");
 								else
 									Format(clsname,sizeof(clsname),"Combine Soldier");
 							}
@@ -339,7 +367,7 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 						}
 					}
 				}
-				else
+				else if (bclcookie3[client] == 1)
 				{
 					int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
 					ReplaceString(clsname,sizeof(clsname),"npc_","");
@@ -371,12 +399,42 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 							if (StrContains( cmodel, "models/combine_super_soldier.mdl") != -1) //Elite
 								Format(clsname,sizeof(clsname),"Combine Elite");
 							else if (StrContains( cmodel, "models/combine_soldier_prisonguard.mdl") != -1) //Shotgunner
-								Format(clsname,sizeof(clsname),"Combine Prison Guard");
+								Format(clsname,sizeof(clsname),"Combine Guard");
 							else
 								Format(clsname,sizeof(clsname),"Combine Soldier");
 						}
 						antispamchk[client] = Time + 0.07;
 						PrintTheMsg(client,curh,maxh,clsname);
+					}
+				}
+				else
+				{
+					char friendfoe[32];
+					Format(friendfoe,sizeof(friendfoe),clsname);
+					int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
+					ReplaceString(clsname,sizeof(clsname),"npc_","");
+					int maxh = 20;
+					if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
+					{
+						maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
+						if (StrEqual(clsname,"combine_camera",false))
+							maxh = 50;
+						else if (maxh == 0)
+						{
+							char cvarren[32];
+							Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
+							Handle cvarchk = FindConVar(cvarren);
+							if (cvarchk == INVALID_HANDLE)
+								maxh = 20;
+							else
+								maxh = GetConVarInt(cvarchk);
+						}
+					}
+					float Time = GetTickedTime();
+					if ((antispamchk[client] <= Time) && (curh > 0))
+					{
+						antispamchk[client] = Time + 0.07;
+						PrintTheMsgf(client,curh,maxh,friendfoe,targ);
 					}
 				}
 			}
@@ -398,6 +456,11 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 	else if (StrEqual(clsname,"cscanner",false)) Format(clsname,sizeof(clsname),"City Scanner");
 	else if (StrEqual(clsname,"combinegunship",false)) Format(clsname,sizeof(clsname),"Combine Gunship");
 	else if (StrEqual(clsname,"prop_vehicle_apc",false)) Format(clsname,sizeof(clsname),"Combine APC");
+	else if (StrEqual(clsname,"npc_fastzombie",false)) Format(clsname,sizeof(clsname),"Fast Zombie");
+	else if (StrEqual(clsname,"npc_headcrab_fast",false)) Format(clsname,sizeof(clsname),"Fast Headcrab");
+	else if (StrEqual(clsname,"npc_headcrab_poison",false)) Format(clsname,sizeof(clsname),"Poison Headcrab");
+	else if (StrEqual(clsname,"npc_headcrab_black",false)) Format(clsname,sizeof(clsname),"Black Headcrab");
+	else if (StrEqual(clsname,"npc_poisonzombie",false)) Format(clsname,sizeof(clsname),"Poison Zombie");
 	else if (StrContains(clsname,"_",false) != -1)
 	{
 		int upper = ReplaceStringEx(clsname,sizeof(clsname),"_"," ");
@@ -408,7 +471,118 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 		Format(hudbuf,sizeof(hudbuf),"%s (%i HP)",clsname,curh);
 	else
 	{
-		Format(hudbuf,sizeof(hudbuf),"%s (%1.f%%)",clsname,FloatDiv(float(curh),float(maxh))*100);
+		float perch = FloatDiv(float(curh),float(maxh))*100;
+		if (perch < 1.0)
+			perch = 1.0;
+		Format(hudbuf,sizeof(hudbuf),"%s (%1.f%%)",clsname,perch);
+	}
+	if (bclcookie[client] == 0)
+	{
+		SetHudTextParams(-1.0, 0.55, 0.1, 255, 255, 0, 255, 0, 0.1, 0.0, 0.1);
+		ShowHudText(client,0,"%s",hudbuf);
+	}
+	else if (bclcookie[client] == 1)
+	{
+		float Time = GetTickedTime();
+		antispamchk[client] = Time + 0.5;
+		PrintHintText(client,hudbuf);
+	}
+	else if (bclcookie[client] == 2)
+	{
+		PrintCenterText(client,hudbuf);
+	}
+}
+
+public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
+{
+	if (StrEqual(clsname,"npc_metropolice",false))
+		if (GetCopAlly()) Format(clsname,sizeof(clsname),"Friend: Metropolice");
+		else Format(clsname,sizeof(clsname),"Enemy: Metropolice");
+	if (GetNPCAlly(clsname))
+	{
+		if (StrEqual(clsname,"npc_combine_s",false))
+		{
+			char cmodel[64];
+			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+			if (StrContains( cmodel, "models/combine_super_soldier.mdl") != -1)
+				Format(clsname,sizeof(clsname),"Friend: Combine Elite");
+			else if (StrContains( cmodel, "models/combine_soldier_prisonguard.mdl") != -1)
+				Format(clsname,sizeof(clsname),"Friend: Combine Guard");
+			else
+				Format(clsname,sizeof(clsname),"Friend: Combine Soldier");
+		}
+		else if (StrEqual(clsname,"npc_monk",false)) Format(clsname,sizeof(clsname),"Friend: Father Grigori");
+		else if (StrEqual(clsname,"npc_kleiner",false)) Format(clsname,sizeof(clsname),"Friend: Isaac Kleiner");
+		else if (StrEqual(clsname,"npc_mossman",false)) Format(clsname,sizeof(clsname),"Friend: Judith Mossman");
+		else if (StrEqual(clsname,"npc_magnusson",false)) Format(clsname,sizeof(clsname),"Friend: Arne Magnusson");
+		else if (StrEqual(clsname,"npc_breen",false)) Format(clsname,sizeof(clsname),"Friend: Dr Breen");
+		else if (StrEqual(clsname,"npc_alyx",false)) Format(clsname,sizeof(clsname),"Friend: Alyx Vance");
+		else if (StrEqual(clsname,"npc_eli",false)) Format(clsname,sizeof(clsname),"Friend: Eli Vance");
+		else if (StrEqual(clsname,"npc_antlionworker",false)) Format(clsname,sizeof(clsname),"Friend: Antlion Worker");
+		else if (StrEqual(clsname,"npc_cscanner",false)) Format(clsname,sizeof(clsname),"Friend: City Scanner");
+		else if (StrEqual(clsname,"npc_combinegunship",false)) Format(clsname,sizeof(clsname),"Friend: Combine Gunship");
+		else if (StrEqual(clsname,"prop_vehicle_apc",false)) Format(clsname,sizeof(clsname),"Friend: Combine APC");
+		else if (StrEqual(clsname,"npc_gman",false)) Format(clsname,sizeof(clsname),"Government Man");
+		else if (StrEqual(clsname,"npc_fastzombie",false)) Format(clsname,sizeof(clsname),"Friend: Fast Zombie");
+		else if (StrEqual(clsname,"npc_poisonzombie",false)) Format(clsname,sizeof(clsname),"Friend: Poison Zombie");
+		else if (StrEqual(clsname,"npc_headcrab_fast",false)) Format(clsname,sizeof(clsname),"Friend: Fast Headcrab");
+		else if (StrEqual(clsname,"npc_headcrab_poison",false)) Format(clsname,sizeof(clsname),"Friend: Poison Headcrab");
+		else if (StrEqual(clsname,"npc_headcrab_black",false)) Format(clsname,sizeof(clsname),"Friend: Black Headcrab");
+		ReplaceString(clsname,sizeof(clsname),"npc","Friend: ");
+		int upper = ReplaceStringEx(clsname,sizeof(clsname),"_"," ");
+		if (upper != -1)
+			clsname[upper] &= ~(1 << 5);
+	}
+	else
+	{
+		if (StrEqual(clsname,"npc_combine_s",false))
+		{
+			char cmodel[64];
+			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+			if (StrContains( cmodel, "models/combine_super_soldier.mdl") != -1)
+				Format(clsname,sizeof(clsname),"Enemy: Combine Elite");
+			else if (StrContains( cmodel, "models/combine_soldier_prisonguard.mdl") != -1)
+				Format(clsname,sizeof(clsname),"Enemy: Combine Guard");
+			else
+				Format(clsname,sizeof(clsname),"Enemy: Combine Soldier");
+		}
+		else if (StrEqual(clsname,"npc_monk",false)) Format(clsname,sizeof(clsname),"Enemy: Father Grigori");
+		else if (StrEqual(clsname,"npc_kleiner",false)) Format(clsname,sizeof(clsname),"Enemy: Isaac Kleiner");
+		else if (StrEqual(clsname,"npc_mossman",false)) Format(clsname,sizeof(clsname),"Enemy: Judith Mossman");
+		else if (StrEqual(clsname,"npc_magnusson",false)) Format(clsname,sizeof(clsname),"Enemy: Arne Magnusson");
+		else if (StrEqual(clsname,"npc_breen",false)) Format(clsname,sizeof(clsname),"Enemy: Dr Breen");
+		else if (StrEqual(clsname,"npc_alyx",false)) Format(clsname,sizeof(clsname),"Enemy: Alyx Vance");
+		else if (StrEqual(clsname,"npc_eli",false)) Format(clsname,sizeof(clsname),"Enemy: Eli Vance");
+		else if (StrEqual(clsname,"npc_antlionworker",false)) Format(clsname,sizeof(clsname),"Enemy: Antlion Worker");
+		else if (StrEqual(clsname,"npc_cscanner",false)) Format(clsname,sizeof(clsname),"Enemy: City Scanner");
+		else if (StrEqual(clsname,"npc_combinegunship",false)) Format(clsname,sizeof(clsname),"Enemy: Combine Gunship");
+		else if (StrEqual(clsname,"prop_vehicle_apc",false)) Format(clsname,sizeof(clsname),"Enemy: Combine APC");
+		else if (StrEqual(clsname,"npc_gman",false)) Format(clsname,sizeof(clsname),"Government Man");
+		else if (StrEqual(clsname,"npc_fastzombie",false)) Format(clsname,sizeof(clsname),"Enemy: Fast Zombie");
+		else if (StrEqual(clsname,"npc_poisonzombie",false)) Format(clsname,sizeof(clsname),"Enemy: Poison Zombie");
+		else if (StrEqual(clsname,"npc_headcrab_fast",false)) Format(clsname,sizeof(clsname),"Enemy: Fast Headcrab");
+		else if (StrEqual(clsname,"npc_headcrab_poison",false)) Format(clsname,sizeof(clsname),"Enemy: Poison Headcrab");
+		else if (StrEqual(clsname,"npc_headcrab_black",false)) Format(clsname,sizeof(clsname),"Enemy: Black Headcrab");
+		ReplaceString(clsname,sizeof(clsname),"npc","Enemy: ");
+		int upper = ReplaceStringEx(clsname,sizeof(clsname),"_"," ");
+		if (upper != -1)
+			clsname[upper] &= ~(1 << 5);
+	}
+	char hudbuf[32];
+	if (StrContains(clsname,"_",false) != -1)
+	{
+		int upper = ReplaceStringEx(clsname,sizeof(clsname),"_"," ");
+		if (upper != -1)
+			clsname[upper] &= ~(1 << 5);
+	}
+	if (bclcookie2[client])
+		Format(hudbuf,sizeof(hudbuf),"%s (%i HP)",clsname,curh);
+	else
+	{
+		float perch = FloatDiv(float(curh),float(maxh))*100;
+		if (perch < 1.0)
+			perch = 1.0;
+		Format(hudbuf,sizeof(hudbuf),"%s (%1.f%%)",clsname,perch);
 	}
 	if (bclcookie[client] == 0)
 	{
@@ -435,18 +609,85 @@ public OnClientDisconnect(int client)
 	bclcookie3[client] = false;
 }
 
+bool GetCopAlly()
+{
+	if (GetArraySize(globalsarr) > 0)
+	{
+		for (int i = 0;i<GetArraySize(globalsarr);i++)
+		{
+			char itmp[32];
+			GetArrayString(globalsarr, i, itmp, sizeof(itmp));
+			int glo = StringToInt(itmp);
+			if (IsValidEntity(glo))
+			{
+				char state[64];
+				GetEntPropString(glo,Prop_Data,"m_iName",state,sizeof(state));
+				char state2[64];
+				GetEntPropString(glo,Prop_Data,"m_globalstate",state2,sizeof(state2));
+				int initstate = GetEntProp(glo,Prop_Data,"m_initialstate");
+				if ((StrEqual(state,"global.precriminal",false)) || (StrEqual(state2,"gordon_precriminal",false)))
+					if (initstate > 0)
+					{
+						return true;
+					}
+			}
+		}
+	}
+	return false;
+}
+
+public Action findglobals(int ent, char[] clsname)
+{
+	int thisent = FindEntityByClassname(ent,clsname);
+	if ((IsValidEntity(thisent)) && (thisent != -1))
+	{
+		char prevtmp[16];
+		Format(prevtmp, sizeof(prevtmp), "%i", thisent);
+		if((thisent >= 0) && (FindStringInArray(globalsarr, prevtmp) == -1))
+		{
+			PushArrayString(globalsarr, prevtmp);
+		}
+		findglobals(thisent++,clsname);
+	}
+	return Plugin_Handled;
+}
+
 bool GetNPCAlly(char[] clsname)
 {
-	if (StrEqual(clsname,"npc_alyx",false) || StrEqual(clsname,"npc_dog",false) || StrEqual(clsname,"npc_barney",false) || StrEqual(clsname,"npc_citizen",false) || StrEqual(clsname,"npc_vortigaunt",false) || StrEqual(clsname,"npc_magnusson",false) || StrEqual(clsname,"npc_eli",false) || StrEqual(clsname,"npc_mossman",false) || StrEqual(clsname,"npc_monk",false) || StrEqual(clsname,"npc_kleiner",false))
-		return false;
+	//if (StrEqual(clsname,"npc_alyx",false) || StrEqual(clsname,"npc_dog",false) || StrEqual(clsname,"npc_barney",false) || StrEqual(clsname,"npc_vortigaunt",false) || StrEqual(clsname,"npc_magnusson",false) || StrEqual(clsname,"npc_eli",false) || StrEqual(clsname,"npc_mossman",false) || StrEqual(clsname,"npc_monk",false) || StrEqual(clsname,"npc_kleiner",false))
+	//	return false;
 	if (GetArraySize(airelarr) < 1)
 		findairel(MaxClients+1,"ai_relationship");
 	if (GetArraySize(htarr) > 0)
 	{
 		if (FindStringInArray(htarr,clsname) != -1) return false;
+		else return true;
 	}
 	else
 	{
+		addht("npc_combine_s");
+		addht("npc_metropolice");
+		addht("prop_vehicle_apc");
+		addht("npc_breen");
+		addht("npc_barnacle");
+		addht("npc_combine_camera");
+		addht("npc_helicopter");
+		addht("npc_cscanner");
+		addht("npc_combinegunship");
+		addht("npc_combinedropship");
+		addht("npc_manhack");
+		addht("npc_strider");
+		addht("npc_zombie");
+		addht("npc_zombie_torso");
+		addht("npc_fastzombie");
+		addht("npc_poisonzombie");
+		addht("npc_headcrab");
+		addht("npc_headcrab_poison");
+		addht("npc_headcrab_black");
+		addht("npc_headcrab_fast");
+		addht("npc_gargantua");
+		addht("npc_antlion");
+		addht("npc_antlionguard");
 		for (int i = 0;i<GetArraySize(airelarr);i++)
 		{
 			char itmp[32];
@@ -467,22 +708,73 @@ bool GetNPCAlly(char[] clsname)
 						int disp = GetEntProp(rel,Prop_Data,"m_iDisposition");
 						int act = GetEntProp(rel,Prop_Data,"m_bIsActive");
 						//disp 1 = D_HT // 2 = D_NT // 3 = D_LI // 4 = D_FR
-						if ((StrContains(targ,"player",false) != -1) && (disp == 3) && (act != 0))
+						if ((StrContains(targ,"player",false) != -1) && (disp == 1) && (act != 0))
 						{
-							if (FindStringInArray(htarr,subj) == -1)
-								PushArrayString(htarr,subj);
-							return false;
+							addht(subj);
 						}
-						else if ((StrContains(targ,"player",false) != -1) && (disp == 1) && (act != 0))
-							return true;
+						else if ((StrContains(targ,"player",false) != -1) && (disp == 3) && (act != 0))
+						{
+							int find = FindStringInArray(htarr,subj);
+							if (find != -1)
+							{
+								//PrintToServer("Rem %s %i",subj,disp);
+								RemoveFromArray(htarr,find);
+							}
+						}
 					}
 				}
 			}
 			else
 				findairel(MaxClients+1,"ai_relationship");
 		}
+		if (GetAntAlly())
+		{
+			int find = FindStringInArray(htarr,"npc_antlion");
+			if (find != -1)
+				RemoveFromArray(htarr,find);
+		}
 	}
 	return true;
+}
+
+addht(char[] addht)
+{
+	if (FindStringInArray(htarr,addht) == -1)
+		PushArrayString(htarr,addht);
+}
+
+bool GetAntAlly()
+{
+	if (bugbaitpicked)
+		return true;
+	if (GetArraySize(globalsarr) > 0)
+	{
+		for (int i = 0;i<GetArraySize(globalsarr);i++)
+		{
+			char itmp[32];
+			GetArrayString(globalsarr, i, itmp, sizeof(itmp));
+			int glo = StringToInt(itmp);
+			if (IsValidEntity(glo))
+			{
+				char state[64];
+				GetEntPropString(glo,Prop_Data,"m_iName",state,sizeof(state));
+				char state2[64];
+				GetEntPropString(glo,Prop_Data,"m_globalstate",state2,sizeof(state2));
+				int offs = FindDataMapInfo(glo, "m_counter");
+				int initstate = GetEntData(glo, offs);
+				if ((StrEqual(state,"antlions_friendly",false)) || (StrEqual(state2,"antlion_allied",false)))
+					if (initstate > 0)
+						return true;
+			}
+		}
+	}
+	return false;
+}
+
+public Action onbugbaitpickup(const char[] output, int caller, int activator, float delay)
+{
+	bugbaitpicked = true;
+	UnhookEntityOutput("weapon_bugbait", "OnPlayerPickup", EntityOutput:onbugbaitpickup);
 }
 
 public Action findairel(int ent, char[] clsname)
