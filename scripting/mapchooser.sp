@@ -1008,6 +1008,8 @@ public Action:Timer_ChangeMap(Handle:hTimer, Handle:dp)
 	Format(mapch,sizeof(mapch),"syn %s",map);
 	ServerCommand("changelevel %s", mapch);
 	LogMessage("Mapchange to %s", mapch);
+	Format(mapch,sizeof(mapch),"Custom %s",map);
+	ServerCommand("changelevel %s", mapch);
 	
 	return Plugin_Stop;
 }
@@ -1040,14 +1042,14 @@ CreateNextVote()
 		{
 			GetArrayString(g_OldMapList, i, map, sizeof(map));
 			RemoveStringFromArray(tempMaps, map);
-		}	
+		}
 	}
 
 	int limit = (g_Cvar_IncludeMaps.IntValue < GetArraySize(tempMaps) ? g_Cvar_IncludeMaps.IntValue : GetArraySize(tempMaps));
 	for (int i = 0; i < limit; i++)
 	{
 		int b = GetRandomInt(0, GetArraySize(tempMaps) - 1);
-		GetArrayString(tempMaps, b, map, sizeof(map));		
+		GetArrayString(tempMaps, b, map, sizeof(map));
 		PushArrayString(g_NextMapList, map);
 		RemoveFromArray(tempMaps, b);
 	}
@@ -1475,6 +1477,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "DownFall");
 	}
+	else if (StrContains(map, "sttr_ch", false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Steam Tracks Trouble and Riddles");
+	}
 	else if ((StrContains(map, "belowice", false) == 0) || (StrEqual(map,"memory",false)))
 	{
 		Format(maptag, sizeof(maptag), "Below The Ice");
@@ -1486,6 +1492,10 @@ public Action GetMapTag(const char[] map)
 	else if (StrContains(map, "ep2_deepdown_", false) == 0)
 	{
 		Format(maptag, sizeof(maptag), "Deep Down");
+	}
+	else if ((StrContains(map, "ptsd_", false) == 0) || (StrEqual(map,"boneless_ptsd",false)))
+	{
+		Format(maptag, sizeof(maptag), "PTSD");
 	}
 	else if ((StrEqual(map,"am2",false)) || (StrEqual(map,"am3",false)) || (StrEqual(map,"am4",false)))
 	{
