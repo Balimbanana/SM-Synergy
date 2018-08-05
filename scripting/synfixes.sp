@@ -264,6 +264,33 @@ public Action clspawnpost(Handle timer, int client)
 			if (debugoowlvl) PrintToServer("%N spawned out of map, moving to active checkpoint.",client);
 			findspawnpos(client);
 		}
+		if (GetArraySize(equiparr) < 1)
+		findent(MaxClients+1,"info_player_equip");
+		Handle weaparr = CreateArray(16);
+		if (WeapList != -1)
+		{
+			for (int j; j<48; j += 4)
+			{
+				int tmp = GetEntDataEnt2(client,WeapList + j);
+				if (tmp != -1)
+				{
+					char name[24];
+					GetEntityClassname(tmp,name,sizeof(name));
+					PushArrayString(weaparr,name);
+				}
+			}
+		}
+		if ((FindStringInArray(weaparr,"weapon_physcannon") == -1) || (GetEntProp(client,Prop_Send,"m_bWearingSuit") > 0))
+		{
+			for (int j; j<GetArraySize(equiparr); j++)
+			{
+				int jtmp = GetArrayCell(equiparr, j);
+				if (IsValidEntity(jtmp))
+					AcceptEntityInput(jtmp,"EquipPlayer",client);
+			}
+		}
+		CloseHandle(weaparr);
+		ClearArray(equiparr);
 	}
 	else if (IsClientConnected(client))
 	{
@@ -625,33 +652,6 @@ findspawnpos(int client)
 		GetEntPropVector(fallbackspawn,Prop_Data,"m_angAbsRotation",angs);
 		TeleportEntity(client,origin,angs,NULL_VECTOR);
 	}
-	if (GetArraySize(equiparr) < 1)
-		findent(MaxClients+1,"info_player_equip");
-	Handle weaparr = CreateArray(16);
-	if (WeapList != -1)
-	{
-		for (int j; j<48; j += 4)
-		{
-			int tmp = GetEntDataEnt2(client,WeapList + j);
-			if (tmp != -1)
-			{
-				char name[24];
-				GetEntityClassname(tmp,name,sizeof(name));
-				PushArrayString(weaparr,name);
-			}
-		}
-	}
-	if ((FindStringInArray(weaparr,"weapon_physcannon") == -1) || (GetEntProp(client,Prop_Send,"m_bWearingSuit") > 0))
-	{
-		for (int j; j<GetArraySize(equiparr); j++)
-		{
-			int jtmp = GetArrayCell(equiparr, j);
-			if (IsValidEntity(jtmp))
-				AcceptEntityInput(jtmp,"EquipPlayer",client);
-		}
-	}
-	CloseHandle(weaparr);
-	ClearArray(equiparr);
 }
 
 findent(int ent, char[] clsname)
