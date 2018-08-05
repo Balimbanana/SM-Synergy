@@ -641,7 +641,7 @@ findspawnpos(int client)
 			}
 		}
 	}
-	if ((FindStringInArray(weaparr,"weapon_physcannon") == -1) || (FindStringInArray(weaparr,"item_suit") == -1))
+	if ((FindStringInArray(weaparr,"weapon_physcannon") == -1) || (GetEntProp(client,Prop_Send,"m_bWearingSuit") > 0))
 	{
 		for (int j; j<GetArraySize(equiparr); j++)
 		{
