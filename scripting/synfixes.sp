@@ -60,6 +60,7 @@ public void OnPluginStart()
 	equiparr = CreateArray(32);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	RegConsoleCmd("alyx",fixalyx);
+	RegConsoleCmd("stuck",stuckblck);
 	AutoExecConfig(true, "synfixes");
 }
 
@@ -129,6 +130,17 @@ public Action fixalyx(int client, int args)
 		menu.Display(client, 120);
 	}
 	return Plugin_Handled;
+}
+
+public Action stuckblck(int client, int args)
+{
+	if ((client == 0) || (!IsPlayerAlive(client))) return Plugin_Handled;
+	if (GetEntityRenderFx(client) == RENDERFX_DISTORT)
+	{
+		PrintToChat(client,"> Can't use after reaching end of level.");
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
 }
 
 public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
@@ -291,6 +303,42 @@ public Action clspawnpost(Handle timer, int client)
 		}
 		CloseHandle(weaparr);
 		ClearArray(equiparr);
+		int ViewEnt = GetEntPropEnt(client, Prop_Data, "m_hViewEntity");
+		if (ViewEnt > MaxClients)
+		{
+			char cls[25];
+			GetEntityClassname(ViewEnt, cls, sizeof(cls));
+			if (!StrEqual(cls, "point_viewcontrol", false))
+			{
+				float PlayerOrigin[3];
+				float PlyAng[3];
+				GetClientAbsOrigin(client, PlayerOrigin);
+				GetClientEyeAngles(client, PlyAng);
+				int cam = CreateEntityByName("point_viewcontrol");
+				TeleportEntity(cam, PlayerOrigin, PlyAng, NULL_VECTOR);
+				DispatchKeyValue(cam, "spawnflags","1");
+				DispatchSpawn(cam);
+				ActivateEntity(cam);
+				AcceptEntityInput(cam,"Enable",client);
+				AcceptEntityInput(cam,"Disable",client);
+				AcceptEntityInput(cam,"Kill");
+			}
+		}
+		else
+		{
+			float PlayerOrigin[3];
+			float PlyAng[3];
+			GetClientAbsOrigin(client, PlayerOrigin);
+			GetClientEyeAngles(client, PlyAng);
+			int cam = CreateEntityByName("point_viewcontrol");
+			TeleportEntity(cam, PlayerOrigin, PlyAng, NULL_VECTOR);
+			DispatchKeyValue(cam, "spawnflags","1");
+			DispatchSpawn(cam);
+			ActivateEntity(cam);
+			AcceptEntityInput(cam,"Enable",client);
+			AcceptEntityInput(cam,"Disable",client);
+			AcceptEntityInput(cam,"Kill");
+		}
 	}
 	else if (IsClientConnected(client))
 	{
