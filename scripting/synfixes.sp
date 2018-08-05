@@ -6,12 +6,14 @@ int debuglvl = 0;
 int debugoowlvl = 0;
 int collisiongroup = -1;
 char mapbuf[64];
+Handle equiparr = INVALID_HANDLE;
+int WeapList = -1;
 
 public Plugin:myinfo = 
 {
 	name = "SynFixes",
 	author = "Balimbanana",
-	description = "Attempts to fix sequences by checking for missing actors, entities that have fallen out of the world, and vehicle pulling from side to side.",
+	description = "Attempts to fix sequences by checking for missing actors, entities that have fallen out of the world, players not spawning with weapons, and vehicle pulling from side to side.",
 	version = "1.0",
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
@@ -55,12 +57,15 @@ public void OnPluginStart()
 	Handle pushh = FindConVar("sv_player_push");
 	if (pushh != INVALID_HANDLE) HookConVarChange(pushh, pushch);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
+	equiparr = CreateArray(32);
+	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	RegConsoleCmd("alyx",fixalyx);
 	AutoExecConfig(true, "synfixes");
 }
 
 public void OnMapStart()
 {
+	ClearArray(equiparr);
 	GetCurrentMap(mapbuf,sizeof(mapbuf));
 	Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
 	char buff[64];
@@ -619,6 +624,45 @@ findspawnpos(int client)
 		float angs[3];
 		GetEntPropVector(fallbackspawn,Prop_Data,"m_angAbsRotation",angs);
 		TeleportEntity(client,origin,angs,NULL_VECTOR);
+	}
+	if (GetArraySize(equiparr) < 1)
+		findent(MaxClients+1,"info_player_equip");
+	Handle weaparr = CreateArray(16);
+	if (WeapList != -1)
+	{
+		for (int j; j<48; j += 4)
+		{
+			int tmp = GetEntDataEnt2(client,WeapList + j);
+			if (tmp != -1)
+			{
+				char name[24];
+				GetEntityClassname(tmp,name,sizeof(name));
+				PushArrayString(weaparr,name);
+			}
+		}
+	}
+	if ((FindStringInArray(weaparr,"weapon_physcannon") == -1) || (FindStringInArray(weaparr,"item_suit") == -1))
+	{
+		for (int j; j<GetArraySize(equiparr); j++)
+		{
+			int jtmp = GetArrayCell(equiparr, j);
+			if (IsValidEntity(jtmp))
+				AcceptEntityInput(jtmp,"EquipPlayer",client);
+		}
+	}
+	CloseHandle(weaparr);
+	ClearArray(equiparr);
+}
+
+findent(int ent, char[] clsname)
+{
+	int thisent = FindEntityByClassname(ent,clsname);
+	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	{
+		int bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
+		if (bdisabled == 0)
+			PushArrayCell(equiparr,thisent);
+		findent(thisent++,clsname);
 	}
 }
 
