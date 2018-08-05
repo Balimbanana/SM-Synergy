@@ -56,6 +56,7 @@ public void OnPluginStart()
 	if (pushh != INVALID_HANDLE) HookConVarChange(pushh, pushch);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	RegConsoleCmd("alyx",fixalyx);
+	AutoExecConfig(true, "synfixes");
 }
 
 public void OnMapStart()
