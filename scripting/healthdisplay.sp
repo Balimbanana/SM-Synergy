@@ -892,7 +892,8 @@ public Action findairel(int ent, char[] clsname)
 		{
 			char subj[32];
 			GetEntPropString(thisent,Prop_Data,"m_iszSubject",subj,sizeof(subj));
-			if (StrContains(subj,"player",false) == -1)
+			int act = GetEntProp(thisent,Prop_Data,"m_bIsActive");
+			if ((StrContains(subj,"player",false) == -1) && (act != 0))
 			{
 				PushArrayString(airelarr, prevtmp);
 			}
