@@ -376,17 +376,17 @@ public Action resetrot(Handle timer)
 					AcceptEntityInput(i,"Start");
 				}
 			}
-			else if (HasEntProp(i,Prop_Data,"m_vecOrigin"))
+			else if ((HasEntProp(i,Prop_Data,"m_vecOrigin")) && (StrContains(clsname,"func_",false) == -1) && (StrContains(clsname,"trigger_",false) == -1))
 			{
 				float pos[3];
 				GetEntPropVector(i,Prop_Data,"m_vecOrigin",pos);
-				if ((TR_PointOutsideWorld(pos)) && ((pos[0] <= vMins[0]) || (pos[1] <= vMins[1]) && (pos[2] <= vMins[2])))
+				if ((TR_PointOutsideWorld(pos)) && ((pos[0] < vMins[0]) || (pos[1] < vMins[1]) && (pos[2] < vMins[2])) && !(((pos[0] <= 1.0) && (pos[0] >= -1.0)) && ((pos[1] <= 1.0) && (pos[1] >= -1.0)) && ((pos[2] <= 1.0) && (pos[2] >= -1.0))))
 				{
 					if (debugoowlvl)
 					{
 						char fname[32];
 						GetEntPropString(i,Prop_Data,"m_iName",fname,sizeof(fname));
-						PrintToServer("%i with name %s fell out of world, removing...",i,fname);
+						PrintToServer("%i %s with name %s fell out of world, removing...",i,clsname,fname);
 					}
 					if (i>MaxClients) AcceptEntityInput(i,"kill");
 				}
