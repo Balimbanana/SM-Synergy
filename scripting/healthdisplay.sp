@@ -581,10 +581,19 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 
 public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 {
+	bool targetally = false;
 	if (StrEqual(clsname,"npc_metropolice",false))
 		if (GetCopAlly()) Format(clsname,sizeof(clsname),"Friend: Metropolice");
 		else Format(clsname,sizeof(clsname),"Enemy: Metropolice");
-	if (GetNPCAlly(clsname))
+	if (HasEntProp(targ,Prop_Data,"m_iName"))
+	{
+		char targn[32];
+		GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+		if (strlen(targn) > 0)
+			if (GetNPCAlly(targn))
+				targetally = true;
+	}
+	if ((GetNPCAlly(clsname)) || (targetally))
 	{
 		if (StrEqual(clsname,"npc_combine_s",false))
 		{
