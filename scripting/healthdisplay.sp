@@ -284,6 +284,7 @@ public Action cleararr(Handle timer)
 	//This is to force recheck of ai relationships as the lowest impact check possible.
 	ClearArray(htarr);
 	ClearArray(liarr);
+	ClearArray(airelarr);
 }
 
 public OnClientCookiesCached(int client)
@@ -594,7 +595,7 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		char targn[32];
 		GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
 		if (strlen(targn) > 0)
-			if (GetNPCAlly(targn))
+			if (GetNPCAllyTarg(targn))
 				targetally = true;
 	}
 	if ((GetNPCAlly(clsname)) || (targetally))
@@ -760,10 +761,14 @@ public Action findglobals(int ent, char[] clsname)
 	return Plugin_Handled;
 }
 
+bool GetNPCAllyTarg(char[] clsname)
+{
+	if (FindStringInArray(liarr,clsname) != -1) return true;
+	return false;
+}
+
 bool GetNPCAlly(char[] clsname)
 {
-	//if (StrEqual(clsname,"npc_alyx",false) || StrEqual(clsname,"npc_dog",false) || StrEqual(clsname,"npc_barney",false) || StrEqual(clsname,"npc_vortigaunt",false) || StrEqual(clsname,"npc_magnusson",false) || StrEqual(clsname,"npc_eli",false) || StrEqual(clsname,"npc_mossman",false) || StrEqual(clsname,"npc_monk",false) || StrEqual(clsname,"npc_kleiner",false))
-	//	return false;
 	if (GetArraySize(airelarr) < 1)
 		findairel(MaxClients+1,"ai_relationship");
 	if (GetArraySize(htarr) > 0)
@@ -855,6 +860,9 @@ addht(char[] addht)
 {
 	if (FindStringInArray(htarr,addht) == -1)
 		PushArrayString(htarr,addht);
+	int findli = FindStringInArray(liarr,addht);
+	if (findli != -1)
+		RemoveFromArray(liarr,findli);
 }
 
 bool GetAntAlly()
