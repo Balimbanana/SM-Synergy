@@ -3,7 +3,7 @@
 #include <sdkhooks>
 #include <clientprefs>
 
-#define PLUGIN_VERSION "1.3"
+#define PLUGIN_VERSION "1.3a"
 
 public Plugin:myinfo = 
 {
@@ -16,6 +16,7 @@ public Plugin:myinfo =
 
 Handle airelarr = INVALID_HANDLE;
 Handle htarr = INVALID_HANDLE;
+Handle liarr = INVALID_HANDLE;
 Handle globalsarr = INVALID_HANDLE;
 bool bugbaitpicked = false;
 float antispamchk[MAXPLAYERS+1];
@@ -35,6 +36,7 @@ public void OnPluginStart()
 {
 	airelarr = CreateArray(64);
 	htarr = CreateArray(64);
+	liarr = CreateArray(64);
 	globalsarr = CreateArray(16);
 	bclcookieh = RegClientCookie("HealthDisplayType", "HealthDisplay type Settings", CookieAccess_Private);
 	bclcookie2h = RegClientCookie("HealthDisplayNum", "HealthDisplay num Settings", CookieAccess_Private);
@@ -55,6 +57,7 @@ public void OnMapStart()
 {
 	ClearArray(airelarr);
 	ClearArray(htarr);
+	ClearArray(liarr);
 	ClearArray(globalsarr);
 	bugbaitpicked = false;
 	CreateTimer(1.0,reloadclcookies);
@@ -280,6 +283,7 @@ public Action cleararr(Handle timer)
 {
 	//This is to force recheck of ai relationships as the lowest impact check possible.
 	ClearArray(htarr);
+	ClearArray(liarr);
 }
 
 public OnClientCookiesCached(int client)
@@ -764,7 +768,8 @@ bool GetNPCAlly(char[] clsname)
 		findairel(MaxClients+1,"ai_relationship");
 	if (GetArraySize(htarr) > 0)
 	{
-		if (FindStringInArray(htarr,clsname) != -1) return false;
+		if (FindStringInArray(liarr,clsname) != -1) return true;
+		else if (FindStringInArray(htarr,clsname) != -1) return false;
 		else return true;
 	}
 	else
@@ -805,26 +810,25 @@ bool GetNPCAlly(char[] clsname)
 				{
 					char subj[32];
 					GetEntPropString(rel,Prop_Data,"m_iszSubject",subj,sizeof(subj));
-					if (StrContains(clsname,subj,false) != -1)
+					char targ[32];
+					GetEntPropString(rel,Prop_Data,"m_target",targ,sizeof(targ));
+					int disp = GetEntProp(rel,Prop_Data,"m_iDisposition");
+					int act = GetEntProp(rel,Prop_Data,"m_bIsActive");
+					//disp 1 = D_HT // 2 = D_NT // 3 = D_LI // 4 = D_FR
+					if ((StrContains(targ,"player",false) != -1) && (disp == 1) && (act != 0))
 					{
-						char targ[32];
-						GetEntPropString(rel,Prop_Data,"m_target",targ,sizeof(targ));
-						int disp = GetEntProp(rel,Prop_Data,"m_iDisposition");
-						int act = GetEntProp(rel,Prop_Data,"m_bIsActive");
-						//disp 1 = D_HT // 2 = D_NT // 3 = D_LI // 4 = D_FR
-						if ((StrContains(targ,"player",false) != -1) && (disp == 1) && (act != 0))
+						addht(subj);
+					}
+					else if ((StrContains(targ,"player",false) != -1) && (disp == 3) && (act != 0))
+					{
+						//PrintToServer("Rem %s %i",subj,disp);
+						int find = FindStringInArray(htarr,subj);
+						if (find != -1)
 						{
-							addht(subj);
+							RemoveFromArray(htarr,find);
 						}
-						else if ((StrContains(targ,"player",false) != -1) && (disp == 3) && (act != 0))
-						{
-							int find = FindStringInArray(htarr,subj);
-							if (find != -1)
-							{
-								//PrintToServer("Rem %s %i",subj,disp);
-								RemoveFromArray(htarr,find);
-							}
-						}
+						if (FindStringInArray(liarr,subj) == -1)
+							PushArrayString(liarr,subj);
 					}
 				}
 			}
@@ -837,6 +841,12 @@ bool GetNPCAlly(char[] clsname)
 			if (find != -1)
 				RemoveFromArray(htarr,find);
 		}
+	}
+	if (GetArraySize(htarr) > 0)
+	{
+		if (FindStringInArray(liarr,clsname) != -1) return true;
+		else if (FindStringInArray(htarr,clsname) != -1) return false;
+		else return true;
 	}
 	return true;
 }
