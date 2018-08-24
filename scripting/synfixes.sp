@@ -14,7 +14,7 @@ public Plugin:myinfo =
 	name = "SynFixes",
 	author = "Balimbanana",
 	description = "Attempts to fix sequences by checking for missing actors, entities that have fallen out of the world, players not spawning with weapons, and vehicle pulling from side to side.",
-	version = "1.0",
+	version = "1.1",
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
@@ -25,6 +25,8 @@ float perclimit = 0.66;
 float delaylimit = 66.0;
 float votetime[64];
 int clused = 0;
+int voteact = 0;
+
 
 enum voteType
 {
@@ -60,6 +62,7 @@ public void OnPluginStart()
 	equiparr = CreateArray(32);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	RegConsoleCmd("alyx",fixalyx);
+	RegConsoleCmd("barney",fixbarney);
 	RegConsoleCmd("stuck",stuckblck);
 	AutoExecConfig(true, "synfixes");
 }
@@ -132,6 +135,21 @@ public Action fixalyx(int client, int args)
 	return Plugin_Handled;
 }
 
+public Action fixbarney(int client, int args)
+{
+	if (!findtargn("barney"))
+		readoutputs(client,"barney");
+	else
+	{
+		Menu menu = new Menu(MenuHandler);
+		menu.SetTitle("Teleport Barney");
+		menu.AddItem("tpbarntocl", "Vote to teleport Barney to you");
+		menu.ExitButton = true;
+		menu.Display(client, 120);
+	}
+	return Plugin_Handled;
+}
+
 public Action stuckblck(int client, int args)
 {
 	if ((client == 0) || (!IsPlayerAlive(client))) return Plugin_Handled;
@@ -168,6 +186,22 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 			g_hVoteMenu.ExitButton = false;
 			g_hVoteMenu.DisplayVoteToAll(20);
 			votetime[param1] = Time + delaylimit;
+			voteact = 1;
+		}
+		if (StrEqual(info,"tpbarntocl",false))
+		{
+			clused = param1;
+			g_voteType = voteType:question;
+			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MenuAction:MENU_ACTIONS_ALL);
+			char buff[64];
+			Format(buff,sizeof(buff),"Teleport Barney to %N?",param1);
+			g_hVoteMenu.SetTitle(buff);
+			g_hVoteMenu.AddItem(VOTE_YES, "Yes");
+			g_hVoteMenu.AddItem(VOTE_NO, "No");
+			g_hVoteMenu.ExitButton = false;
+			g_hVoteMenu.DisplayVoteToAll(20);
+			votetime[param1] = Time + delaylimit;
+			voteact = 0;
 		}
 	}
 	else if (action == MenuAction_End)
@@ -246,9 +280,20 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 			Location[0] = (PlayerOrigin[0] + (10 * Cosine(DegToRad(clangles[1]))));
 			Location[1] = (PlayerOrigin[1] + (10 * Sine(DegToRad(clangles[1]))));
 			Location[2] = (PlayerOrigin[2] + 10);
-			int al = FindEntityByClassname(MaxClients+1,"npc_alyx");
-			if (al != -1)
-				TeleportEntity(al,Location,clangles,NULL_VECTOR);
+			if (voteact == 1)
+			{
+				int al = FindEntityByClassname(MaxClients+1,"npc_alyx");
+				if (al != -1)
+					TeleportEntity(al,Location,clangles,NULL_VECTOR);
+				voteact = 0;
+			}
+			else
+			{
+				int ba = FindEntityByClassname(MaxClients+1,"npc_barney");
+				if (ba != -1)
+					TeleportEntity(ba,Location,clangles,NULL_VECTOR);
+				voteact = 0;
+			}
 		}
 	}
 	return 0;
@@ -376,7 +421,7 @@ public Action resetrot(Handle timer)
 					AcceptEntityInput(i,"Start");
 				}
 			}
-			else if ((HasEntProp(i,Prop_Data,"m_vecOrigin")) && (StrContains(clsname,"func_",false) == -1) && (StrContains(clsname,"trigger_",false) == -1))
+			else if ((HasEntProp(i,Prop_Data,"m_vecOrigin")) && (StrContains(clsname,"func_",false) == -1) && (StrContains(clsname,"trigger_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (StrContains(clsname,"npc_",false) == -1))
 			{
 				float pos[3];
 				GetEntPropVector(i,Prop_Data,"m_vecOrigin",pos);
