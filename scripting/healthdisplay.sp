@@ -487,12 +487,19 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 						{
 							char cmodel[64];
 							GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-							if (StrContains( cmodel, "models/combine_super_soldier.mdl") != -1) //Elite
-								Format(clsname,sizeof(clsname),"Combine Elite");
-							else if (StrContains( cmodel, "models/combine_soldier_prisonguard.mdl") != -1) //Shotgunner
-								Format(clsname,sizeof(clsname),"Combine Guard");
+							if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
+								Format(clsname,sizeof(clsname),"Friend: Combine Elite");
+							else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
+								Format(clsname,sizeof(clsname),"Friend: Combine Guard");
 							else
-								Format(clsname,sizeof(clsname),"Combine Soldier");
+								Format(clsname,sizeof(clsname),"Friend: Combine Soldier");
+						}
+						else if (StrEqual(clsname,"citizen",false))
+						{
+							char cmodel[64];
+							GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+							if (StrEqual(cmodel,"models/odessa.mdl",false))
+								Format(clsname,sizeof(clsname),"Friend: Odessa Cubbage");
 						}
 						antispamchk[client] = Time + 0.07;
 						PrintTheMsg(client,curh,maxh,clsname);
@@ -604,12 +611,19 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		{
 			char cmodel[64];
 			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-			if (StrContains( cmodel, "models/combine_super_soldier.mdl") != -1)
+			if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
 				Format(clsname,sizeof(clsname),"Friend: Combine Elite");
-			else if (StrContains( cmodel, "models/combine_soldier_prisonguard.mdl") != -1)
+			else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
 				Format(clsname,sizeof(clsname),"Friend: Combine Guard");
 			else
 				Format(clsname,sizeof(clsname),"Friend: Combine Soldier");
+		}
+		else if (StrEqual(clsname,"npc_citizen",false))
+		{
+			char cmodel[64];
+			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+			if (StrEqual(cmodel,"models/odessa.mdl",false))
+				Format(clsname,sizeof(clsname),"Friend: Odessa Cubbage");
 		}
 		else if (StrEqual(clsname,"npc_monk",false)) Format(clsname,sizeof(clsname),"Friend: Father Grigori");
 		else if (StrEqual(clsname,"npc_kleiner",false)) Format(clsname,sizeof(clsname),"Friend: Isaac Kleiner");
@@ -639,12 +653,19 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		{
 			char cmodel[64];
 			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-			if (StrContains( cmodel, "models/combine_super_soldier.mdl") != -1)
+			if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
 				Format(clsname,sizeof(clsname),"Enemy: Combine Elite");
-			else if (StrContains( cmodel, "models/combine_soldier_prisonguard.mdl") != -1)
+			else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
 				Format(clsname,sizeof(clsname),"Enemy: Combine Guard");
 			else
 				Format(clsname,sizeof(clsname),"Enemy: Combine Soldier");
+		}
+		else if (StrEqual(clsname,"npc_citizen",false))
+		{
+			char cmodel[64];
+			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+			if (StrEqual(cmodel,"models/odessa.mdl",false))
+				Format(clsname,sizeof(clsname),"Enemy: Odessa Cubbage");
 		}
 		else if (StrEqual(clsname,"npc_monk",false)) Format(clsname,sizeof(clsname),"Enemy: Father Grigori");
 		else if (StrEqual(clsname,"npc_kleiner",false)) Format(clsname,sizeof(clsname),"Enemy: Isaac Kleiner");
