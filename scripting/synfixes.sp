@@ -14,7 +14,7 @@ public Plugin:myinfo =
 	name = "SynFixes",
 	author = "Balimbanana",
 	description = "Attempts to fix sequences by checking for missing actors, entities that have fallen out of the world, players not spawning with weapons, and vehicle pulling from side to side.",
-	version = "1.1",
+	version = "1.0",
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
@@ -64,6 +64,7 @@ public void OnPluginStart()
 	RegConsoleCmd("alyx",fixalyx);
 	RegConsoleCmd("barney",fixbarney);
 	RegConsoleCmd("stuck",stuckblck);
+	RegConsoleCmd("propaccuracy",setpropaccuracy);
 	AutoExecConfig(true, "synfixes");
 }
 
@@ -122,6 +123,7 @@ public void OnMapStart()
 
 public Action fixalyx(int client, int args)
 {
+	findgfollow(-1,"alyx");
 	if (!findtargn("alyx"))
 		readoutputs(client,"alyx");
 	else
@@ -137,6 +139,7 @@ public Action fixalyx(int client, int args)
 
 public Action fixbarney(int client, int args)
 {
+	findgfollow(-1,"barney");
 	if (!findtargn("barney"))
 		readoutputs(client,"barney");
 	else
@@ -159,6 +162,59 @@ public Action stuckblck(int client, int args)
 		return Plugin_Handled;
 	}
 	return Plugin_Continue;
+}
+
+public Action setpropaccuracy(int client, int args)
+{
+	if (args == 1)
+	{
+		char h[8];
+		GetCmdArg(1,h,sizeof(h));
+		if (StrEqual(h,"1",false) || StrEqual(h,"yes",false))
+			QueryClientConVar(client,"cl_predict",setpropacc,1);
+		else if (StrEqual(h,"0",false) || StrEqual(h,"no",false))
+			QueryClientConVar(client,"cl_predict",setpropacc,2);
+	}
+	else
+		QueryClientConVar(client,"cl_predict",setpropacc,0);
+	return Plugin_Handled;
+}
+
+public void setpropacc(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, any value)
+{
+	int cllatency = RoundFloat(GetClientLatency(client,NetFlow_Outgoing) * 1000) - 30;
+	if ((cllatency > 100) && ((value == 0) || (value == 2))) PrintToChat(client,"Warning, your latency may affect how smooth movement is with this on.");
+	if (value == 0)
+	{
+		if (StrEqual(cvarValue,"0",false))
+		{
+			ClientCommand(client,"cl_interp 0.1");
+			ClientCommand(client,"cl_predict 1");
+			ClientCommand(client,"cl_interp_ratio 2");
+			PrintToChat(client,"Set prop accuracy to default.");
+		}
+		else
+		{
+			ClientCommand(client,"cl_interp 0");
+			ClientCommand(client,"cl_predict 0");
+			ClientCommand(client,"cl_interp_ratio 0");
+			PrintToChat(client,"Set prop accuracy to accurate.");
+		}
+	}
+	else if (value == 1)
+	{
+		ClientCommand(client,"cl_interp 0");
+		ClientCommand(client,"cl_predict 0");
+		ClientCommand(client,"cl_interp_ratio 0");
+		PrintToChat(client,"Set prop accuracy to accurate.");
+	}
+	else if (value == 2)
+	{
+		ClientCommand(client,"cl_interp 0.1");
+		ClientCommand(client,"cl_predict 1");
+		ClientCommand(client,"cl_interp_ratio 2");
+		PrintToChat(client,"Set prop accuracy to default.");
+	}
 }
 
 public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
@@ -471,15 +527,20 @@ public Action trigout(const char[] output, int caller, int activator, float dela
 	{
 		if (!findtargn("alyx"))
 			readoutputs(caller,"alyx");
+		findgfollow(-1,"alyx");
 		if (!findtargn("vort"))
 			readoutputs(caller,"vort");
+		findgfollow(-1,"vort");
+	}
+	else
+	{
+		if ((!findtargn(targn)) && (strlen(targn) > 0))
+		{
+			if (debuglvl > 0) PrintToServer("Could not find actor with name %s",targn);
+			readoutputs(caller,targn);
+		}
 	}
 	if (debuglvl == 3) PrintToServer("Sequence ent %i with name %s started with %s target\nPlaying %s\nAt: %1.f %1.f %1.f",caller,sname,targn,scenes,origin[0],origin[1],origin[2]);
-	if ((!findtargn(targn)) && (strlen(targn) > 0))
-	{
-		if (debuglvl > 0) PrintToServer("Could not find actor with name %s",targn);
-		readoutputs(caller,targn);
-	}
 }
 
 readoutputs(int scriptent, char[] targn)
@@ -685,6 +746,23 @@ readoutputs(int scriptent, char[] targn)
 	CloseHandle(filehandle);
 }
 
+findgfollow(int ent, char[] targn)
+{
+	int thisent = FindEntityByClassname(ent,"ai_goal_follow");
+	if ((IsValidEntity(thisent)) && (thisent != -1))
+	{
+		char actor[64];
+		char goalt[64];
+		GetEntPropString(thisent,Prop_Data,"m_iszActor",actor,sizeof(actor));
+		GetEntPropString(thisent,Prop_Data,"m_iszGoal",goalt,sizeof(goalt));
+		if (debuglvl > 1)
+			PrintToServer("Found follow ent: %i\n%s %s %i %s",thisent,actor,goalt,targn);
+		if (StrContains(actor,targn,false) != -1)
+			AcceptEntityInput(thisent,"Activate");
+		findgfollow(thisent++,targn);
+	}
+}
+
 public OnClientDisconnect(int client)
 {
 	votetime[client] = 0.0;
@@ -692,6 +770,7 @@ public OnClientDisconnect(int client)
 
 bool findtargn(char[] targn)
 {
+	int found,lastfound;
 	for (int i = 1; i<GetMaxEntities(); i++)
 	{
 		if (IsValidEntity(i) && IsEntNetworkable(i))
@@ -703,11 +782,36 @@ bool findtargn(char[] targn)
 				char ename[64];
 				GetEntPropString(i,Prop_Data,"m_iName",ename,sizeof(ename));
 				if (StrEqual(ename,targn,false))
-					return true;
+				{
+					found++;
+					lastfound = i;
+					if (found > 1)
+						CreateTimer(1.0,rechecktarg,lastfound);
+				}
 			}
 		}
 	}
+	if (found == 1)
+		return true;
+	else if (found > 1)
+	{
+		AcceptEntityInput(lastfound,"kill");
+		return true;
+	}
 	return false;
+}
+
+public Action rechecktarg(Handle timer,int targ)
+{
+	if (IsValidEntity(targ))
+	{
+		if (HasEntProp(targ,Prop_Data,"m_iName"))
+		{
+			char targn[64];
+			GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+			findtargn(targn);
+		}
+	}
 }
 
 findspawnpos(int client)
