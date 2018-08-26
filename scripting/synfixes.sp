@@ -534,10 +534,13 @@ public Action trigout(const char[] output, int caller, int activator, float dela
 	}
 	else
 	{
-		if ((!findtargn(targn)) && (strlen(targn) > 0))
+		if (StrContains(scenes,"ep1_intro_alyx",false) == -1)
 		{
-			if (debuglvl > 0) PrintToServer("Could not find actor with name %s",targn);
-			readoutputs(caller,targn);
+			if ((!findtargn(targn)) && (strlen(targn) > 0))
+			{
+				if (debuglvl > 0) PrintToServer("Could not find actor with name %s",targn);
+				readoutputs(caller,targn);
+			}
 		}
 	}
 	if (debuglvl == 3) PrintToServer("Sequence ent %i with name %s started with %s target\nPlaying %s\nAt: %1.f %1.f %1.f",caller,sname,targn,scenes,origin[0],origin[1],origin[2]);
@@ -560,6 +563,8 @@ readoutputs(int scriptent, char[] targn)
 		int linepospass = 0;
 		int lastpos = 0;
 		float fileorigin[3];
+		char clsscript[32];
+		GetEntityClassname(scriptent,clsscript,sizeof(clsscript));
 		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
 		{
 			TrimString(line);
@@ -587,6 +592,15 @@ readoutputs(int scriptent, char[] targn)
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"template0","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				strcopy(tmpchar,sizeof(tmpchar),tmpchar[2]);
+				TrimString(tmpchar);
+				Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
+			}
+			else if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
+			{
+				char tmpchar[64];
+				Format(tmpchar,sizeof(tmpchar),line);
+				ReplaceString(tmpchar,sizeof(tmpchar),"\"actor\" ","",false);
+				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				TrimString(tmpchar);
 				Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
 			}
@@ -666,17 +680,17 @@ readoutputs(int scriptent, char[] targn)
 					}
 					float angs[3];
 					GetEntPropVector(scriptent,Prop_Data,"m_angAbsRotation",angs);
-					if (ent != -1)
+					if ((ent != -1) && (!StrEqual(clsscript,"ai_goal_follow",false)))
 					{
 						DispatchSpawn(ent);
 						ActivateEntity(ent);
 						SetEntData(ent, collisiongroup, 17, 4, true);
 						TeleportEntity(ent,origin,angs,NULL_VECTOR);
 					}
-					char clsscript[32];
-					GetEntityClassname(scriptent,clsscript,sizeof(clsscript));
 					if (StrEqual(clsscript,"scripted_sequence",false))
 						AcceptEntityInput(scriptent,"BeginSequence");
+					else if (StrEqual(clsscript,"ai_goal_follow",false))
+						AcceptEntityInput(scriptent,"Activate");
 					else
 						AcceptEntityInput(scriptent,"Start");
 					break;
@@ -703,6 +717,15 @@ readoutputs(int scriptent, char[] targn)
 				TrimString(tmpchar);
 				Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
 			}
+			if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
+			{
+				char tmpchar[64];
+				Format(tmpchar,sizeof(tmpchar),line);
+				ReplaceString(tmpchar,sizeof(tmpchar),"\"actor\" ","",false);
+				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+				TrimString(tmpchar);
+				Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
+			}
 			if ((StrContains(line,"\"classname\"",false) != -1) && (readnextlines))
 			{
 				if (StrContains(line,"point_template",false) != -1)
@@ -711,14 +734,16 @@ readoutputs(int scriptent, char[] targn)
 					DispatchKeyValue(loginp,"spawnflags","1");
 					char tmpchar[64];
 					char tmpchar2[64];
-					char clsscript[32];
-					GetEntityClassname(scriptent,clsscript,sizeof(clsscript));
 					char sname[64];
 					GetEntPropString(scriptent,Prop_Data,"m_iName",sname,sizeof(sname));
 					Format(tmpchar,sizeof(tmpchar),"%s,ForceSpawn,,0,-1",lineoriginfixup);
 					DispatchKeyValue(loginp,"OnMapSpawn",tmpchar);
 					if (StrEqual(clsscript,"scripted_sequence",false))
 						Format(tmpchar2,sizeof(tmpchar2),"%s,BeginSequence,,1,-1",sname);
+					else if (StrEqual(clsscript,"ai_goal_follow",false))
+					{
+						AcceptEntityInput(scriptent,"Activate");
+					}
 					else
 						Format(tmpchar2,sizeof(tmpchar2),"%s,Start,,1,-1",sname);
 					DispatchKeyValue(loginp,"OnMapSpawn",tmpchar2);
@@ -733,7 +758,7 @@ readoutputs(int scriptent, char[] targn)
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"classname\" ","",false);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 					if (StrEqual(tmpchar,"worldspawn",false)) break;
-					else
+					else if (!StrEqual(clsscript,"ai_goal_follow",false))
 					{
 						ent = CreateEntityByName(tmpchar);
 						if (debuglvl == 3) PrintToServer("Created Ent as %s",tmpchar);
@@ -748,18 +773,16 @@ readoutputs(int scriptent, char[] targn)
 
 findgfollow(int ent, char[] targn)
 {
+	PrintToServer("Search %i",ent);
 	int thisent = FindEntityByClassname(ent,"ai_goal_follow");
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
 		char actor[64];
-		char goalt[64];
 		GetEntPropString(thisent,Prop_Data,"m_iszActor",actor,sizeof(actor));
-		GetEntPropString(thisent,Prop_Data,"m_iszGoal",goalt,sizeof(goalt));
-		if (debuglvl > 1)
-			PrintToServer("Found follow ent: %i\n%s %s %i %s",thisent,actor,goalt,targn);
-		if (StrContains(actor,targn,false) != -1)
-			AcceptEntityInput(thisent,"Activate");
-		findgfollow(thisent++,targn);
+		if ((strlen(actor) > 0) && (StrEqual(actor,targn,false)))
+			readoutputs(thisent,actor);
+		else
+			findgfollow(thisent++,targn);
 	}
 }
 
