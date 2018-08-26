@@ -780,7 +780,6 @@ readoutputs(int scriptent, char[] targn)
 
 findgfollow(int ent, char[] targn)
 {
-	PrintToServer("Search %i",ent);
 	int thisent = FindEntityByClassname(ent,"ai_goal_follow");
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
