@@ -674,9 +674,16 @@ readoutputs(int scriptent, char[] targn)
 					GetEntPropVector(scriptent,Prop_Data,"m_vecAbsOrigin",origin);
 					if ((origin[0] == 0.0) && (origin[1] == 0.0) && (origin[2] == 0.0))
 					{
-						origin[0] = fileorigin[0];
-						origin[1] = fileorigin[1];
-						origin[2] = fileorigin[2];
+						if (StrEqual(clsscript,"logic_choreographed_scene",false))
+						{
+							
+						}
+						else
+						{
+							origin[0] = fileorigin[0];
+							origin[1] = fileorigin[1];
+							origin[2] = fileorigin[2];
+						}
 					}
 					float angs[3];
 					GetEntPropVector(scriptent,Prop_Data,"m_angAbsRotation",angs);
