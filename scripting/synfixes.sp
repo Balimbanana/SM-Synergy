@@ -814,8 +814,6 @@ bool findtargn(char[] targn)
 				{
 					found++;
 					lastfound = i;
-					if (found > 1)
-						CreateTimer(1.0,rechecktarg,lastfound);
 				}
 			}
 		}
@@ -828,19 +826,6 @@ bool findtargn(char[] targn)
 		return true;
 	}
 	return false;
-}
-
-public Action rechecktarg(Handle timer,int targ)
-{
-	if (IsValidEntity(targ))
-	{
-		if (HasEntProp(targ,Prop_Data,"m_iName"))
-		{
-			char targn[64];
-			GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
-			findtargn(targn);
-		}
-	}
 }
 
 findspawnpos(int client)
