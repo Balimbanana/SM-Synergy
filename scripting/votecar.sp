@@ -101,10 +101,10 @@ public void OnMapStart()
 {
 	GetCurrentMap(mapbuf, sizeof(mapbuf));
 	//collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
+	ClearArray(globalsarr);
 	if (restrictbyveh)
 	{
 		isvehiclemap = false;
-		ClearArray(globalsarr);
 		findglobals(-1,"info_global_settings");
 	}
 	useapc = FileExists("models/vehicles/combine_apcdrivable.mdl",false);
@@ -608,7 +608,7 @@ CreateVehicle(client)
 				int veh = -1;
 				if (vehiclemdltype[client] == 1)
 				{
-					veh = CreateEntityByName("prop_vehicle_mp");
+					veh = CreateEntityByName("prop_vehicle_jeep");
 					DispatchKeyValue(veh, "model", "models/vehicles/buggy_p2.mdl");
 					DispatchKeyValue(veh, "vehiclescript", "scripts/vehicles/jeep_test.txt");
 					findent(MaxClients+1,"prop_vehicle_jeep");
@@ -639,7 +639,7 @@ CreateVehicle(client)
 				}
 				else if (vehiclemdltype[client] == 5)
 				{
-					veh = CreateEntityByName("prop_vehicle_mp");
+					veh = CreateEntityByName("prop_vehicle_jeep");
 					DispatchKeyValue(veh, "model", "models/vehicles/buggy_elite.mdl");
 					DispatchKeyValue(veh, "vehiclescript", "scripts/vehicles/jeep_elite.txt");
 					findent(MaxClients+1,"prop_vehicle_jeep");
@@ -727,7 +727,7 @@ CreateVehicle(client)
 				DispatchSpawn(veh);
 				ActivateEntity(veh);
 				//SetEntData(veh, collisiongroup, 5, 4, true);
-				if (vehsetown)
+				if ((vehsetown) && (HasEntProp(veh,Prop_Data,"m_iOnlyUser")))
 					SetEntProp(veh,Prop_Data,"m_iOnlyUser",client);
 				plyvehicle[client] = veh;
 			}
@@ -739,7 +739,7 @@ CreateVehicle(client)
 public Action playeron(const char[] output, int caller, int activator, float delay)
 {
 	plyhasenteredvehicle = true;
-	if (GetEntProp(caller,Prop_Send,"m_iPassengerCount") > 1)
+	if ((GetEntProp(caller,Prop_Send,"m_iPassengerCount") > 1) && (HasEntProp(caller,Prop_Data,"m_iOnlyUser")))
 		SetEntProp(caller,Prop_Data,"m_iOnlyUser",-1);
 	return Plugin_Continue;
 }
