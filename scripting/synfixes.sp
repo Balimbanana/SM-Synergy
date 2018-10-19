@@ -378,7 +378,7 @@ public Action clspawnpost(Handle timer, int client)
 			findspawnpos(client);
 		}
 		if (GetArraySize(equiparr) < 1)
-		findent(MaxClients+1,"info_player_equip");
+			findent(MaxClients+1,"info_player_equip");
 		Handle weaparr = CreateArray(16);
 		if (WeapList != -1)
 		{
@@ -477,7 +477,7 @@ public Action resetrot(Handle timer)
 					AcceptEntityInput(i,"Start");
 				}
 			}
-			else if ((HasEntProp(i,Prop_Data,"m_vecOrigin")) && (StrContains(clsname,"func_",false) == -1) && (StrContains(clsname,"trigger_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (StrContains(clsname,"npc_",false) == -1) && (StrContains(clsname,"momentary_rot_button",false) == -1))
+			else if ((HasEntProp(i,Prop_Data,"m_vecOrigin")) && (StrContains(clsname,"func_",false) == -1) && (StrContains(clsname,"trigger_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (StrContains(clsname,"npc_",false) == -1) && (!StrEqual(clsname,"momentary_rot_button",false)))
 			{
 				float pos[3];
 				GetEntPropVector(i,Prop_Data,"m_vecOrigin",pos);
@@ -806,7 +806,7 @@ bool findtargn(char[] targn)
 		{
 			char clsname[32];
 			GetEntityClassname(i,clsname,sizeof(clsname));
-			if (StrContains(clsname,"npc_",false) != -1)
+			if ((StrContains(clsname,"npc_",false) != -1) || (StrEqual(clsname,"generic_actor",false)) || (StrEqual(clsname,"generic_monster",false)))
 			{
 				char ename[64];
 				GetEntPropString(i,Prop_Data,"m_iName",ename,sizeof(ename));
