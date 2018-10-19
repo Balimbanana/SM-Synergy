@@ -65,6 +65,7 @@ public void OnPluginStart()
 	RegConsoleCmd("barney",fixbarney);
 	RegConsoleCmd("stuck",stuckblck);
 	RegConsoleCmd("propaccuracy",setpropaccuracy);
+	RegConsoleCmd("con",enablecon);
 	AutoExecConfig(true, "synfixes");
 }
 
@@ -177,6 +178,13 @@ public Action setpropaccuracy(int client, int args)
 	}
 	else
 		QueryClientConVar(client,"cl_predict",setpropacc,0);
+	return Plugin_Handled;
+}
+
+public Action enablecon(int client, int args)
+{
+	ClientCommand(client,"con_enable 1");
+	ClientCommand(client,"toggleconsole");
 	return Plugin_Handled;
 }
 
