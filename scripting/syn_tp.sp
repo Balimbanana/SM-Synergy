@@ -19,6 +19,7 @@ float saveangz[MAXPLAYERS];
 bool saveset[MAXPLAYERS];
 int citshowcl[MAXPLAYERS];
 bool citshowset = true;
+bool tpdisable = false;
 char citeffect[128];
 float teleportcd = 1.0;
 float antispamchk[MAXPLAYERS];
@@ -27,13 +28,20 @@ public void OnPluginStart()
 {
 	RegConsoleCmd("s", savepos);
 	RegConsoleCmd("t", teleport);
+	RegConsoleCmd("sm_save", savepos);
+	RegConsoleCmd("sm_tele", teleport);
 	Handle citshowh = CreateConVar("savetp_effect","models/effects/portalfunnel.mdl","Change the effect that shows where players saves are, none or 0 to disable.");
 	GetConVarString(citshowh,citeffect,sizeof(citeffect));
 	HookConVarChange(citshowh, citshowch);
 	CloseHandle(citshowh);
 	Handle teleportcdh = CreateConVar("savetp_cooldown","1.0","Sets cooldown time to stop spamming teleport.", _, true, 0.0, true, 120.0);
 	HookConVarChange(teleportcdh, teleportcdch);
+	teleportcd = GetConVarFloat(teleportcdh);
 	CloseHandle(teleportcdh);
+	Handle teleportdish = CreateConVar("savetp_disable","0","Disables save/teleport.", _, true, 0.0, true, 1.0);
+	HookConVarChange(teleportdish, teleportdisch);
+	tpdisable = GetConVarBool(teleportdish);
+	CloseHandle(teleportdish);
 }
 
 public citshowch(Handle convar, const char[] oldValue, const char[] newValue)
@@ -62,8 +70,17 @@ public teleportcdch(Handle convar, const char[] oldValue, const char[] newValue)
 	teleportcd = StringToFloat(newValue);
 }
 
+public teleportdisch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1)
+		tpdisable = true;
+	else
+		tpdisable = false;
+}
+
 public Action savepos(int client, int args)
 {
+	if (tpdisable) return Plugin_Handled;
 	if (client == 0) return Plugin_Handled;
 	if (!IsPlayerAlive(client)) return Plugin_Handled;
 	if (saveset[client])
@@ -110,6 +127,7 @@ public Action savepos(int client, int args)
 
 public Action teleport(int client, int args)
 {
+	if (tpdisable) return Plugin_Handled;
 	if (client == 0) return Plugin_Handled;
 	if (!IsPlayerAlive(client)) return Plugin_Handled;
 	float Time = GetTickedTime();
