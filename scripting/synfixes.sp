@@ -562,7 +562,7 @@ readoutputs(int scriptent, char[] targn)
 		char line[128];
 		bool readnextlines = false;
 		char lineoriginfixup[64];
-		char kvs[128][24];
+		char kvs[128][32];
 		bool reverse = true;
 		bool returntostart = false;
 		bool passvars = false;
@@ -661,7 +661,7 @@ readoutputs(int scriptent, char[] targn)
 					}
 					char tmpchar[128];
 					Format(tmpchar,sizeof(tmpchar),line);
-					ExplodeString(tmpchar, "\"", kvs, 24, 128, true);
+					ExplodeString(tmpchar, "\"", kvs, 32, 128, true);
 					ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 					ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
 					if (debuglvl > 1) PrintToServer("%s %s",kvs[1],kvs[3]);
@@ -679,19 +679,13 @@ readoutputs(int scriptent, char[] targn)
 				{
 					readnextlines = false;
 					float origin[3];
-					GetEntPropVector(scriptent,Prop_Data,"m_vecAbsOrigin",origin);
+					if (!StrEqual(clsscript,"logic_choreographed_scene",false))
+						GetEntPropVector(scriptent,Prop_Data,"m_vecAbsOrigin",origin);
 					if ((origin[0] == 0.0) && (origin[1] == 0.0) && (origin[2] == 0.0))
 					{
-						if (StrEqual(clsscript,"logic_choreographed_scene",false))
-						{
-							
-						}
-						else
-						{
-							origin[0] = fileorigin[0];
-							origin[1] = fileorigin[1];
-							origin[2] = fileorigin[2];
-						}
+						origin[0] = fileorigin[0];
+						origin[1] = fileorigin[1];
+						origin[2] = fileorigin[2];
 					}
 					float angs[3];
 					GetEntPropVector(scriptent,Prop_Data,"m_angAbsRotation",angs);
@@ -701,6 +695,18 @@ readoutputs(int scriptent, char[] targn)
 						ActivateEntity(ent);
 						SetEntData(ent, collisiongroup, 17, 4, true);
 						TeleportEntity(ent,origin,angs,NULL_VECTOR);
+						if (TR_PointOutsideWorld(origin))
+						{
+							origin[2]+=5.0;
+							TeleportEntity(ent,origin,angs,NULL_VECTOR);
+							origin[2]-=5.0;
+						}
+						origin[2]+=80.0;
+						if (TR_PointOutsideWorld(origin))
+						{
+							origin[2]-=90.0;
+							TeleportEntity(ent,origin,angs,NULL_VECTOR);
+						}
 					}
 					if (StrEqual(clsscript,"scripted_sequence",false))
 						AcceptEntityInput(scriptent,"BeginSequence");
