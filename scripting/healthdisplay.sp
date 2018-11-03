@@ -814,6 +814,7 @@ bool GetNPCAlly(char[] clsname)
 		addht("npc_strider");
 		addht("npc_zombie");
 		addht("npc_zombie_torso");
+		addht("npc_zombine");
 		addht("npc_fastzombie");
 		addht("npc_poisonzombie");
 		addht("npc_headcrab");
