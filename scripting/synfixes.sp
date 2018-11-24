@@ -7,6 +7,8 @@ int debugoowlvl = 0;
 int collisiongroup = -1;
 char mapbuf[64];
 Handle equiparr = INVALID_HANDLE;
+Handle entlist = INVALID_HANDLE;
+float entrefresh = 0.0;
 int WeapList = -1;
 
 public Plugin:myinfo = 
@@ -14,7 +16,7 @@ public Plugin:myinfo =
 	name = "SynFixes",
 	author = "Balimbanana",
 	description = "Attempts to fix sequences by checking for missing actors, entities that have fallen out of the world, players not spawning with weapons, and vehicle pulling from side to side.",
-	version = "1.0",
+	version = "1.1",
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
@@ -61,6 +63,7 @@ public void OnPluginStart()
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	equiparr = CreateArray(32);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
+	entlist = CreateArray(1024);
 	RegConsoleCmd("alyx",fixalyx);
 	RegConsoleCmd("barney",fixbarney);
 	RegConsoleCmd("stuck",stuckblck);
@@ -71,6 +74,8 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
+	entrefresh = 0.0;
+	ClearArray(entlist);
 	ClearArray(equiparr);
 	GetCurrentMap(mapbuf,sizeof(mapbuf));
 	Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
@@ -363,7 +368,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 	return 0;
 }
 
-public OnClientAuthorized(int client, const char[] szAuth)
+public OnClientPutInServer(int client)
 {
 	CreateTimer(0.5,clspawnpost,client);
 }
@@ -448,6 +453,7 @@ public Action clspawnpost(Handle timer, int client)
 			AcceptEntityInput(cam,"Disable",client);
 			AcceptEntityInput(cam,"Kill");
 		}
+		SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 	}
 	else if (IsClientConnected(client))
 	{
@@ -506,8 +512,8 @@ public Action resetrot(Handle timer)
 
 public Action trigout(const char[] output, int caller, int activator, float delay)
 {
-	char targn[64];
-	char scenes[64];
+	char targn[128];
+	char scenes[128];
 	if (HasEntProp(caller,Prop_Data,"m_iszEntity"))
 		GetEntPropString(caller,Prop_Data,"m_iszEntity",targn,sizeof(targn));
 	else
@@ -527,7 +533,7 @@ public Action trigout(const char[] output, int caller, int activator, float dela
 	}
 	float origin[3];
 	GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
-	char sname[64];
+	char sname[128];
 	GetEntPropString(caller,Prop_Data,"m_iName",sname,sizeof(sname));
 	if (strlen(targn) < 1)
 		GetEntPropString(caller,Prop_Data,"m_target",targn,sizeof(targn));
@@ -561,8 +567,8 @@ readoutputs(int scriptent, char[] targn)
 	{
 		char line[128];
 		bool readnextlines = false;
-		char lineoriginfixup[64];
-		char kvs[128][32];
+		char lineoriginfixup[128];
+		char kvs[128][64];
 		bool reverse = true;
 		bool returntostart = false;
 		bool passvars = false;
@@ -586,7 +592,7 @@ readoutputs(int scriptent, char[] targn)
 			}
 			if (StrContains(line,"\"targetname\"",false) == 0)
 			{
-				char tmpchar[64];
+				char tmpchar[128];
 				Format(tmpchar,sizeof(tmpchar),line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
@@ -595,7 +601,7 @@ readoutputs(int scriptent, char[] targn)
 			}
 			else if (StrContains(line,"\"template0",false) == 0)
 			{
-				char tmpchar[64];
+				char tmpchar[128];
 				Format(tmpchar,sizeof(tmpchar),line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"template0","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
@@ -605,7 +611,7 @@ readoutputs(int scriptent, char[] targn)
 			}
 			else if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
 			{
-				char tmpchar[64];
+				char tmpchar[128];
 				Format(tmpchar,sizeof(tmpchar),line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"actor\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
@@ -650,8 +656,8 @@ readoutputs(int scriptent, char[] targn)
 						passvars = false;
 						for (int k;k<GetArraySize(passedarr);k++)
 						{
-							char ktmp[64];
-							char ktmp2[64];
+							char ktmp[128];
+							char ktmp2[128];
 							GetArrayString(passedarr, k, ktmp, sizeof(ktmp));
 							k++;
 							GetArrayString(passedarr, k, ktmp2, sizeof(ktmp2));
@@ -661,7 +667,7 @@ readoutputs(int scriptent, char[] targn)
 					}
 					char tmpchar[128];
 					Format(tmpchar,sizeof(tmpchar),line);
-					ExplodeString(tmpchar, "\"", kvs, 32, 128, true);
+					ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
 					ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 					ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
 					if (debuglvl > 1) PrintToServer("%s %s",kvs[1],kvs[3]);
@@ -719,7 +725,7 @@ readoutputs(int scriptent, char[] targn)
 			}
 			if (StrContains(line,"\"origin\"",false) == 0)
 			{
-				char tmpchar[64];
+				char tmpchar[128];
 				Format(tmpchar,sizeof(tmpchar),line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
@@ -731,7 +737,7 @@ readoutputs(int scriptent, char[] targn)
 			}
 			if (StrContains(line,"\"targetname\"",false) == 0)
 			{
-				char tmpchar[64];
+				char tmpchar[128];
 				Format(tmpchar,sizeof(tmpchar),line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
@@ -740,7 +746,7 @@ readoutputs(int scriptent, char[] targn)
 			}
 			if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
 			{
-				char tmpchar[64];
+				char tmpchar[128];
 				Format(tmpchar,sizeof(tmpchar),line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"actor\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
@@ -753,9 +759,9 @@ readoutputs(int scriptent, char[] targn)
 				{
 					int loginp = CreateEntityByName("logic_auto");
 					DispatchKeyValue(loginp,"spawnflags","1");
-					char tmpchar[64];
-					char tmpchar2[64];
-					char sname[64];
+					char tmpchar[128];
+					char tmpchar2[128];
+					char sname[128];
 					GetEntPropString(scriptent,Prop_Data,"m_iName",sname,sizeof(sname));
 					Format(tmpchar,sizeof(tmpchar),"%s,ForceSpawn,,0,-1",lineoriginfixup);
 					DispatchKeyValue(loginp,"OnMapSpawn",tmpchar);
@@ -774,7 +780,7 @@ readoutputs(int scriptent, char[] targn)
 				}
 				else if (ent == -1)
 				{
-					char tmpchar[64];
+					char tmpchar[128];
 					Format(tmpchar,sizeof(tmpchar),line);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"classname\" ","",false);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
@@ -783,6 +789,7 @@ readoutputs(int scriptent, char[] targn)
 					{
 						ent = CreateEntityByName(tmpchar);
 						if (debuglvl == 3) PrintToServer("Created Ent as %s",tmpchar);
+						PushArrayCell(entlist,ent);
 					}
 				}
 			}
@@ -797,7 +804,7 @@ findgfollow(int ent, char[] targn)
 	int thisent = FindEntityByClassname(ent,"ai_goal_follow");
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
-		char actor[64];
+		char actor[128];
 		GetEntPropString(thisent,Prop_Data,"m_iszActor",actor,sizeof(actor));
 		if ((strlen(actor) > 0) && (StrEqual(actor,targn,false)))
 			readoutputs(thisent,actor);
@@ -811,23 +818,91 @@ public OnClientDisconnect(int client)
 	votetime[client] = 0.0;
 }
 
+public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype)
+{
+	char clsnamechk[32];
+	GetEntityClassname(inflictor,clsnamechk,sizeof(clsnamechk));
+	if (StrEqual(clsnamechk,"npc_turret_floor",false))
+		if (HasEntProp(inflictor,Prop_Data,"m_bCarriedByPlayer"))
+			if (GetEntProp(inflictor,Prop_Data,"m_bCarriedByPlayer") != 0)
+			{
+				damage = 0.0;
+				return Plugin_Changed;
+			}
+	//Check disconnect projectile hit ply
+	//m_bThrownByPlayer
+	//m_nPhysgunState
+	//m_hPhysicsAttacker
+	//m_hLastAttacker
+	//m_flLastPhysicsInfluenceTime
+	//m_iTeamNum
+	//m_iInitialTeamNum
+	
+	//m_bClientSideAnimation
+	//m_bClientSideFrameReset
+	//m_flGravity
+	//m_flFriction
+	//PrintToServer("Vic %i Atk %i Inf %i Dmg %1.f",victim,attacker,inflictor,damage);
+	return Plugin_Continue;
+}
+
+public OnEntityCreated(int entity, const char[] classname)
+{
+	if ((StrContains(classname,"npc_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false)) && (!FindValueInArray(entlist,entity)))
+	{
+		PushArrayCell(entlist,entity);
+	}
+}
+
 bool findtargn(char[] targn)
 {
-	int found,lastfound;
-	for (int i = 1; i<GetMaxEntities(); i++)
+	float Time = GetTickedTime();
+	if (entrefresh <= Time)
 	{
-		if (IsValidEntity(i) && IsEntNetworkable(i))
+		ClearArray(entlist);
+		entrefresh = Time + 10.0;
+	}
+	int found,lastfound;
+	if (GetArraySize(entlist) < 1)
+	{
+		for (int i = 1; i<GetMaxEntities(); i++)
 		{
-			char clsname[32];
-			GetEntityClassname(i,clsname,sizeof(clsname));
-			if ((StrContains(clsname,"npc_",false) != -1) || (StrEqual(clsname,"generic_actor",false)) || (StrEqual(clsname,"generic_monster",false)))
+			if (IsValidEntity(i) && IsEntNetworkable(i))
 			{
-				char ename[64];
-				GetEntPropString(i,Prop_Data,"m_iName",ename,sizeof(ename));
-				if (StrEqual(ename,targn,false))
+				char clsname[32];
+				GetEntityClassname(i,clsname,sizeof(clsname));
+				if ((StrContains(clsname,"npc_",false) != -1) || (StrEqual(clsname,"generic_actor",false)) || (StrEqual(clsname,"generic_monster",false)))
 				{
-					found++;
-					lastfound = i;
+					PushArrayCell(entlist,i);
+					char ename[128];
+					GetEntPropString(i,Prop_Data,"m_iName",ename,sizeof(ename));
+					if (StrEqual(ename,targn,false))
+					{
+						found++;
+						lastfound = i;
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		for (int jtmp = 0; jtmp<GetArraySize(entlist); jtmp++)
+		{
+			int i = GetArrayCell(entlist, jtmp);
+			if (IsValidEntity(i) && IsEntNetworkable(i))
+			{
+				char clsname[32];
+				GetEntityClassname(i,clsname,sizeof(clsname));
+				if ((StrContains(clsname,"npc_",false) != -1) || (StrEqual(clsname,"generic_actor",false)) || (StrEqual(clsname,"generic_monster",false)))
+				{
+					char ename[128];
+					GetEntPropString(i,Prop_Data,"m_iName",ename,sizeof(ename));
+					if (StrEqual(ename,targn,false))
+					{
+						found++;
+						lastfound = i;
+					}
 				}
 			}
 		}
