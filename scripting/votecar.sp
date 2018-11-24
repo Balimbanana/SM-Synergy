@@ -55,6 +55,7 @@ public void OnPluginStart()
 	globalsarr = CreateArray(16);
 	vehiclecustomdir = CreateArray(64);
 	RegConsoleCmd("votecar",votecar);
+	RegConsoleCmd("votecarskin",votecarskin);
 	RegConsoleCmd("votecarremove",removeclvehicle);
 	Handle restrictbyvehh = CreateConVar("sm_votecarrestrict", "1", "Restrict voting for cars on non-vehicle maps. 0 is unrestricted, 1 is by info_global_settings and 2 is by first entering vehicle.", _, true, 0.0, true, 2.0);
 	if (GetConVarInt(restrictbyvehh) == 0)
@@ -161,6 +162,30 @@ public Action votecar(int client, int args)
 	menu.Display(client, 120);
 	
 	return Plugin_Handled;
+}
+
+public Action votecarskin(int client, int args)
+{
+	if (plyvehicle[client])
+	{
+		char h[8];
+		GetCmdArg(1,h,sizeof(h));
+		int skinnum = StringToInt(h);
+		SetVariantInt(skinnum);
+		AcceptEntityInput(plyvehicle[client],"Skin");
+	}
+	else PrintToChat(client,"%T",client,"NoVehicle");
+	return Plugin_Handled;
+}
+
+public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs)
+{
+	if (StrEqual(sArgs,"votecar",false))
+	{
+		votecar(client,0);
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
 }
 
 enum voteType
