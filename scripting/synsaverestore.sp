@@ -46,6 +46,7 @@ public void OnPluginStart()
 	globalsiarr = CreateArray(32);
 	RegAdminCmd("savegame",savecurgame,ADMFLAG_RESERVATION,".");
 	RegAdminCmd("loadgame",loadgame,ADMFLAG_PASSWORD,".");
+	RegAdminCmd("deletesave",delsave,ADMFLAG_PASSWORD,".");
 	RegConsoleCmd("votereload",votereloadchk);
 	char savepath[256];
 	BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves");
@@ -324,6 +325,21 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 	return 0;
 }
 
+public MenuHandlerDelSaves(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_Select)
+	{
+		char info[32];
+		menu.GetItem(param2, info, sizeof(info));
+		delthissave(info,param1);
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+	return 0;
+}
+
 loadthissave(char[] info)
 {
 	char savepath[256];
@@ -365,12 +381,104 @@ loadthissave(char[] info)
 	}
 }
 
+delthissave(char[] info, int client)
+{
+	char saverm[256];
+	BuildPath(Path_SM,saverm,sizeof(saverm),"data/SynSaves/%s/%s",mapbuf,info);
+	Handle savedirh = OpenDirectory(saverm, false);
+	if (savedirh == INVALID_HANDLE)
+	{
+		if (client == 0) PrintToServer("Save: %s does not exist.",info);
+		else PrintToChat(client,"Save: %s does not exist.",info);
+		delsave(client,0);
+		return;
+	}
+	char subfilen[256];
+	while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
+	{
+		if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+		{
+			if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+			{
+				Format(subfilen,sizeof(subfilen),"%s\\%s",saverm,subfilen);
+				DeleteFile(subfilen);
+			}
+		}
+	}
+	CloseHandle(savedirh);
+	RemoveDir(saverm);
+	if (DirExists(saverm))
+	{
+		if (client == 0) PrintToServer("Was unable to remove %s",info);
+		else PrintToChat(client,"Was unable to remove %s",info);
+	}
+	else
+	{
+		if (client == 0) PrintToServer("Removed save %s",info);
+		else PrintToChat(client,"Removed save %s",info);
+	}
+	delsave(client,0);
+	return;
+}
+
 public Action reloadtimer(Handle timer)
 {
 	new thereload = CreateEntityByName("player_loadsaved");
 	DispatchSpawn(thereload);
 	ActivateEntity(thereload);
 	AcceptEntityInput(thereload, "Reload");
+}
+
+public Action delsave(int client, int args)
+{
+	Menu menu = new Menu(MenuHandlerDelSaves);
+	menu.SetTitle("Delete Save");
+	char savepath[256];
+	BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves/%s",mapbuf);
+	Handle savedirh = OpenDirectory(savepath, false);
+	if (savedirh == INVALID_HANDLE)
+	{
+		if (client == 0) PrintToServer("Could not find any save games for this map.");
+		else PrintToChat(client,"Could not find any save games for this map.");
+		return Plugin_Handled;
+	}
+	char subfilen[32];
+	char fullist[512];
+	bool foundsaves = false;
+	while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
+	{
+		if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+		{
+			if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+			{
+				if (client == 0) Format(fullist,sizeof(fullist),"%s\n%s",fullist,subfilen);
+				menu.AddItem(subfilen,subfilen);
+				foundsaves = true;
+			}
+		}
+	}
+	if (!foundsaves)
+	{
+		delete menu;
+		if (client == 0) PrintToServer("Could not find any save games for this map.");
+		else PrintToChat(client,"Could not find any saves for this map.");
+		return Plugin_Handled;
+	}
+	if (client == 0)
+	{
+		delete menu;
+		if (args == 0) PrintToServer(fullist);
+		else
+		{
+			char h[256];
+			GetCmdArgString(h,sizeof(h));
+			delthissave(h,client);
+		}
+		return Plugin_Handled;
+	}
+	menu.ExitButton = true;
+	menu.Display(client, 120);
+	return Plugin_Handled;
 }
 
 public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
