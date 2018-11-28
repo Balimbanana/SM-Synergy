@@ -9,10 +9,10 @@ bool enterfrom03pb = false;
 bool enterfrom08 = false;
 bool enterfrom08pb = false;
 bool reloadingmap = false;
-bool allowreloadsaves = false;
+bool allowvotereloadsaves = false; //Set by cvar sm_reloadsaves
 int reloadtype = 0;
 float votetime = 0.0;
-float perclimit = 0.80; //Percent of all players to vote yes
+float perclimit = 0.80; //Set by cvar sm_voterestore
 
 Handle globalsarr = INVALID_HANDLE;
 Handle globalsiarr = INVALID_HANDLE;
@@ -25,7 +25,7 @@ public Plugin:myinfo =
 {
 	name = "SynSaveRestore",
 	author = "Balimbanana",
-	description = "Allows you to create persistant saves and reload them per-map.",
+	description = "Allows you to create persistent saves and reload them per-map.",
 	version = "1.0",
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
@@ -51,7 +51,7 @@ public void OnPluginStart()
 	BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves");
 	if (!DirExists(savepath)) CreateDirectory(savepath,511);
 	Handle votereloadcvarh = CreateConVar("sm_reloadsaves", "1", "Enable anyone to vote to reload a saved game, default is 1", _, true, 0.0, true, 1.0);
-	if (votereloadcvarh != INVALID_HANDLE) allowreloadsaves = GetConVarBool(votereloadcvarh);
+	if (votereloadcvarh != INVALID_HANDLE) allowvotereloadsaves = GetConVarBool(votereloadcvarh);
 	HookConVarChange(votereloadcvarh, votereloadcvar);
 	CloseHandle(votereloadcvarh);
 	Handle votepercenth = CreateConVar("sm_voterestore", "0.80", "People need to vote to at least this percent to pass checkpoint and map reload.", _, true, 0.0, true, 1.0);
@@ -61,8 +61,8 @@ public void OnPluginStart()
 
 public votereloadcvar(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	if (StringToInt(newValue) == 0) allowreloadsaves = false;
-	else allowreloadsaves = true;
+	if (StringToInt(newValue) == 0) allowvotereloadsaves = false;
+	else allowvotereloadsaves = true;
 }
 
 public restrictvotepercch(Handle convar, const char[] oldValue, const char[] newValue)
@@ -98,7 +98,7 @@ public Action votereload(int client, int args)
 	Menu menu = new Menu(MenuHandlervote);
 	menu.SetTitle("Reload Checkpoint");
 	menu.AddItem("checkpoint","The current last checkpoint");
-	if (allowreloadsaves)
+	if (allowvotereloadsaves)
 	{
 		char savepath[256];
 		BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves/%s",mapbuf);
