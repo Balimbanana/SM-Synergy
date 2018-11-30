@@ -10,9 +10,11 @@ bool enterfrom08 = false;
 bool enterfrom08pb = false;
 bool reloadingmap = false;
 bool allowvotereloadsaves = false; //Set by cvar sm_reloadsaves
+bool allowvotecreatesaves = false; //Set by cvar sm_createsaves
 int reloadtype = 0;
 float votetime = 0.0;
 float perclimit = 0.80; //Set by cvar sm_voterestore
+float perclimitsave = 0.60; //Set by cvar sm_votecreatesave
 
 Handle globalsarr = INVALID_HANDLE;
 Handle globalsiarr = INVALID_HANDLE;
@@ -26,7 +28,7 @@ public Plugin:myinfo =
 	name = "SynSaveRestore",
 	author = "Balimbanana",
 	description = "Allows you to create persistent saves and reload them per-map.",
-	version = "1.0",
+	version = "1.1",
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
@@ -41,6 +43,7 @@ new voteType:g_voteType = voteType:question;
 
 public void OnPluginStart()
 {
+	LoadTranslations("common.phrases");
 	LoadTranslations("basevotes.phrases");
 	globalsarr = CreateArray(32);
 	globalsiarr = CreateArray(32);
@@ -48,6 +51,9 @@ public void OnPluginStart()
 	RegAdminCmd("loadgame",loadgame,ADMFLAG_PASSWORD,".");
 	RegAdminCmd("deletesave",delsave,ADMFLAG_PASSWORD,".");
 	RegConsoleCmd("votereload",votereloadchk);
+	RegConsoleCmd("votereloadmap",votereloadmap);
+	RegConsoleCmd("votereloadsave",votereload);
+	RegConsoleCmd("voterecreatesave",votecreatesave);
 	char savepath[256];
 	BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves");
 	if (!DirExists(savepath)) CreateDirectory(savepath,511);
@@ -55,9 +61,18 @@ public void OnPluginStart()
 	if (votereloadcvarh != INVALID_HANDLE) allowvotereloadsaves = GetConVarBool(votereloadcvarh);
 	HookConVarChange(votereloadcvarh, votereloadcvar);
 	CloseHandle(votereloadcvarh);
+	Handle votecreatesavecvarh = CreateConVar("sm_createsaves", "1", "Enable anyone to vote to create a save game, default is 1", _, true, 0.0, true, 1.0);
+	if (votecreatesavecvarh != INVALID_HANDLE) allowvotecreatesaves = GetConVarBool(votecreatesavecvarh);
+	HookConVarChange(votecreatesavecvarh, votesavecvar);
+	CloseHandle(votecreatesavecvarh);
 	Handle votepercenth = CreateConVar("sm_voterestore", "0.80", "People need to vote to at least this percent to pass checkpoint and map reload.", _, true, 0.0, true, 1.0);
 	perclimit = GetConVarFloat(votepercenth);
 	HookConVarChange(votepercenth, restrictvotepercch);
+	CloseHandle(votepercenth);
+	Handle votecspercenth = CreateConVar("sm_votecreatesave", "0.60", "People need to vote to at least this percent to pass creating a save.", _, true, 0.0, true, 1.0);
+	perclimitsave = GetConVarFloat(votecspercenth);
+	HookConVarChange(votecspercenth, restrictvotepercsch);
+	CloseHandle(votecspercenth);
 }
 
 public votereloadcvar(Handle convar, const char[] oldValue, const char[] newValue)
@@ -66,9 +81,20 @@ public votereloadcvar(Handle convar, const char[] oldValue, const char[] newValu
 	else allowvotereloadsaves = true;
 }
 
+public votesavecvar(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 0) allowvotecreatesaves = false;
+	else allowvotecreatesaves = true;
+}
+
 public restrictvotepercch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	perclimit = StringToFloat(newValue);
+}
+
+public restrictvotepercsch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	perclimitsave = StringToFloat(newValue);
 }
 
 public Action votereloadchk(int client, int args)
@@ -77,6 +103,7 @@ public Action votereloadchk(int client, int args)
 	SetPanelTitle(panel, "Reload Type");
 	DrawPanelItem(panel, "Reload Map");
 	DrawPanelItem(panel, "Reload Checkpoint");
+	if (allowvotecreatesaves) DrawPanelItem(panel, "Create Persistent Save");
 	DrawPanelItem(panel, "Close");
 	SendPanelToClient(panel, client, PanelHandlervotetype, 20);
 	CloseHandle(panel);
@@ -125,6 +152,24 @@ public Action votereload(int client, int args)
 	menu.AddItem("back","Back");
 	menu.ExitButton = true;
 	menu.Display(client, 120);
+	return Plugin_Handled;
+}
+
+public Action votecreatesave(int client, int args)
+{
+	if (allowvotecreatesaves)
+	{
+		Menu menu = new Menu(MenuHandlervote);
+		menu.SetTitle("Create Save of Current Game");
+		menu.AddItem("createsave","Start Vote");
+		menu.AddItem("back","Back");
+		menu.ExitButton = true;
+		menu.Display(client, 120);
+	}
+	else
+	{
+		PrintToChat(client,"%T","Cannot participate in vote",client);
+	}
 	return Plugin_Handled;
 }
 
@@ -504,6 +549,20 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			votetime = Time + 60;
 			reloadtype = 2;
 		}
+		else if ((StrEqual(info,"createsave",false)) && (votetime <= Time))
+		{
+			new String:buff[32];
+			g_voteType = voteType:question;
+			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MenuAction:MENU_ACTIONS_ALL);
+			Format(buff,sizeof(buff),"Create Save Point?");
+			g_hVoteMenu.SetTitle(buff);
+			g_hVoteMenu.AddItem(VOTE_YES, "Yes");
+			g_hVoteMenu.AddItem(VOTE_NO, "No");
+			g_hVoteMenu.ExitButton = false;
+			g_hVoteMenu.DisplayVoteToAll(20);
+			votetime = Time + 60;
+			reloadtype = 4;
+		}
 		else if ((StrEqual(info,"checkpoint",false)) && (votetime <= Time))
 		{
 			new String:buff[32];
@@ -557,6 +616,10 @@ public PanelHandlervotetype(Handle:menu, MenuAction:action, int client, int para
 	}
 	else if (param1 == 3)
 	{
+		votecreatesave(client,0);
+	}
+	else if (param1 == 4)
+	{
 		CloseHandle(menu);
 	}
 	else if (action == MenuAction_End)
@@ -607,6 +670,9 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 		char item[64], display[64];
 		float percent;
 		int votes, totalVotes;
+		float perclimitlocal;
+		if (reloadtype == 4) perclimitlocal = perclimitsave;
+		else perclimitlocal = perclimit;
 
 		GetMenuVoteInfo(param2, votes, totalVotes);
 		menu.GetItem(param1, item, sizeof(item), _, display, sizeof(display));
@@ -618,13 +684,14 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 		
 		percent = GetVotePercent(votes, totalVotes);
 
-		if ((strcmp(item, VOTE_YES) == 0 && FloatCompare(percent,perclimit) < 0 && param1 == 0) || (strcmp(item, VOTE_NO) == 0 && param1 == 1))
+		if ((strcmp(item, VOTE_YES) == 0 && FloatCompare(percent,perclimitlocal) < 0 && param1 == 0) || (strcmp(item, VOTE_NO) == 0 && param1 == 1))
 		{
-			PrintToChatAll("%t","Vote Failed", RoundToNearest(100.0*perclimit), RoundToNearest(100.0*percent), totalVotes);
+			PrintToChatAll("%t","Vote Failed", RoundToNearest(100.0*perclimitlocal), RoundToNearest(100.0*percent), totalVotes);
 			Format(reloadthissave,sizeof(reloadthissave),"");
 		}
 		else
 		{
+			PrintToChatAll("%t","Vote Successful", RoundToNearest(100.0*percent), totalVotes);
 			if (reloadtype == 1) CreateTimer(0.1,reloadtimer);
 			else if (reloadtype == 2)
 			{
@@ -653,7 +720,42 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 				loadthissave(reloadthissave);
 				Format(reloadthissave,sizeof(reloadthissave),"");
 			}
-			PrintToChatAll("%t","Vote Successful", RoundToNearest(100.0*percent), totalVotes);
+			else if (reloadtype == 4)
+			{
+				int loginp = FindEntityByClassname(0, "logic_autosave");
+				if (loginp == -1)
+				{
+					loginp = CreateEntityByName("logic_autosave");
+					if (loginp != -1)
+					{
+						DispatchKeyValue(loginp, "targetname","syn_autosave");
+						DispatchSpawn(loginp);
+						ActivateEntity(loginp);
+						AcceptEntityInput(loginp,"Save");
+					}
+				}
+				else if ((loginp > 0) || (loginp < -1))
+				{
+					AcceptEntityInput(loginp,"Save");
+				}
+				char savepath[256];
+				BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves/%s",mapbuf);
+				if (!DirExists(savepath)) CreateDirectory(savepath,511);
+				char ctimestamp[32];
+				FormatTime(ctimestamp,sizeof(ctimestamp),NULL_STRING);
+				ReplaceString(ctimestamp,sizeof(ctimestamp),"/","");
+				ReplaceString(ctimestamp,sizeof(ctimestamp),"-","");
+				ReplaceString(ctimestamp,sizeof(ctimestamp),":","");
+				Handle data;
+				data = CreateDataPack();
+				WritePackCell(data, 0);
+				WritePackCell(data, 2);
+				WritePackString(data, ctimestamp);
+				//Slight delay for open/active files
+				CreateTimer(0.5,savecurgamedp,data);
+				PrintToChatAll("Saving game as %s",ctimestamp);
+			}
+			reloadtype = 0;
 		}
 	}
 	return 0;
