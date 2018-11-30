@@ -103,7 +103,7 @@ public Action votereloadchk(int client, int args)
 	SetPanelTitle(panel, "Reload Type");
 	DrawPanelItem(panel, "Reload Map");
 	DrawPanelItem(panel, "Reload Checkpoint");
-	if (allowvotecreatesaves) DrawPanelItem(panel, "Create Persistent Save");
+	DrawPanelItem(panel, "Create Persistent Save");
 	DrawPanelItem(panel, "Close");
 	SendPanelToClient(panel, client, PanelHandlervotetype, 20);
 	CloseHandle(panel);
@@ -169,6 +169,7 @@ public Action votecreatesave(int client, int args)
 	else
 	{
 		PrintToChat(client,"%T","Cannot participate in vote",client);
+		votereloadchk(client,0);
 	}
 	return Plugin_Handled;
 }
