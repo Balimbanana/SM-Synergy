@@ -2,8 +2,15 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <clientprefs>
+#undef REQUIRE_PLUGIN
+#undef REQUIRE_EXTENSIONS
+#tryinclude <SteamWorks>
+#tryinclude <updater>
+#define REQUIRE_PLUGIN
+#define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.3a"
+#define PLUGIN_VERSION "1.4"
+#define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
 {
@@ -62,6 +69,14 @@ public void OnMapStart()
 	bugbaitpicked = false;
 	CreateTimer(1.0,reloadclcookies);
 	HookEntityOutput("weapon_bugbait", "OnPlayerPickup", EntityOutput:onbugbaitpickup);
+}
+
+public OnLibraryAdded(const char[] name)
+{
+    if (StrEqual(name,"updater",false))
+    {
+        Updater_AddPlugin(UPDATE_URL);
+    }
 }
 
 public Action showinf(int client, int args)
@@ -427,6 +442,10 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 							maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
 							if (StrEqual(clsname,"combine_camera",false))
 								maxh = 50;
+							else if (StrEqual(clsname,"antlion_grub",false))
+								maxh = 1;
+							else if (StrEqual(clsname,"combinedropship",false))
+								maxh = 100;
 							else if (maxh == 0)
 							{
 								char cvarren[32];
@@ -468,6 +487,10 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 						maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
 						if (StrEqual(clsname,"combine_camera",false))
 							maxh = 50;
+						else if (StrEqual(clsname,"antlion_grub",false))
+							maxh = 1;
+						else if (StrEqual(clsname,"combinedropship",false))
+							maxh = 100;
 						else if (maxh == 0)
 						{
 							char cvarren[32];
@@ -488,18 +511,22 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 							char cmodel[64];
 							GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 							if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
-								Format(clsname,sizeof(clsname),"Friend: Combine Elite");
+								Format(clsname,sizeof(clsname),"Combine Elite");
 							else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
-								Format(clsname,sizeof(clsname),"Friend: Combine Guard");
+								Format(clsname,sizeof(clsname),"Combine Guard");
 							else
-								Format(clsname,sizeof(clsname),"Friend: Combine Soldier");
+								Format(clsname,sizeof(clsname),"Combine Soldier");
 						}
 						else if (StrEqual(clsname,"citizen",false))
 						{
+							char targn[64];
 							char cmodel[64];
 							GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+							if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
 							if (StrEqual(cmodel,"models/odessa.mdl",false))
-								Format(clsname,sizeof(clsname),"Friend: Odessa Cubbage");
+								Format(clsname,sizeof(clsname),"Odessa Cubbage");
+							else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
+							else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
 						}
 						antispamchk[client] = Time + 0.07;
 						PrintTheMsg(client,curh,maxh,clsname);
@@ -517,6 +544,10 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 						maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
 						if (StrEqual(clsname,"combine_camera",false))
 							maxh = 50;
+						else if (StrEqual(clsname,"antlion_grub",false))
+							maxh = 1;
+						else if (StrEqual(clsname,"combinedropship",false))
+							maxh = 100;
 						else if (maxh == 0)
 						{
 							char cvarren[32];
@@ -597,9 +628,9 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 	if (StrEqual(clsname,"npc_metropolice",false))
 		if (GetCopAlly()) Format(clsname,sizeof(clsname),"Friend: Metropolice");
 		else Format(clsname,sizeof(clsname),"Enemy: Metropolice");
+	char targn[32];
 	if (HasEntProp(targ,Prop_Data,"m_iName"))
 	{
-		char targn[32];
 		GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
 		if (strlen(targn) > 0)
 			if (GetNPCAllyTarg(targn))
@@ -618,6 +649,8 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 			else
 				Format(clsname,sizeof(clsname),"Friend: Combine Soldier");
 		}
+		else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Friend: Griggs");
+		else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Friend: Sheckley");
 		else if (StrEqual(clsname,"npc_citizen",false))
 		{
 			char cmodel[64];
