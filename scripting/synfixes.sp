@@ -1,6 +1,12 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#undef REQUIRE_PLUGIN
+#undef REQUIRE_EXTENSIONS
+#tryinclude <SteamWorks>
+#tryinclude <updater>
+#define REQUIRE_PLUGIN
+#define REQUIRE_EXTENSIONS
 
 int debuglvl = 0;
 int debugoowlvl = 0;
@@ -10,13 +16,18 @@ Handle equiparr = INVALID_HANDLE;
 Handle entlist = INVALID_HANDLE;
 float entrefresh = 0.0;
 int WeapList = -1;
+bool friendlyfire = false;
+bool seqenablecheck = true;
+
+#define PLUGIN_VERSION "1.2"
+#define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo = 
 {
 	name = "SynFixes",
 	author = "Balimbanana",
 	description = "Attempts to fix sequences by checking for missing actors, entities that have fallen out of the world, players not spawning with weapons, and vehicle pulling from side to side.",
-	version = "1.1",
+	version = "PLUGIN_VERSION",
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
@@ -41,14 +52,19 @@ public void OnPluginStart()
 {
 	LoadTranslations("basevotes.phrases");
 	Handle dbgh = INVALID_HANDLE;
+	Handle dbgallowh = INVALID_HANDLE;
 	Handle dbgoh = INVALID_HANDLE;
 	dbgh = CreateConVar("seqdbg", "0", "Set debug level of sequence checks.", _, true, 0.0, true, 3.0);
+	dbgallowh = CreateConVar("seqenablecheck", "1", "Enables or disables sequence checking.", _, true, 0.0, true, 1.0);
 	dbgoh = CreateConVar("oowdbg", "0", "Set debug level of out of world checks.", _, true, 0.0, true, 1.0);
 	HookConVarChange(dbgh, dbghch);
+	HookConVarChange(dbgallowh, dbgallowhch);
 	HookConVarChange(dbgoh, dbghoch);
 	debuglvl = GetConVarInt(dbgh);
+	seqenablecheck = GetConVarBool(dbgallowh);
 	debugoowlvl = GetConVarInt(dbgoh);
 	CloseHandle(dbgh);
+	CloseHandle(dbgallowh);
 	CloseHandle(dbgoh);
 	Handle votepercenth = CreateConVar("sm_votealyxpercent", "0.66", "People need to vote to at least this percent to pass.", _, true, 0.0, true, 1.0);
 	perclimit = GetConVarFloat(votepercenth);
@@ -60,6 +76,14 @@ public void OnPluginStart()
 	CloseHandle(votedelayh);
 	Handle pushh = FindConVar("sv_player_push");
 	if (pushh != INVALID_HANDLE) HookConVarChange(pushh, pushch);
+	CloseHandle(pushh);
+	Handle ffh = FindConVar("mp_friendlyfire");
+	if (ffh != INVALID_HANDLE)
+	{
+		friendlyfire = GetConVarBool(ffh);
+		HookConVarChange(ffh, ffhch);
+	}
+	CloseHandle(ffh);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	equiparr = CreateArray(32);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
@@ -125,6 +149,14 @@ public void OnMapStart()
 		}
 		CloseHandle(cvarchk);
 	}
+}
+
+public OnLibraryAdded(const char[] name)
+{
+    if (StrEqual(name,"updater",false))
+    {
+        Updater_AddPlugin(UPDATE_URL);
+    }
 }
 
 public Action fixalyx(int client, int args)
@@ -471,6 +503,12 @@ public dbghoch(Handle convar, const char[] oldValue, const char[] newValue)
 	debugoowlvl = StringToInt(newValue);
 }
 
+public dbgallowhch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) seqenablecheck = true;
+	else seqenablecheck = false;
+}
+
 public Action resetrot(Handle timer)
 {
 	float vMins[3];
@@ -491,18 +529,15 @@ public Action resetrot(Handle timer)
 					AcceptEntityInput(i,"Start");
 				}
 			}
-			else if ((HasEntProp(i,Prop_Data,"m_vecOrigin")) && (StrContains(clsname,"func_",false) == -1) && (StrContains(clsname,"trigger_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (StrContains(clsname,"npc_",false) == -1) && (!StrEqual(clsname,"momentary_rot_button",false)))
+			else if ((HasEntProp(i,Prop_Data,"m_vecOrigin")) && (StrContains(clsname,"func_",false) == -1) && (StrContains(clsname,"trigger_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (StrContains(clsname,"npc_",false) == -1) && (StrContains(clsname,"monster_",false) == -1) && (StrContains(clsname,"info_",false) == -1) && (StrContains(clsname,"env_",false) == -1) && (StrContains(clsname,"scripted",false) == -1) && (!StrEqual(clsname,"momentary_rot_button",false)))
 			{
 				float pos[3];
 				GetEntPropVector(i,Prop_Data,"m_vecOrigin",pos);
-				if ((TR_PointOutsideWorld(pos)) && ((pos[0] < vMins[0]) || (pos[1] < vMins[1]) && (pos[2] < vMins[2])) && !(((pos[0] <= 1.0) && (pos[0] >= -1.0)) && ((pos[1] <= 1.0) && (pos[1] >= -1.0)) && ((pos[2] <= 1.0) && (pos[2] >= -1.0))))
+				char fname[32];
+				GetEntPropString(i,Prop_Data,"m_iName",fname,sizeof(fname));
+				if ((TR_PointOutsideWorld(pos)) && (StrContains(fname,"elevator",false) == -1) && ((pos[0] < vMins[0]) || (pos[1] < vMins[1]) && (pos[2] < vMins[2])) && !(((pos[0] <= 1.0) && (pos[0] >= -1.0)) && ((pos[1] <= 1.0) && (pos[1] >= -1.0)) && ((pos[2] <= 1.0) && (pos[2] >= -1.0))))
 				{
-					if (debugoowlvl)
-					{
-						char fname[32];
-						GetEntPropString(i,Prop_Data,"m_iName",fname,sizeof(fname));
-						PrintToServer("%i %s with name %s fell out of world, removing...",i,clsname,fname);
-					}
+					if (debugoowlvl) PrintToServer("%i %s with name %s fell out of world, removing...",i,clsname,fname);
 					if (i>MaxClients) AcceptEntityInput(i,"kill");
 				}
 			}
@@ -512,52 +547,55 @@ public Action resetrot(Handle timer)
 
 public Action trigout(const char[] output, int caller, int activator, float delay)
 {
-	char targn[128];
-	char scenes[128];
-	if (HasEntProp(caller,Prop_Data,"m_iszEntity"))
-		GetEntPropString(caller,Prop_Data,"m_iszEntity",targn,sizeof(targn));
-	else
+	if (seqenablecheck)
 	{
-		if (HasEntProp(caller,Prop_Data,"m_iszSceneFile"))
-			GetEntPropString(caller,Prop_Data,"m_iszSceneFile",scenes,sizeof(scenes));
-		if ((StrContains(scenes,"alyx",false) != -1) || (StrContains(scenes,"/al_",false) != -1))
-			Format(targn,sizeof(targn),"alyx");
-		else if ((StrContains(scenes,"barn",false) != -1) || (StrContains(scenes,"/ba_",false) != -1))
-			Format(targn,sizeof(targn),"barney");
-		else if ((StrContains(scenes,"eli",false) != -1) || (StrContains(scenes,"/eli_",false) != -1))
-			Format(targn,sizeof(targn),"eli");
-		else if ((StrContains(scenes,"mag",false) != -1) || (StrContains(scenes,"/ma_",false) != -1))
-			Format(targn,sizeof(targn),"magnusson");
-		else if ((StrContains(scenes,"breen",false) != -1) || (StrContains(scenes,"/br_",false) != -1))
-			Format(targn,sizeof(targn),"breen");
-	}
-	float origin[3];
-	GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
-	char sname[128];
-	GetEntPropString(caller,Prop_Data,"m_iName",sname,sizeof(sname));
-	if (strlen(targn) < 1)
-		GetEntPropString(caller,Prop_Data,"m_target",targn,sizeof(targn));
-	if ((StrContains(sname,"al_vort",false) != -1) && ((!StrEqual(targn,"alyx")) || (!StrEqual(targn,"vort"))))
-	{
-		if (!findtargn("alyx"))
-			readoutputs(caller,"alyx");
-		findgfollow(-1,"alyx");
-		if (!findtargn("vort"))
-			readoutputs(caller,"vort");
-		findgfollow(-1,"vort");
-	}
-	else
-	{
-		if (StrContains(scenes,"ep1_intro_alyx",false) == -1)
+		char targn[128];
+		char scenes[128];
+		if (HasEntProp(caller,Prop_Data,"m_iszEntity"))
+			GetEntPropString(caller,Prop_Data,"m_iszEntity",targn,sizeof(targn));
+		else
 		{
-			if ((!findtargn(targn)) && (strlen(targn) > 0))
+			if (HasEntProp(caller,Prop_Data,"m_iszSceneFile"))
+				GetEntPropString(caller,Prop_Data,"m_iszSceneFile",scenes,sizeof(scenes));
+			if ((StrContains(scenes,"alyx",false) != -1) || (StrContains(scenes,"/al_",false) != -1))
+				Format(targn,sizeof(targn),"alyx");
+			else if ((StrContains(scenes,"barn",false) != -1) || (StrContains(scenes,"/ba_",false) != -1))
+				Format(targn,sizeof(targn),"barney");
+			else if ((StrContains(scenes,"eli",false) != -1) || (StrContains(scenes,"/eli_",false) != -1))
+				Format(targn,sizeof(targn),"eli");
+			else if ((StrContains(scenes,"mag",false) != -1) || (StrContains(scenes,"/ma_",false) != -1))
+				Format(targn,sizeof(targn),"magnusson");
+			else if ((StrContains(scenes,"breen",false) != -1) || (StrContains(scenes,"/br_",false) != -1))
+				Format(targn,sizeof(targn),"breen");
+		}
+		float origin[3];
+		GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+		char sname[128];
+		GetEntPropString(caller,Prop_Data,"m_iName",sname,sizeof(sname));
+		if (strlen(targn) < 1)
+			GetEntPropString(caller,Prop_Data,"m_target",targn,sizeof(targn));
+		if ((StrContains(sname,"al_vort",false) != -1) && ((!StrEqual(targn,"alyx")) || (!StrEqual(targn,"vort"))))
+		{
+			if (!findtargn("alyx"))
+				readoutputs(caller,"alyx");
+			findgfollow(-1,"alyx");
+			if (!findtargn("vort"))
+				readoutputs(caller,"vort");
+			findgfollow(-1,"vort");
+		}
+		else
+		{
+			if (StrContains(scenes,"ep1_intro_alyx",false) == -1)
 			{
-				if (debuglvl > 0) PrintToServer("Could not find actor with name %s",targn);
-				readoutputs(caller,targn);
+				if ((!findtargn(targn)) && (strlen(targn) > 0))
+				{
+					if (debuglvl > 0) PrintToServer("Could not find actor with name %s",targn);
+					readoutputs(caller,targn);
+				}
 			}
 		}
+		if (debuglvl == 3) PrintToServer("Sequence ent %i with name %s started with %s target\nPlaying %s\nAt: %1.f %1.f %1.f",caller,sname,targn,scenes,origin[0],origin[1],origin[2]);
 	}
-	if (debuglvl == 3) PrintToServer("Sequence ent %i with name %s started with %s target\nPlaying %s\nAt: %1.f %1.f %1.f",caller,sname,targn,scenes,origin[0],origin[1],origin[2]);
 }
 
 readoutputs(int scriptent, char[] targn)
@@ -820,6 +858,15 @@ public OnClientDisconnect(int client)
 
 public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype)
 {
+	if (HasEntProp(attacker,Prop_Data,"m_hPhysicsAttacker"))
+	{
+		int atk = GetEntPropEnt(attacker,Prop_Data,"m_hPhysicsAttacker");
+		if ((!friendlyfire) && (atk < MaxClients+1))
+		{
+			damage = 0.0;
+			return Plugin_Changed;
+		}
+	}
 	char clsnamechk[32];
 	GetEntityClassname(inflictor,clsnamechk,sizeof(clsnamechk));
 	if (StrEqual(clsnamechk,"npc_turret_floor",false))
@@ -848,7 +895,7 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 
 public OnEntityCreated(int entity, const char[] classname)
 {
-	if ((StrContains(classname,"npc_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false)) && (!FindValueInArray(entlist,entity)))
+	if ((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false)) && (!FindValueInArray(entlist,entity)))
 	{
 		PushArrayCell(entlist,entity);
 	}
@@ -871,7 +918,7 @@ bool findtargn(char[] targn)
 			{
 				char clsname[32];
 				GetEntityClassname(i,clsname,sizeof(clsname));
-				if ((StrContains(clsname,"npc_",false) != -1) || (StrEqual(clsname,"generic_actor",false)) || (StrEqual(clsname,"generic_monster",false)))
+				if ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"monster_",false) != -1) || (StrEqual(clsname,"generic_actor",false)) || (StrEqual(clsname,"generic_monster",false)))
 				{
 					PushArrayCell(entlist,i);
 					char ename[128];
@@ -894,7 +941,7 @@ bool findtargn(char[] targn)
 			{
 				char clsname[32];
 				GetEntityClassname(i,clsname,sizeof(clsname));
-				if ((StrContains(clsname,"npc_",false) != -1) || (StrEqual(clsname,"generic_actor",false)) || (StrEqual(clsname,"generic_monster",false)))
+				if ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"monster_",false) != -1) || (StrEqual(clsname,"generic_actor",false)) || (StrEqual(clsname,"generic_monster",false)))
 				{
 					char ename[128];
 					GetEntPropString(i,Prop_Data,"m_iName",ename,sizeof(ename));
@@ -989,6 +1036,12 @@ public pushch(Handle convar, const char[] oldValue, const char[] newValue)
 			CloseHandle(cvarchk);
 		}
 	}
+}
+
+public ffhch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) friendlyfire = true;
+	else friendlyfire = false;
 }
 
 public restrictpercch(Handle convar, const char[] oldValue, const char[] newValue)
