@@ -27,7 +27,7 @@ public Plugin:myinfo =
 	name = "SynFixes",
 	author = "Balimbanana",
 	description = "Attempts to fix sequences by checking for missing actors, entities that have fallen out of the world, players not spawning with weapons, and vehicle pulling from side to side.",
-	version = "PLUGIN_VERSION",
+	version = PLUGIN_VERSION,
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
