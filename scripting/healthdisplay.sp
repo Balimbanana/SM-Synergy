@@ -855,6 +855,7 @@ bool GetNPCAlly(char[] clsname)
 		addht("npc_headcrab_black");
 		addht("npc_headcrab_fast");
 		addht("npc_gargantua");
+		addht("npc_hunter");
 		addht("npc_antlion");
 		addht("npc_antlionguard");
 		for (int i = 0;i<GetArraySize(airelarr);i++)
