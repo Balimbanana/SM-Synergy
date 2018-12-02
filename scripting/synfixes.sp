@@ -898,6 +898,7 @@ public OnEntityCreated(int entity, const char[] classname)
 	if ((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false)) && (!FindValueInArray(entlist,entity)))
 	{
 		PushArrayCell(entlist,entity);
+		if ((StrEqual(classname,"npc_citizen",false)) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
 	}
 }
 
