@@ -55,7 +55,7 @@ public void OnPluginStart()
 	Handle dbgallowh = INVALID_HANDLE;
 	Handle dbgoh = INVALID_HANDLE;
 	dbgh = CreateConVar("seqdbg", "0", "Set debug level of sequence checks.", _, true, 0.0, true, 3.0);
-	dbgallowh = CreateConVar("seqenablecheck", "1", "Enables or disables sequence checking.", _, true, 0.0, true, 1.0);
+	dbgallowh = CreateConVar("seqenablecheck", "0", "Enables or disables sequence checking.", _, true, 0.0, true, 1.0);
 	dbgoh = CreateConVar("oowdbg", "0", "Set debug level of out of world checks.", _, true, 0.0, true, 1.0);
 	HookConVarChange(dbgh, dbghch);
 	HookConVarChange(dbgallowh, dbgallowhch);
