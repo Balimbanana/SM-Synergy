@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.4"
+#define PLUGIN_VERSION "1.5"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -58,6 +58,7 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_healthfriendcol",Display_HudFriendSelect);
 	RegConsoleCmd("sm_healthenemycol",Display_HudEnemySelect);
 	CreateTimer(10.0,cleararr,_,TIMER_REPEAT);
+	CreateTimer(0.1,ShowTimer,_,TIMER_REPEAT);
 }
 
 public void OnMapStart()
@@ -278,9 +279,9 @@ public Action reloadclcookies(Handle timer)
 			if (strlen(sValue) < 1)
 			{
 				bclcookie4f[client][0] = 255;
-				bclcookie4f[client][1] = 255;
+				bclcookie4f[client][1] = 176;
 				bclcookie4f[client][2] = 0;
-				SetClientCookie(client, bclcookie4fh, "255 255 0");
+				SetClientCookie(client, bclcookie4fh, "255 176 0");
 			}
 			else
 			{
@@ -392,178 +393,185 @@ public bool TraceEntityFilter(int entity, int mask, any data){
 	return true;
 }
 
-public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float angles[3], &weapon)
+//public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float angles[3], &weapon)
+public Action ShowTimer(Handle timer)
 {
-	if (IsPlayerAlive(client) && !IsFakeClient(client) && (bclcookie[client] != 3))
+	for (int client = 1;client<MaxClients+1;client++)
 	{
-		int targ = GetClientAimTarget(client,false);
-		if ((targ != -1) && (targ > MaxClients))
+		if (IsClientInGame(client))
 		{
-			char clsname[32];
-			GetEntityClassname(targ,clsname,sizeof(clsname));
-			int vck = GetEntProp(client,Prop_Send,"m_hVehicle");
-			if ((StrContains(clsname,"clip",false) != -1) || ((StrContains(clsname,"prop_vehicle",false) != -1) && (vck != -1)))
+			if (IsPlayerAlive(client) && !IsFakeClient(client) && (bclcookie[client] != 3))
 			{
-				float PlayerOrigin[3];
-				float Location[3];
-				float clang[3];
-				GetClientEyePosition(client, Location);
-				GetClientEyeAngles(client,clang);
-				PlayerOrigin[0] = (Location[0] + (60 * Cosine(DegToRad(clang[1]))));
-				PlayerOrigin[1] = (Location[1] + (60 * Sine(DegToRad(clang[1]))));
-				PlayerOrigin[2] = (Location[2] + 10);
-				Location[0] = (PlayerOrigin[0] + (10 * Cosine(DegToRad(clang[1]))));
-				Location[1] = (PlayerOrigin[1] + (10 * Sine(DegToRad(clang[1]))));
-				Location[2] = (PlayerOrigin[2] + 10);
-				if (vck != -1)
+				int targ = GetClientAimTarget(client,false);
+				if ((targ != -1) && (targ > MaxClients))
 				{
-					Location[0] = (PlayerOrigin[0] - (10 * Cosine(DegToRad(clang[1]))));
-					Location[1] = (PlayerOrigin[1] - (10 * Sine(DegToRad(clang[1]))));
-					Location[2] = (PlayerOrigin[2] - 10);
-				}
-				Handle hhitpos = INVALID_HANDLE;
-				TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter);
-				targ = TR_GetEntityIndex(hhitpos);
-				CloseHandle(hhitpos);
-				if (targ != -1)
+					char clsname[32];
 					GetEntityClassname(targ,clsname,sizeof(clsname));
-			}
-			if ((targ != -1) && (StrContains(clsname,"npc_",false) != -1) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
-			{
-				if (!bclcookie3[client])
-				{
-					if (!GetNPCAlly(clsname))
+					int vck = GetEntProp(client,Prop_Send,"m_hVehicle");
+					if ((StrContains(clsname,"clip",false) != -1) || ((StrContains(clsname,"prop_vehicle",false) != -1) && (vck != -1)))
 					{
-						int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
-						ReplaceString(clsname,sizeof(clsname),"npc_","");
-						int maxh = 20;
-						if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
+						float PlayerOrigin[3];
+						float Location[3];
+						float clang[3];
+						GetClientEyePosition(client, Location);
+						GetClientEyeAngles(client,clang);
+						PlayerOrigin[0] = (Location[0] + (60 * Cosine(DegToRad(clang[1]))));
+						PlayerOrigin[1] = (Location[1] + (60 * Sine(DegToRad(clang[1]))));
+						PlayerOrigin[2] = (Location[2] + 10);
+						Location[0] = (PlayerOrigin[0] + (10 * Cosine(DegToRad(clang[1]))));
+						Location[1] = (PlayerOrigin[1] + (10 * Sine(DegToRad(clang[1]))));
+						Location[2] = (PlayerOrigin[2] + 10);
+						if (vck != -1)
 						{
-							maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
-							if (StrEqual(clsname,"combine_camera",false))
-								maxh = 50;
-							else if (StrEqual(clsname,"antlion_grub",false))
-								maxh = 1;
-							else if (StrEqual(clsname,"combinedropship",false))
-								maxh = 100;
-							else if (maxh == 0)
+							Location[0] = (PlayerOrigin[0] - (10 * Cosine(DegToRad(clang[1]))));
+							Location[1] = (PlayerOrigin[1] - (10 * Sine(DegToRad(clang[1]))));
+							Location[2] = (PlayerOrigin[2] - 10);
+						}
+						Handle hhitpos = INVALID_HANDLE;
+						TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter);
+						targ = TR_GetEntityIndex(hhitpos);
+						CloseHandle(hhitpos);
+						if (targ != -1)
+							GetEntityClassname(targ,clsname,sizeof(clsname));
+					}
+					if ((targ != -1) && (StrContains(clsname,"npc_",false) != -1) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
+					{
+						if (!bclcookie3[client])
+						{
+							if (!GetNPCAlly(clsname))
 							{
-								char cvarren[32];
-								Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
-								Handle cvarchk = FindConVar(cvarren);
-								if (cvarchk == INVALID_HANDLE)
-									maxh = 20;
-								else
-									maxh = GetConVarInt(cvarchk);
+								int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
+								ReplaceString(clsname,sizeof(clsname),"npc_","");
+								int maxh = 20;
+								if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
+								{
+									maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
+									if (StrEqual(clsname,"combine_camera",false))
+										maxh = 50;
+									else if (StrEqual(clsname,"antlion_grub",false))
+										maxh = 1;
+									else if (StrEqual(clsname,"combinedropship",false))
+										maxh = 100;
+									else if (maxh == 0)
+									{
+										char cvarren[32];
+										Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
+										Handle cvarchk = FindConVar(cvarren);
+										if (cvarchk == INVALID_HANDLE)
+											maxh = 20;
+										else
+											maxh = GetConVarInt(cvarchk);
+									}
+								}
+								clsname[0] &= ~(1 << 5);
+								float Time = GetTickedTime();
+								if ((antispamchk[client] <= Time) && (curh > 0))
+								{
+									if (StrEqual(clsname,"combine_s",false))
+									{
+										char cmodel[64];
+										GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+										if (StrContains( cmodel, "models/combine_super_soldier.mdl") != -1) //Elite
+											Format(clsname,sizeof(clsname),"Combine Elite");
+										else if (StrContains( cmodel, "models/combine_soldier_prisonguard.mdl") != -1) //Shotgunner
+											Format(clsname,sizeof(clsname),"Combine Guard");
+										else
+											Format(clsname,sizeof(clsname),"Combine Soldier");
+									}
+									antispamchk[client] = Time + 0.07;
+									PrintTheMsg(client,curh,maxh,clsname);
+								}
 							}
 						}
-						clsname[0] &= ~(1 << 5);
-						float Time = GetTickedTime();
-						if ((antispamchk[client] <= Time) && (curh > 0))
+						else if (bclcookie3[client] == 1)
 						{
-							if (StrEqual(clsname,"combine_s",false))
+							int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
+							ReplaceString(clsname,sizeof(clsname),"npc_","");
+							int maxh = 20;
+							if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
 							{
-								char cmodel[64];
-								GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-								if (StrContains( cmodel, "models/combine_super_soldier.mdl") != -1) //Elite
-									Format(clsname,sizeof(clsname),"Combine Elite");
-								else if (StrContains( cmodel, "models/combine_soldier_prisonguard.mdl") != -1) //Shotgunner
-									Format(clsname,sizeof(clsname),"Combine Guard");
-								else
-									Format(clsname,sizeof(clsname),"Combine Soldier");
+								maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
+								if (StrEqual(clsname,"combine_camera",false))
+									maxh = 50;
+								else if (StrEqual(clsname,"antlion_grub",false))
+									maxh = 1;
+								else if (StrEqual(clsname,"combinedropship",false))
+									maxh = 100;
+								else if (maxh == 0)
+								{
+									char cvarren[32];
+									Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
+									Handle cvarchk = FindConVar(cvarren);
+									if (cvarchk == INVALID_HANDLE)
+										maxh = 20;
+									else
+										maxh = GetConVarInt(cvarchk);
+								}
 							}
-							antispamchk[client] = Time + 0.07;
-							PrintTheMsg(client,curh,maxh,clsname);
+							clsname[0] &= ~(1 << 5);
+							float Time = GetTickedTime();
+							if ((antispamchk[client] <= Time) && (curh > 0))
+							{
+								if (StrEqual(clsname,"combine_s",false))
+								{
+									char cmodel[64];
+									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+									if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
+										Format(clsname,sizeof(clsname),"Combine Elite");
+									else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
+										Format(clsname,sizeof(clsname),"Combine Guard");
+									else
+										Format(clsname,sizeof(clsname),"Combine Soldier");
+								}
+								else if (StrEqual(clsname,"citizen",false))
+								{
+									char targn[64];
+									char cmodel[64];
+									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+									if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+									if (StrEqual(cmodel,"models/odessa.mdl",false))
+										Format(clsname,sizeof(clsname),"Odessa Cubbage");
+									else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
+									else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
+								}
+								antispamchk[client] = Time + 0.07;
+								PrintTheMsg(client,curh,maxh,clsname);
+							}
 						}
-					}
-				}
-				else if (bclcookie3[client] == 1)
-				{
-					int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
-					ReplaceString(clsname,sizeof(clsname),"npc_","");
-					int maxh = 20;
-					if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
-					{
-						maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
-						if (StrEqual(clsname,"combine_camera",false))
-							maxh = 50;
-						else if (StrEqual(clsname,"antlion_grub",false))
-							maxh = 1;
-						else if (StrEqual(clsname,"combinedropship",false))
-							maxh = 100;
-						else if (maxh == 0)
+						else
 						{
-							char cvarren[32];
-							Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
-							Handle cvarchk = FindConVar(cvarren);
-							if (cvarchk == INVALID_HANDLE)
-								maxh = 20;
-							else
-								maxh = GetConVarInt(cvarchk);
+							char friendfoe[32];
+							Format(friendfoe,sizeof(friendfoe),clsname);
+							int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
+							ReplaceString(clsname,sizeof(clsname),"npc_","");
+							int maxh = 20;
+							if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
+							{
+								maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
+								if (StrEqual(clsname,"combine_camera",false))
+									maxh = 50;
+								else if (StrEqual(clsname,"antlion_grub",false))
+									maxh = 1;
+								else if (StrEqual(clsname,"combinedropship",false))
+									maxh = 100;
+								else if (maxh == 0)
+								{
+									char cvarren[32];
+									Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
+									Handle cvarchk = FindConVar(cvarren);
+									if (cvarchk == INVALID_HANDLE)
+										maxh = 20;
+									else
+										maxh = GetConVarInt(cvarchk);
+								}
+							}
+							float Time = GetTickedTime();
+							if ((antispamchk[client] <= Time) && (curh > 0))
+							{
+								antispamchk[client] = Time + 0.07;
+								PrintTheMsgf(client,curh,maxh,friendfoe,targ);
+							}
 						}
-					}
-					clsname[0] &= ~(1 << 5);
-					float Time = GetTickedTime();
-					if ((antispamchk[client] <= Time) && (curh > 0))
-					{
-						if (StrEqual(clsname,"combine_s",false))
-						{
-							char cmodel[64];
-							GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-							if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
-								Format(clsname,sizeof(clsname),"Combine Elite");
-							else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
-								Format(clsname,sizeof(clsname),"Combine Guard");
-							else
-								Format(clsname,sizeof(clsname),"Combine Soldier");
-						}
-						else if (StrEqual(clsname,"citizen",false))
-						{
-							char targn[64];
-							char cmodel[64];
-							GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-							if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
-							if (StrEqual(cmodel,"models/odessa.mdl",false))
-								Format(clsname,sizeof(clsname),"Odessa Cubbage");
-							else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
-							else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
-						}
-						antispamchk[client] = Time + 0.07;
-						PrintTheMsg(client,curh,maxh,clsname);
-					}
-				}
-				else
-				{
-					char friendfoe[32];
-					Format(friendfoe,sizeof(friendfoe),clsname);
-					int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
-					ReplaceString(clsname,sizeof(clsname),"npc_","");
-					int maxh = 20;
-					if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
-					{
-						maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
-						if (StrEqual(clsname,"combine_camera",false))
-							maxh = 50;
-						else if (StrEqual(clsname,"antlion_grub",false))
-							maxh = 1;
-						else if (StrEqual(clsname,"combinedropship",false))
-							maxh = 100;
-						else if (maxh == 0)
-						{
-							char cvarren[32];
-							Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
-							Handle cvarchk = FindConVar(cvarren);
-							if (cvarchk == INVALID_HANDLE)
-								maxh = 20;
-							else
-								maxh = GetConVarInt(cvarchk);
-						}
-					}
-					float Time = GetTickedTime();
-					if ((antispamchk[client] <= Time) && (curh > 0))
-					{
-						antispamchk[client] = Time + 0.07;
-						PrintTheMsgf(client,curh,maxh,friendfoe,targ);
 					}
 				}
 			}
