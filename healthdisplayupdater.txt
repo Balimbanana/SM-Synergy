@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.4"
-			"Previous"	"1.3"
+			"Latest"  	"1.5"
+			"Previous"	"1.4"
 		}
 		
 		"Notes"	"Added more max health checks for AntlionGrub and Combinedropship"
