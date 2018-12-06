@@ -434,6 +434,21 @@ public Action ShowTimer(Handle timer)
 						if (targ != -1)
 							GetEntityClassname(targ,clsname,sizeof(clsname));
 					}
+					if (targ != -1)
+					{
+						if (StrEqual(clsname,"generic_actor",false))
+						{
+							char targn[64];
+							if (HasEntProp(targ,Prop_Data,"m_iName"))
+							{
+								GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+								if (StrContains(targn,"lamar",false) != -1)
+									Format(clsname,sizeof(clsname),"npc_lamarr");
+							}
+						}
+						if (HasEntProp(targ,Prop_Data,"m_nRenderMode"))
+							if (GetEntProp(targ,Prop_Data,"m_nRenderMode") == 10) targ = -1;
+					}
 					if ((targ != -1) && (StrContains(clsname,"npc_",false) != -1) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
 					{
 						if (!bclcookie3[client])
@@ -471,12 +486,50 @@ public Action ShowTimer(Handle timer)
 									{
 										char cmodel[64];
 										GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-										if (StrContains( cmodel, "models/combine_super_soldier.mdl") != -1) //Elite
+										if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
 											Format(clsname,sizeof(clsname),"Combine Elite");
-										else if (StrContains( cmodel, "models/combine_soldier_prisonguard.mdl") != -1) //Shotgunner
+										else if (GetEntProp(targ,Prop_Data,"m_nSkin") == 1)
+											Format(clsname,sizeof(clsname),"Combine Shotgunner");
+										else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
 											Format(clsname,sizeof(clsname),"Combine Guard");
 										else
 											Format(clsname,sizeof(clsname),"Combine Soldier");
+									}
+									else if (StrEqual(clsname,"citizen",false))
+									{
+										char targn[64];
+										char cmodel[64];
+										GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+										if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+										if (StrEqual(cmodel,"models/odessa.mdl",false)) Format(clsname,sizeof(clsname),"Odessa Cubbage");
+										else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
+										else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
+										else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
+										else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
+									}
+									else if (StrEqual(clsname,"cscanner",false))
+									{
+										char cmodel[64];
+										GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+										if (StrEqual(cmodel,"models/shield_scanner.mdl",false)) Format(clsname,sizeof(clsname),"Claw Scanner");
+									}
+									else if (StrEqual(clsname,"vortigaunt",false))
+									{
+										char cmodel[64];
+										GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+										if (StrEqual(cmodel,"models/vortigaunt_doctor.mdl",false)) Format(clsname,sizeof(clsname),"Uriah");
+										else if (StrEqual(cmodel,"models/vortigaunt_slave.mdl",false)) Format(clsname,sizeof(clsname),"Vortigaunt Slave");
+									}
+									else if (StrEqual(clsname,"antlion",false))
+									{
+										char cmodel[64];
+										GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+										if (StrEqual(cmodel,"models/antlion_worker.mdl",false)) Format(clsname,sizeof(clsname),"Antlion Worker");
+									}
+									else if (StrEqual(clsname,"antlionguard",false))
+									{
+										Format(clsname,sizeof(clsname),"Antlion Guard");
+										if (GetEntProp(targ,Prop_Data,"m_bCavernBreed") == 1) Format(clsname,sizeof(clsname),"Antlion Guardian");
 									}
 									antispamchk[client] = Time + 0.07;
 									PrintTheMsg(client,curh,maxh,clsname);
@@ -518,6 +571,8 @@ public Action ShowTimer(Handle timer)
 									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 									if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
 										Format(clsname,sizeof(clsname),"Combine Elite");
+									else if (GetEntProp(targ,Prop_Data,"m_nSkin") == 1)
+											Format(clsname,sizeof(clsname),"Combine Shotgunner");
 									else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
 										Format(clsname,sizeof(clsname),"Combine Guard");
 									else
@@ -529,10 +584,35 @@ public Action ShowTimer(Handle timer)
 									char cmodel[64];
 									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 									if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
-									if (StrEqual(cmodel,"models/odessa.mdl",false))
-										Format(clsname,sizeof(clsname),"Odessa Cubbage");
+									if (StrEqual(cmodel,"models/odessa.mdl",false)) Format(clsname,sizeof(clsname),"Odessa Cubbage");
 									else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
 									else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
+									else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
+									else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
+								}
+								else if (StrEqual(clsname,"cscanner",false))
+								{
+									char cmodel[64];
+									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+									if (StrEqual(cmodel,"models/shield_scanner.mdl",false)) Format(clsname,sizeof(clsname),"Claw Scanner");
+								}
+								else if (StrEqual(clsname,"vortigaunt",false))
+								{
+									char cmodel[64];
+									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+									if (StrEqual(cmodel,"models/vortigaunt_doctor.mdl",false)) Format(clsname,sizeof(clsname),"Uriah");
+									else if (StrEqual(cmodel,"models/vortigaunt_slave.mdl",false)) Format(clsname,sizeof(clsname),"Vortigaunt Slave");
+								}
+								else if (StrEqual(clsname,"antlion",false))
+								{
+									char cmodel[64];
+									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+									if (StrEqual(cmodel,"models/antlion_worker.mdl",false)) Format(clsname,sizeof(clsname),"Antlion Worker");
+								}
+								else if (StrEqual(clsname,"antlionguard",false))
+								{
+									Format(clsname,sizeof(clsname),"Antlion Guard");
+									if (GetEntProp(targ,Prop_Data,"m_bCavernBreed") == 1) Format(clsname,sizeof(clsname),"Antlion Guardian");
 								}
 								antispamchk[client] = Time + 0.07;
 								PrintTheMsg(client,curh,maxh,clsname);
@@ -652,6 +732,8 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 			if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
 				Format(clsname,sizeof(clsname),"Friend: Combine Elite");
+			else if (GetEntProp(targ,Prop_Data,"m_nSkin") == 1)
+				Format(clsname,sizeof(clsname),"Friend: Combine Shotgunner");
 			else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
 				Format(clsname,sizeof(clsname),"Friend: Combine Guard");
 			else
@@ -665,6 +747,8 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 			if (StrEqual(cmodel,"models/odessa.mdl",false))
 				Format(clsname,sizeof(clsname),"Friend: Odessa Cubbage");
+			else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Friend: Refugee");
+			else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Friend: Rebel");
 		}
 		else if (StrEqual(clsname,"npc_monk",false)) Format(clsname,sizeof(clsname),"Friend: Father Grigori");
 		else if (StrEqual(clsname,"npc_kleiner",false)) Format(clsname,sizeof(clsname),"Friend: Isaac Kleiner");
@@ -674,7 +758,31 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		else if (StrEqual(clsname,"npc_alyx",false)) Format(clsname,sizeof(clsname),"Friend: Alyx Vance");
 		else if (StrEqual(clsname,"npc_eli",false)) Format(clsname,sizeof(clsname),"Friend: Eli Vance");
 		else if (StrEqual(clsname,"npc_antlionworker",false)) Format(clsname,sizeof(clsname),"Friend: Antlion Worker");
-		else if (StrEqual(clsname,"npc_cscanner",false)) Format(clsname,sizeof(clsname),"Friend: City Scanner");
+		else if (StrEqual(clsname,"npc_antlion",false))
+		{
+			char cmodel[64];
+			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+			if (StrEqual(cmodel,"models/antlion_worker.mdl",false)) Format(clsname,sizeof(clsname),"Friend: Antlion Worker");
+		}
+		else if (StrEqual(clsname,"npc_antlionguard",false))
+		{
+			Format(clsname,sizeof(clsname),"Friend: Antlion Guard");
+			if (GetEntProp(targ,Prop_Data,"m_bCavernBreed") == 1) Format(clsname,sizeof(clsname),"Friend: Antlion Guardian");
+		}
+		else if (StrEqual(clsname,"npc_cscanner",false))
+		{
+			Format(clsname,sizeof(clsname),"Friend: City Scanner");
+			char cmodel[64];
+			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+			if (StrEqual(cmodel,"models/shield_scanner.mdl",false)) Format(clsname,sizeof(clsname),"Friend: Claw Scanner");
+		}
+		else if (StrEqual(clsname,"npc_vortigaunt",false))
+		{
+			char cmodel[64];
+			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+			if (StrEqual(cmodel,"models/vortigaunt_doctor.mdl",false)) Format(clsname,sizeof(clsname),"Friend: Uriah");
+			else if (StrEqual(cmodel,"models/vortigaunt_slave.mdl",false)) Format(clsname,sizeof(clsname),"Friend: Vortigaunt Slave");
+		}
 		else if (StrEqual(clsname,"npc_combinegunship",false)) Format(clsname,sizeof(clsname),"Friend: Combine Gunship");
 		else if (StrEqual(clsname,"prop_vehicle_apc",false)) Format(clsname,sizeof(clsname),"Friend: Combine APC");
 		else if (StrEqual(clsname,"npc_gman",false)) Format(clsname,sizeof(clsname),"Government Man");
@@ -696,6 +804,8 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 			if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
 				Format(clsname,sizeof(clsname),"Enemy: Combine Elite");
+			else if (GetEntProp(targ,Prop_Data,"m_nSkin") == 1)
+				Format(clsname,sizeof(clsname),"Enemy: Combine Shotgunner");
 			else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
 				Format(clsname,sizeof(clsname),"Enemy: Combine Guard");
 			else
@@ -707,6 +817,8 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 			if (StrEqual(cmodel,"models/odessa.mdl",false))
 				Format(clsname,sizeof(clsname),"Enemy: Odessa Cubbage");
+			else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Enemy: Refugee");
+			else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Enemy: Rebel");
 		}
 		else if (StrEqual(clsname,"npc_monk",false)) Format(clsname,sizeof(clsname),"Enemy: Father Grigori");
 		else if (StrEqual(clsname,"npc_kleiner",false)) Format(clsname,sizeof(clsname),"Enemy: Isaac Kleiner");
@@ -716,7 +828,31 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		else if (StrEqual(clsname,"npc_alyx",false)) Format(clsname,sizeof(clsname),"Enemy: Alyx Vance");
 		else if (StrEqual(clsname,"npc_eli",false)) Format(clsname,sizeof(clsname),"Enemy: Eli Vance");
 		else if (StrEqual(clsname,"npc_antlionworker",false)) Format(clsname,sizeof(clsname),"Enemy: Antlion Worker");
-		else if (StrEqual(clsname,"npc_cscanner",false)) Format(clsname,sizeof(clsname),"Enemy: City Scanner");
+		else if (StrEqual(clsname,"npc_antlion",false))
+		{
+			char cmodel[64];
+			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+			if (StrEqual(cmodel,"models/antlion_worker.mdl",false)) Format(clsname,sizeof(clsname),"Enemy: Antlion Worker");
+		}
+		else if (StrEqual(clsname,"npc_antlionguard",false))
+		{
+			Format(clsname,sizeof(clsname),"Enemy: Antlion Guard");
+			if (GetEntProp(targ,Prop_Data,"m_bCavernBreed") == 1) Format(clsname,sizeof(clsname),"Enemy: Antlion Guardian");
+		}
+		else if (StrEqual(clsname,"npc_cscanner",false))
+		{
+			Format(clsname,sizeof(clsname),"Enemy: City Scanner");
+			char cmodel[64];
+			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+			if (StrEqual(cmodel,"models/shield_scanner.mdl",false)) Format(clsname,sizeof(clsname),"Enemy: Claw Scanner");
+		}
+		else if (StrEqual(clsname,"npc_vortigaunt",false))
+		{
+			char cmodel[64];
+			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+			if (StrEqual(cmodel,"models/vortigaunt_doctor.mdl",false)) Format(clsname,sizeof(clsname),"Enemy: Uriah");
+			else if (StrEqual(cmodel,"models/vortigaunt_slave.mdl",false)) Format(clsname,sizeof(clsname),"Enemy: Vortigaunt Slave");
+		}
 		else if (StrEqual(clsname,"npc_combinegunship",false)) Format(clsname,sizeof(clsname),"Enemy: Combine Gunship");
 		else if (StrEqual(clsname,"prop_vehicle_apc",false)) Format(clsname,sizeof(clsname),"Enemy: Combine APC");
 		else if (StrEqual(clsname,"npc_gman",false)) Format(clsname,sizeof(clsname),"Government Man");
@@ -866,6 +1002,7 @@ bool GetNPCAlly(char[] clsname)
 		addht("npc_hunter");
 		addht("npc_advisor");
 		addht("npc_antlion");
+		addht("npc_antlionworker");
 		addht("npc_antlionguard");
 		for (int i = 0;i<GetArraySize(airelarr);i++)
 		{
