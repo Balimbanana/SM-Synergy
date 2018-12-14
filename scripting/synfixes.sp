@@ -19,7 +19,7 @@ int WeapList = -1;
 bool friendlyfire = false;
 bool seqenablecheck = true;
 
-#define PLUGIN_VERSION "1.2"
+#define PLUGIN_VERSION "1.3"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo = 
@@ -123,6 +123,7 @@ public void OnMapStart()
 	HookEntityOutput("scripted_scene","OnStart",EntityOutput:trigout);
 	HookEntityOutput("logic_choreographed_scene","OnStart",EntityOutput:trigout);
 	HookEntityOutput("instanced_scripted_scene","OnStart",EntityOutput:trigout);
+	HookEntityOutput("func_tracktrain","OnStart",EntityOutput:elevatorstart);
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
 	{
@@ -529,7 +530,7 @@ public Action resetrot(Handle timer)
 					AcceptEntityInput(i,"Start");
 				}
 			}
-			else if ((HasEntProp(i,Prop_Data,"m_vecOrigin")) && (StrContains(clsname,"func_",false) == -1) && (StrContains(clsname,"trigger_",false) == -1) && (StrContains(clsname,"point_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (StrContains(clsname,"npc_",false) == -1) && (StrContains(clsname,"monster_",false) == -1) && (StrContains(clsname,"info_",false) == -1) && (StrContains(clsname,"env_",false) == -1) && (StrContains(clsname,"scripted",false) == -1) && (!StrEqual(clsname,"momentary_rot_button",false)) && (!StrEqual(clsname,"prop_dynamic",false)))
+			else if ((HasEntProp(i,Prop_Data,"m_vecOrigin")) && (StrContains(clsname,"func_",false) == -1) && (StrContains(clsname,"trigger_",false) == -1) && (StrContains(clsname,"point_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (StrContains(clsname,"npc_",false) == -1) && (StrContains(clsname,"monster_",false) == -1) && (StrContains(clsname,"info_",false) == -1) && (StrContains(clsname,"env_",false) == -1) && (StrContains(clsname,"scripted",false) == -1) && (!StrEqual(clsname,"momentary_rot_button",false)) && (!StrEqual(clsname,"prop_dynamic",false)) && (StrContains(clsname,"light_",false) == -1))
 			{
 				float pos[3];
 				GetEntPropVector(i,Prop_Data,"m_vecOrigin",pos);
@@ -539,6 +540,45 @@ public Action resetrot(Handle timer)
 				{
 					if (debugoowlvl) PrintToServer("%i %s with name %s fell out of world, removing...",i,clsname,fname);
 					if (i>MaxClients) AcceptEntityInput(i,"kill");
+				}
+			}
+		}
+	}
+}
+
+public Action elevatorstart(const char[] output, int caller, int activator, float delay)
+{
+	float origin[3];
+	GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+	for (int i = MaxClients+1; i<GetMaxEntities(); i++)
+	{
+		if (IsValidEntity(i) && IsEntNetworkable(i))
+		{
+			char clsname[32];
+			GetEntityClassname(i,clsname,sizeof(clsname));
+			if (StrEqual(clsname,"prop_physics",false))
+			{
+				float proporigin[3];
+				GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",proporigin);
+				int parentchk = 0;
+				if (HasEntProp(i,Prop_Data,"m_hParent"))
+					parentchk = GetEntPropEnt(i,Prop_Data,"m_hParent");
+				if (parentchk < 1)
+				{
+					float chkdist = GetVectorDistance(origin,proporigin,false);
+					bool below = true;
+					if ((origin[2] < 0) && (origin[2] > proporigin[2])) below = false;
+					else if ((origin[2] > -1) && (origin[2] < proporigin[2])) below = false;
+					if ((chkdist < 200.0) && (!below))
+					{
+						if (debuglvl > 0)
+						{
+							char targn[32];
+							GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+							PrintToServer("Removed %i %s %s colliding with elevator",i,targn,clsname);
+						}
+						AcceptEntityInput(i,"kill");
+					}
 				}
 			}
 		}
