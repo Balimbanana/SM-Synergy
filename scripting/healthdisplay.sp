@@ -502,6 +502,7 @@ public Action ShowTimer(Handle timer)
 										GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 										if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
 										if (StrEqual(cmodel,"models/odessa.mdl",false)) Format(clsname,sizeof(clsname),"Odessa Cubbage");
+										else if (StrContains(cmodel,"models/humans/group03m/",false) == 0) Format(clsname,sizeof(clsname),"Rebel Medic");
 										else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
 										else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
@@ -585,6 +586,7 @@ public Action ShowTimer(Handle timer)
 									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 									if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
 									if (StrEqual(cmodel,"models/odessa.mdl",false)) Format(clsname,sizeof(clsname),"Odessa Cubbage");
+									else if (StrContains(cmodel,"models/humans/group03m/",false) == 0) Format(clsname,sizeof(clsname),"Rebel Medic");
 									else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
 									else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
@@ -747,6 +749,8 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 			if (StrEqual(cmodel,"models/odessa.mdl",false))
 				Format(clsname,sizeof(clsname),"Friend: Odessa Cubbage");
+			else if (StrContains(cmodel,"models/humans/group03m/",false) == 0)
+				Format(clsname,sizeof(clsname),"Friend: Rebel Medic");
 			else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Friend: Refugee");
 			else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Friend: Rebel");
 		}
@@ -817,6 +821,8 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 			if (StrEqual(cmodel,"models/odessa.mdl",false))
 				Format(clsname,sizeof(clsname),"Enemy: Odessa Cubbage");
+			else if (StrContains(cmodel,"models/humans/group03m/",false) == 0)
+				Format(clsname,sizeof(clsname),"Enemy: Rebel Medic");
 			else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Enemy: Refugee");
 			else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Enemy: Rebel");
 		}
