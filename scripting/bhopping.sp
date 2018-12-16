@@ -13,7 +13,7 @@ public Plugin:myinfo =
 	author = "Balimbanana",
 	description = "Enables BHopping",
 	version = "0.1",
-	url = ""
+	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
 public void OnPluginStart()
