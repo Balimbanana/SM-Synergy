@@ -45,7 +45,7 @@ public Plugin:myinfo =
 	author = "Balimbanana",
 	description = "Creates vehicles with error correction",
 	version = "1.0",
-	url = ""
+	url = "https://github.com/Balimbanana/SM-Synergy/"
 }
 
 public void OnPluginStart()
@@ -423,7 +423,7 @@ bool:CCreateVehicle(client,char[] vehiclemodel)
 					if (state == 1)
 					{
 						isvehiclemap = true;
-						if (StrEqual(mapbuf,"ep2_outland_02",false))
+						if ((StrEqual(mapbuf,"ep2_outland_02",false)) || (StrEqual(mapbuf,"jump_portal_b83",false)))
 							isvehiclemap = false;
 					}
 					else if (state == 0)
