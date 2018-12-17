@@ -6,6 +6,7 @@ float maxspeed = 450.0;
 float normspeed = 190.0;
 float clreleased[MAXPLAYERS+1];
 bool clresetspeed[MAXPLAYERS+1];
+bool clsecondchk[MAXPLAYERS+1];
 bool bhopdisable = false;
 bool sxpmact = false;
 
@@ -126,10 +127,20 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 		int groundchk = GetEntProp(client,Prop_Send,"m_hGroundEntity");
 		if (groundchk != -1)
 		{
-			SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",normspeed);
-			SetEntityGravity(client,1.0);
-			SetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue",1.0);
-			clresetspeed[client] = false;
+			//secondchk allows for large jumps and/or antigrav
+			if (clsecondchk[client])
+			{
+				SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",normspeed);
+				SetEntityGravity(client,1.0);
+				SetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue",1.0);
+				clresetspeed[client] = false;
+				clsecondchk[client] = false;
+			}
+			else
+			{
+				clsecondchk[client] = true;
+				clreleased[client] = Time+0.1;
+			}
 		}
 	}
 }
