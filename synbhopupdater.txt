@@ -1,0 +1,19 @@
+"Updater"
+{
+	"Information"
+	{
+		"Version"
+		{
+			"Latest"  	"0.2"
+			"Previous"	"0.1"
+		}
+		
+		"Notes"	"Added check for suit power"
+	}
+	
+	"Files"
+	{
+		"Plugin"	"Path_SM/plugins/synbhop.smx"
+		"Source"	"Path_SM/scripting/synbhop.sp"
+	}
+}
