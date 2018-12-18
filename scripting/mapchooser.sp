@@ -1011,7 +1011,7 @@ public Action:Timer_ChangeMap(Handle:hTimer, Handle:dp)
 	Format(mapch,sizeof(mapch),"syn %s",map);
 	ServerCommand("changelevel %s", mapch);
 	LogMessage("Mapchange to %s", mapch);
-	Format(mapch,sizeof(mapch),"Custom %s",map);
+	Format(mapch,sizeof(mapch),"custom %s",map);
 	ServerCommand("changelevel %s", mapch);
 	mapchangeinprogress = false;
 	return Plugin_Stop;
