@@ -1006,7 +1006,7 @@ public Action:Timer_ChangeMap(Handle:hTimer, Handle:dp)
 	
 	new String:mapch[128];
 	ServerCommand("changelevel %s", map);
-	Format(mapch,sizeof(mapch),"custom %s",map);
+	Format(mapch,sizeof(mapch),"Custom %s",map);
 	ServerCommand("changelevel %s", mapch);
 	Format(mapch,sizeof(mapch),"syn %s",map);
 	ServerCommand("changelevel %s", mapch);
