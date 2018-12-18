@@ -224,7 +224,7 @@ public OnConfigsExecuted()
 	{
 		thishandle = OpenFile("mapcycle.txt","r");
 	}
-	char line[32];
+	char line[128];
 	while(!IsEndOfFile(thishandle)&&ReadFileLine(thishandle,line,sizeof(line)))
 	{
 		TrimString(line);
