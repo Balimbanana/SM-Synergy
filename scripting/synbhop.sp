@@ -1,5 +1,11 @@
 #include <sourcemod>
 #include <sdktools>
+#undef REQUIRE_PLUGIN
+#undef REQUIRE_EXTENSIONS
+#tryinclude <SteamWorks>
+#tryinclude <updater>
+#define REQUIRE_PLUGIN
+#define REQUIRE_EXTENSIONS
 
 float airaccel = 10.0;
 float maxspeed = 450.0;
@@ -11,12 +17,15 @@ bool clsecondchk[MAXPLAYERS+1];
 bool bhopdisable = false;
 bool sxpmact = false;
 
+#define PLUGIN_VERSION "0.2"
+#define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synbhopupdater.txt"
+
 public Plugin:myinfo = 
 {
 	name = "BHopping in Synergy",
 	author = "Balimbanana",
 	description = "Enables BHopping",
-	version = "0.1",
+	version = PLUGIN_VERSION,
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
@@ -146,7 +155,10 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 			//secondchk allows for large jumps and/or antigrav
 			if (clsecondchk[client])
 			{
-				if (GetClientButtons(client) & button2)
+				float suitpow = 11.0;
+				if (HasEntProp(client,Prop_Send,"m_flSuitPower"))
+					suitpow = GetEntPropFloat(client,Prop_Send,"m_flSuitPower");
+				if ((GetClientButtons(client) & button2) && (RoundFloat(suitpow) > 10))
 					SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",normsprintspeed);
 				else
 					SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",normspeed);
@@ -280,4 +292,12 @@ public Action buttonrelease2timer(Handle timer, any client)
 				SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",maxspeed);
 		}
 	}
+}
+
+public OnLibraryAdded(const char[] name)
+{
+    if (StrEqual(name,"updater",false))
+    {
+        Updater_AddPlugin(UPDATE_URL);
+    }
 }
