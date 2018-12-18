@@ -89,6 +89,7 @@ new bool:g_MapVoteCompleted;
 new bool:g_ChangeMapAtRoundEnd;
 new bool:g_ChangeMapInProgress;
 //new g_mapFileSerial = -1;
+bool mapchangeinprogress = false;
 new String:maptag[64];
 
 new MapChange:g_ChangeTime;
@@ -177,6 +178,7 @@ public OnPluginStart()
 	
 	g_NominationsResetForward = CreateGlobalForward("OnNominationRemoved", ET_Ignore, Param_String, Param_Cell);
 	g_MapVoteStartedForward = CreateGlobalForward("OnMapVoteStarted", ET_Ignore);
+	CreateTimer(0.1,recheckchangelevels,_,TIMER_REPEAT);
 }
 
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
@@ -278,6 +280,12 @@ public OnMapEnd()
 	{
 		RemoveFromArray(g_OldMapList, 0);
 	}	
+	mapchangeinprogress = false;
+}
+
+public OnMapStart()
+{
+	mapchangeinprogress = false;
 }
 
 public OnClientDisconnect(client)
@@ -989,16 +997,11 @@ public Action:Timer_ChangeMap(Handle:hTimer, Handle:dp)
 		ReadPackString(dp, map, sizeof(map));		
 	}
 	
-	for (int i = 1; i<MaxClients+1; i++)
+
+	if (mapchangeinprogress)
 	{
-		if (IsClientConnected(i) && IsValidEntity(i) && IsClientInGame(i))
-		{
-			if (GetEntityRenderFx(i) == RENDERFX_DISTORT)
-			{
-				PrintToChatAll("Map change prevented due to map change already in progress.");
-				return Plugin_Handled;
-			}
-		}
+		PrintToChatAll("Map change prevented due to map change already in progress.");
+		return Plugin_Handled;
 	}
 	
 	new String:mapch[128];
@@ -1010,7 +1013,7 @@ public Action:Timer_ChangeMap(Handle:hTimer, Handle:dp)
 	LogMessage("Mapchange to %s", mapch);
 	Format(mapch,sizeof(mapch),"Custom %s",map);
 	ServerCommand("changelevel %s", mapch);
-	
+	mapchangeinprogress = false;
 	return Plugin_Stop;
 }
 
@@ -1508,5 +1511,22 @@ public Action GetMapTag(const char[] map)
 	else
 	{
 		Format(maptag, sizeof(maptag), "Syn");
+	}
+}
+
+public Action recheckchangelevels(Handle timer)
+{
+	if ((GetClientCount(true)) && (!mapchangeinprogress))
+	{
+		for (int i = 1; i<MaxClients+1; i++)
+		{
+			if (IsClientConnected(i) && IsValidEntity(i) && IsClientInGame(i))
+			{
+				if (GetEntityRenderFx(i) == RENDERFX_DISTORT)
+				{
+					mapchangeinprogress = true;
+				}
+			}
+		}
 	}
 }
