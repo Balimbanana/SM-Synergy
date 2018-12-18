@@ -55,7 +55,7 @@ Handle g_MapList = null;
 char currentMap[32];
 int passedcl = 0;
 int modsact = 0;
-bool syn,hl2,r24m,lcm,ep1m,ep2m,metam,calm,citm,ci7m,upm,ram,dwm,prem,c2am,ep3m,offm,radm,cdm,ntm,opm,mim,smm,s2em,rhm,snm,mprm,cem,mpm,el87m,alm,esm,dfm,stm,btm,llm,dhm,lum,thm,ddm,amm,ptsd;
+bool syn,hl2,hl1,r24m,lcm,ep1m,ep2m,metam,calm,citm,ci7m,upm,ram,dwm,prem,c2am,ep3m,offm,radm,cdm,ntm,opm,mim,smm,s2em,rhm,snm,mprm,cem,mpm,el87m,alm,esm,dfm,stm,btm,llm,dhm,lum,thm,ddm,amm,ptsd;
 
 #define MAPSTATUS_ENABLED (1<<0)
 #define MAPSTATUS_DISABLED (1<<1)
@@ -100,7 +100,7 @@ public void OnConfigsExecuted()
 	}
 	*/
 	ClearArray(g_MapList);
-	char pathtomapcycle[64];
+	char pathtomapcycle[128];
 	Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/mapcyclecfg.txt");
 	Handle hostnamh = FindConVar("hostname");
 	char hostnam[32];
@@ -117,7 +117,7 @@ public void OnConfigsExecuted()
 	{
 		thishandle = OpenFile("mapcycle.txt","r");
 	}
-	char line[64];
+	char line[128];
 	while(!IsEndOfFile(thishandle)&&ReadFileLine(thishandle,line,sizeof(line)))
 	{
 		TrimString(line);
@@ -219,6 +219,21 @@ public Action Command_Nominate(int client, int args)
 	char mapname[128];
 	GetCmdArg(1, mapname, sizeof(mapname));
 	
+	if (StrEqual(mapname,"nextmap",false))
+	{
+		char curmap[128];
+		GetCurrentMap(curmap,sizeof(curmap));
+		int find = FindStringInArray(g_MapList,curmap);
+		if (find != -1)
+		{
+			find++;
+			if (GetArraySize(g_MapList) <= find)
+				GetArrayString(g_MapList,find,mapname,sizeof(mapname));
+			else
+				GetArrayString(g_MapList,0,mapname,sizeof(mapname));
+		}
+	}
+	
 	int status;
 	if (!g_mapTrie.GetValue(mapname, status))
 	{
@@ -292,6 +307,7 @@ public Action AttemptNominate(int client, int args)
 	Menu menu = new Menu(MenuHandlersub);
 	menu.SetTitle("%T", "Nominate Title", client);
 	if (syn) menu.AddItem("syn", "Synergy/Custom");
+	if (hl1) menu.AddItem("half-life 1", "Half-Life 1");
 	if (hl2) menu.AddItem("half-life 2", "Half-Life 2");
 	if (ep1m) menu.AddItem("episode 1", "HL2 Episode 1");
 	if (ep2m) menu.AddItem("episode 2", "HL2 Episode 2");
@@ -548,7 +564,7 @@ void BuildMapMenu()
 		
 		if (g_Cvar_ExcludeCurrent.BoolValue)
 		{
-			char displaymap[64];
+			char displaymap[128];
 			Format(displaymap,sizeof(displaymap),map);
 			if (StrContains(displaymap,"workshop/",false) != -1)
 				GetMapDisplayName(map,displaymap,sizeof(displaymap));
@@ -722,6 +738,12 @@ public Action GetMapTag(const char[] map)
 		if (!hl2) modsact++;
 		hl2 = true;
 		Format(maptag, sizeof(maptag), "Half-Life 2");
+	}
+	else if ((StrContains(map, "c0a0", false) == 0) || (StrContains(map, "c1a", false) == 0) || (StrContains(map, "c2a", false) == 0) || (StrContains(map, "c3a", false) == 0) || (StrContains(map, "c4a", false) == 0) || (StrEqual(map, "c5a1", false)))
+	{
+		if (!hl1) modsact++;
+		hl1 = true;
+		Format(maptag, sizeof(maptag), "Half-Life 1");
 	}
 	else if (StrContains(map,"ep1_",false) == 0)
 	{
