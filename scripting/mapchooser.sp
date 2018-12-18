@@ -213,7 +213,7 @@ public OnConfigsExecuted()
 	}
 	*/
 	ClearArray(g_MapList);
-	char pathtomapcycle[64];
+	char pathtomapcycle[128];
 	Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/mapcyclecfg.txt");
 	Handle thishandle = INVALID_HANDLE;
 	if (FileExists(pathtomapcycle))
@@ -611,7 +611,7 @@ InitiateVote(MapChange:when, Handle:inputlist=null)
 		{
 			GetArrayString(g_NominateList, i, map, sizeof(map));
 			GetMapTag(map);
-			char mapmod[64];
+			char mapmod[128];
 			Format(mapmod,sizeof(mapmod),"%s (%s)",map,maptag);
 			g_VoteMenu.AddItem(map, mapmod);
 			RemoveStringFromArray(g_NextMapList, map);
@@ -655,7 +655,7 @@ InitiateVote(MapChange:when, Handle:inputlist=null)
 			
 			/* Insert the map and increment our count */
 			GetMapTag(map);
-			char mapmod[64];
+			char mapmod[128];
 			Format(mapmod,sizeof(mapmod),"%s (%s)",map,maptag);
 			g_VoteMenu.AddItem(map, mapmod);
 			i++;
@@ -676,7 +676,7 @@ InitiateVote(MapChange:when, Handle:inputlist=null)
 			//if (IsMapValid(map))
 			//{
 			GetMapTag(map);
-			char mapmod[64];
+			char mapmod[128];
 			Format(mapmod,sizeof(mapmod),"%s (%s)",map,maptag);
 			g_VoteMenu.AddItem(map, mapmod);
 			//}	
@@ -1001,7 +1001,7 @@ public Action:Timer_ChangeMap(Handle:hTimer, Handle:dp)
 		}
 	}
 	
-	new String:mapch[64];
+	new String:mapch[128];
 	ServerCommand("changelevel %s", map);
 	Format(mapch,sizeof(mapch),"custom %s",map);
 	ServerCommand("changelevel %s", mapch);
@@ -1324,6 +1324,10 @@ public Action GetMapTag(const char[] map)
 	else if (StrContains(map, "d3_", false) == 0)
 	{
 		Format(maptag, sizeof(maptag), "Half-Life 2");
+	}
+	else if ((StrContains(map, "c0a0", false) == 0) || (StrContains(map, "c1a", false) == 0) || (StrContains(map, "c2a", false) == 0) || (StrContains(map, "c3a", false) == 0) || (StrContains(map, "c4a", false) == 0) || (StrEqual(map, "c5a1", false)))
+	{
+		Format(maptag, sizeof(maptag), "Half-Life 1");
 	}
 	else if (StrContains(map, "ep1", false) == 0)
 	{
