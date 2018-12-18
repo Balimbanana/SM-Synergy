@@ -4,6 +4,7 @@
 float airaccel = 10.0;
 float maxspeed = 450.0;
 float normspeed = 190.0;
+float normsprintspeed = 320.0;
 float clreleased[MAXPLAYERS+1];
 bool clresetspeed[MAXPLAYERS+1];
 bool clsecondchk[MAXPLAYERS+1];
@@ -35,7 +36,12 @@ public void OnPluginStart()
 	if (airaccelh == INVALID_HANDLE)
 		airaccelh = CreateConVar("hl2_normspeed", "190.0", "", _, true, 0.0, false, 10000.0);
 	normspeed = GetConVarFloat(airaccelh);
-	HookConVarChange(airaccelh, maxspeedchg);
+	HookConVarChange(airaccelh, normspeedchg);
+	airaccelh = FindConVar("hl2_sprintspeed");
+	if (airaccelh == INVALID_HANDLE)
+		airaccelh = CreateConVar("hl2_sprintspeed", "320.0", "", _, true, 0.0, false, 10000.0);
+	normsprintspeed = GetConVarFloat(airaccelh);
+	HookConVarChange(airaccelh, runspeedchg);
 	airaccelh = FindConVar("bhopdisable");
 	if (airaccelh == INVALID_HANDLE)
 		airaccelh = CreateConVar("bhopdisable", "0", "Enable or Disable BHopping", _, true, 0.0, true, 1.0);
@@ -63,6 +69,16 @@ public airaccelchange(Handle convar, const char[] oldValue, const char[] newValu
 public maxspeedchg(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	maxspeed = StringToFloat(newValue);
+}
+
+public normspeedchg(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	normspeed = StringToFloat(newValue);
+}
+
+public runspeedchg(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	normsprintspeed = StringToFloat(newValue);
 }
 
 public disablech(Handle convar, const char[] oldValue, const char[] newValue)
@@ -130,7 +146,10 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 			//secondchk allows for large jumps and/or antigrav
 			if (clsecondchk[client])
 			{
-				SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",normspeed);
+				if (GetClientButtons(client) & button2)
+					SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",normsprintspeed);
+				else
+					SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",normspeed);
 				SetEntityGravity(client,1.0);
 				SetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue",1.0);
 				clresetspeed[client] = false;
