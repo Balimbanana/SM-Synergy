@@ -93,6 +93,8 @@ public void OnPluginStart()
 	RegConsoleCmd("stuck",stuckblck);
 	RegConsoleCmd("propaccuracy",setpropaccuracy);
 	RegConsoleCmd("con",enablecon);
+	RegConsoleCmd("npc_freeze",admblock);
+	RegConsoleCmd("npc_freeze_unselected",admblock);
 	AutoExecConfig(true, "synfixes");
 }
 
@@ -261,6 +263,13 @@ public void setpropacc(QueryCookie cookie, int client, ConVarQueryResult result,
 		ClientCommand(client,"cl_interp_ratio 2");
 		PrintToChat(client,"Set prop accuracy to default.");
 	}
+}
+
+public Action admblock(int client, int args)
+{
+	if (GetUserFlagBits(client)&ADMFLAG_ROOT > 0)
+		return Plugin_Continue;
+	return Plugin_Handled;
 }
 
 public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
