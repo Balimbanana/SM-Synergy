@@ -19,7 +19,7 @@ int WeapList = -1;
 bool friendlyfire = false;
 bool seqenablecheck = true;
 
-#define PLUGIN_VERSION "1.3"
+#define PLUGIN_VERSION "1.4"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo = 
@@ -901,7 +901,7 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 	if (HasEntProp(attacker,Prop_Data,"m_hPhysicsAttacker"))
 	{
 		int atk = GetEntPropEnt(attacker,Prop_Data,"m_hPhysicsAttacker");
-		if ((!friendlyfire) && (atk < MaxClients+1))
+		if (((!friendlyfire) && (atk < MaxClients+1)) && (atk > 0))
 		{
 			damage = 0.0;
 			return Plugin_Changed;
