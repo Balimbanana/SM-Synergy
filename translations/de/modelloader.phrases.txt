@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"de"			"Modell auf {1} setzen"
+	}
+	
+	"OCM"
+	{
+		"de"			"Andere benutzerdefinierte Modelle"
+	}
+	
+	"CIT"
+	{
+		"de"			"Bürger "
+	}
+	
+	"Hero"
+	{
+		"de"			"Held {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"de"			"Weiblich {1}"
+	}
+	
+	"MaleNum"
+	{
+		"de"			"Männlich {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"de"			"Sie müssen ein Spender sein, um dieses Modell verwenden zu können"
+	}
+	
+	"NoCustomModels"
+	{
+		"de"			"Keine benutzerdefinierten Modelle auf dem Server."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"de"			"Es wurden mehrere Modelle mit dem von Ihnen angegebenen Namen gefunden. Dies sind die Modelle: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"de"			"Wenn Sie mehrere Modelle mit dem von Ihnen angegebenen Namen gefunden haben, befinden sich die Modellnamen in Ihrer Konsole."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"de"			"Mehrere Modelle mit dem von Ihnen angegebenen Namen gefunden, überprüfen Sie Ihre Konsole."
+	}
+	
+	"CouldntFindModel"
+	{
+		"de"			"Ein Modell mit {1} konnte nicht gefunden werden"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"de"			"Modellgruppe auswählen:"
+	}
+	
+	"ModelMenu"
+	{
+		"de"			"Wählen Sie das Modell aus, das Sie sein möchten:"
+	}
+}

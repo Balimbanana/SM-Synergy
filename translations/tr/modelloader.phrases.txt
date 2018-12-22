@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"tr"			"Modeli {1} olarak ayarlayın"
+	}
+	
+	"OCM"
+	{
+		"tr"			"Diğer özel modeller"
+	}
+	
+	"CIT"
+	{
+		"tr"			"vatandaş "
+	}
+	
+	"Hero"
+	{
+		"tr"			"Kahraman {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"tr"			"Kadın {1}"
+	}
+	
+	"MaleNum"
+	{
+		"tr"			"Erkek {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"tr"			"Bu modeli kullanmak için bağışçı olmalısınız"
+	}
+	
+	"NoCustomModels"
+	{
+		"tr"			"Sunucuda özel model yok."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"tr"			"Sağladığınız adda birden fazla model bulundu, bunlar modellerdir: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"tr"			"Sağladığınız adda birden fazla model bulundu, model adları konsolunuzda."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"tr"			"Bunlar girdiklerinize benzer isimlere sahip modeller: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"tr"			"{1} içeren bir model bulunamadı"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"tr"			"Model grubu seç:"
+	}
+	
+	"ModelMenu"
+	{
+		"tr"			"Olmak istediğiniz modeli seçin:"
+	}
+}

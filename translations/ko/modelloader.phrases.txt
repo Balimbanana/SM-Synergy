@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"ko"			"모델을 {1} (으)로 설정하십시오."
+	}
+	
+	"OCM"
+	{
+		"ko"			"기타 맞춤 모델"
+	}
+	
+	"CIT"
+	{
+		"ko"			"시민 "
+	}
+	
+	"Hero"
+	{
+		"ko"			"영웅 {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"ko"			"여자 {1}"
+	}
+	
+	"MaleNum"
+	{
+		"ko"			"남성 {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"ko"			"이 모델을 사용하려면 기부자 여야합니다."
+	}
+	
+	"NoCustomModels"
+	{
+		"ko"			"서버에 사용자 지정 모델이 없습니다."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"ko"			"제공 한 이름을 가진 여러 모델을 발견했습니다. 다음 모델이 있습니다 : {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"ko"			"제공 한 이름으로 여러 모델을 발견했습니다. 모델 이름은 콘솔에 있습니다."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"ko"			"다음은 입력 한 것과 비슷한 이름을 가진 모델입니다 : {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"ko"			"{1}이 (가) 포함 된 모델을 찾을 수 없습니다."
+	}
+	
+	"ModelMenuGrp"
+	{
+		"ko"			"모델 그룹 선택 :"
+	}
+	
+	"ModelMenu"
+	{
+		"ko"			"원하는 모델 선택 :"
+	}
+}

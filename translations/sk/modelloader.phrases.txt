@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"sk"			"Nastavte model na hodnotu {1}"
+	}
+	
+	"OCM"
+	{
+		"sk"			"Ďalšie vlastné modely"
+	}
+	
+	"CIT"
+	{
+		"sk"			"občan "
+	}
+	
+	"Hero"
+	{
+		"sk"			"hrdina {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"sk"			"Žena {1}"
+	}
+	
+	"MaleNum"
+	{
+		"sk"			"Muž {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"sk"			"Musíte byť darcom používať tento model"
+	}
+	
+	"NoCustomModels"
+	{
+		"sk"			"Žiadne vlastné modely na serveri."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"sk"			"Nájdete viacero modelov s názvom, ktorý ste uviedli, to sú modely: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"sk"			"Nájdené viaceré modely s názvom, ktorý ste zadali, názvy modelov sú vo vašej konzole."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"sk"			"Toto sú modely, ktoré majú podobné názvy ako tie, ktoré ste zadali: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"sk"			"Nepodarilo sa nájsť model, ktorý obsahuje {1}"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"sk"			"Vyberte skupinu modelov:"
+	}
+	
+	"ModelMenu"
+	{
+		"sk"			"Vyberte model, ktorý chcete byť:"
+	}
+}

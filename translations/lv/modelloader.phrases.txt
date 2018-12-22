@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"lv"			"Iestatiet modeli uz {1}"
+	}
+	
+	"OCM"
+	{
+		"lv"			"Citi pielāgoti modeļi"
+	}
+	
+	"CIT"
+	{
+		"lv"			"Pilsoņi "
+	}
+	
+	"Hero"
+	{
+		"lv"			"Varonis {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"lv"			"Sieviete {1}"
+	}
+	
+	"MaleNum"
+	{
+		"lv"			"Vīrietis {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"lv"			"Jums ir jābūt donoram, lai izmantotu šo modeli"
+	}
+	
+	"NoCustomModels"
+	{
+		"lv"			"Nav pielāgotu modeļu serverī."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"lv"			"Atrasti vairāki modeļi ar jūsu norādīto nosaukumu, šie modeļi ir: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"lv"			"Atrasti vairāki modeļi ar jūsu vārdu, pārbaudiet konsoli."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"lv"			"Šie ir modeļi, kuriem ir līdzīgi nosaukumi, kā ievadījāt: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"lv"			"Nevarēja atrast modeli, kas satur {1}"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"lv"			"Atlasīt modeļa grupu:"
+	}
+	
+	"ModelMenu"
+	{
+		"lv"			"Izvēlieties modeli, kuru vēlaties būt:"
+	}
+}

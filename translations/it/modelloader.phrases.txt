@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"it"			"Imposta il modello su {1}"
+	}
+	
+	"OCM"
+	{
+		"it"			"Altri modelli personalizzati"
+	}
+	
+	"CIT"
+	{
+		"it"			"Cittadino "
+	}
+	
+	"Hero"
+	{
+		"it"			"Eroe {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"it"			"Femmina {1}"
+	}
+	
+	"MaleNum"
+	{
+		"it"			"Maschio {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"it"			"Devi essere un donatore per usare questo modello"
+	}
+	
+	"NoCustomModels"
+	{
+		"it"			"Nessun modello personalizzato sul server."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"it"			"Trovati più modelli con il nome che hai fornito, questi sono i modelli: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"it"			"Trovato più modelli con il nome che hai fornito, controlla la tua console."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"it"			"Questi sono i modelli che hanno nomi simili a quello che hai inserito: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"it"			"Impossibile trovare un modello che contiene {1}"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"it"			"Seleziona il gruppo di modelli:"
+	}
+	
+	"ModelMenu"
+	{
+		"it"			"Seleziona il modello che desideri essere:"
+	}
+}

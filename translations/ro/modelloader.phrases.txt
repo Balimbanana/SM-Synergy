@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"ro"			"Setați modelul la {1}"
+	}
+	
+	"OCM"
+	{
+		"ro"			"Alte modele personalizate"
+	}
+	
+	"CIT"
+	{
+		"ro"			"Cetăţean "
+	}
+	
+	"Hero"
+	{
+		"ro"			"Erou {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"ro"			"Femeie {1}"
+	}
+	
+	"MaleNum"
+	{
+		"ro"			"Masculin {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"ro"			"Trebuie să fiți un donator pentru a utiliza acest model"
+	}
+	
+	"NoCustomModels"
+	{
+		"ro"			"Nu există modele personalizate pe server."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"ro"			"Găsiți mai multe modele cu numele pe care l-ați furnizat, acestea sunt modelele: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"ro"			"Găsiți mai multe modele cu numele pe care l-ați furnizat, verificați-vă consola."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"ro"			"Acestea sunt modelele care au nume similare cu cele pe care le-ați introdus: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"ro"			"Nu am găsit un model care conține {1}"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"ro"			"Selectați grupul de modele:"
+	}
+	
+	"ModelMenu"
+	{
+		"ro"			"Selectați modelul pe care doriți să-l alegeți:"
+	}
+}

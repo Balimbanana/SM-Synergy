@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"hu"			"Modell beállítása {1}"
+	}
+	
+	"OCM"
+	{
+		"hu"			"Egyéb egyéni modellek"
+	}
+	
+	"CIT"
+	{
+		"hu"			"Állampolgár "
+	}
+	
+	"Hero"
+	{
+		"hu"			"Hős {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"hu"			"Női {1}"
+	}
+	
+	"MaleNum"
+	{
+		"hu"			"Férfi {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"hu"			"Adományozónak kell lennie a modell használatához"
+	}
+	
+	"NoCustomModels"
+	{
+		"hu"			"Nincsenek egyéni modellek a kiszolgálón."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"hu"			"Több modellt talált a megadott névvel, ezek a modellek: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"hu"			"Több modellt talált a megadott névvel, a modellnevek a konzolban vannak."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"hu"			"Ezek azok a modellek, amelyek hasonló nevekkel rendelkeznek: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"hu"			"Nem található egy olyan modell, amely {1} -et tartalmaz"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"hu"			"Modellcsoport kiválasztása:"
+	}
+	
+	"ModelMenu"
+	{
+		"hu"			"Válassza ki a kívánt modellt:"
+	}
+}

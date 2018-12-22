@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"sv"			"Ange modell till {1}"
+	}
+	
+	"OCM"
+	{
+		"sv"			"Andra anpassade modeller"
+	}
+	
+	"CIT"
+	{
+		"sv"			"Medborgare "
+	}
+	
+	"Hero"
+	{
+		"sv"			"Hjälte {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"sv"			"Kvinna {1}"
+	}
+	
+	"MaleNum"
+	{
+		"sv"			"Manlig {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"sv"			"Du måste vara en donator för att använda denna modell"
+	}
+	
+	"NoCustomModels"
+	{
+		"sv"			"Inga anpassade modeller på servern."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"sv"			"Hittade flera modeller med namn du gav, det här är modellerna: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"sv"			"Hittade flera modeller med namn du angav, modellnamnen finns i din konsol."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"sv"			"Det här är de modeller som har liknande namn på det du skrev in: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"sv"			"Det gick inte att hitta en modell som innehåller {1}"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"sv"			"Välj modellgrupp:"
+	}
+	
+	"ModelMenu"
+	{
+		"sv"			"Välj modell du vill vara:"
+	}
+}

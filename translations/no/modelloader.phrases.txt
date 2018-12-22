@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"no"			"Sett modell til {1}"
+	}
+	
+	"OCM"
+	{
+		"no"			"Andre tilpassede modeller"
+	}
+	
+	"CIT"
+	{
+		"no"			"Borger "
+	}
+	
+	"Hero"
+	{
+		"no"			"Helt {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"no"			"Hunn {1}"
+	}
+	
+	"MaleNum"
+	{
+		"no"			"mann {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"no"			"Du må være en donator for å bruke denne modellen"
+	}
+	
+	"NoCustomModels"
+	{
+		"no"			"Ingen tilpassede modeller på serveren."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"no"			"Funnet flere modeller med navn du oppgav, disse er modellene: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"no"			"Funnet flere modeller med navn du oppgav, modellnavnene er i konsollen."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"no"			"Dette er modellene som har lignende navn til det du skrev inn: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"no"			"Kunne ikke finne en modell som inneholder {1}"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"no"			"Velg modellgruppe:"
+	}
+	
+	"ModelMenu"
+	{
+		"no"			"Velg modell du ønsker å være:"
+	}
+}

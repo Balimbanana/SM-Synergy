@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"zho"			"將模型設置為{1}"
+	}
+	
+	"OCM"
+	{
+		"zho"			"其他自定義模型"
+	}
+	
+	"CIT"
+	{
+		"zho"			"公民 "
+	}
+	
+	"Hero"
+	{
+		"zho"			"英雄 {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"zho"			"女 {1}"
+	}
+	
+	"MaleNum"
+	{
+		"zho"			"男 {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"zho"			"您必須是捐贈者才能使用此模型"
+	}
+	
+	"NoCustomModels"
+	{
+		"zho"			"服務器上沒有自定義模型。"
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"zho"			"找到了您提供的多個模型，這些是模型：{1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"zho"			"找到您提供的多個型號，檢查您的控制台。"
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"zho"			"這些模型的名稱與您輸入的名稱相似：{1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"zho"			"找不到包含{1}的模型"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"zho"			"選擇型號組："
+	}
+	
+	"ModelMenu"
+	{
+		"zho"			"選擇您想要的型號："
+	}
+}

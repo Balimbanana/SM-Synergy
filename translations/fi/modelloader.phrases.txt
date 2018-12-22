@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"fi"			"Aseta malli {1}"
+	}
+	
+	"OCM"
+	{
+		"fi"			"Muut mukautetut mallit"
+	}
+	
+	"CIT"
+	{
+		"fi"			"Kansalainen "
+	}
+	
+	"Hero"
+	{
+		"fi"			"Sankari {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"fi"			"Nainen {1}"
+	}
+	
+	"MaleNum"
+	{
+		"fi"			"Uros {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"fi"			"Sinun on oltava luovuttaja, joka käyttää tätä mallia"
+	}
+	
+	"NoCustomModels"
+	{
+		"fi"			"Palvelimessa ei ole mukautettuja malleja."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"fi"			"Löydetty useita malleja, joiden nimi on antanut, nämä mallit ovat: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"fi"			"Löydetty useita malleja, joiden nimi on antanut, tarkista konsoli."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"fi"			"Nämä ovat malleja, joilla on samanlaisia nimiä kuin syötit: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"fi"			"Mallia {1} ei löytynyt"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"fi"			"Valitse malliryhmä:"
+	}
+	
+	"ModelMenu"
+	{
+		"fi"			"Valitse malli, jonka haluat olla:"
+	}
+}

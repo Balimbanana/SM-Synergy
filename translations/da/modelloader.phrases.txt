@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"da"			"Indstil model til {1}"
+	}
+	
+	"OCM"
+	{
+		"da"			"Andre brugerdefinerede modeller"
+	}
+	
+	"CIT"
+	{
+		"da"			"Borger "
+	}
+	
+	"Hero"
+	{
+		"da"			"Helt {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"da"			"Kvinde {1}"
+	}
+	
+	"MaleNum"
+	{
+		"da"			"Han {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"da"			"Du skal være en donator for at bruge denne model"
+	}
+	
+	"NoCustomModels"
+	{
+		"da"			"Ingen brugerdefinerede modeller på serveren."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"da"			"Fundet flere modeller med navn du har angivet, disse er modellerne: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"da"			"Fandt flere modeller med navnet du har angivet, modelnavne er i din konsol."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"da"			"Dette er de modeller, der har lignende navne til det, du indtastede: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"da"			"Kunne ikke finde en model, der indeholder {1}"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"da"			"Vælg modelgruppe:"
+	}
+	
+	"ModelMenu"
+	{
+		"da"			"Vælg model du ønsker at være:"
+	}
+}

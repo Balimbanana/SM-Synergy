@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"lt"			"Nustatykite modelį {1}"
+	}
+	
+	"OCM"
+	{
+		"lt"			"Kiti individualūs modeliai"
+	}
+	
+	"CIT"
+	{
+		"lt"			"Pilietis "
+	}
+	
+	"Hero"
+	{
+		"lt"			"Herojus {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"lt"			"Moteris {1}"
+	}
+	
+	"MaleNum"
+	{
+		"lt"			"Patinas {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"lt"			"Jūs turite būti donoras, kad galėtumėte naudoti šį modelį"
+	}
+	
+	"NoCustomModels"
+	{
+		"lt"			"Nėra priskirtų modelių serveryje."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"lt"			"Rasta keli modeliai su jūsų pateiktu pavadinimu, šie modeliai: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"lt"			"Rasta keli modeliai su jūsų pateiktu pavadinimu, patikrinkite savo konsolę."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"lt"			"Šie modeliai turi panašius pavadinimus su tuo, ką įvedėte: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"lt"			"Nepavyko rasti modelio, kuriame yra {1}"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"lt"			"Pasirinkite modelių grupę:"
+	}
+	
+	"ModelMenu"
+	{
+		"lt"			"Pasirinkite modelį, kurį norite būti:"
+	}
+}

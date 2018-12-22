@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"pl"			"Ustaw model na {1}"
+	}
+	
+	"OCM"
+	{
+		"pl"			"Inne niestandardowe modele"
+	}
+	
+	"CIT"
+	{
+		"pl"			"Obywatel "
+	}
+	
+	"Hero"
+	{
+		"pl"			"Bohater {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"pl"			"Płeć żeńska {1}"
+	}
+	
+	"MaleNum"
+	{
+		"pl"			"Męski {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"pl"			"Musisz być donatorem, aby korzystać z tego modelu"
+	}
+	
+	"NoCustomModels"
+	{
+		"pl"			"Brak niestandardowych modeli na serwerze."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"pl"			"Znaleziono wiele modeli o podanej nazwie, są to modele: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"pl"			"Znaleziono wiele modeli o podanej nazwie, sprawdź konsolę."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"pl"			"Są to modele, które mają podobne nazwy do wprowadzonych: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"pl"			"Nie można znaleźć modelu, który zawiera {1}"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"pl"			"Wybierz grupę modeli:"
+	}
+	
+	"ModelMenu"
+	{
+		"pl"			"Wybierz model, który chcesz być:"
+	}
+}

@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"jp"			"モデルを{1}に設定してください"
+	}
+	
+	"OCM"
+	{
+		"jp"			"他のカスタムモデル"
+	}
+	
+	"CIT"
+	{
+		"jp"			"市民 "
+	}
+	
+	"Hero"
+	{
+		"jp"			"勇者 {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"jp"			"女性 {1}"
+	}
+	
+	"MaleNum"
+	{
+		"jp"			"男性 {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"jp"			"このモデルを使用するには寄付者でなければなりません"
+	}
+	
+	"NoCustomModels"
+	{
+		"jp"			"サーバーにカスタムモデルがありません。"
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"jp"			"指定した名前のモデルが複数見つかりました。これらはモデルです：{1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"jp"			"指定した名前のモデルが複数見つかりました。コンソールを確認してください。"
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"jp"			"これらは入力したものと似た名前のモデルです：{1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"jp"			"{1}を含むモデルが見つかりませんでした"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"jp"			"モデルグループを選択："
+	}
+	
+	"ModelMenu"
+	{
+		"jp"			"あなたがになりたいモデルを選択してください："
+	}
+}

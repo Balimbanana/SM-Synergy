@@ -1,0 +1,72 @@
+"Phrases"
+{
+	"SetModelTo"
+	{
+		"nl"			"Model instellen op {1}"
+	}
+	
+	"OCM"
+	{
+		"nl"			"Andere aangepaste modellen"
+	}
+	
+	"CIT"
+	{
+		"nl"			"Inwoner "
+	}
+	
+	"Hero"
+	{
+		"nl"			"Held {1}"
+	}
+	
+	"FemaleNum"
+	{
+		"nl"			"Vrouw {1}"
+	}
+	
+	"MaleNum"
+	{
+		"nl"			"Mannetje {1}"
+	}
+	
+	"DonatorOnly"
+	{
+		"nl"			"U moet een schenker zijn om dit model te gebruiken"
+	}
+	
+	"NoCustomModels"
+	{
+		"nl"			"Geen aangepaste modellen op server."
+	}
+	
+	"MultipleReturnedSearch"
+	{
+		"nl"			"Heeft meerdere modellen gevonden met de naam die u heeft opgegeven, dit zijn de modellen: {1}"
+	}
+	
+	"TooManyToShowInChat"
+	{
+		"nl"			"Heeft u meerdere modellen gevonden met de naam die u heeft opgegeven, controleer dan uw console."
+	}
+	
+	"MultipleReturnedSearchConsole"
+	{
+		"nl"			"Dit zijn de modellen met vergelijkbare namen als wat u heeft ingevoerd: {1}"
+	}
+	
+	"CouldntFindModel"
+	{
+		"nl"			"Kon een model niet vinden dat {1} bevat"
+	}
+	
+	"ModelMenuGrp"
+	{
+		"nl"			"Selecteer een modelgroep:"
+	}
+	
+	"ModelMenu"
+	{
+		"nl"			"Selecteer het model dat u wenst te zijn:"
+	}
+}
