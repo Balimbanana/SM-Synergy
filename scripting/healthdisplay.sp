@@ -449,7 +449,7 @@ public Action ShowTimer(Handle timer)
 						if (HasEntProp(targ,Prop_Data,"m_nRenderMode"))
 							if (GetEntProp(targ,Prop_Data,"m_nRenderMode") == 10) targ = -1;
 					}
-					if ((targ != -1) && (StrContains(clsname,"npc_",false) != -1) && (StrContains(clsname,"monster_",false) != -1) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
+					if ((targ != -1) && ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"monster_",false) != -1)) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
 					{
 						if (!bclcookie3[client])
 						{
