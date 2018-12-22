@@ -84,21 +84,21 @@
 			/* CBasePlayer */
 			"GiveNamedItem"
 			{//408 4.3 pre hls
-				"windows"	"411"
-				"linux"		"407"
-				"mac"		"407"
+				"windows"	"408" //411
+				"linux"		"409"
+				"mac"		"409"
 			}
 			"RemovePlayerItem"
 			{
-				"windows"	"273"
-				"linux"		"274"
-				"mac"		"274"
+				"windows"	"270" //273
+				"linux"		"271"
+				"mac"		"271"
 			}
 			"Weapon_GetSlot"
 			{
-				"windows"	"271"
-				"linux"		"272"
-				"mac"		"272"
+				"windows"	"268" //271
+				"linux"		"269"
+				"mac"		"269"
 			}
 			"Ignite"
 			{
@@ -120,9 +120,9 @@
 			}
 			"CommitSuicide"
 			{
-				"windows"	"449"
-				"linux"		"450"
-				"mac"		"450"
+				"windows"	"446" //449
+				"linux"		"447"
+				"mac"		"447"
 			}
 			"GetVelocity"
 			{
@@ -162,15 +162,15 @@
 			}
 			"RemoveAllItems"
 			{
-				"windows"	"352"
-				"linux"		"353"
-				"mac"		"353"
+				"windows"	"349" //352
+				"linux"		"350"
+				"mac"		"350"
 			}
 			"PlayerRunCmd"
 			{//426 4.3 pre hls
-				"windows"	"429"
-				"linux"		"425"
-				"mac"		"425"
+				"windows"	"426" //429
+				"linux"		"427"
+				"mac"		"427"
 			}
 		}
 		
