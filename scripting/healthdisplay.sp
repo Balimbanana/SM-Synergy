@@ -813,7 +813,8 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		else if (StrEqual(clsname,"npc_headcrab_fast",false)) Format(clsname,sizeof(clsname),"Friend: Fast Headcrab");
 		else if (StrEqual(clsname,"npc_headcrab_poison",false)) Format(clsname,sizeof(clsname),"Friend: Poison Headcrab");
 		else if (StrEqual(clsname,"npc_headcrab_black",false)) Format(clsname,sizeof(clsname),"Friend: Black Headcrab");
-		ReplaceString(clsname,sizeof(clsname),"npc","Friend: ");
+		if (StrContains(clsname,"monster_",false) != -1) ReplaceString(clsname,sizeof(clsname),"monster","Friend: ");
+		else ReplaceString(clsname,sizeof(clsname),"npc","Friend: ");
 		int upper = ReplaceStringEx(clsname,sizeof(clsname),"_"," ");
 		if (upper != -1)
 			clsname[upper] &= ~(1 << 5);
@@ -885,7 +886,8 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		else if (StrEqual(clsname,"npc_headcrab_fast",false)) Format(clsname,sizeof(clsname),"Enemy: Fast Headcrab");
 		else if (StrEqual(clsname,"npc_headcrab_poison",false)) Format(clsname,sizeof(clsname),"Enemy: Poison Headcrab");
 		else if (StrEqual(clsname,"npc_headcrab_black",false)) Format(clsname,sizeof(clsname),"Enemy: Black Headcrab");
-		ReplaceString(clsname,sizeof(clsname),"npc","Enemy: ");
+		if (StrContains(clsname,"monster_",false) != -1) ReplaceString(clsname,sizeof(clsname),"monster","Enemy: ");
+		else ReplaceString(clsname,sizeof(clsname),"npc","Enemy: ");
 		int upper = ReplaceStringEx(clsname,sizeof(clsname),"_"," ");
 		if (upper != -1)
 			clsname[upper] &= ~(1 << 5);
