@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.5"
-			"Previous"	"1.4"
+			"Latest"  	"1.6"
+			"Previous"	"1.5"
 		}
 		
-		"Notes"	"Added more max health checks for AntlionGrub and Combinedropship"
+		"Notes"	"Added rollermine and monster_ detection."
 	}
 	
 	"Files"
