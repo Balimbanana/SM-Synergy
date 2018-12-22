@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.5"
+#define PLUGIN_VERSION "1.6"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -449,14 +449,15 @@ public Action ShowTimer(Handle timer)
 						if (HasEntProp(targ,Prop_Data,"m_nRenderMode"))
 							if (GetEntProp(targ,Prop_Data,"m_nRenderMode") == 10) targ = -1;
 					}
-					if ((targ != -1) && (StrContains(clsname,"npc_",false) != -1) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
+					if ((targ != -1) && (StrContains(clsname,"npc_",false) != -1) && (StrContains(clsname,"monster_",false) != -1) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
 					{
 						if (!bclcookie3[client])
 						{
 							if (!GetNPCAlly(clsname))
 							{
 								int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
-								ReplaceString(clsname,sizeof(clsname),"npc_","");
+								if (StrContains(clsname,"monster_",false)) ReplaceString(clsname,sizeof(clsname),"monster_","");
+								else ReplaceString(clsname,sizeof(clsname),"npc_","");
 								int maxh = 20;
 								if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
 								{
@@ -532,6 +533,11 @@ public Action ShowTimer(Handle timer)
 										Format(clsname,sizeof(clsname),"Antlion Guard");
 										if (GetEntProp(targ,Prop_Data,"m_bCavernBreed") == 1) Format(clsname,sizeof(clsname),"Antlion Guardian");
 									}
+									else if (StrEqual(clsname,"rollermine",false))
+									{
+										curh = 1;
+										maxh = 1;
+									}
 									antispamchk[client] = Time + 0.07;
 									PrintTheMsg(client,curh,maxh,clsname);
 								}
@@ -540,7 +546,8 @@ public Action ShowTimer(Handle timer)
 						else if (bclcookie3[client] == 1)
 						{
 							int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
-							ReplaceString(clsname,sizeof(clsname),"npc_","");
+							if (StrContains(clsname,"monster_",false)) ReplaceString(clsname,sizeof(clsname),"monster_","");
+							else ReplaceString(clsname,sizeof(clsname),"npc_","");
 							int maxh = 20;
 							if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
 							{
@@ -616,6 +623,11 @@ public Action ShowTimer(Handle timer)
 									Format(clsname,sizeof(clsname),"Antlion Guard");
 									if (GetEntProp(targ,Prop_Data,"m_bCavernBreed") == 1) Format(clsname,sizeof(clsname),"Antlion Guardian");
 								}
+								else if (StrEqual(clsname,"rollermine",false))
+								{
+									curh = 1;
+									maxh = 1;
+								}
 								antispamchk[client] = Time + 0.07;
 								PrintTheMsg(client,curh,maxh,clsname);
 							}
@@ -625,7 +637,8 @@ public Action ShowTimer(Handle timer)
 							char friendfoe[32];
 							Format(friendfoe,sizeof(friendfoe),clsname);
 							int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
-							ReplaceString(clsname,sizeof(clsname),"npc_","");
+							if (StrContains(clsname,"monster_",false)) ReplaceString(clsname,sizeof(clsname),"monster_","");
+							else ReplaceString(clsname,sizeof(clsname),"npc_","");
 							int maxh = 20;
 							if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
 							{
@@ -646,6 +659,11 @@ public Action ShowTimer(Handle timer)
 									else
 										maxh = GetConVarInt(cvarchk);
 								}
+							}
+							if (StrEqual(clsname,"rollermine",false))
+							{
+								curh = 1;
+								maxh = 1;
 							}
 							float Time = GetTickedTime();
 							if ((antispamchk[client] <= Time) && (curh > 0))
