@@ -451,12 +451,17 @@ public Action ShowTimer(Handle timer)
 					}
 					if ((targ != -1) && ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"monster_",false) != -1)) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
 					{
+						bool ismonster = false;
 						if (!bclcookie3[client])
 						{
 							if (!GetNPCAlly(clsname))
 							{
 								int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
-								if (StrContains(clsname,"monster_",false)) ReplaceString(clsname,sizeof(clsname),"monster_","");
+								if (StrContains(clsname,"monster_",false) != -1)
+								{
+									ReplaceString(clsname,sizeof(clsname),"monster_","");
+									ismonster = true;
+								}
 								else ReplaceString(clsname,sizeof(clsname),"npc_","");
 								int maxh = 20;
 								if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
@@ -471,7 +476,8 @@ public Action ShowTimer(Handle timer)
 									else if (maxh == 0)
 									{
 										char cvarren[32];
-										Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
+										if (ismonster) Format(cvarren,sizeof(cvarren),"hl1_sk_%s_health",clsname);
+										else Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
 										Handle cvarchk = FindConVar(cvarren);
 										if (cvarchk == INVALID_HANDLE)
 											maxh = 20;
@@ -546,7 +552,11 @@ public Action ShowTimer(Handle timer)
 						else if (bclcookie3[client] == 1)
 						{
 							int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
-							if (StrContains(clsname,"monster_",false)) ReplaceString(clsname,sizeof(clsname),"monster_","");
+							if (StrContains(clsname,"monster_",false) != -1)
+							{
+								ReplaceString(clsname,sizeof(clsname),"monster_","");
+								ismonster = true;
+							}
 							else ReplaceString(clsname,sizeof(clsname),"npc_","");
 							int maxh = 20;
 							if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
@@ -561,7 +571,8 @@ public Action ShowTimer(Handle timer)
 								else if (maxh == 0)
 								{
 									char cvarren[32];
-									Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
+									if (ismonster) Format(cvarren,sizeof(cvarren),"hl1_sk_%s_health",clsname);
+									else Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
 									Handle cvarchk = FindConVar(cvarren);
 									if (cvarchk == INVALID_HANDLE)
 										maxh = 20;
@@ -637,7 +648,11 @@ public Action ShowTimer(Handle timer)
 							char friendfoe[32];
 							Format(friendfoe,sizeof(friendfoe),clsname);
 							int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
-							if (StrContains(clsname,"monster_",false)) ReplaceString(clsname,sizeof(clsname),"monster_","");
+							if (StrContains(clsname,"monster_",false) != -1)
+							{
+								ReplaceString(clsname,sizeof(clsname),"monster_","");
+								ismonster = true;
+							}
 							else ReplaceString(clsname,sizeof(clsname),"npc_","");
 							int maxh = 20;
 							if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
@@ -652,7 +667,8 @@ public Action ShowTimer(Handle timer)
 								else if (maxh == 0)
 								{
 									char cvarren[32];
-									Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
+									if (ismonster) Format(cvarren,sizeof(cvarren),"hl1_sk_%s_health",clsname);
+									else Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
 									Handle cvarchk = FindConVar(cvarren);
 									if (cvarchk == INVALID_HANDLE)
 										maxh = 20;
