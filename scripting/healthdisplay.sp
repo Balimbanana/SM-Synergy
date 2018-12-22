@@ -1030,6 +1030,24 @@ bool GetNPCAlly(char[] clsname)
 		addht("npc_antlion");
 		addht("npc_antlionworker");
 		addht("npc_antlionguard");
+		addht("monster_alien_slave");
+		addht("monster_bullchicken");
+		addht("monster_headcrab");
+		addht("monster_ichthyosaur");
+		addht("monster_tentacle");
+		addht("monster_sentry");
+		addht("monster_houndeye");
+		addht("monster_barnacle");
+		addht("monster_apache");
+		addht("monster_zombie");
+		addht("monster_alien_grunt");
+		addht("monster_bigmomma");
+		addht("monster_babycrab");
+		addht("monster_gargantua");
+		addht("monster_human_assassin");
+		addht("monster_human_grunt");
+		addht("monster_miniturret");
+		addht("monster_nihilanth");
 		for (int i = 0;i<GetArraySize(airelarr);i++)
 		{
 			char itmp[32];
