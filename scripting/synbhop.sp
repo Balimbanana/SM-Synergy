@@ -222,10 +222,12 @@ public OnButtonPress(int client, int button)
 			clreleased[client] = GetTickedTime()+0.1;
 			clresetspeed[client] = true;
 		}
+		/*
 		if (GetClientButtons(client) & button2)
 		{
 			clresetspeed[client] = false;
 		}
+		*/
 	}
 }
 
