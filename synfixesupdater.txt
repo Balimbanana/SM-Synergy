@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.4"
-			"Previous"	"1.3"
+			"Latest"  	"1.41"
+			"Previous"	"1.4"
 		}
 		
-		"Notes"	"Fixed problem of phy atk id LTN 0 negated"
+		"Notes"	"Fixed problem in ai_goal_follow behavior, added dropship check"
 	}
 	
 	"Files"
