@@ -19,7 +19,7 @@ int WeapList = -1;
 bool friendlyfire = false;
 bool seqenablecheck = true;
 
-#define PLUGIN_VERSION "1.4"
+#define PLUGIN_VERSION "1.41"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo = 
@@ -95,6 +95,7 @@ public void OnPluginStart()
 	RegConsoleCmd("con",enablecon);
 	RegConsoleCmd("npc_freeze",admblock);
 	RegConsoleCmd("npc_freeze_unselected",admblock);
+	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
 	AutoExecConfig(true, "synfixes");
 }
 
@@ -594,6 +595,70 @@ public Action elevatorstart(const char[] output, int caller, int activator, floa
 	}
 }
 
+public Action dropshipchk(Handle timer)
+{
+	for (int i = MaxClients+1; i<GetMaxEntities(); i++)
+	{
+		if (IsValidEntity(i) && IsEntNetworkable(i))
+		{
+			char clsname[32];
+			GetEntityClassname(i,clsname,sizeof(clsname));
+			if (StrEqual(clsname,"npc_combinedropship",false))
+			{
+				int lastdropped = 0;
+				int curdrop = GetEntProp(i,Prop_Data,"m_iCurrentTroopExiting");
+				char m_sNPCTemplatechar[64];
+				for (int j = 0;j<6;j++)
+				{
+					char tmp[4];
+					Format(m_sNPCTemplatechar,sizeof(m_sNPCTemplatechar),"m_sNPCTemplate[%i]",j);
+					GetEntPropString(i,Prop_Data,m_sNPCTemplatechar,tmp,sizeof(tmp));
+					if (strlen(tmp) > 0)
+						lastdropped = j+1;
+				}
+				if (curdrop == lastdropped)
+				{
+					CreateTimer(10.0,rmcolliding,i);
+				}
+			}
+		}
+	}
+}
+
+public Action rmcolliding(Handle timer, int caller)
+{
+	//int landtarg = GetEntProp(i,Prop_Data,"m_bHasDroppedOff");
+	if ((caller == -1) || (!IsValidEntity(caller))) return Plugin_Handled;
+	float origin[3];
+	GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+	origin[2]-=100.0;
+	for (int i = MaxClients+1; i<GetMaxEntities(); i++)
+	{
+		if (IsValidEntity(i) && IsEntNetworkable(i))
+		{
+			char clsname[32];
+			GetEntityClassname(i,clsname,sizeof(clsname));
+			if ((StrContains(clsname,"npc_",false) != -1) && (!StrEqual(clsname,"npc_combinedropship",false)) && (!StrEqual(clsname,"npc_bullseye",false)))
+			{
+				int dropspawnflags = GetEntProp(i,Prop_Data,"m_spawnflags");
+				if (dropspawnflags & 2048)
+				{
+					float npcorigin[3];
+					GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",npcorigin);
+					float chkdist = GetVectorDistance(origin,npcorigin,false);
+					if (chkdist < 80.0)
+					{
+						if (debuglvl > 1) PrintToServer("Template %i %s is %1.f away from ship",i,clsname,chkdist);
+						SetVariantInt(0);
+						AcceptEntityInput(i,"SetHealth");
+					}
+				}
+			}
+		}
+	}
+	return Plugin_Handled;
+}
+
 public Action trigout(const char[] output, int caller, int activator, float delay)
 {
 	if (seqenablecheck)
@@ -803,6 +868,8 @@ readoutputs(int scriptent, char[] targn)
 					}
 					if (StrEqual(clsscript,"scripted_sequence",false))
 						AcceptEntityInput(scriptent,"BeginSequence");
+					else if (StrEqual(clsscript,"ai_goal_follow",false) && (ent != -1))
+						AcceptEntityInput(ent,"Activate");
 					else if (StrEqual(clsscript,"ai_goal_follow",false))
 						AcceptEntityInput(scriptent,"Activate");
 					else
@@ -872,12 +939,9 @@ readoutputs(int scriptent, char[] targn)
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"classname\" ","",false);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 					if (StrEqual(tmpchar,"worldspawn",false)) break;
-					else if (!StrEqual(clsscript,"ai_goal_follow",false))
-					{
-						ent = CreateEntityByName(tmpchar);
-						if (debuglvl == 3) PrintToServer("Created Ent as %s",tmpchar);
-						PushArrayCell(entlist,ent);
-					}
+					ent = CreateEntityByName(tmpchar);
+					if (debuglvl == 3) PrintToServer("Created Ent as %s",tmpchar);
+					PushArrayCell(entlist,ent);
 				}
 			}
 		}
@@ -894,9 +958,39 @@ findgfollow(int ent, char[] targn)
 		char actor[128];
 		GetEntPropString(thisent,Prop_Data,"m_iszActor",actor,sizeof(actor));
 		if ((strlen(actor) > 0) && (StrEqual(actor,targn,false)))
-			readoutputs(thisent,actor);
+		{
+			AcceptEntityInput(thisent,"Activate");
+		}
 		else
 			findgfollow(thisent++,targn);
+	}
+	else
+	{
+		int aiglent = CreateEntityByName("ai_goal_follow");
+		DispatchSpawn(aiglent);
+		ActivateEntity(aiglent);
+		readoutputs(aiglent,targn);
+		Handle data;
+		data = CreateDataPack();
+		WritePackCell(data, aiglent);
+		WritePackString(data, "ai_goal_follow");
+		CreateTimer(0.1,cleanup,data);
+	}
+}
+
+public Action cleanup(Handle timer, Handle data)
+{
+	ResetPack(data);
+	int cleanupent = ReadPackCell(data);
+	char clsname[32];
+	ReadPackString(data,clsname,sizeof(clsname));
+	CloseHandle(data);
+	if ((IsValidEntity(cleanupent)) && (cleanupent > MaxClients))
+	{
+		char tmpcls[32];
+		GetEntityClassname(cleanupent,tmpcls,sizeof(tmpcls));
+		if (StrEqual(tmpcls,clsname,false))
+			AcceptEntityInput(cleanupent,"kill");
 	}
 }
 
