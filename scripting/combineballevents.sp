@@ -2,6 +2,9 @@
 #include <sdktools>
 #include <sdkhooks>
 
+//This is basically just a snippet to allow combine ball death event to trigger.
+//This only happens on specific entities such as npc_vortigaunt, where no death event is fired when they are dissolved.
+
 public OnPluginStart()
 {
 	CreateTimer(0.1,findents);
