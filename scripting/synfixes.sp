@@ -1,11 +1,11 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
-#include <mapchooser>
 #undef REQUIRE_PLUGIN
 #undef REQUIRE_EXTENSIONS
 #tryinclude <SteamWorks>
 #tryinclude <updater>
+#tryinclude <mapchooser>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
@@ -21,7 +21,7 @@ bool friendlyfire = false;
 bool seqenablecheck = true;
 bool voteinprogress = false;
 
-#define PLUGIN_VERSION "1.42"
+#define PLUGIN_VERSION "1.43"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo = 
