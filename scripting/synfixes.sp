@@ -21,7 +21,7 @@ bool friendlyfire = false;
 bool seqenablecheck = true;
 bool voteinprogress = false;
 
-#define PLUGIN_VERSION "1.43"
+#define PLUGIN_VERSION "1.44"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo = 
@@ -138,6 +138,7 @@ public void OnMapStart()
 			CreateTimer(1.0,clspawnpost,i);
 		}
 	}
+	findentlist(MaxClients+1,"npc_*");
 	int jstat = FindEntityByClassname(MaxClients+1,"prop_vehicle_jeep");
 	int jspawn = FindEntityByClassname(MaxClients+1,"info_vehicle_spawn");
 	if ((jstat != -1) || (jspawn != -1))
@@ -155,6 +156,16 @@ public void OnMapStart()
 			}
 		}
 		CloseHandle(cvarchk);
+	}
+	for (int j; j<GetArraySize(entlist); j++)
+	{
+		int jtmp = GetArrayCell(entlist, j);
+		if (IsValidEntity(jtmp))
+		{
+			char clsname[16];
+			GetEntityClassname(jtmp,clsname,sizeof(clsname));
+			if ((StrEqual(clsname,"npc_citizen",false)) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(jtmp, SDKHook_OnTakeDamage, OnTakeDamage);
+		}
 	}
 }
 
@@ -1170,6 +1181,16 @@ findent(int ent, char[] clsname)
 		if (bdisabled == 0)
 			PushArrayCell(equiparr,thisent);
 		findent(thisent++,clsname);
+	}
+}
+
+findentlist(int ent, char[] clsname)
+{
+	int thisent = FindEntityByClassname(ent,clsname);
+	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	{
+		PushArrayCell(entlist,thisent);
+		findentlist(thisent++,clsname);
 	}
 }
 
