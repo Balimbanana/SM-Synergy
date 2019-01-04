@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.42"
-			"Previous"	"1.41"
+			"Latest"  	"1.43"
+			"Previous"	"1.42"
 		}
 		
 		"Notes"	"Fixed problem in ai_goal_follow behavior, added dropship check"
