@@ -1,6 +1,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include <mapchooser>
 #undef REQUIRE_PLUGIN
 #undef REQUIRE_EXTENSIONS
 #tryinclude <SteamWorks>
@@ -18,8 +19,9 @@ float entrefresh = 0.0;
 int WeapList = -1;
 bool friendlyfire = false;
 bool seqenablecheck = true;
+bool voteinprogress = false;
 
-#define PLUGIN_VERSION "1.41"
+#define PLUGIN_VERSION "1.42"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo = 
@@ -101,6 +103,7 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
+	voteinprogress = false;
 	entrefresh = 0.0;
 	ClearArray(entlist);
 	ClearArray(equiparr);
@@ -283,6 +286,11 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 			PrintToChat(param1,"You must wait %1.f seconds before you can vote again.",votetime[param1]-Time);
 			return 0;
 		}
+		if (!CanMapChooserStartVote() || voteinprogress)
+		{
+			PrintToChat(param1,"There is a vote already in progress.");
+			return 0;
+		}
 		char info[128];
 		menu.GetItem(param2, info, sizeof(info));
 		if (StrEqual(info,"tptocl",false))
@@ -299,6 +307,7 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 			g_hVoteMenu.DisplayVoteToAll(20);
 			votetime[param1] = Time + delaylimit;
 			voteact = 1;
+			voteinprogress = true;
 		}
 		if (StrEqual(info,"tpbarntocl",false))
 		{
@@ -314,6 +323,7 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 			g_hVoteMenu.DisplayVoteToAll(20);
 			votetime[param1] = Time + delaylimit;
 			voteact = 0;
+			voteinprogress = true;
 		}
 	}
 	else if (action == MenuAction_End)
@@ -382,6 +392,11 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 			float PlayerOrigin[3];
 			float Location[3];
 			float clangles[3];
+			if (!IsClientInGame(clused) || !IsPlayerAlive(clused))
+			{
+				voteinprogress = false;
+				return 0;
+			}
 			GetClientEyeAngles(clused, clangles);
 			clangles[0] = 0.0;
 			clangles[2] = 0.0;
@@ -407,6 +422,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 				voteact = 0;
 			}
 		}
+		voteinprogress = false;
 	}
 	return 0;
 }
