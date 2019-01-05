@@ -1029,6 +1029,7 @@ bool GetNPCAlly(char[] clsname)
 		addht("npc_combine_camera");
 		addht("npc_helicopter");
 		addht("npc_cscanner");
+		addht("npc_rollermine");
 		addht("npc_combinegunship");
 		addht("npc_combinedropship");
 		addht("npc_manhack");
