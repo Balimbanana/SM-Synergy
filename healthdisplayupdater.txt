@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.61"
-			"Previous"	"1.6"
+			"Latest"  	"1.62"
+			"Previous"	"1.61"
 		}
 		
 		"Notes"	"Added sniper/turret monster detection."
