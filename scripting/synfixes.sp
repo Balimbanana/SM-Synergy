@@ -175,6 +175,14 @@ public void OnMapStart()
 	}
 }
 
+public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs)
+{
+	if ((StrEqual(sArgs,"stuck",false)) || (StrEqual(sArgs,"unstuck",false)) || (StrEqual(sArgs,"!stuck",false)) || (StrEqual(sArgs,"!unstuck",false)))
+	{
+		ClientCommand(client,"stuck");
+	}
+}
+
 public OnLibraryAdded(const char[] name)
 {
     if (StrEqual(name,"updater",false))
