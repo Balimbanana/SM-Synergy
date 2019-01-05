@@ -1,0 +1,19 @@
+"Updater"
+{
+	"Information"
+	{
+		"Version"
+		{
+			"Latest"  	"1.0"
+			"Previous"	"0.9"
+		}
+		
+		"Notes"	""
+	}
+	
+	"Files"
+	{
+		"Plugin"	"Path_SM/plugins/enttools.smx"
+		"Source"	"Path_SM/scripting/enttools.sp"
+	}
+}
