@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.6"
+#define PLUGIN_VERSION "1.61"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -50,6 +50,8 @@ public void OnPluginStart()
 	bclcookie3h = RegClientCookie("HealthDisplayFriend", "HealthDisplay friend Settings", CookieAccess_Private);
 	bclcookie4h = RegClientCookie("HealthDisplayColors", "HealthDisplay color Settings", CookieAccess_Private);
 	bclcookie4fh = RegClientCookie("HealthDisplayEnemyColors", "HealthDisplay enemy color Settings", CookieAccess_Private);
+	RegConsoleCmd("hpmenu",showinf);
+	RegConsoleCmd("hitpointmenu",showinf);
 	RegConsoleCmd("sm_healthdisplay",showinf);
 	RegConsoleCmd("sm_healthtype",sethealthtype);
 	RegConsoleCmd("sm_healthnum",sethealthnum);
@@ -449,7 +451,7 @@ public Action ShowTimer(Handle timer)
 						if (HasEntProp(targ,Prop_Data,"m_nRenderMode"))
 							if (GetEntProp(targ,Prop_Data,"m_nRenderMode") == 10) targ = -1;
 					}
-					if ((targ != -1) && ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"monster_",false) != -1)) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"turret",false) == -1) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
+					if ((targ != -1) && ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"monster_",false) != -1)) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
 					{
 						bool ismonster = false;
 						if (!bclcookie3[client])
@@ -1031,6 +1033,7 @@ bool GetNPCAlly(char[] clsname)
 		addht("npc_combinedropship");
 		addht("npc_manhack");
 		addht("npc_strider");
+		addht("npc_sniper");
 		addht("npc_zombie");
 		addht("npc_zombie_torso");
 		addht("npc_zombine");
