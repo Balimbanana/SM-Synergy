@@ -21,7 +21,7 @@ bool friendlyfire = false;
 bool seqenablecheck = true;
 bool voteinprogress = false;
 
-#define PLUGIN_VERSION "1.44"
+#define PLUGIN_VERSION "1.45"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo = 
@@ -130,6 +130,7 @@ public void OnMapStart()
 	HookEntityOutput("logic_choreographed_scene","OnStart",EntityOutput:trigout);
 	HookEntityOutput("instanced_scripted_scene","OnStart",EntityOutput:trigout);
 	HookEntityOutput("func_tracktrain","OnStart",EntityOutput:elevatorstart);
+	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:mapendchg);
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
 	{
@@ -622,6 +623,41 @@ public Action elevatorstart(const char[] output, int caller, int activator, floa
 	}
 }
 
+public Action mapendchg(const char[] output, int caller, int activator, float delay)
+{
+	char maptochange[64];
+	char curmapbuf[64];
+	GetCurrentMap(curmapbuf,sizeof(curmapbuf));
+	GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
+	Handle data;
+	data = CreateDataPack();
+	WritePackString(data, maptochange);
+	WritePackString(data, curmapbuf);
+	CreateTimer(1.0,changeleveldelay,data);
+}
+
+public Action changeleveldelay(Handle timer, Handle data)
+{
+	if (data != INVALID_HANDLE)
+	{
+		char maptochange[64];
+		char curmapbuf[64];
+		ResetPack(data);
+		ReadPackString(data,maptochange,sizeof(maptochange));
+		ReadPackString(data,curmapbuf,sizeof(curmapbuf));
+		CloseHandle(data);
+		char mapchk[64];
+		GetCurrentMap(mapchk,sizeof(mapchk));
+		if (StrEqual(mapchk,curmapbuf,false))
+		{
+			if (debuglvl > 1) PrintToServer("Failed to change map to %s attempting to change manually.",maptochange);
+			ServerCommand("changelevel %s",maptochange);
+			ServerCommand("changelevel Custom %s",maptochange);
+			ServerCommand("changelevel syn %s",maptochange);
+		}
+	}
+}
+
 public Action dropshipchk(Handle timer)
 {
 	for (int i = MaxClients+1; i<GetMaxEntities(); i++)
@@ -675,6 +711,7 @@ public Action rmcolliding(Handle timer, int caller)
 					float chkdist = GetVectorDistance(origin,npcorigin,false);
 					if (chkdist < 80.0)
 					{
+						//m_hTargetEnt
 						if (debuglvl > 1) PrintToServer("Template %i %s is %1.f away from ship",i,clsname,chkdist);
 						SetVariantInt(0);
 						AcceptEntityInput(i,"SetHealth");
