@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.6"
-			"Previous"	"1.5"
+			"Latest"  	"1.61"
+			"Previous"	"1.6"
 		}
 		
-		"Notes"	"Added rollermine and monster_ detection."
+		"Notes"	"Added sniper/turret monster detection."
 	}
 	
 	"Files"
