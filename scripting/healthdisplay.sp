@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.61"
+#define PLUGIN_VERSION "1.62"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -514,6 +514,8 @@ public Action ShowTimer(Handle timer)
 										else if (StrContains(cmodel,"models/humans/group03m/",false) == 0) Format(clsname,sizeof(clsname),"Rebel Medic");
 										else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
 										else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
+										else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Larry");
+										else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Arthur");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
 									}
@@ -609,6 +611,8 @@ public Action ShowTimer(Handle timer)
 									else if (StrContains(cmodel,"models/humans/group03m/",false) == 0) Format(clsname,sizeof(clsname),"Rebel Medic");
 									else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
 									else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
+									else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Larry");
+									else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Arthur");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
 								}
@@ -779,6 +783,8 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		}
 		else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Friend: Griggs");
 		else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Friend: Sheckley");
+		else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Friend: Larry");
+		else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Friend: Arthur");
 		else if (StrEqual(clsname,"npc_citizen",false))
 		{
 			char cmodel[64];
