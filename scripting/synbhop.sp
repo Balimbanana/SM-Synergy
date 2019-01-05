@@ -16,8 +16,9 @@ bool clresetspeed[MAXPLAYERS+1];
 bool clsecondchk[MAXPLAYERS+1];
 bool bhopdisable = false;
 bool sxpmact = false;
+bool hl1act = false;
 
-#define PLUGIN_VERSION "0.2"
+#define PLUGIN_VERSION "0.21"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synbhopupdater.txt"
 
 public Plugin:myinfo = 
@@ -158,7 +159,11 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 				float suitpow = 11.0;
 				if (HasEntProp(client,Prop_Send,"m_flSuitPower"))
 					suitpow = GetEntPropFloat(client,Prop_Send,"m_flSuitPower");
-				if ((GetClientButtons(client) & button2) && (RoundFloat(suitpow) > 10))
+				if ((buttons & button2) && (RoundFloat(suitpow) > 10) && (!hl1act))
+					SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",normsprintspeed);
+				else if ((buttons & button2) && (hl1act))
+					SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",normspeed);
+				else if (hl1act)
 					SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",normsprintspeed);
 				else
 					SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",normspeed);
@@ -238,17 +243,9 @@ public OnButtonRelease(int client, int button)
 		int groundchk = GetEntProp(client,Prop_Send,"m_hGroundEntity");
 		if ((groundchk != -1) && (!(GetClientButtons(client) & button2)))
 		{
-			CreateTimer(0.1,releasebuff,client);
+			clreleased[client] = GetTickedTime()+0.8;
+			clresetspeed[client] = true;
 		}
-	}
-}
-
-public Action releasebuff(Handle timer, int client)
-{
-	int groundchk = GetEntProp(client,Prop_Send,"m_hGroundEntity");
-	if (groundchk != -1)
-	{
-		SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",normspeed);
 	}
 }
 
@@ -302,4 +299,10 @@ public OnLibraryAdded(const char[] name)
     {
         Updater_AddPlugin(UPDATE_URL);
     }
+}
+
+public void OnMapStart()
+{
+	if ((FileExists("sound/scientist/scream01.wav",true,NULL_STRING)) && (FileExists("models/bullsquid.mdl",true,NULL_STRING)) && (FileExists("materials/halflife/!c1a1cw00.vtf",true,NULL_STRING))) hl1act = true;
+	else hl1act = false;
 }
