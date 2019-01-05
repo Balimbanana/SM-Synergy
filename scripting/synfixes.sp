@@ -20,8 +20,9 @@ int WeapList = -1;
 bool friendlyfire = false;
 bool seqenablecheck = true;
 bool voteinprogress = false;
+bool instswitch = true;
 
-#define PLUGIN_VERSION "1.45"
+#define PLUGIN_VERSION "1.46"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo = 
@@ -79,6 +80,10 @@ public void OnPluginStart()
 	Handle pushh = FindConVar("sv_player_push");
 	if (pushh != INVALID_HANDLE) HookConVarChange(pushh, pushch);
 	CloseHandle(pushh);
+	Handle instphyswitch = CreateConVar("sm_instantswitch", "1", "Allow instant weapon switch for physcannon.", _, true, 0.0, true, 1.0);
+	instswitch = GetConVarBool(instphyswitch);
+	HookConVarChange(instphyswitch, instphych);
+	CloseHandle(instphyswitch);
 	Handle ffh = FindConVar("mp_friendlyfire");
 	if (ffh != INVALID_HANDLE)
 	{
@@ -525,6 +530,7 @@ public Action clspawnpost(Handle timer, int client)
 			AcceptEntityInput(cam,"Kill");
 		}
 		SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+		SDKHook(client, SDKHook_WeaponSwitch, OnWeaponUse);
 	}
 	else if (IsClientConnected(client))
 	{
@@ -1109,6 +1115,45 @@ public OnEntityCreated(int entity, const char[] classname)
 	}
 }
 
+public Action OnWeaponUse(int client, int weapon)
+{
+	if (instswitch)
+	{
+		if ((IsValidEntity(weapon)) && (weapon != -1))
+		{
+			char weapname[32];
+			GetEntityClassname(weapon,weapname,sizeof(weapname));
+			if (StrEqual(weapname,"weapon_physcannon",false))
+			{
+				Handle data;
+				data = CreateDataPack();
+				WritePackCell(data, client);
+				WritePackCell(data, weapon);
+				CreateTimer(0.1,resetinst,data);
+			}
+		}
+	}
+	return Plugin_Continue;
+}
+
+public Action resetinst(Handle timer, any:data)
+{
+	ResetPack(data);
+	int client = ReadPackCell(data);
+	int weap = ReadPackCell(data);
+	CloseHandle(data);
+	if ((IsValidEntity(weap)) && (HasEntProp(weap,Prop_Send,"m_flNextPrimaryAttack")))
+	{
+		float curtime = GetGameTime();
+		SetEntPropFloat(weap,Prop_Send,"m_flNextPrimaryAttack",curtime,0);
+		SetEntPropFloat(weap,Prop_Send,"m_flNextSecondaryAttack",curtime,0);
+		int viewmdl = GetEntPropEnt(client,Prop_Send,"m_hViewModel");
+		if (IsValidEntity(viewmdl))
+			SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
+		SetEntPropFloat(client,Prop_Send,"m_flNextAttack",curtime);
+	}
+}
+
 bool findtargn(char[] targn)
 {
 	float Time = GetTickedTime();
@@ -1260,6 +1305,12 @@ public ffhch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) friendlyfire = true;
 	else friendlyfire = false;
+}
+
+public instphych(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) instswitch = true;
+	else instswitch = false;
 }
 
 public restrictpercch(Handle convar, const char[] oldValue, const char[] newValue)
