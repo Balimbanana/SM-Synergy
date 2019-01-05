@@ -450,13 +450,15 @@ public Action ShowTimer(Handle timer)
 						}
 						if (HasEntProp(targ,Prop_Data,"m_nRenderMode"))
 							if (GetEntProp(targ,Prop_Data,"m_nRenderMode") == 10) targ = -1;
+						if (HasEntProp(targ,Prop_Data,"m_NPCState"))
+							if (GetEntProp(targ,Prop_Data,"m_NPCState") == 7) targ = -1;
 					}
 					if ((targ != -1) && ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"monster_",false) != -1)) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
 					{
 						bool ismonster = false;
 						if (!bclcookie3[client])
 						{
-							if (!GetNPCAlly(clsname))
+							if (!GetNPCAlly(clsname,targ))
 							{
 								int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
 								if (StrContains(clsname,"monster_",false) != -1)
@@ -516,6 +518,7 @@ public Action ShowTimer(Handle timer)
 										else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
 										else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Larry");
 										else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Arthur");
+										else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Sarah");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
 									}
@@ -613,6 +616,7 @@ public Action ShowTimer(Handle timer)
 									else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
 									else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Larry");
 									else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Arthur");
+									else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Sarah");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
 								}
@@ -766,7 +770,7 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 			if (GetNPCAllyTarg(targn))
 				targetally = true;
 	}
-	if ((GetNPCAlly(clsname)) || (targetally))
+	if ((GetNPCAlly(clsname,targ)) || (targetally))
 	{
 		if (StrEqual(clsname,"npc_combine_s",false))
 		{
@@ -785,6 +789,7 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Friend: Sheckley");
 		else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Friend: Larry");
 		else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Friend: Arthur");
+		else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Friend: Sarah");
 		else if (StrEqual(clsname,"npc_citizen",false))
 		{
 			char cmodel[64];
@@ -1015,12 +1020,18 @@ bool GetNPCAllyTarg(char[] clsname)
 	return false;
 }
 
-bool GetNPCAlly(char[] clsname)
+bool GetNPCAlly(char[] clsname, int entchk)
 {
 	if (GetArraySize(airelarr) < 1)
 		findairel(MaxClients+1,"ai_relationship");
 	if (GetArraySize(htarr) > 0)
 	{
+		if (StrEqual(clsname,"npc_turret_floor",false))
+		{
+			int sf = GetEntProp(entchk,Prop_Data,"m_spawnflags");
+			if (sf & 512) return true;
+			else return false;
+		}
 		if (FindStringInArray(liarr,clsname) != -1) return true;
 		else if (FindStringInArray(htarr,clsname) != -1) return false;
 		else return true;
@@ -1041,6 +1052,7 @@ bool GetNPCAlly(char[] clsname)
 		addht("npc_manhack");
 		addht("npc_strider");
 		addht("npc_sniper");
+		addht("npc_turret_floor");
 		addht("npc_zombie");
 		addht("npc_zombie_torso");
 		addht("npc_zombine");
