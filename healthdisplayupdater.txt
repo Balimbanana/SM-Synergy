@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.62"
-			"Previous"	"1.61"
+			"Latest"  	"1.63"
+			"Previous"	"1.62"
 		}
 		
-		"Notes"	"Added sniper/turret monster detection."
+		"Notes"	"Added additional cl load check."
 	}
 	
 	"Files"
