@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.62"
+#define PLUGIN_VERSION "1.63"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -72,6 +72,90 @@ public void OnMapStart()
 	bugbaitpicked = false;
 	CreateTimer(1.0,reloadclcookies);
 	HookEntityOutput("weapon_bugbait", "OnPlayerPickup", EntityOutput:onbugbaitpickup);
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if (IsClientConnected(i) && !IsFakeClient(i))
+		{
+			CreateTimer(1.0,clspawnpost,i);
+		}
+	}
+}
+
+public OnClientPutInServer(int client)
+{
+	CreateTimer(0.5,clspawnpost,client);
+}
+
+public Action clspawnpost(Handle timer, int client)
+{
+	if (IsValidEntity(client) && IsPlayerAlive(client))
+	{
+		char sValue[32];
+		GetClientCookie(client, bclcookieh, sValue, sizeof(sValue));
+		if (strlen(sValue) < 1)
+		{
+			bclcookie[client] = 0;
+			SetClientCookie(client, bclcookieh, "0");
+		}
+		else
+			bclcookie[client] = StringToInt(sValue);
+		GetClientCookie(client, bclcookie2h, sValue, sizeof(sValue));
+		if (StringToInt(sValue) == 0)
+			bclcookie2[client] = false;
+		else if (StringToInt(sValue) == 1)
+			bclcookie2[client] = true;
+		else
+		{
+			bclcookie2[client] = false;
+			SetClientCookie(client, bclcookie2h, "0");
+		}
+		GetClientCookie(client, bclcookie3h, sValue, sizeof(sValue));
+		if (strlen(sValue) < 1)
+		{
+			bclcookie3[client] = 0;
+			SetClientCookie(client, bclcookie3h, "0");
+		}
+		else if (StringToInt(sValue) == 1)
+			bclcookie3[client] = 1;
+		else if (StringToInt(sValue) == 2)
+			bclcookie3[client] = 2;
+		GetClientCookie(client, bclcookie4h, sValue, sizeof(sValue));
+		if (strlen(sValue) < 1)
+		{
+			bclcookie4[client][0] = 255;
+			bclcookie4[client][1] = 255;
+			bclcookie4[client][2] = 0;
+			SetClientCookie(client, bclcookie4h, "255 255 0");
+		}
+		else
+		{
+			char tmpc[3][8];
+			ExplodeString(sValue," ",tmpc,3,8);
+			bclcookie4[client][0] = StringToInt(tmpc[0]);
+			bclcookie4[client][1] = StringToInt(tmpc[1]);
+			bclcookie4[client][2] = StringToInt(tmpc[2]);
+		}
+		GetClientCookie(client, bclcookie4fh, sValue, sizeof(sValue));
+		if (strlen(sValue) < 1)
+		{
+			bclcookie4f[client][0] = 255;
+			bclcookie4f[client][1] = 176;
+			bclcookie4f[client][2] = 0;
+			SetClientCookie(client, bclcookie4fh, "255 176 0");
+		}
+		else
+		{
+			char tmpc[3][8];
+			ExplodeString(sValue," ",tmpc,3,8);
+			bclcookie4f[client][0] = StringToInt(tmpc[0]);
+			bclcookie4f[client][1] = StringToInt(tmpc[1]);
+			bclcookie4f[client][2] = StringToInt(tmpc[2]);
+		}
+	}
+	else if (IsClientConnected(client))
+	{
+		CreateTimer(0.5,clspawnpost,client);
+	}
 }
 
 public OnLibraryAdded(const char[] name)
