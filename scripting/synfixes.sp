@@ -21,8 +21,9 @@ bool friendlyfire = false;
 bool seqenablecheck = true;
 bool voteinprogress = false;
 bool instswitch = true;
+bool mapchoosercheck = false;
 
-#define PLUGIN_VERSION "1.46"
+#define PLUGIN_VERSION "1.47"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo = 
@@ -185,10 +186,14 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 public OnLibraryAdded(const char[] name)
 {
-    if (StrEqual(name,"updater",false))
-    {
-        Updater_AddPlugin(UPDATE_URL);
-    }
+	if (StrEqual(name,"updater",false))
+	{
+		Updater_AddPlugin(UPDATE_URL);
+	}
+	if (StrEqual(name,"mapchooser",false))
+	{
+		mapchoosercheck = true;
+	}
 }
 
 public Action fixalyx(int client, int args)
@@ -311,7 +316,15 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 			PrintToChat(param1,"You must wait %1.f seconds before you can vote again.",votetime[param1]-Time);
 			return 0;
 		}
-		if (!CanMapChooserStartVote() || voteinprogress)
+		if (mapchoosercheck)
+		{
+			if (!CanMapChooserStartVote())
+			{
+				PrintToChat(param1,"There is a vote already in progress.");
+				return 0;
+			}
+		}
+		if (voteinprogress)
 		{
 			PrintToChat(param1,"There is a vote already in progress.");
 			return 0;
