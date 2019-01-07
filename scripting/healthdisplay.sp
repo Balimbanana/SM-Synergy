@@ -520,7 +520,7 @@ public Action ShowTimer(Handle timer)
 						if (targ != -1)
 							GetEntityClassname(targ,clsname,sizeof(clsname));
 					}
-					if (targ != -1)
+					if ((targ != -1) && (IsValidEntity(targ)))
 					{
 						if (StrEqual(clsname,"generic_actor",false))
 						{
@@ -537,6 +537,7 @@ public Action ShowTimer(Handle timer)
 						if (HasEntProp(targ,Prop_Data,"m_NPCState"))
 							if (GetEntProp(targ,Prop_Data,"m_NPCState") == 7) targ = -1;
 					}
+					if  ((targ == -1) || (!IsValidEntity(targ))) return Plugin_Handled;
 					if ((targ != -1) && ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"monster_",false) != -1)) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
 					{
 						bool ismonster = false;
@@ -787,6 +788,7 @@ public Action ShowTimer(Handle timer)
 			}
 		}
 	}
+	return Plugin_Handled;
 }
 
 public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
