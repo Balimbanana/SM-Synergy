@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.46"
-			"Previous"	"1.45"
+			"Latest"  	"1.47"
+			"Previous"	"1.46"
 		}
 		
-		"Notes"	"Added sm_instantswitch for instant physcannon switch."
+		"Notes"	"Added more checks for if mapchooser is running."
 	}
 	
 	"Files"
