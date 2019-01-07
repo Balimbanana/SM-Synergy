@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.63"
-			"Previous"	"1.62"
+			"Latest"  	"1.64"
+			"Previous"	"1.63"
 		}
 		
-		"Notes"	"Added additional cl load check."
+		"Notes"	"Added additional returns."
 	}
 	
 	"Files"
