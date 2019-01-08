@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.64"
+#define PLUGIN_VERSION "1.65"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -533,9 +533,9 @@ public Action ShowTimer(Handle timer)
 							}
 						}
 						if (HasEntProp(targ,Prop_Data,"m_nRenderMode"))
-							if (GetEntProp(targ,Prop_Data,"m_nRenderMode") == 10) targ = -1;
+							if (GetEntProp(targ,Prop_Data,"m_nRenderMode") == 10) targ = 0;
 						if (HasEntProp(targ,Prop_Data,"m_NPCState"))
-							if (GetEntProp(targ,Prop_Data,"m_NPCState") == 7) targ = -1;
+							if (GetEntProp(targ,Prop_Data,"m_NPCState") == 7) targ = 0;
 					}
 					if  ((targ == -1) || (!IsValidEntity(targ))) return Plugin_Handled;
 					if ((targ != -1) && ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"monster_",false) != -1)) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
