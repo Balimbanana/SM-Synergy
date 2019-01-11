@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.66"
+#define PLUGIN_VERSION "1.67"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -72,6 +72,7 @@ public void OnMapStart()
 	bugbaitpicked = false;
 	CreateTimer(1.0,reloadclcookies);
 	HookEntityOutput("weapon_bugbait", "OnPlayerPickup", EntityOutput:onbugbaitpickup);
+	/*
 	for (int i = 1;i<MaxClients+1;i++)
 	{
 		if (IsClientConnected(i) && !IsFakeClient(i))
@@ -79,13 +80,14 @@ public void OnMapStart()
 			CreateTimer(1.0,clspawnpost,i);
 		}
 	}
+	*/
 }
-
+/*
 public OnClientAuthorized(int client, const char[] szAuth)
 {
 	CreateTimer(0.5,clspawnpost,client);
 }
-
+*/
 public Action clspawnpost(Handle timer, int client)
 {
 	if (IsValidEntity(client) && IsPlayerAlive(client))
@@ -1042,7 +1044,7 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		PrintCenterText(client,hudbuf);
 	}
 }
-
+/*
 public OnClientDisconnect(int client)
 {
 	antispamchk[client] = 0.0;
@@ -1056,7 +1058,7 @@ public OnClientDisconnect(int client)
 	bclcookie4f[client][1] = 255;
 	bclcookie4f[client][2] = 0;
 }
-
+*/
 bool GetCopAlly()
 {
 	if (GetArraySize(globalsarr) > 0)
