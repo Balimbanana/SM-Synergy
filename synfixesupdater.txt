@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.47"
-			"Previous"	"1.46"
+			"Latest"  	"1.48"
+			"Previous"	"1.47"
 		}
 		
-		"Notes"	"Added more checks for if mapchooser is running."
+		"Notes"	"Added vehicle check to spawnpost."
 	}
 	
 	"Files"
