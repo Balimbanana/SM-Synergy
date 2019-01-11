@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.65"
+#define PLUGIN_VERSION "1.66"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -81,7 +81,7 @@ public void OnMapStart()
 	}
 }
 
-public OnClientPutInServer(int client)
+public OnClientAuthorized(int client, const char[] szAuth)
 {
 	CreateTimer(0.5,clspawnpost,client);
 }
