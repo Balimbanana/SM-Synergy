@@ -23,7 +23,7 @@ bool voteinprogress = false;
 bool instswitch = true;
 bool mapchoosercheck = false;
 
-#define PLUGIN_VERSION "1.47"
+#define PLUGIN_VERSION "1.48"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo = 
@@ -503,7 +503,10 @@ public Action clspawnpost(Handle timer, int client)
 				}
 			}
 		}
-		if ((FindStringInArray(weaparr,"weapon_physcannon") == -1) || (GetEntProp(client,Prop_Send,"m_bWearingSuit") > 0))
+		int vck = 0;
+		if (HasEntProp(client,Prop_Send,"m_hVehicle"))
+			vck = GetEntProp(client, Prop_Send, "m_hVehicle");
+		if ((vck == -1) && ((FindStringInArray(weaparr,"weapon_physcannon") == -1) || (GetEntProp(client,Prop_Send,"m_bWearingSuit") > 0)))
 		{
 			for (int j; j<GetArraySize(equiparr); j++)
 			{
