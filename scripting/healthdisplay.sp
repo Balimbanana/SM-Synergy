@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.67"
+#define PLUGIN_VERSION "1.68"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -564,6 +564,8 @@ public Action ShowTimer(Handle timer)
 										maxh = 1;
 									else if (StrEqual(clsname,"combinedropship",false))
 										maxh = 100;
+									else if (StrEqual(clsname,"turret_ceiling",false))
+										maxh = 1000;
 									else if (maxh == 0)
 									{
 										char cvarren[32];
@@ -662,6 +664,8 @@ public Action ShowTimer(Handle timer)
 									maxh = 1;
 								else if (StrEqual(clsname,"combinedropship",false))
 									maxh = 100;
+								else if (StrEqual(clsname,"turret_ceiling",false))
+									maxh = 1000;
 								else if (maxh == 0)
 								{
 									char cvarren[32];
@@ -761,6 +765,8 @@ public Action ShowTimer(Handle timer)
 									maxh = 1;
 								else if (StrEqual(clsname,"combinedropship",false))
 									maxh = 100;
+								else if (StrEqual(clsname,"turret_ceiling",false))
+									maxh = 1000;
 								else if (maxh == 0)
 								{
 									char cvarren[32];
@@ -1137,6 +1143,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_rollermine");
 		addht("npc_combinegunship");
 		addht("npc_combinedropship");
+		addht("npc_turret_ceiling");
 		addht("npc_manhack");
 		addht("npc_strider");
 		addht("npc_sniper");
