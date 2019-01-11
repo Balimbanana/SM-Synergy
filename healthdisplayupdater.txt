@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.65"
-			"Previous"	"1.64"
+			"Latest"  	"1.66"
+			"Previous"	"1.65"
 		}
 		
-		"Notes"	"Added additional returns. Fixed targ -1 problem."
+		"Notes"	"Changed CL load points."
 	}
 	
 	"Files"
