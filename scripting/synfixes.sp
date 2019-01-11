@@ -503,7 +503,7 @@ public Action clspawnpost(Handle timer, int client)
 				}
 			}
 		}
-		int vck = 0;
+		int vck = -1;
 		if (HasEntProp(client,Prop_Send,"m_hVehicle"))
 			vck = GetEntProp(client, Prop_Send, "m_hVehicle");
 		if ((vck == -1) && ((FindStringInArray(weaparr,"weapon_physcannon") == -1) || (GetEntProp(client,Prop_Send,"m_bWearingSuit") > 0)))
