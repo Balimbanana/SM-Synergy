@@ -795,7 +795,7 @@ public Action ShowTimer(Handle timer)
 
 public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 {
-	char hudbuf[32];
+	char hudbuf[40];
 	if (StrEqual(clsname,"monk",false)) Format(clsname,sizeof(clsname),"Father Grigori");
 	else if (StrEqual(clsname,"kleiner",false)) Format(clsname,sizeof(clsname),"Isaac Kleiner");
 	else if (StrEqual(clsname,"mossman",false)) Format(clsname,sizeof(clsname),"Judith Mossman");
@@ -1009,7 +1009,7 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		if (upper != -1)
 			clsname[upper] &= ~(1 << 5);
 	}
-	char hudbuf[32];
+	char hudbuf[40];
 	if (StrContains(clsname,"_",false) != -1)
 	{
 		int upper = ReplaceStringEx(clsname,sizeof(clsname),"_"," ");
