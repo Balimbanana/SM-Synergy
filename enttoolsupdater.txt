@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.0"
-			"Previous"	"0.9"
+			"Latest"  	"1.01"
+			"Previous"	"1.0"
 		}
 		
 		"Notes"	""
