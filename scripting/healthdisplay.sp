@@ -70,7 +70,7 @@ public void OnMapStart()
 	ClearArray(liarr);
 	ClearArray(globalsarr);
 	bugbaitpicked = false;
-	CreateTimer(1.0,reloadclcookies);
+	CreateTimer(10.0,reloadclcookies);
 	HookEntityOutput("weapon_bugbait", "OnPlayerPickup", EntityOutput:onbugbaitpickup);
 	/*
 	for (int i = 1;i<MaxClients+1;i++)
