@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION "1.01"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -28,7 +28,7 @@ public OnPluginStart()
 	RegAdminCmd("cinp",cinp,ADMFLAG_BAN,"ent_fire");
 	RegAdminCmd("entinput",cinp,ADMFLAG_BAN,"ent_fire");
 	RegAdminCmd("changeclasses",changeclasses,ADMFLAG_BAN,"ChangeClasses");
-	RegAdminCmd("gi",getinf,ADMFLAG_RESERVATION,"Getinf");
+	RegConsoleCmd("gi",getinf);
 	RegAdminCmd("tn",sett,ADMFLAG_PASSWORD,"SetName");
 	RegAdminCmd("sm_sep",setprops,ADMFLAG_ROOT,".");
 }
