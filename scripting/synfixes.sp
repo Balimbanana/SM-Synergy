@@ -201,6 +201,9 @@ public OnLibraryAdded(const char[] name)
 
 public Action fixalyx(int client, int args)
 {
+	char tmpmap[24];
+	GetCurrentMap(tmpmap,sizeof(tmpmap));
+	if (StrEqual(tmpmap,"ep2_outland_12",false)) return Plugin_Handled;
 	findgfollow(-1,"alyx");
 	if (!findtargn("alyx"))
 		readoutputs(client,"alyx");
