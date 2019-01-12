@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.48"
-			"Previous"	"1.47"
+			"Latest"  	"1.49"
+			"Previous"	"1.48"
 		}
 		
-		"Notes"	"Added vehicle check to spawnpost."
+		"Notes"	"Added linux chk and dropship TP stuck soldiers."
 	}
 	
 	"Files"
