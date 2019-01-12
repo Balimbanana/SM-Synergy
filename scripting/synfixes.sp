@@ -24,7 +24,7 @@ bool instswitch = true;
 bool mapchoosercheck = false;
 bool linact = false;
 
-#define PLUGIN_VERSION "1.49"
+#define PLUGIN_VERSION "1.50"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -203,7 +203,7 @@ public Action fixalyx(int client, int args)
 {
 	char tmpmap[24];
 	GetCurrentMap(tmpmap,sizeof(tmpmap));
-	if (StrEqual(tmpmap,"ep2_outland_12",false)) return Plugin_Handled;
+	if ((StrEqual(tmpmap,"ep2_outland_12",false)) || (StrEqual(tmpmap,"ep2_outland_11b",false))) return Plugin_Handled;
 	findgfollow(-1,"alyx");
 	if (!findtargn("alyx"))
 		readoutputs(client,"alyx");
