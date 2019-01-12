@@ -643,7 +643,7 @@ public Action elevatorstart(const char[] output, int caller, int activator, floa
 					bool below = true;
 					if ((origin[2] < 0) && (origin[2] > proporigin[2])) below = false;
 					else if ((origin[2] > -1) && (origin[2] < proporigin[2])) below = false;
-					if ((chkdist < 200.0) && (!below))
+					if ((chkdist < 250.0) && (!below))
 					{
 						if (debuglvl > 0)
 						{
