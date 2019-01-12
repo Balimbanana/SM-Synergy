@@ -22,11 +22,12 @@ bool seqenablecheck = true;
 bool voteinprogress = false;
 bool instswitch = true;
 bool mapchoosercheck = false;
+bool linact = false;
 
-#define PLUGIN_VERSION "1.48"
+#define PLUGIN_VERSION "1.49"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
-public Plugin:myinfo = 
+public Plugin:myinfo =
 {
 	name = "SynFixes",
 	author = "Balimbanana",
@@ -93,6 +94,8 @@ public void OnPluginStart()
 	}
 	CloseHandle(ffh);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
+	if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
+	else linact = false;
 	equiparr = CreateArray(32);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	entlist = CreateArray(1024);
@@ -741,10 +744,21 @@ public Action rmcolliding(Handle timer, int caller)
 					float chkdist = GetVectorDistance(origin,npcorigin,false);
 					if (chkdist < 80.0)
 					{
-						//m_hTargetEnt
 						if (debuglvl > 1) PrintToServer("Template %i %s is %1.f away from ship",i,clsname,chkdist);
-						SetVariantInt(0);
-						AcceptEntityInput(i,"SetHealth");
+						int targent = GetEntPropEnt(caller,Prop_Data,"m_hLandTarget");
+						if (targent != -1)
+						{
+							float targorigin[3];
+							GetEntPropVector(targent,Prop_Data,"m_vecAbsOrigin",targorigin);
+							float targang[3];
+							GetEntPropVector(targent,Prop_Data,"m_angAbsRotation",targang);
+							TeleportEntity(i,targorigin,targang,NULL_VECTOR);
+						}
+						else
+						{
+							SetVariantInt(0);
+							AcceptEntityInput(i,"SetHealth");
+						}
 					}
 				}
 			}
@@ -830,7 +844,11 @@ readoutputs(int scriptent, char[] targn)
 			TrimString(line);
 			if (StrEqual(line,"{",false))
 			{
-				if ((lastpos != linepospass) || (lastpos == 0))
+				if (linact)
+				{
+					lastpos = FilePosition(filehandle)-2;
+				}
+				else if ((lastpos != linepospass) || (lastpos == 0))
 				{
 					lastpos = linepospass;
 				}
