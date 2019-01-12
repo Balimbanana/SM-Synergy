@@ -1,7 +1,6 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
-#include <clientprefs>
 #undef REQUIRE_PLUGIN
 #undef REQUIRE_EXTENSIONS
 #tryinclude <SteamWorks>
@@ -9,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.68"
+#define PLUGIN_VERSION "1.70"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -28,16 +27,21 @@ Handle globalsarr = INVALID_HANDLE;
 bool bugbaitpicked = false;
 float antispamchk[MAXPLAYERS+1];
 
-Handle bclcookieh = INVALID_HANDLE;
-Handle bclcookie2h = INVALID_HANDLE;
-Handle bclcookie3h = INVALID_HANDLE;
-Handle bclcookie4h = INVALID_HANDLE;
-Handle bclcookie4fh = INVALID_HANDLE;
+Handle Handle_Database = INVALID_HANDLE;
+char SteamID[32][MAXPLAYERS+1];
 int bclcookie[MAXPLAYERS+1];
-bool bclcookie2[MAXPLAYERS+1];
+int bclcookie2[MAXPLAYERS+1];
 int bclcookie3[MAXPLAYERS+1];
 int bclcookie4[MAXPLAYERS+1][3];
 int bclcookie4f[MAXPLAYERS+1][3];
+int hChanged[MAXPLAYERS+1];
+
+//CLupdate chk
+#define HD_C_Type 0x1
+#define HD_C_Ver 0x2
+#define HD_C_Friendlies 0x4
+#define HD_C_FCol 0x8
+#define HD_C_ECol 0x16
 
 public void OnPluginStart()
 {
@@ -45,11 +49,19 @@ public void OnPluginStart()
 	htarr = CreateArray(64);
 	liarr = CreateArray(64);
 	globalsarr = CreateArray(16);
-	bclcookieh = RegClientCookie("HealthDisplayType", "HealthDisplay type Settings", CookieAccess_Private);
-	bclcookie2h = RegClientCookie("HealthDisplayNum", "HealthDisplay num Settings", CookieAccess_Private);
-	bclcookie3h = RegClientCookie("HealthDisplayFriend", "HealthDisplay friend Settings", CookieAccess_Private);
-	bclcookie4h = RegClientCookie("HealthDisplayColors", "HealthDisplay color Settings", CookieAccess_Private);
-	bclcookie4fh = RegClientCookie("HealthDisplayEnemyColors", "HealthDisplay enemy color Settings", CookieAccess_Private);
+	char Err[100];
+	Handle_Database = SQLite_UseDatabase("sourcemod-local",Err,100-1);
+	if (Handle_Database == INVALID_HANDLE)
+		LogError("SQLite error: %s",Err);
+	if (!SQL_FastQuery(Handle_Database,"CREATE TABLE IF NOT EXISTS healthdisplay(SteamID VARCHAR(32) NOT NULL PRIMARY KEY,H1 INT NOT NULL,H2 INT NOT NULL,H3 INT NOT NULL,H4 INT NOT NULL,H5 INT NOT NULL,H6 INT NOT NULL,H7 INT NOT NULL,H8 INT NOT NULL,H9 INT NOT NULL);"))
+	{
+		char Err2[100];
+		SQL_GetError(Handle_Database,Err2,100);
+		LogError("SQLite error: %s",Err2);
+	}
+	//This is on a timer to call a function because when the function is called at this point,
+	//it can sometimes fail, so I found it was best to wait 1 second.
+	CreateTimer(1.0, reloadclientstime);
 	RegConsoleCmd("hpmenu",showinf);
 	RegConsoleCmd("hitpointmenu",showinf);
 	RegConsoleCmd("sm_healthdisplay",showinf);
@@ -70,89 +82,28 @@ public void OnMapStart()
 	ClearArray(liarr);
 	ClearArray(globalsarr);
 	bugbaitpicked = false;
-	CreateTimer(10.0,reloadclcookies);
 	HookEntityOutput("weapon_bugbait", "OnPlayerPickup", EntityOutput:onbugbaitpickup);
-	/*
-	for (int i = 1;i<MaxClients+1;i++)
-	{
-		if (IsClientConnected(i) && !IsFakeClient(i))
-		{
-			CreateTimer(1.0,clspawnpost,i);
-		}
-	}
-	*/
 }
-/*
+
 public OnClientAuthorized(int client, const char[] szAuth)
 {
-	CreateTimer(0.5,clspawnpost,client);
+	GetClientAuthId(client,AuthId_Steam2,SteamID[client],32-1);
+	ReplaceString(SteamID[client],sizeof(SteamID[]),"STEAM_1","STEAM_0");
+	LoadClient(client);
 }
-*/
+
+public OnClientPutInServer(int client)
+{
+	GetClientAuthId(client,AuthId_Steam2,SteamID[client],32-1);
+	ReplaceString(SteamID[client],sizeof(SteamID[]),"STEAM_1","STEAM_0");
+	LoadClient(client);
+}
+
 public Action clspawnpost(Handle timer, int client)
 {
 	if (IsValidEntity(client) && IsPlayerAlive(client))
 	{
-		char sValue[32];
-		GetClientCookie(client, bclcookieh, sValue, sizeof(sValue));
-		if (strlen(sValue) < 1)
-		{
-			bclcookie[client] = 0;
-			SetClientCookie(client, bclcookieh, "0");
-		}
-		else
-			bclcookie[client] = StringToInt(sValue);
-		GetClientCookie(client, bclcookie2h, sValue, sizeof(sValue));
-		if (StringToInt(sValue) == 0)
-			bclcookie2[client] = false;
-		else if (StringToInt(sValue) == 1)
-			bclcookie2[client] = true;
-		else
-		{
-			bclcookie2[client] = false;
-			SetClientCookie(client, bclcookie2h, "0");
-		}
-		GetClientCookie(client, bclcookie3h, sValue, sizeof(sValue));
-		if (strlen(sValue) < 1)
-		{
-			bclcookie3[client] = 0;
-			SetClientCookie(client, bclcookie3h, "0");
-		}
-		else if (StringToInt(sValue) == 1)
-			bclcookie3[client] = 1;
-		else if (StringToInt(sValue) == 2)
-			bclcookie3[client] = 2;
-		GetClientCookie(client, bclcookie4h, sValue, sizeof(sValue));
-		if (strlen(sValue) < 1)
-		{
-			bclcookie4[client][0] = 255;
-			bclcookie4[client][1] = 255;
-			bclcookie4[client][2] = 0;
-			SetClientCookie(client, bclcookie4h, "255 255 0");
-		}
-		else
-		{
-			char tmpc[3][8];
-			ExplodeString(sValue," ",tmpc,3,8);
-			bclcookie4[client][0] = StringToInt(tmpc[0]);
-			bclcookie4[client][1] = StringToInt(tmpc[1]);
-			bclcookie4[client][2] = StringToInt(tmpc[2]);
-		}
-		GetClientCookie(client, bclcookie4fh, sValue, sizeof(sValue));
-		if (strlen(sValue) < 1)
-		{
-			bclcookie4f[client][0] = 255;
-			bclcookie4f[client][1] = 176;
-			bclcookie4f[client][2] = 0;
-			SetClientCookie(client, bclcookie4fh, "255 176 0");
-		}
-		else
-		{
-			char tmpc[3][8];
-			ExplodeString(sValue," ",tmpc,3,8);
-			bclcookie4f[client][0] = StringToInt(tmpc[0]);
-			bclcookie4f[client][1] = StringToInt(tmpc[1]);
-			bclcookie4f[client][2] = StringToInt(tmpc[2]);
-		}
+		LoadClient(client);
 	}
 	else if (IsClientConnected(client))
 	{
@@ -214,25 +165,25 @@ public Action sethealthtype(int client, int args)
 		{
 			PrintToChat(client,"Set HealthDisplay to show HudText.");
 			bclcookie[client] = 0;
-			SetClientCookie(client, bclcookieh, "0");
+			hChanged[client] |= HD_C_Type;
 		}
 		else if (numset == 2)
 		{
 			PrintToChat(client,"Set HealthDisplay to show Hint.");
 			bclcookie[client] = 1;
-			SetClientCookie(client, bclcookieh, "1");
+			hChanged[client] |= HD_C_Type;
 		}
 		else if (numset == 3)
 		{
 			PrintToChat(client,"Set HealthDisplay to show CenterText.");
 			bclcookie[client] = 2;
-			SetClientCookie(client, bclcookieh, "2");
+			hChanged[client] |= HD_C_Type;
 		}
 		else
 		{
 			PrintToChat(client,"Disabled HealthDisplay.");
 			bclcookie[client] = 3;
-			SetClientCookie(client, bclcookieh, "3");
+			hChanged[client] |= HD_C_Type;
 		}
 	}
 	return Plugin_Handled;
@@ -256,19 +207,19 @@ public Action sethealthfriendly(int client, int args)
 		{
 			PrintToChat(client,"Set HealthDisplay to hide friendly npcs health.");
 			bclcookie3[client] = 0;
-			SetClientCookie(client, bclcookie3h, "0");
+			hChanged[client] |= HD_C_Friendlies;
 		}
 		else if (numset == 1)
 		{
 			PrintToChat(client,"Set HealthDisplay to show friendly npcs health.");
 			bclcookie3[client] = 1;
-			SetClientCookie(client, bclcookie3h, "1");
+			hChanged[client] |= HD_C_Friendlies;
 		}
 		else if (numset == 2)
 		{
 			PrintToChat(client,"Set HealthDisplay to show friendly npcs health with friend: or enemy:.");
 			bclcookie3[client] = 2;
-			SetClientCookie(client, bclcookie3h, "2");
+			hChanged[client] |= HD_C_Friendlies;
 		}
 		else
 		{
@@ -299,162 +250,35 @@ public Action sethealthnum(int client, int args)
 		else if (numset == 1)
 		{
 			PrintToChat(client,"Set HealthDisplay to show percentage.");
-			bclcookie2[client] = false;
-			SetClientCookie(client, bclcookie2h, "0");
+			bclcookie2[client] = 0;
+			hChanged[client] |= HD_C_Ver;
 		}
 		else if (numset == 2)
 		{
 			PrintToChat(client,"Set HealthDisplay to show hit points.");
-			bclcookie2[client] = true;
-			SetClientCookie(client, bclcookie2h, "1");
+			bclcookie2[client] = 1;
+			hChanged[client] |= HD_C_Ver;
 		}
 	}
 	return Plugin_Handled;
 }
 
-public Action reloadclcookies(Handle timer)
+public Action cleararr(Handle timer)
 {
-	for (int client = 1;client<MaxClients;client++)
+	for (int client = 1;client<MaxClients+1;client++)
 	{
-		if (IsClientConnected(client))
+		if (IsClientInGame(client))
 		{
-			char sValue[32];
-			GetClientCookie(client, bclcookieh, sValue, sizeof(sValue));
-			if (strlen(sValue) < 1)
+			if (!IsFakeClient(client))
 			{
-				bclcookie[client] = 0;
-				SetClientCookie(client, bclcookieh, "0");
-			}
-			else
-				bclcookie[client] = StringToInt(sValue);
-			GetClientCookie(client, bclcookie2h, sValue, sizeof(sValue));
-			if (StringToInt(sValue) == 0)
-				bclcookie2[client] = false;
-			else if (StringToInt(sValue) == 1)
-				bclcookie2[client] = true;
-			else
-			{
-				bclcookie2[client] = false;
-				SetClientCookie(client, bclcookie2h, "0");
-			}
-			GetClientCookie(client, bclcookie3h, sValue, sizeof(sValue));
-			if (strlen(sValue) < 1)
-			{
-				bclcookie3[client] = 0;
-				SetClientCookie(client, bclcookie3h, "0");
-			}
-			else if (StringToInt(sValue) == 1)
-				bclcookie3[client] = 1;
-			else if (StringToInt(sValue) == 2)
-				bclcookie3[client] = 2;
-			GetClientCookie(client, bclcookie4h, sValue, sizeof(sValue));
-			if (strlen(sValue) < 1)
-			{
-				bclcookie4[client][0] = 255;
-				bclcookie4[client][1] = 255;
-				bclcookie4[client][2] = 0;
-				SetClientCookie(client, bclcookie4h, "255 255 0");
-			}
-			else
-			{
-				char tmpc[3][8];
-				ExplodeString(sValue," ",tmpc,3,8);
-				bclcookie4[client][0] = StringToInt(tmpc[0]);
-				bclcookie4[client][1] = StringToInt(tmpc[1]);
-				bclcookie4[client][2] = StringToInt(tmpc[2]);
-			}
-			GetClientCookie(client, bclcookie4fh, sValue, sizeof(sValue));
-			if (strlen(sValue) < 1)
-			{
-				bclcookie4f[client][0] = 255;
-				bclcookie4f[client][1] = 176;
-				bclcookie4f[client][2] = 0;
-				SetClientCookie(client, bclcookie4fh, "255 176 0");
-			}
-			else
-			{
-				char tmpc[3][8];
-				ExplodeString(sValue," ",tmpc,3,8);
-				bclcookie4f[client][0] = StringToInt(tmpc[0]);
-				bclcookie4f[client][1] = StringToInt(tmpc[1]);
-				bclcookie4f[client][2] = StringToInt(tmpc[2]);
+				CLStoreInTable(client);
 			}
 		}
 	}
-}
-
-public Action cleararr(Handle timer)
-{
 	//This is to force recheck of ai relationships as the lowest impact check possible.
 	ClearArray(htarr);
 	ClearArray(liarr);
 	ClearArray(airelarr);
-}
-
-public OnClientCookiesCached(int client)
-{
-	char sValue[32];
-	GetClientCookie(client, bclcookieh, sValue, sizeof(sValue));
-	if (strlen(sValue) < 1)
-	{
-		bclcookie[client] = 0;
-		SetClientCookie(client, bclcookieh, "0");
-	}
-	else
-		bclcookie[client] = StringToInt(sValue);
-	GetClientCookie(client, bclcookie2h, sValue, sizeof(sValue));
-	if (StringToInt(sValue) == 0)
-		bclcookie2[client] = false;
-	else if (StringToInt(sValue) == 1)
-		bclcookie2[client] = true;
-	else
-	{
-		bclcookie2[client] = false;
-		SetClientCookie(client, bclcookie2h, "0");
-	}
-	GetClientCookie(client, bclcookie3h, sValue, sizeof(sValue));
-	if (strlen(sValue) < 1)
-	{
-		bclcookie3[client] = 0;
-		SetClientCookie(client, bclcookie3h, "0");
-	}
-	else if (StringToInt(sValue) == 1)
-		bclcookie3[client] = 1;
-	else if (StringToInt(sValue) == 2)
-		bclcookie3[client] = 2;
-	GetClientCookie(client, bclcookie4h, sValue, sizeof(sValue));
-	if (strlen(sValue) < 1)
-	{
-		bclcookie4[client][0] = 255;
-		bclcookie4[client][1] = 255;
-		bclcookie4[client][2] = 0;
-		SetClientCookie(client, bclcookie4h, "255 255 0");
-	}
-	else
-	{
-		char tmpc[3][8];
-		ExplodeString(sValue," ",tmpc,3,8);
-		//PrintToServer("%s %s %s Original: %s",tmpc[0],tmpc[1],tmpc[2],sValue);
-		bclcookie4[client][0] = StringToInt(tmpc[0]);
-		bclcookie4[client][1] = StringToInt(tmpc[1]);
-		bclcookie4[client][2] = StringToInt(tmpc[2]);
-	}
-	GetClientCookie(client, bclcookie4fh, sValue, sizeof(sValue));
-	if (strlen(sValue) < 1)
-	{
-		bclcookie4f[client][0] = 255;
-		bclcookie4f[client][1] = 255;
-		bclcookie4f[client][2] = 0;
-		SetClientCookie(client, bclcookie4fh, "255 255 0");
-	}
-	else
-	{
-		char tmpc[3][8];
-		ExplodeString(sValue," ",tmpc,3,8);
-		bclcookie4f[client][0] = StringToInt(tmpc[0]);
-		bclcookie4f[client][1] = StringToInt(tmpc[1]);
-		bclcookie4f[client][2] = StringToInt(tmpc[2]);
-	}
 }
 
 bool IsInViewCtrl(int client)
@@ -1050,13 +874,19 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		PrintCenterText(client,hudbuf);
 	}
 }
-/*
+
 public OnClientDisconnect(int client)
+{
+	CLStoreInTable(client);
+	initcl(client);
+}
+
+initcl(int client)
 {
 	antispamchk[client] = 0.0;
 	bclcookie[client] = 0;
-	bclcookie2[client] = false;
-	bclcookie3[client] = false;
+	bclcookie2[client] = 0;
+	bclcookie3[client] = 0;
 	bclcookie4[client][0] = 255;
 	bclcookie4[client][1] = 255;
 	bclcookie4[client][2] = 0;
@@ -1064,7 +894,7 @@ public OnClientDisconnect(int client)
 	bclcookie4f[client][1] = 255;
 	bclcookie4f[client][2] = 0;
 }
-*/
+
 bool GetCopAlly()
 {
 	if (GetArraySize(globalsarr) > 0)
@@ -1418,64 +1248,64 @@ public PanelHandlerDisplayFull(Menu menu, MenuAction action, int param1, int par
 		else if (StrEqual(info,"setperc",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show percentage.");
-			bclcookie2[param1] = false;
-			SetClientCookie(param1, bclcookie2h, "0");
+			bclcookie2[param1] = 0;
+			hChanged[param1] |= HD_C_Ver;
 			Display_HudNum(param1,0);
 		}
 		else if (StrEqual(info,"sethp",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show hit points.");
-			bclcookie2[param1] = true;
-			SetClientCookie(param1, bclcookie2h, "1");
+			bclcookie2[param1] = 1;
+			hChanged[param1] |= HD_C_Ver;
 			Display_HudNum(param1,0);
 		}
 		else if (StrEqual(info,"friend0",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to hide friendly npcs health.");
 			bclcookie3[param1] = 0;
-			SetClientCookie(param1, bclcookie3h, "0");
+			hChanged[param1] |= HD_C_Friendlies;
 			Display_HudFriendlies(param1,0);
 		}
 		else if (StrEqual(info,"friend1",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show friendly npcs health.");
 			bclcookie3[param1] = 1;
-			SetClientCookie(param1, bclcookie3h, "1");
+			hChanged[param1] |= HD_C_Friendlies;
 			Display_HudFriendlies(param1,0);
 		}
 		else if (StrEqual(info,"friend2",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show friendly npcs health with friend: or enemy:.");
 			bclcookie3[param1] = 2;
-			SetClientCookie(param1, bclcookie3h, "2");
+			hChanged[param1] |= HD_C_Friendlies;
 			Display_HudFriendlies(param1,0);
 		}
 		else if (StrEqual(info,"settext",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show HudText.");
 			bclcookie[param1] = 0;
-			SetClientCookie(param1, bclcookieh, "0");
+			hChanged[param1] |= HD_C_Type;
 			Display_HudTypes(param1,0);
 		}
 		else if (StrEqual(info,"sethint",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show Hint.");
 			bclcookie[param1] = 1;
-			SetClientCookie(param1, bclcookieh, "1");
+			hChanged[param1] |= HD_C_Type;
 			Display_HudTypes(param1,0);
 		}
 		else if (StrEqual(info,"setcent",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show CenterText.");
 			bclcookie[param1] = 2;
-			SetClientCookie(param1, bclcookieh, "2");
+			hChanged[param1] |= HD_C_Type;
 			Display_HudTypes(param1,0);
 		}
 		else if (StrEqual(info,"setdisable",false))
 		{
 			PrintToChat(param1,"Disabled HealthDisplay.");
 			bclcookie[param1] = 3;
-			SetClientCookie(param1, bclcookieh, "3");
+			hChanged[param1] |= HD_C_Type;
 			Display_HudTypes(param1,0);
 		}
 		else if (StrEqual(info,"backtotop",false)) showinf(param1,10);
@@ -1532,84 +1362,84 @@ public PanelHandlerDisplay(Menu menu, MenuAction action, int param1, int param2)
 			bclcookie4[param1][0] = 255;
 			bclcookie4[param1][1] = 0;
 			bclcookie4[param1][2] = 0;
-			SetClientCookie(param1, bclcookie4h, "255 0 0");
+			hChanged[param1] |= HD_C_ECol;
 		}
 		else if (StrEqual(info,"en green",false))
 		{
 			bclcookie4[param1][0] = 0;
 			bclcookie4[param1][1] = 255;
 			bclcookie4[param1][2] = 0;
-			SetClientCookie(param1, bclcookie4h, "0 255 0");
+			hChanged[param1] |= HD_C_ECol;
 		}
 		else if (StrEqual(info,"en blue",false))
 		{
 			bclcookie4[param1][0] = 0;
 			bclcookie4[param1][1] = 0;
 			bclcookie4[param1][2] = 255;
-			SetClientCookie(param1, bclcookie4h, "0 0 255");
+			hChanged[param1] |= HD_C_ECol;
 		}
 		else if (StrEqual(info,"en yellow",false))
 		{
 			bclcookie4[param1][0] = 255;
 			bclcookie4[param1][1] = 255;
 			bclcookie4[param1][2] = 0;
-			SetClientCookie(param1, bclcookie4h, "255 255 0");
+			hChanged[param1] |= HD_C_ECol;
 		}
 		else if (StrEqual(info,"en white",false))
 		{
 			bclcookie4[param1][0] = 255;
 			bclcookie4[param1][1] = 255;
 			bclcookie4[param1][2] = 255;
-			SetClientCookie(param1, bclcookie4h, "255 255 255");
+			hChanged[param1] |= HD_C_ECol;
 		}
 		else if (StrEqual(info,"en purple",false))
 		{
 			bclcookie4[param1][0] = 255;
 			bclcookie4[param1][1] = 0;
 			bclcookie4[param1][2] = 255;
-			SetClientCookie(param1, bclcookie4h, "255 0 255");
+			hChanged[param1] |= HD_C_ECol;
 		}
 		else if (StrEqual(info,"ff red",false))
 		{
 			bclcookie4f[param1][0] = 255;
 			bclcookie4f[param1][1] = 0;
 			bclcookie4f[param1][2] = 0;
-			SetClientCookie(param1, bclcookie4fh, "255 0 0");
+			hChanged[param1] |= HD_C_FCol;
 		}
 		else if (StrEqual(info,"ff green",false))
 		{
 			bclcookie4f[param1][0] = 0;
 			bclcookie4f[param1][1] = 255;
 			bclcookie4f[param1][2] = 0;
-			SetClientCookie(param1, bclcookie4fh, "0 255 0");
+			hChanged[param1] |= HD_C_FCol;
 		}
 		else if (StrEqual(info,"ff blue",false))
 		{
 			bclcookie4f[param1][0] = 0;
 			bclcookie4f[param1][1] = 0;
 			bclcookie4f[param1][2] = 255;
-			SetClientCookie(param1, bclcookie4fh, "0 0 255");
+			hChanged[param1] |= HD_C_FCol;
 		}
 		else if (StrEqual(info,"ff yellow",false))
 		{
 			bclcookie4f[param1][0] = 255;
 			bclcookie4f[param1][1] = 255;
 			bclcookie4f[param1][2] = 0;
-			SetClientCookie(param1, bclcookie4fh, "255 255 0");
+			hChanged[param1] |= HD_C_FCol;
 		}
 		else if (StrEqual(info,"ff white",false))
 		{
 			bclcookie4f[param1][0] = 255;
 			bclcookie4f[param1][1] = 255;
 			bclcookie4f[param1][2] = 255;
-			SetClientCookie(param1, bclcookie4fh, "255 255 255");
+			hChanged[param1] |= HD_C_FCol;
 		}
 		else if (StrEqual(info,"ff purple",false))
 		{
 			bclcookie4f[param1][0] = 255;
 			bclcookie4f[param1][1] = 0;
 			bclcookie4f[param1][2] = 255;
-			SetClientCookie(param1, bclcookie4fh, "255 0 255");
+			hChanged[param1] |= HD_C_FCol;
 		}
 		if (StrContains(info,"ff ",false) != -1) Display_HudFriendSelect(param1,0);
 		else if (StrContains(info,"en ",false) != -1) Display_HudEnemySelect(param1,0);
@@ -1623,4 +1453,175 @@ public PanelHandlerDisplay(Menu menu, MenuAction action, int param1, int param2)
 	{
 		delete menu;
 	}
+}
+
+public bool IsCLStored(int client)
+{
+	char Query[100];
+	Format(Query,100,"SELECT H1 FROM healthdisplay WHERE SteamID = '%s'",SteamID[client]);
+	Handle hQuery = SQL_Query(Handle_Database,Query);
+	if (hQuery == INVALID_HANDLE)
+	{
+		char Err[100];
+		SQL_GetError(Handle_Database,Err,100);
+		LogError("SQLite error: %s",Err);
+		return false;
+	}
+	while (SQL_FetchRow(hQuery))
+	{
+		CloseHandle(hQuery);
+		return true;
+	}
+	CloseHandle(hQuery);
+	return false;
+}
+
+public LoadClient(int client)
+{
+	if (!IsCLStored(client))
+	{
+		CLStoreInTable(client);
+		return;
+	}
+	char Query[100];
+	Format(Query,100,"SELECT * FROM healthdisplay WHERE SteamID = '%s';",SteamID[client]);
+	Handle hQuery = SQL_Query(Handle_Database,Query);
+	if (hQuery == INVALID_HANDLE)
+	{
+		char Err[100];
+		SQL_GetError(Handle_Database,Err,100);
+		LogError("SQLite error: %s with query %s",Err,Query);
+		return;
+	}
+	while(SQL_FetchRow(hQuery))
+	{
+		bclcookie[client] = SQL_FetchInt(hQuery,1);
+		bclcookie2[client] = SQL_FetchInt(hQuery,2);
+		bclcookie3[client] = SQL_FetchInt(hQuery,3);
+		bclcookie4[client][0] = SQL_FetchInt(hQuery,4);
+		bclcookie4[client][1] = SQL_FetchInt(hQuery,5);
+		bclcookie4[client][2] = SQL_FetchInt(hQuery,6);
+		bclcookie4f[client][0] = SQL_FetchInt(hQuery,7);
+		bclcookie4f[client][1] = SQL_FetchInt(hQuery,8);
+		bclcookie4f[client][2] = SQL_FetchInt(hQuery,9);
+	}
+	return;
+}
+
+public Action reloadclients(int args)
+{
+	for (int client = 0; client<MaxClients+1 ;client++)
+	{
+		if (client == 0)
+		{
+			
+		}
+		else
+		{
+			if (IsClientConnected(client) && IsClientAuthorized(client))
+			{
+				GetClientAuthId(client,AuthId_Steam2,SteamID[client],32-1);
+				ReplaceString(SteamID[client],sizeof(SteamID[]),"STEAM_1","STEAM_0");
+				LoadClient(client);
+			}
+		}
+	}
+}
+
+public Action reloadclientstime(Handle timer)
+{
+	reloadclients(0);
+}
+
+public CLStoreInTable(int client)
+{
+	char Query[500];
+	char Temp[100];
+	if (IsCLStored(client) && (hChanged[client]))
+	{
+		StrCat(Query,500,"UPDATE healthdisplay SET ");
+		if (hChanged[client] & HD_C_Type)
+		{
+			Format(Temp,100,"H1 = %i, ",bclcookie[client]);
+			StrCat(Query,500,Temp);
+		}
+		if (hChanged[client] & HD_C_Ver)
+		{
+			Format(Temp,100,"H2 = %i, ",bclcookie2[client]);
+			StrCat(Query,500,Temp);
+		}
+		if (hChanged[client] & HD_C_Friendlies)
+		{
+			Format(Temp,100,"H3 = %i, ",bclcookie3[client]);
+			StrCat(Query,500,Temp);
+		}
+		if (hChanged[client] & HD_C_FCol)
+		{
+			Format(Temp,100,"H4 = %i, ",bclcookie4[client][0]);
+			StrCat(Query,500,Temp);
+			Format(Temp,100,"H5 = %i, ",bclcookie4[client][1]);
+			StrCat(Query,500,Temp);
+			Format(Temp,100,"H6 = %i, ",bclcookie4[client][2]);
+			StrCat(Query,500,Temp);
+		}
+		if (hChanged[client] & HD_C_ECol)
+		{
+			Format(Temp,100,"H7 = %i, ",bclcookie4f[client][0]);
+			StrCat(Query,500,Temp);
+			Format(Temp,100,"H8 = %i, ",bclcookie4f[client][1]);
+			StrCat(Query,500,Temp);
+			Format(Temp,100,"H9 = %i, ",bclcookie4f[client][2]);
+			StrCat(Query,500,Temp);
+		}
+		Query[strlen(Query)-2] = '\0';
+		Format(Temp,100," WHERE SteamID = '%s';",SteamID[client]);
+		StrCat(Query,500,Temp);
+	}
+	else if (hChanged[client])
+	{
+		StrCat(Query,500,"INSERT INTO healthdisplay VALUES( ");
+		char thistemp[34];
+		Format(thistemp,sizeof(thistemp),"'%s'",SteamID[client]);
+		StrCat(Query,500,thistemp);
+		StrCat(Query,500,", ");
+		IntToString(bclcookie[client],Temp,100);
+		StrCat(Query,500,Temp);
+		StrCat(Query,500,", ");
+		IntToString(bclcookie2[client],Temp,100);
+		StrCat(Query,500,Temp);
+		StrCat(Query,500,", ");
+		IntToString(bclcookie3[client],Temp,100);
+		StrCat(Query,500,Temp);
+		StrCat(Query,500,", ");
+		IntToString(255,Temp,100);
+		StrCat(Query,500,Temp);
+		StrCat(Query,500,", ");
+		IntToString(255,Temp,100);
+		StrCat(Query,500,Temp);
+		StrCat(Query,500,", ");
+		IntToString(0,Temp,100);
+		StrCat(Query,500,Temp);
+		StrCat(Query,500,", ");
+		IntToString(255,Temp,100);
+		StrCat(Query,500,Temp);
+		StrCat(Query,500,", ");
+		IntToString(255,Temp,100);
+		StrCat(Query,500,Temp);
+		StrCat(Query,500,", ");
+		IntToString(0,Temp,100);
+		StrCat(Query,500,Temp);
+		StrCat(Query,500,");");
+	}
+	if (strlen(Query) > 32)
+	{
+		PrintToServer("Query %s",Query);
+		if (!SQL_FastQuery(Handle_Database,Query))
+		{
+			char Err[100];
+			SQL_GetError(Handle_Database,Err,100);
+			LogError("SQLite error: %s with query %s",Err,Query);
+			return;
+		}
+	}
+	hChanged[client] = 0;
 }
