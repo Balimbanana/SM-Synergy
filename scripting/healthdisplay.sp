@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.70"
+#define PLUGIN_VERSION "1.71"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -1614,7 +1614,6 @@ public CLStoreInTable(int client)
 	}
 	if (strlen(Query) > 32)
 	{
-		PrintToServer("Query %s",Query);
 		if (!SQL_FastQuery(Handle_Database,Query))
 		{
 			char Err[100];
