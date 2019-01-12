@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.68"
-			"Previous"	"1.67"
+			"Latest"  	"1.70"
+			"Previous"	"1.68"
 		}
 		
-		"Notes"	"Added ceiling turret"
+		"Notes"	"Changed entire database structure to be more accurate in more circumstances."
 	}
 	
 	"Files"
