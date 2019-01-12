@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.49"
-			"Previous"	"1.48"
+			"Latest"  	"1.50"
+			"Previous"	"1.49"
 		}
 		
 		"Notes"	"Added linux chk and dropship TP stuck soldiers."
