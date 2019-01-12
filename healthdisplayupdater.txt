@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.70"
-			"Previous"	"1.68"
+			"Latest"  	"1.71"
+			"Previous"	"1.70"
 		}
 		
 		"Notes"	"Changed entire database structure to be more accurate in more circumstances."
