@@ -15,6 +15,7 @@ int collisiongroup = -1;
 char mapbuf[64];
 Handle equiparr = INVALID_HANDLE;
 Handle entlist = INVALID_HANDLE;
+Handle entnames = INVALID_HANDLE;
 float entrefresh = 0.0;
 int WeapList = -1;
 bool friendlyfire = false;
@@ -24,7 +25,7 @@ bool instswitch = true;
 bool mapchoosercheck = false;
 bool linact = false;
 
-#define PLUGIN_VERSION "1.50"
+#define PLUGIN_VERSION "1.51"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -60,7 +61,7 @@ public void OnPluginStart()
 	Handle dbgallowh = INVALID_HANDLE;
 	Handle dbgoh = INVALID_HANDLE;
 	dbgh = CreateConVar("seqdbg", "0", "Set debug level of sequence checks.", _, true, 0.0, true, 3.0);
-	dbgallowh = CreateConVar("seqenablecheck", "0", "Enables or disables sequence checking.", _, true, 0.0, true, 1.0);
+	dbgallowh = CreateConVar("seqenablecheck", "1", "Enables or disables sequence checking.", _, true, 0.0, true, 1.0);
 	dbgoh = CreateConVar("oowdbg", "0", "Set debug level of out of world checks.", _, true, 0.0, true, 1.0);
 	HookConVarChange(dbgh, dbghch);
 	HookConVarChange(dbgallowh, dbgallowhch);
@@ -99,6 +100,7 @@ public void OnPluginStart()
 	equiparr = CreateArray(32);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	entlist = CreateArray(1024);
+	entnames = CreateArray(128);
 	RegConsoleCmd("alyx",fixalyx);
 	RegConsoleCmd("barney",fixbarney);
 	RegConsoleCmd("stuck",stuckblck);
@@ -116,6 +118,7 @@ public void OnMapStart()
 	entrefresh = 0.0;
 	ClearArray(entlist);
 	ClearArray(equiparr);
+	ClearArray(entnames);
 	GetCurrentMap(mapbuf,sizeof(mapbuf));
 	Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
 	char buff[64];
@@ -140,6 +143,7 @@ public void OnMapStart()
 	HookEntityOutput("instanced_scripted_scene","OnStart",EntityOutput:trigout);
 	HookEntityOutput("func_tracktrain","OnStart",EntityOutput:elevatorstart);
 	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:mapendchg);
+	HookEntityOutput("npc_citizen","OnDeath",EntityOutput:entdeath);
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
 	{
@@ -694,6 +698,16 @@ public Action changeleveldelay(Handle timer, Handle data)
 	}
 }
 
+public Action entdeath(const char[] output, int caller, int activator, float delay)
+{
+	if (HasEntProp(caller,Prop_Data,"m_iName"))
+	{
+		char entname[32];
+		GetEntPropString(caller,Prop_Data,"m_iName",entname,sizeof(entname));
+		if (FindStringInArray(entnames,entname) == -1) PushArrayString(entnames,entname);
+	}
+}
+
 public Action dropshipchk(Handle timer)
 {
 	for (int i = MaxClients+1; i<GetMaxEntities(); i++)
@@ -799,6 +813,7 @@ public Action trigout(const char[] output, int caller, int activator, float dela
 		GetEntPropString(caller,Prop_Data,"m_iName",sname,sizeof(sname));
 		if (strlen(targn) < 1)
 			GetEntPropString(caller,Prop_Data,"m_target",targn,sizeof(targn));
+		if (FindStringInArray(entnames,targn) != -1) return Plugin_Continue;
 		if ((StrContains(sname,"al_vort",false) != -1) && ((!StrEqual(targn,"alyx")) || (!StrEqual(targn,"vort"))))
 		{
 			if (!findtargn("alyx"))
@@ -821,6 +836,7 @@ public Action trigout(const char[] output, int caller, int activator, float dela
 		}
 		if (debuglvl == 3) PrintToServer("Sequence ent %i with name %s started with %s target\nPlaying %s\nAt: %1.f %1.f %1.f",caller,sname,targn,scenes,origin[0],origin[1],origin[2]);
 	}
+	return Plugin_Continue;
 }
 
 readoutputs(int scriptent, char[] targn)
@@ -1201,6 +1217,7 @@ public Action resetinst(Handle timer, any:data)
 
 bool findtargn(char[] targn)
 {
+	if (strlen(targn) < 1) return false;
 	float Time = GetTickedTime();
 	if (entrefresh <= Time)
 	{
