@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.50"
-			"Previous"	"1.49"
+			"Latest"  	"1.51"
+			"Previous"	"1.50"
 		}
 		
-		"Notes"	"Added linux chk and dropship TP stuck soldiers."
+		"Notes"	"Fixed sequence checking, seqenablecheck is now default 1 unless set by config."
 	}
 	
 	"Files"
