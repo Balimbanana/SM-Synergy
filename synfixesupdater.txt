@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.51"
-			"Previous"	"1.50"
+			"Latest"  	"1.52"
+			"Previous"	"1.51"
 		}
 		
-		"Notes"	"Fixed sequence checking, seqenablecheck is now default 1 unless set by config."
+		"Notes"	"Added sm_removedrops default 30.0 this will remove health and ammo drops after this many seconds."
 	}
 	
 	"Files"
