@@ -17,6 +17,7 @@ Handle equiparr = INVALID_HANDLE;
 Handle entlist = INVALID_HANDLE;
 Handle entnames = INVALID_HANDLE;
 float entrefresh = 0.0;
+float removertimer = 30.0;
 int WeapList = -1;
 bool friendlyfire = false;
 bool seqenablecheck = true;
@@ -25,7 +26,7 @@ bool instswitch = true;
 bool mapchoosercheck = false;
 bool linact = false;
 
-#define PLUGIN_VERSION "1.51"
+#define PLUGIN_VERSION "1.52"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -87,6 +88,10 @@ public void OnPluginStart()
 	instswitch = GetConVarBool(instphyswitch);
 	HookConVarChange(instphyswitch, instphych);
 	CloseHandle(instphyswitch);
+	Handle removertimerh = CreateConVar("sm_removedrops", "30", "Remove healthkits and ammo drops after this many seconds.", _, true, 1.0, true, 100.0);
+	removertimer = GetConVarFloat(removertimerh);
+	HookConVarChange(removertimerh, removertimerch);
+	CloseHandle(removertimerh);
 	Handle ffh = FindConVar("mp_friendlyfire");
 	if (ffh != INVALID_HANDLE)
 	{
@@ -1174,6 +1179,36 @@ public OnEntityCreated(int entity, const char[] classname)
 		PushArrayCell(entlist,entity);
 		if ((StrEqual(classname,"npc_citizen",false)) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
 	}
+	if ((StrEqual(classname,"item_health_drop",false)) || (StrEqual(classname,"item_ammo_drop",false)))
+	{
+		SDKHook(entity, SDKHook_StartTouch, StartTouchprop);
+		Handle data;
+		data = CreateDataPack();
+		WritePackCell(data, entity);
+		WritePackString(data, classname);
+		CreateTimer(removertimer,cleanup,data);
+	}
+}
+
+public Action StartTouchprop(int entity, int other)
+{
+	if ((other > MaxClients) && (other > 0) && (IsValidEntity(other)))
+	{
+		char clscoll[64];
+		GetEntityClassname(other,clscoll,sizeof(clscoll));
+		if (StrEqual(clscoll,"prop_dynamic",false))
+		{
+			char clscollname[64];
+			GetEntPropString(other,Prop_Data,"m_iName",clscollname,sizeof(clscollname));
+			if (strlen(clscollname) > 0)
+			{
+				if ((StrContains(clscollname,"elev",false) != -1) || (StrContains(clscollname,"basket",false) != -1))
+					AcceptEntityInput(entity,"kill");
+			}
+		}
+		else if (StrEqual(clscoll,"func_tracktrain",false))
+			AcceptEntityInput(entity,"kill");
+	}
 }
 
 public Action OnWeaponUse(int client, int weapon)
@@ -1373,6 +1408,14 @@ public instphych(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) instswitch = true;
 	else instswitch = false;
+}
+
+public removertimerch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToFloat(newValue) > 0.0)
+		removertimer = StringToFloat(newValue);
+	else
+		removertimer = 30.0;
 }
 
 public restrictpercch(Handle convar, const char[] oldValue, const char[] newValue)
