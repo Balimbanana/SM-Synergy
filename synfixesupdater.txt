@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.52"
-			"Previous"	"1.51"
+			"Latest"  	"1.53"
+			"Previous"	"1.52"
 		}
 		
-		"Notes"	"Added sm_removedrops default 30.0 this will remove health and ammo drops after this many seconds."
+		"Notes"	"Added logic_auto spawnflags 1 unless targetname is syn_logicauto Added ragdoll checks to elevator."
 	}
 	
 	"Files"
