@@ -26,7 +26,7 @@ bool instswitch = true;
 bool mapchoosercheck = false;
 bool linact = false;
 
-#define PLUGIN_VERSION "1.52"
+#define PLUGIN_VERSION "1.53"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -206,6 +206,12 @@ public OnLibraryAdded(const char[] name)
 	{
 		mapchoosercheck = true;
 	}
+}
+
+public Updater_OnPluginUpdated()
+{
+	Handle nullpl = INVALID_HANDLE;
+	ReloadPlugin(nullpl);
 }
 
 public Action fixalyx(int client, int args)
@@ -639,7 +645,7 @@ public Action elevatorstart(const char[] output, int caller, int activator, floa
 		{
 			char clsname[32];
 			GetEntityClassname(i,clsname,sizeof(clsname));
-			if (StrEqual(clsname,"prop_physics",false))
+			if ((StrEqual(clsname,"prop_physics",false)) || (StrEqual(clsname,"prop_ragdoll",false)))
 			{
 				float proporigin[3];
 				GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",proporigin);
@@ -652,7 +658,8 @@ public Action elevatorstart(const char[] output, int caller, int activator, floa
 					bool below = true;
 					if ((origin[2] < 0) && (origin[2] > proporigin[2])) below = false;
 					else if ((origin[2] > -1) && (origin[2] < proporigin[2])) below = false;
-					if ((chkdist < 250.0) && (!below))
+					if (StrEqual(clsname,"prop_ragdoll",false)) below = false;
+					if ((chkdist < 200.0) && (!below))
 					{
 						if (debuglvl > 0)
 						{
@@ -1187,6 +1194,25 @@ public OnEntityCreated(int entity, const char[] classname)
 		WritePackCell(data, entity);
 		WritePackString(data, classname);
 		CreateTimer(removertimer,cleanup,data);
+	}
+	if (StrEqual(classname,"logic_auto",false))
+	{
+		CreateTimer(1.0,rechk,entity);
+	}
+}
+
+public Action rechk(Handle timer, int logent)
+{
+	if (IsValidEntity(logent))
+	{
+		char entname[32];
+		if (HasEntProp(logent,Prop_Data,"m_iName")) GetEntPropString(logent,Prop_Data,"m_iName",entname,sizeof(entname));
+		if (!StrEqual(entname,"syn_logicauto",false))
+		{
+			DispatchKeyValue(logent,"spawnflags","1");
+			SetVariantString("spawnflags 1");
+			AcceptEntityInput(logent,"AddOutput");
+		}
 	}
 }
 
