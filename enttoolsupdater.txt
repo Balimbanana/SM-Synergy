@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.01"
-			"Previous"	"1.0"
+			"Latest"  	"1.02"
+			"Previous"	"1.01"
 		}
 		
-		"Notes"	""
+		"Notes"	"Added global name check to get inf"
 	}
 	
 	"Files"
