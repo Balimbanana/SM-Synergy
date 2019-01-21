@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.01"
+#define PLUGIN_VERSION "1.02"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -376,11 +376,14 @@ public Action getinf(int client, int args)
 		PrintToChat(client,"%i",targ);
 		char ent[32];
 		char targname[64];
+		char globname[64];
 		float vec[3];
 		int parent = 0;
 		vec[0] = -1.1;
 		GetEntityClassname(targ, ent, sizeof(ent));
 		GetEntPropString(targ,Prop_Data,"m_iName",targname,sizeof(targname));
+		if (HasEntProp(targ,Prop_Data,"m_iGlobalname"))
+			GetEntPropString(targ,Prop_Data,"m_iGlobalname",globname,sizeof(globname));
 		if (HasEntProp(targ,Prop_Send,"m_vecOrigin"))
 			GetEntPropVector(targ,Prop_Send,"m_vecOrigin",vec);
 		if (HasEntProp(targ,Prop_Data,"m_hParent"))
@@ -398,13 +401,15 @@ public Action getinf(int client, int args)
 			GetEntityClassname(parent,parentcls,sizeof(parentcls));
 			PrintToChat(client,"Parented to %i %s %s",parent,parentname,parentcls);
 		}
-		char inf[64];
+		char inf[128];
 		if (strlen(targname) > 0)
-			Format(inf,sizeof(inf),"Name: %s ",targname,spawnflagsi);
+			Format(inf,sizeof(inf),"Name: %s ",targname);
+		if (strlen(globname) > 0)
+			Format(inf,sizeof(inf),"%sGlobalName: %s ",inf,globname);
 		if (spawnflagsi != 0)
 			Format(inf,sizeof(inf),"%sSpawnflags: %i",inf,spawnflagsi);
 		if (vec[0] != -1.1)
-			Format(inf,sizeof(inf),"%s Vec: %i, %i, %i",inf,RoundFloat(vec[0]),RoundFloat(vec[1]),RoundFloat(vec[2]));
+			Format(inf,sizeof(inf),"%s\nVec: %i, %i, %i",inf,RoundFloat(vec[0]),RoundFloat(vec[1]),RoundFloat(vec[2]));
 		PrintToChat(client,"%s",inf);
 		if (HasEntProp(targ,Prop_Data,"m_bCarriedByPlayer"))
 		{
