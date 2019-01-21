@@ -409,7 +409,7 @@ public Action getinf(int client, int args)
 		if (spawnflagsi != 0)
 			Format(inf,sizeof(inf),"%sSpawnflags: %i",inf,spawnflagsi);
 		if (vec[0] != -1.1)
-			Format(inf,sizeof(inf),"%s\nVec: %i, %i, %i",inf,RoundFloat(vec[0]),RoundFloat(vec[1]),RoundFloat(vec[2]));
+			Format(inf,sizeof(inf),"%s\nVec: %i %i %i",inf,RoundFloat(vec[0]),RoundFloat(vec[1]),RoundFloat(vec[2]));
 		PrintToChat(client,"%s",inf);
 		if (HasEntProp(targ,Prop_Data,"m_bCarriedByPlayer"))
 		{
