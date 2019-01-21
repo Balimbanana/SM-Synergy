@@ -25,8 +25,9 @@ bool voteinprogress = false;
 bool instswitch = true;
 bool mapchoosercheck = false;
 bool linact = false;
+bool syn56act = false;
 
-#define PLUGIN_VERSION "1.53"
+#define PLUGIN_VERSION "1.54"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -124,6 +125,10 @@ public void OnMapStart()
 	ClearArray(entlist);
 	ClearArray(equiparr);
 	ClearArray(entnames);
+	char gamedescoriginal[24];
+	GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
+	if (StrEqual(gamedescoriginal,"synergy 56.16",false)) syn56act = true;
+	else syn56act = false;
 	GetCurrentMap(mapbuf,sizeof(mapbuf));
 	Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
 	char buff[64];
@@ -744,6 +749,19 @@ public Action dropshipchk(Handle timer)
 				if (curdrop == lastdropped)
 				{
 					CreateTimer(10.0,rmcolliding,i);
+				}
+			}
+			if ((HasEntProp(i,Prop_Data,"m_iGlobalname")) && (StrContains(clsname,"prop_",false) != -1) && (syn56act))
+			{
+				char glname[32];
+				GetEntPropString(i,Prop_Data,"m_iGlobalname",glname,sizeof(glname));
+				if (strlen(glname) > 1)
+				{
+					if (debuglvl > 2) PrintToServer("Ent %i %s had globalname %s reloads will remove this on 56.16",i,clsname,glname);
+					SetEntPropString(i,Prop_Data,"m_iGlobalname","");
+					char localname[32];
+					GetEntPropString(i,Prop_Data,"m_iName",localname,sizeof(localname));
+					if (strlen(localname) < 1) SetEntPropString(i,Prop_Data,"m_iName",glname);
 				}
 			}
 		}
