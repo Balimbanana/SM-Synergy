@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.54"
-			"Previous"	"1.53"
+			"Latest"  	"1.55"
+			"Previous"	"1.54"
 		}
 		
-		"Notes"	"Added logic_auto spawnflags 1 unless targetname is syn_logicauto Added ragdoll checks to elevator."
+		"Notes"	"Added physboxes to FF checks."
 	}
 	
 	"Files"
