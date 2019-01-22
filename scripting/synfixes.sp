@@ -16,6 +16,8 @@ char mapbuf[64];
 Handle equiparr = INVALID_HANDLE;
 Handle entlist = INVALID_HANDLE;
 Handle entnames = INVALID_HANDLE;
+Handle physboxarr = INVALID_HANDLE;
+Handle physboxharr = INVALID_HANDLE;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 int WeapList = -1;
@@ -27,7 +29,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.54"
+#define PLUGIN_VERSION "1.55"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -107,6 +109,8 @@ public void OnPluginStart()
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	entlist = CreateArray(1024);
 	entnames = CreateArray(128);
+	physboxarr = CreateArray(64);
+	physboxharr = CreateArray(64);
 	RegConsoleCmd("alyx",fixalyx);
 	RegConsoleCmd("barney",fixbarney);
 	RegConsoleCmd("stuck",stuckblck);
@@ -125,6 +129,8 @@ public void OnMapStart()
 	ClearArray(entlist);
 	ClearArray(equiparr);
 	ClearArray(entnames);
+	ClearArray(physboxarr);
+	ClearArray(physboxharr);
 	char gamedescoriginal[24];
 	GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
 	if (StrEqual(gamedescoriginal,"synergy 56.16",false)) syn56act = true;
@@ -154,6 +160,7 @@ public void OnMapStart()
 	HookEntityOutput("func_tracktrain","OnStart",EntityOutput:elevatorstart);
 	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:mapendchg);
 	HookEntityOutput("npc_citizen","OnDeath",EntityOutput:entdeath);
+	HookEntityOutput("func_physbox","OnPhysGunPunt",EntityOutput:physpunt);
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
 	{
@@ -725,6 +732,43 @@ public Action entdeath(const char[] output, int caller, int activator, float del
 	}
 }
 
+public Action physpunt(const char[] output, int caller, int activator, float delay)
+{
+	if (HasEntProp(caller,Prop_Data,"m_hParent"))
+	{
+		int parentent = GetEntPropEnt(caller,Prop_Data,"m_hParent");
+		if (parentent > 0) return Plugin_Continue;
+	}
+	int arrindx = FindValueInArray(physboxarr,caller)
+	if (arrindx == -1)
+	{
+		PushArrayCell(physboxarr,caller);
+		Handle tmptime = CreateTimer(5.0,RemoveFromArr,caller);
+		PushArrayCell(physboxharr,tmptime);
+	}
+	else
+	{
+		Handle tmptime = GetArrayCell(physboxharr,arrindx);
+		if (tmptime != INVALID_HANDLE)
+		{
+			RemoveFromArray(physboxarr,arrindx);
+			RemoveFromArray(physboxharr,arrindx);
+			KillTimer(tmptime);
+			Handle tmptimepost = CreateTimer(5.0,RemoveFromArr,caller);
+			PushArrayCell(physboxarr,caller);
+			PushArrayCell(physboxharr,tmptimepost);
+		}
+	}
+	return Plugin_Continue;
+}
+
+public Action RemoveFromArr(Handle timer, int physbox)
+{
+	int arrindx = FindValueInArray(physboxarr,physbox);
+	RemoveFromArray(physboxarr,arrindx);
+	RemoveFromArray(physboxharr,arrindx);
+}
+
 public Action dropshipchk(Handle timer)
 {
 	for (int i = MaxClients+1; i<GetMaxEntities(); i++)
@@ -1180,6 +1224,11 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 				damage = 0.0;
 				return Plugin_Changed;
 			}
+	if (FindValueInArray(physboxarr,attacker) != -1)
+	{
+		damage = 0.0;
+		return Plugin_Changed;
+	}
 	//Check disconnect projectile hit ply
 	//m_bThrownByPlayer
 	//m_nPhysgunState
@@ -1199,7 +1248,7 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 
 public OnEntityCreated(int entity, const char[] classname)
 {
-	if ((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false)) && (!FindValueInArray(entlist,entity)))
+	if ((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false)) && (FindValueInArray(entlist,entity) == -1))
 	{
 		PushArrayCell(entlist,entity);
 		if ((StrEqual(classname,"npc_citizen",false)) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
