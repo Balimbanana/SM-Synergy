@@ -8,7 +8,7 @@
 			"Previous"	"1.55"
 		}
 		
-		"Notes"	"Added FF true false to physboxes. Added array check for potential problems."
+		"Notes"	"Added FF true false to physboxes. Added array index check for potential problems."
 	}
 	
 	"Files"
