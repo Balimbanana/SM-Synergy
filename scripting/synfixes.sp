@@ -29,7 +29,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.55"
+#define PLUGIN_VERSION "1.56"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -734,6 +734,7 @@ public Action entdeath(const char[] output, int caller, int activator, float del
 
 public Action physpunt(const char[] output, int caller, int activator, float delay)
 {
+	if (friendlyfire) return Plugin_Continue;
 	if (HasEntProp(caller,Prop_Data,"m_hParent"))
 	{
 		int parentent = GetEntPropEnt(caller,Prop_Data,"m_hParent");
@@ -765,8 +766,11 @@ public Action physpunt(const char[] output, int caller, int activator, float del
 public Action RemoveFromArr(Handle timer, int physbox)
 {
 	int arrindx = FindValueInArray(physboxarr,physbox);
-	RemoveFromArray(physboxarr,arrindx);
-	RemoveFromArray(physboxharr,arrindx);
+	if (arrindx != -1)
+	{
+		RemoveFromArray(physboxarr,arrindx);
+		RemoveFromArray(physboxharr,arrindx);
+	}
 }
 
 public Action dropshipchk(Handle timer)
