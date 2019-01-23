@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.55"
-			"Previous"	"1.54"
+			"Latest"  	"1.56"
+			"Previous"	"1.55"
 		}
 		
-		"Notes"	"Added physboxes to FF checks."
+		"Notes"	"Added FF true false to physboxes. Added array check for potential problems."
 	}
 	
 	"Files"
