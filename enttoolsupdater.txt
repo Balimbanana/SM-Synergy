@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.02"
-			"Previous"	"1.01"
+			"Latest"  	"1.03"
+			"Previous"	"1.02"
 		}
 		
-		"Notes"	"Added global name check to get inf"
+		"Notes"	"Added model validity check when creating entities."
 	}
 	
 	"Files"
