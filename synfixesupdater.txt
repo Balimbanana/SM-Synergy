@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.57"
-			"Previous"	"1.56"
+			"Latest"  	"1.58"
+			"Previous"	"1.57"
 		}
 		
-		"Notes"	"Added simple_physics_prop and m_hLastAttacker to damage restrictions."
+		"Notes"	"Remove goal follow check on ep2_outland_12a."
 	}
 	
 	"Files"
