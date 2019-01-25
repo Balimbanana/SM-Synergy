@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.56"
-			"Previous"	"1.55"
+			"Latest"  	"1.57"
+			"Previous"	"1.56"
 		}
 		
-		"Notes"	"Added FF true false to physboxes. Added array index check for potential problems."
+		"Notes"	"Added simple_physics_prop and m_hLastAttacker to damage restrictions."
 	}
 	
 	"Files"
