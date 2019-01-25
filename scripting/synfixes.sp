@@ -29,7 +29,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.58"
+#define PLUGIN_VERSION "1.59"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1287,6 +1287,23 @@ public OnEntityCreated(int entity, const char[] classname)
 	if (StrEqual(classname,"logic_auto",false))
 	{
 		CreateTimer(1.0,rechk,entity);
+	}
+	if (StrEqual(classname,"npc_vortigaunt",false))
+	{
+		CreateTimer(1.0,rechkcol,entity);
+	}
+}
+
+public Action rechkcol(Handle timer, int logent)
+{
+	if (IsValidEntity(logent))
+	{
+		char entname[32];
+		if (HasEntProp(logent,Prop_Data,"m_iName")) GetEntPropString(logent,Prop_Data,"m_iName",entname,sizeof(entname));
+		if (StrEqual(entname,"vort",false))
+		{
+			SetEntData(logent, collisiongroup, 5, 4, true);
+		}
 	}
 }
 
