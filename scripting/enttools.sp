@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.02"
+#define PLUGIN_VERSION "1.03"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -112,7 +112,18 @@ public Action CreateStuff(int client, int args)
 				int v1 = v+1;
 				int v1size = GetCmdArg(v1,tmp2,sizeof(tmp2));
 				if (v1size > 0)
+				{
+					if (StrEqual(tmp,"model",false))
+					{
+						if (!FileExists(tmp2,true,NULL_STRING))
+						{
+							PrintToChat(client,"The model %s was not found.",tmp2);
+							AcceptEntityInput(stuff,"kill");
+							return Plugin_Handled;
+						}
+					}
 					DispatchKeyValue(stuff,tmp,tmp2);
+				}
 				Format(fullstr,sizeof(fullstr),"%s %s %s",fullstr,tmp,tmp2);
 				v++;
 			}
@@ -167,7 +178,17 @@ public Action CreateStuffThere(int client, int args)
 				int v1 = v+1;
 				int v1size = GetCmdArg(v1,tmp2,sizeof(tmp2));
 				if (v1size > 0)
+				{
+					if (StrEqual(tmp,"model",false))
+					{
+						if (!FileExists(tmp2,true,NULL_STRING))
+						{
+							PrintToChat(client,"The model %s was not found.",tmp2);
+							return Plugin_Handled;
+						}
+					}
 					DispatchKeyValue(stuff,tmp,tmp2);
+				}
 				Format(fullstr,sizeof(fullstr),"%s %s %s",fullstr,tmp,tmp2);
 				v++;
 			}
