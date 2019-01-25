@@ -29,7 +29,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.56"
+#define PLUGIN_VERSION "1.57"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1219,15 +1219,33 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 			return Plugin_Changed;
 		}
 	}
+	if (HasEntProp(attacker,Prop_Data,"m_hLastAttacker"))
+	{
+		int atk = GetEntPropEnt(attacker,Prop_Data,"m_hLastAttacker");
+		if (((!friendlyfire) && (atk < MaxClients+1)) && (atk > 0))
+		{
+			damage = 0.0;
+			return Plugin_Changed;
+		}
+	}
 	char clsnamechk[32];
 	GetEntityClassname(inflictor,clsnamechk,sizeof(clsnamechk));
 	if (StrEqual(clsnamechk,"npc_turret_floor",false))
+	{
 		if (HasEntProp(inflictor,Prop_Data,"m_bCarriedByPlayer"))
+		{
 			if (GetEntProp(inflictor,Prop_Data,"m_bCarriedByPlayer") != 0)
 			{
 				damage = 0.0;
 				return Plugin_Changed;
 			}
+		}
+	}
+	else if (StrEqual(clsnamechk,"simple_physics_prop",false))
+	{
+		damage = 0.0;
+		return Plugin_Changed;
+	}
 	if (FindValueInArray(physboxarr,attacker) != -1)
 	{
 		damage = 0.0;
