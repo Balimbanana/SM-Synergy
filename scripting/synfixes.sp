@@ -29,7 +29,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.59"
+#define PLUGIN_VERSION "1.60"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -649,37 +649,47 @@ public Action resetrot(Handle timer)
 
 public Action elevatorstart(const char[] output, int caller, int activator, float delay)
 {
-	float origin[3];
-	GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
-	for (int i = MaxClients+1; i<GetMaxEntities(); i++)
+	CreateTimer(0.1,elevatorstartpost,caller);
+	//Post check
+	CreateTimer(5.0,elevatorstartpost,caller);
+}
+
+public Action elevatorstartpost(Handle timer, int elev)
+{
+	if (IsValidEntity(elev))
 	{
-		if (IsValidEntity(i) && IsEntNetworkable(i))
+		float origin[3];
+		GetEntPropVector(elev,Prop_Data,"m_vecAbsOrigin",origin);
+		for (int i = MaxClients+1; i<GetMaxEntities(); i++)
 		{
-			char clsname[32];
-			GetEntityClassname(i,clsname,sizeof(clsname));
-			if ((StrEqual(clsname,"prop_physics",false)) || (StrEqual(clsname,"prop_ragdoll",false)))
+			if (IsValidEntity(i) && IsEntNetworkable(i))
 			{
-				float proporigin[3];
-				GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",proporigin);
-				int parentchk = 0;
-				if (HasEntProp(i,Prop_Data,"m_hParent"))
-					parentchk = GetEntPropEnt(i,Prop_Data,"m_hParent");
-				if (parentchk < 1)
+				char clsname[32];
+				GetEntityClassname(i,clsname,sizeof(clsname));
+				if ((StrEqual(clsname,"prop_physics",false)) || (StrEqual(clsname,"prop_ragdoll",false)))
 				{
-					float chkdist = GetVectorDistance(origin,proporigin,false);
-					bool below = true;
-					if ((origin[2] < 0) && (origin[2] > proporigin[2])) below = false;
-					else if ((origin[2] > -1) && (origin[2] < proporigin[2])) below = false;
-					if (StrEqual(clsname,"prop_ragdoll",false)) below = false;
-					if ((chkdist < 200.0) && (!below))
+					float proporigin[3];
+					GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",proporigin);
+					int parentchk = 0;
+					if (HasEntProp(i,Prop_Data,"m_hParent"))
+						parentchk = GetEntPropEnt(i,Prop_Data,"m_hParent");
+					if (parentchk < 1)
 					{
-						if (debuglvl > 0)
+						float chkdist = GetVectorDistance(origin,proporigin,false);
+						bool below = true;
+						if ((origin[2] < 0) && (origin[2] > proporigin[2])) below = false;
+						else if ((origin[2] > -1) && (origin[2] < proporigin[2])) below = false;
+						if (StrEqual(clsname,"prop_ragdoll",false)) below = false;
+						if ((chkdist < 200.0) && (!below))
 						{
-							char targn[32];
-							GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-							PrintToServer("Removed %i %s %s colliding with elevator",i,targn,clsname);
+							if (debuglvl > 0)
+							{
+								char targn[32];
+								GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+								PrintToServer("Removed %i %s %s colliding with elevator",i,targn,clsname);
+							}
+							AcceptEntityInput(i,"kill");
 						}
-						AcceptEntityInput(i,"kill");
 					}
 				}
 			}
