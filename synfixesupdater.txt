@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.59"
-			"Previous"	"1.58"
+			"Latest"  	"1.60"
+			"Previous"	"1.59"
 		}
 		
-		"Notes"	"Remove ply collisions for vort actor."
+		"Notes"	"Added elevator start post check."
 	}
 	
 	"Files"
