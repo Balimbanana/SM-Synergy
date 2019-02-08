@@ -21,15 +21,19 @@ Handle physboxharr = INVALID_HANDLE;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 int WeapList = -1;
+int spawneramt = 20;
+int restrictmode = 0;
+bool restrictact = false;
 bool friendlyfire = false;
 bool seqenablecheck = true;
 bool voteinprogress = false;
 bool instswitch = true;
+bool forcehdr = false;
 bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.60"
+#define PLUGIN_VERSION "1.61"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -91,6 +95,10 @@ public void OnPluginStart()
 	instswitch = GetConVarBool(instphyswitch);
 	HookConVarChange(instphyswitch, instphych);
 	CloseHandle(instphyswitch);
+	Handle forcehdrh = CreateConVar("sm_forcehdr", "0", "Force clients to use HDR (fixes fullbright).", _, true, 0.0, true, 1.0);
+	forcehdr = GetConVarBool(forcehdrh);
+	HookConVarChange(forcehdrh, forcehdrch);
+	CloseHandle(forcehdrh);
 	Handle removertimerh = CreateConVar("sm_removedrops", "30", "Remove healthkits and ammo drops after this many seconds.", _, true, 1.0, true, 100.0);
 	removertimer = GetConVarFloat(removertimerh);
 	HookConVarChange(removertimerh, removertimerch);
@@ -102,6 +110,14 @@ public void OnPluginStart()
 		HookConVarChange(ffh, ffhch);
 	}
 	CloseHandle(ffh);
+	Handle resetspawnersh = CreateConVar("sm_forcespawners", "20", "Force npc_makers above this number to be reset to this number.", _, true, -1.0, true, 1000.0);
+	spawneramt = GetConVarInt(resetspawnersh);
+	HookConVarChange(resetspawnersh, spawneramtch);
+	CloseHandle(resetspawnersh);
+	Handle resetspawnermodesh = CreateConVar("sm_forcespawnersmode", "0", "Set mode of spawner restrictions. 1 is coop and js map prefix. 2 is always.", _, true, 0.0, true, 2.0);
+	restrictact = GetConVarBool(resetspawnermodesh);
+	HookConVarChange(resetspawnermodesh, spawneramtresch);
+	CloseHandle(resetspawnermodesh);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	else linact = false;
@@ -136,6 +152,18 @@ public void OnMapStart()
 	if (StrEqual(gamedescoriginal,"synergy 56.16",false)) syn56act = true;
 	else syn56act = false;
 	GetCurrentMap(mapbuf,sizeof(mapbuf));
+	if (restrictmode == 1)
+	{
+		if ((StrContains(mapbuf,"js_",false) != -1) || (StrContains(mapbuf,"coop_",false)))
+			restrictact = true;
+		else
+			restrictact = false;
+	}
+	if ((StrEqual(mapbuf,"d1_canals_13",false)) && (syn56act))
+	{
+		int skycam = FindEntityByClassname(-1,"sky_camera");
+		if (skycam != -1) AcceptEntityInput(skycam,"kill");
+	}
 	Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
 	char buff[64];
 	while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
@@ -169,6 +197,7 @@ public void OnMapStart()
 			CreateTimer(1.0,clspawnpost,i);
 		}
 	}
+	findentlist(MaxClients+1,"npc_template_maker");
 	findentlist(MaxClients+1,"npc_*");
 	int jstat = FindEntityByClassname(MaxClients+1,"prop_vehicle_jeep");
 	int jspawn = FindEntityByClassname(MaxClients+1,"info_vehicle_spawn");
@@ -264,7 +293,21 @@ public Action fixbarney(int client, int args)
 public Action stuckblck(int client, int args)
 {
 	if ((client == 0) || (!IsPlayerAlive(client))) return Plugin_Handled;
-	if (GetEntityRenderFx(client) == RENDERFX_DISTORT)
+	int vckent = GetEntPropEnt(client, Prop_Send, "m_hVehicle");
+	char vckcls[32];
+	if (vckent != -1) GetEntityClassname(vckent,vckcls,sizeof(vckcls));
+	float CurVec = GetEntPropFloat(client, Prop_Send, "m_vecVelocity[2]");
+	if (RoundFloat(CurVec) < -800)
+	{
+		PrintToChat(client,"> Can't use while falling too fast.");
+		return Plugin_Handled;
+	}
+	else if ((StrContains(vckcls,"choreo",false) != -1) || (StrContains(vckcls,"prisoner_pod",false) != -1))
+	{
+		PrintToChat(client,"> Can't use while in a choreo vehicle.");
+		return Plugin_Handled;
+	}
+	else if (GetEntityRenderFx(client) == RENDERFX_DISTORT)
 	{
 		PrintToChat(client,"> Can't use after reaching end of level.");
 		return Plugin_Handled;
@@ -501,6 +544,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 public OnClientPutInServer(int client)
 {
 	CreateTimer(0.5,clspawnpost,client);
+	if (forcehdr) QueryClientConVar(client,"mat_hdr_level",hdrchk,0);
 }
 
 public Action clspawnpost(Handle timer, int client)
@@ -593,6 +637,12 @@ public Action clspawnpost(Handle timer, int client)
 	{
 		CreateTimer(0.5,clspawnpost,client);
 	}
+}
+
+public void hdrchk(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, any value)
+{
+	if ((StrEqual(cvarValue,"0",false)) || (StrEqual(cvarValue,"1",false)))
+		ClientCommand(client,"mat_hdr_level 2");
 }
 
 public dbghch(Handle convar, const char[] oldValue, const char[] newValue)
@@ -1510,6 +1560,16 @@ findentlist(int ent, char[] clsname)
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
+		if (StrEqual(clsname,"npc_template_maker",false))
+		{
+			int maxnpc = GetEntProp(thisent,Prop_Data,"m_nMaxNumNPCs");
+			if ((maxnpc > spawneramt) && (restrictact))
+			{
+				if (debuglvl == 1) PrintToServer("%i has %i max npcs resetting to %i",thisent,maxnpc,spawneramt);
+				SetVariantInt(spawneramt);
+				AcceptEntityInput(thisent,"SetMaxChildren");
+			}
+		}
 		PushArrayCell(entlist,thisent);
 		findentlist(thisent++,clsname);
 	}
@@ -1552,6 +1612,12 @@ public instphych(Handle convar, const char[] oldValue, const char[] newValue)
 	else instswitch = false;
 }
 
+public forcehdrch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) forcehdr = true;
+	else forcehdr = false;
+}
+
 public removertimerch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToFloat(newValue) > 0.0)
@@ -1568,4 +1634,48 @@ public restrictpercch(Handle convar, const char[] oldValue, const char[] newValu
 public restrictvotech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	delaylimit = StringToFloat(newValue);
+}
+
+public spawneramtch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	spawneramt = StringToInt(newValue);
+}
+
+public spawneramtresch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	restrictmode = StringToInt(newValue);
+	if (restrictmode == 0)
+		restrictact = false;
+	else if (restrictmode == 1)
+	{
+		char maploc[64];
+		GetCurrentMap(maploc,sizeof(maploc));
+		if ((StrContains(maploc,"js_",false) != -1) || (StrContains(maploc,"coop_",false)))
+			restrictact = true;
+		else
+			restrictact = false;
+	}
+	else if (restrictmode == 2)
+	{
+		restrictact = true;
+		if (GetArraySize(entlist) > 0)
+		{
+			for (int i = 0;i<GetArraySize(entlist);i++)
+			{
+				int entl = GetArrayCell(entlist,i);
+				char clsname[32];
+				GetEntityClassname(entl,clsname,sizeof(clsname));
+				if ((StrEqual(clsname,"npc_template_maker",false)) || (StrEqual(clsname,"npc_maker",false)))
+				{
+					int maxnpc = GetEntProp(entl,Prop_Data,"m_nMaxNumNPCs");
+					if (maxnpc > spawneramt)
+					{
+						if (debuglvl == 1) PrintToServer("%i has %i max npcs resetting to %i",entl,maxnpc,spawneramt);
+						SetVariantInt(spawneramt);
+						AcceptEntityInput(entl,"SetMaxChildren");
+					}
+				}
+			}
+		}
+	}
 }
