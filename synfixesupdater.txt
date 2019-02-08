@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.60"
-			"Previous"	"1.59"
+			"Latest"  	"1.61"
+			"Previous"	"1.60"
 		}
 		
-		"Notes"	"Added elevator start post check."
+		"Notes"	"Added sm_forcehdr sm_forcespawnersmode and sm_forcespawners and more stuck exploit restrictions."
 	}
 	
 	"Files"
