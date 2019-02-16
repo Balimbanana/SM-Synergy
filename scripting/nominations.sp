@@ -55,7 +55,7 @@ Handle g_MapList = null;
 char currentMap[32];
 int passedcl = 0;
 int modsact = 0;
-bool syn,hl2,hl1,r24m,lcm,ep1m,ep2m,metam,calm,citm,ci7m,upm,ram,dwm,prem,c2am,ep3m,offm,radm,cdm,ntm,opm,mim,smm,s2em,rhm,snm,mprm,cem,mpm,el87m,alm,esm,dfm,stm,btm,llm,dhm,lum,thm,ddm,amm,ptsd;
+bool syn,hl2,hl1,r24m,lcm,ep1m,ep2m,metam,calm,citm,ci7m,upm,ram,dwm,prem,c2am,ep3m,offm,radm,cdm,ntm,opm,mim,smm,s2em,rhm,snm,mprm,cem,mpm,el87m,alm,esm,dfm,stm,btm,llm,dhm,lum,thm,ddm,amm,ptsd,yla,ktm,t7;
 
 #define MAPSTATUS_ENABLED (1<<0)
 #define MAPSTATUS_DISABLED (1<<1)
@@ -348,6 +348,9 @@ public Action AttemptNominate(int client, int args)
 	if (thm) menu.AddItem("they hunger again", "They Hunger Again");
 	if (ddm) menu.AddItem("deep down", "Deep Down");
 	if (amm) menu.AddItem("aftermath", "Aftermath");
+	if (yla) menu.AddItem("year long alarm", "Year Long Alarm");
+	if (ktm) menu.AddItem("kill the monk", "Kill The Monk");
+	if (t7) menu.AddItem("terminal 7", "Terminal 7");
 	if (ptsd) menu.AddItem("ptsd", "PTSD Mod");
 	menu.AddItem("allmaps", "All Maps");
 	menu.ExitButton = true;
@@ -960,6 +963,24 @@ public Action GetMapTag(const char[] map)
 		if (!ddm) modsact++;
 		ddm = true;
 		Format(maptag, sizeof(maptag), "Deep Down");
+	}
+	else if (StrContains(map, "yla_", false) == 0)
+	{
+		if (!yla) modsact++;
+		yla = true;
+		Format(maptag, sizeof(maptag), "Year Long Alarm");
+	}
+	else if (StrContains(map, "ktm_", false) == 0)
+	{
+		if (!ktm) modsact++;
+		ktm = true;
+		Format(maptag, sizeof(maptag), "Kill The Monk");
+	}
+	else if (StrContains(map, "t7_", false) == 0)
+	{
+		if (!t7) modsact++;
+		t7 = true;
+		Format(maptag, sizeof(maptag), "Terminal 7");
 	}
 	else if ((StrContains(map,"ptsd_",false) == 0) || (StrEqual(map,"boneless_ptsd",false)))
 	{
