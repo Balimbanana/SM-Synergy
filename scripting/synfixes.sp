@@ -33,7 +33,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.61"
+#define PLUGIN_VERSION "1.62"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -189,6 +189,15 @@ public void OnMapStart()
 	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:mapendchg);
 	HookEntityOutput("npc_citizen","OnDeath",EntityOutput:entdeath);
 	HookEntityOutput("func_physbox","OnPhysGunPunt",EntityOutput:physpunt);
+	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
+	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
+	HookEntityOutput("logic_relay","OnTrigger",EntityOutput:trigtp);
+	HookEntityOutput("trigger_multiple","OnTrigger",EntityOutput:trigtp);
+	HookEntityOutput("trigger_multiple","OnStartTouch",EntityOutput:trigtp);
+	HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigtp);
+	HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigtp);
+	HookEntityOutput("scripted_sequence","OnEndSequence",EntityOutput:trigtp);
+	HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
 	{
@@ -977,6 +986,24 @@ public Action trigout(const char[] output, int caller, int activator, float dela
 	return Plugin_Continue;
 }
 
+public Action trigtp(const char[] output, int caller, int activator, float delay)
+{
+	if ((activator < MaxClients+1) && (activator > 0))
+	{
+		if (IsPlayerAlive(activator))
+		{
+			char targn[64];
+			GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
+			char clsname[64];
+			GetEntityClassname(caller,clsname,sizeof(clsname));
+			float origin[3];
+			GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
+			readoutputstp(targn,clsname,origin,activator);
+			readoutputstp(targn,"logic_auto",origin,activator);
+		}
+	}
+}
+
 readoutputs(int scriptent, char[] targn)
 {
 	Handle filehandle = OpenFile(mapbuf,"r");
@@ -1219,6 +1246,115 @@ readoutputs(int scriptent, char[] targn)
 	CloseHandle(filehandle);
 }
 
+readoutputstp(char[] targn, char[] clsname, float origin[3], int activator)
+{
+	Handle filehandle = OpenFile(mapbuf,"r");
+	if (filehandle != INVALID_HANDLE)
+	{
+		char line[128];
+		char tmpclschk[64];
+		Format(tmpclschk,sizeof(tmpclschk),"\"classname\" \"%s\"",clsname);
+		char originchar[64];
+		Format(originchar,sizeof(originchar),"%i %i %i",RoundFloat(origin[0]),RoundFloat(origin[1]),RoundFloat(origin[2]));
+		bool readnextlines = false;
+		char lineorgres[64][16];
+		char lineoriginfixup[64];
+		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
+		{
+			lineoriginfixup = "";
+			TrimString(line);
+			if (readnextlines)
+			{
+				if ((StrEqual(line,"}",false)) || (StrEqual(line,"{",false)))
+					readnextlines = false;
+				else
+				{
+					if (StrContains(line,",teleport,",false) != -1)
+					{
+						char tmpchar[64];
+						Format(tmpchar,sizeof(tmpchar),line);
+						ReplaceString(tmpchar,sizeof(tmpchar),"\"onmapspawn\" ","",false);
+						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+						ExplodeString(tmpchar, " ", lineorgres, 16, 64);
+						int targnend = StrContains(lineorgres[1],",",false);
+						ReplaceString(lineorgres[1],64,lineorgres[1][targnend],"");
+						//PrintToServer("%s",lineorgres[1]);
+						findpointtp(-1,lineorgres[1],activator);
+						break;
+					}
+					if ((StrContains(line,":teleport:",false) != -1) && (StrContains(line,targn,false) != -1))
+					{
+						char tmpchar[64];
+						Format(tmpchar,sizeof(tmpchar),line);
+						ReplaceString(tmpchar,sizeof(tmpchar),"\"onmapspawn\" ","",false);
+						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+						ExplodeString(tmpchar, " ", lineorgres, 16, 64);
+						int targnend = StrContains(lineorgres[1],":",false);
+						ReplaceString(lineorgres[1],64,lineorgres[1][targnend],"");
+						//PrintToServer("%s %s",lineorgres[1],line);
+						findpointtp(-1,lineorgres[1],activator);
+						break;
+					}
+				}
+			}
+			if (StrEqual(line,"\"classname\" \"logic_auto\"",false))
+			{
+				readnextlines = true;
+				if ((StrContains(line,",AddOutput,",false) == 0) && (StrContains(line,targn,false) == 0) && (StrContains(line,":Teleport:",false) == 0))
+				{
+					char tmpchar[64];
+					Format(tmpchar,sizeof(tmpchar),line);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"onmapspawn\" ","",false);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+					ExplodeString(tmpchar, " ", lineorgres, 16, 64);
+					int targnend = StrContains(lineorgres[1],",",false);
+					ReplaceString(lineorgres[1],64,lineorgres[1][targnend],"");
+					//PrintToServer("%s",lineorgres[1]);
+					findpointtp(-1,lineorgres[1],activator);
+					break;
+				}
+			}
+			if (StrContains(line,"\"origin\"",false) == 0)
+			{
+				char tmpchar[64];
+				Format(tmpchar,sizeof(tmpchar),line);
+				ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
+				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+				ExplodeString(tmpchar, " ", lineorgres, 4, 16);
+				Format(lineoriginfixup,sizeof(lineoriginfixup),"%i %i %i",RoundFloat(StringToFloat(lineorgres[0])),RoundFloat(StringToFloat(lineorgres[1])),RoundFloat(StringToFloat(lineorgres[2])))
+			}
+			if (StrEqual(originchar,lineoriginfixup,false))
+			{
+				readnextlines = true;
+			}
+		}
+	}
+	CloseHandle(filehandle);
+}
+
+findpointtp(int ent, char[] targn, int cl)
+{
+	int thisent = FindEntityByClassname(ent,"point_teleport");
+	if ((IsValidEntity(thisent)) && (thisent != -1))
+	{
+		char enttargn[32];
+		GetEntPropString(thisent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
+		char pttarget[32];
+		GetEntPropString(thisent,Prop_Data,"m_target",pttarget,sizeof(pttarget));
+		if ((StrEqual(targn,enttargn,false)) && (StrEqual(pttarget,"!activator",false)))
+		{
+			float origin[3];
+			GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",origin);
+			float angs[3];
+			GetEntPropVector(thisent,Prop_Data,"m_angAbsRotation",angs);
+			origin[2]+=5.0;
+			//PrintToServer("Teleport %i to %i %s",cl,thisent,enttargn);
+			TeleportEntity(cl,origin,angs,NULL_VECTOR);
+		}
+		else findpointtp(thisent,targn,cl);
+	}
+}
+
 findgfollow(int ent, char[] targn)
 {
 	int thisent = FindEntityByClassname(ent,"ai_goal_follow");
@@ -1335,7 +1471,7 @@ public OnEntityCreated(int entity, const char[] classname)
 		PushArrayCell(entlist,entity);
 		if ((StrEqual(classname,"npc_citizen",false)) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
 	}
-	if ((StrEqual(classname,"item_health_drop",false)) || (StrEqual(classname,"item_ammo_drop",false)))
+	if ((StrEqual(classname,"item_health_drop",false)) || (StrEqual(classname,"item_ammo_drop",false)) || (StrEqual(classname,"item_ammo_pack",false)))
 	{
 		SDKHook(entity, SDKHook_StartTouch, StartTouchprop);
 		Handle data;
