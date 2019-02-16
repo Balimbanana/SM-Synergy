@@ -902,7 +902,7 @@ public Action GetMapTag(const char[] map)
 	{
 		if (!alm) modsact++;
 		alm = true;
-		Format(maptag, sizeof(maptag), "Silent Hill: Alchemilla");
+		Format(maptag, sizeof(maptag), "Alchemilla");
 	}
 	else if (StrContains(map,"eots_1",false) == 0)
 	{
