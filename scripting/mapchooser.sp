@@ -1500,6 +1500,18 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Deep Down");
 	}
+	else if (StrContains(map, "yla_", false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Year Long Alarm");
+	}
+	else if (StrContains(map, "ktm_", false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Kill The Monk");
+	}
+	else if (StrContains(map, "t7_", false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Terminal 7");
+	}
 	else if ((StrContains(map, "ptsd_", false) == 0) || (StrEqual(map,"boneless_ptsd",false)))
 	{
 		Format(maptag, sizeof(maptag), "PTSD");
