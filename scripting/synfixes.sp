@@ -33,7 +33,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.63"
+#define PLUGIN_VERSION "1.64"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -189,7 +189,7 @@ public void OnMapStart()
 	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:mapendchg);
 	HookEntityOutput("npc_citizen","OnDeath",EntityOutput:entdeath);
 	HookEntityOutput("func_physbox","OnPhysGunPunt",EntityOutput:physpunt);
-	/*
+	
 	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
 	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
 	HookEntityOutput("logic_relay","OnTrigger",EntityOutput:trigtp);
@@ -199,7 +199,7 @@ public void OnMapStart()
 	HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigtp);
 	HookEntityOutput("scripted_sequence","OnEndSequence",EntityOutput:trigtp);
 	HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
-	*/
+	
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
 	{
@@ -1000,8 +1000,11 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			GetEntityClassname(caller,clsname,sizeof(clsname));
 			float origin[3];
 			GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
-			readoutputstp(targn,clsname,origin,activator);
-			readoutputstp(targn,"logic_auto",origin,activator);
+			if (strlen(targn) > 0)
+			{
+				readoutputstp(targn,clsname,origin,activator);
+				readoutputstp(targn,"logic_auto",origin,activator);
+			}
 		}
 	}
 }
@@ -1271,7 +1274,7 @@ readoutputstp(char[] targn, char[] clsname, float origin[3], int activator)
 					readnextlines = false;
 				else
 				{
-					if (StrContains(line,",teleport,",false) != -1)
+					if ((StrContains(line,",teleport,",false) != -1) && (!(StrEqual(clsname,"logic_auto",false))))
 					{
 						char tmpchar[64];
 						Format(tmpchar,sizeof(tmpchar),line);
@@ -1280,7 +1283,7 @@ readoutputstp(char[] targn, char[] clsname, float origin[3], int activator)
 						ExplodeString(tmpchar, " ", lineorgres, 16, 64);
 						int targnend = StrContains(lineorgres[1],",",false);
 						ReplaceString(lineorgres[1],64,lineorgres[1][targnend],"");
-						//PrintToServer("%s",lineorgres[1]);
+						if (debuglvl == 3) PrintToServer("TPOutput %s",lineorgres[1]);
 						findpointtp(-1,lineorgres[1],activator);
 						break;
 					}
@@ -1293,28 +1296,15 @@ readoutputstp(char[] targn, char[] clsname, float origin[3], int activator)
 						ExplodeString(tmpchar, " ", lineorgres, 16, 64);
 						int targnend = StrContains(lineorgres[1],":",false);
 						ReplaceString(lineorgres[1],64,lineorgres[1][targnend],"");
-						//PrintToServer("%s %s",lineorgres[1],line);
+						if (debuglvl == 3) PrintToServer("TPAddedOutput %s %s",lineorgres[1],line);
 						findpointtp(-1,lineorgres[1],activator);
 						break;
 					}
 				}
 			}
-			if (StrEqual(line,"\"classname\" \"logic_auto\"",false))
+			if ((StrEqual(line,"\"classname\" \"logic_auto\"",false)) && (StrEqual(clsname,"logic_auto")))
 			{
 				readnextlines = true;
-				if ((StrContains(line,",AddOutput,",false) == 0) && (StrContains(line,targn,false) == 0) && (StrContains(line,":Teleport:",false) == 0))
-				{
-					char tmpchar[64];
-					Format(tmpchar,sizeof(tmpchar),line);
-					ReplaceString(tmpchar,sizeof(tmpchar),"\"onmapspawn\" ","",false);
-					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-					ExplodeString(tmpchar, " ", lineorgres, 16, 64);
-					int targnend = StrContains(lineorgres[1],",",false);
-					ReplaceString(lineorgres[1],64,lineorgres[1][targnend],"");
-					//PrintToServer("%s",lineorgres[1]);
-					findpointtp(-1,lineorgres[1],activator);
-					break;
-				}
 			}
 			if (StrContains(line,"\"origin\"",false) == 0)
 			{
