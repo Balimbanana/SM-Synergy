@@ -33,7 +33,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.62"
+#define PLUGIN_VERSION "1.63"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -189,6 +189,7 @@ public void OnMapStart()
 	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:mapendchg);
 	HookEntityOutput("npc_citizen","OnDeath",EntityOutput:entdeath);
 	HookEntityOutput("func_physbox","OnPhysGunPunt",EntityOutput:physpunt);
+	/*
 	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
 	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
 	HookEntityOutput("logic_relay","OnTrigger",EntityOutput:trigtp);
@@ -198,6 +199,7 @@ public void OnMapStart()
 	HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigtp);
 	HookEntityOutput("scripted_sequence","OnEndSequence",EntityOutput:trigtp);
 	HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
+	*/
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
 	{
