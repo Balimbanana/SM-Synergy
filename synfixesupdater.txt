@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.64"
-			"Previous"	"1.63"
+			"Latest"  	"1.65"
+			"Previous"	"1.64"
 		}
 		
-		"Notes"	"Added fixes to point_teleport !activator setups, added another starttouch check for elevator props."
+		"Notes"	"Added additional scenario checks to point_teleport !activator setups."
 	}
 	
 	"Files"
