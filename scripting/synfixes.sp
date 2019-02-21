@@ -1294,9 +1294,10 @@ readoutputstp(char[] targn, char[] output, float origin[3], int activator)
 						ExplodeString(tmpchar, ",", lineorgrescom, 16, 64);
 						//int targnend = StrContains(lineorgres[1],",",false);
 						//ReplaceString(lineorgres[1],sizeof(lineorgres[]),lineorgres[1][targnend],"");
+						ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
 						float delay = StringToFloat(lineorgrescom[3]);
-						if (debuglvl == 3) PrintToServer("TPOutput %s",lineorgrescom[1],line);
-						findpointtp(-1,lineorgrescom[1],activator,delay);
+						if (debuglvl == 3) PrintToServer("TPOutput %s %s",lineorgrescom[0],line);
+						findpointtp(-1,lineorgrescom[0],activator,delay);
 						break;
 					}
 				}
