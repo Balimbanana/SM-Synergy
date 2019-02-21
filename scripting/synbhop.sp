@@ -18,7 +18,7 @@ bool bhopdisable = false;
 bool sxpmact = false;
 bool hl1act = false;
 
-#define PLUGIN_VERSION "0.21"
+#define PLUGIN_VERSION "0.22"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synbhopupdater.txt"
 
 public Plugin:myinfo = 
@@ -187,7 +187,8 @@ public OnButtonPress(int client, int button)
 	{
 		int groundchk = GetEntProp(client,Prop_Send,"m_hGroundEntity");
 		float movemod = GetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue");
-		if ((movemod > 0.9) && (groundchk != -1) && (!(GetClientButtons(client) & button2)))
+		int vckent = GetEntPropEnt(client, Prop_Send, "m_hVehicle");
+		if ((movemod > 0.9) && (vckent != -1) && (groundchk != -1) && (!(GetClientButtons(client) & button2)))
 		{
 			SetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue",1.0);
 			float curspeed = GetEntPropFloat(client,Prop_Send,"m_flMaxspeed");
