@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.71"
-			"Previous"	"1.70"
+			"Latest"  	"1.72"
+			"Previous"	"1.71"
 		}
 		
-		"Notes"	"Changed entire database structure to be more accurate in more circumstances."
+		"Notes"	"Added John and Mitch friend and more CL load checks."
 	}
 	
 	"Files"
