@@ -1,0 +1,19 @@
+"Updater"
+{
+	"Information"
+	{
+		"Version"
+		{
+			"Latest"  	"1.61"
+			"Previous"	"1.6"
+		}
+		
+		"Notes"	"Added updater and open source."
+	}
+	
+	"Files"
+	{
+		"Plugin"	"Path_SM/plugins/modelloader.smx"
+		"Source"	"Path_SM/scripting/modelloader.sp"
+	}
+}
