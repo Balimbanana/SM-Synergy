@@ -1295,7 +1295,7 @@ readoutputstp(char[] targn, char[] output, float origin[3], int activator)
 						int targnend = StrContains(lineorgres[1],",",false);
 						ReplaceString(lineorgres[1],sizeof(lineorgres[]),lineorgres[1][targnend],"");
 						float delay = StringToFloat(lineorgrescom[3]);
-						if (debuglvl == 3) PrintToServer("TPOutput %s",lineorgres[1]);
+						if (debuglvl == 3) PrintToServer("TPOutput %s",lineorgres[1],line);
 						findpointtp(-1,lineorgres[1],activator,delay);
 						break;
 					}
