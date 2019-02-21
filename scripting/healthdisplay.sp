@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.71"
+#define PLUGIN_VERSION "1.72"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -708,6 +708,8 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Friend: Larry");
 		else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Friend: Arthur");
 		else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Friend: Sarah");
+		else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"Friend: John");
+		else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Friend: Mitch");
 		else if (StrEqual(clsname,"npc_citizen",false))
 		{
 			char cmodel[64];
@@ -878,6 +880,10 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 public OnClientDisconnect(int client)
 {
 	CLStoreInTable(client);
+}
+
+public OnClientDisconnectPost(int client)
+{
 	initcl(client);
 }
 
@@ -1481,6 +1487,7 @@ public LoadClient(int client)
 	if (!IsCLStored(client))
 	{
 		CLStoreInTable(client);
+		CreateTimer(1.0,reloadcl,client);
 		return;
 	}
 	char Query[100];
@@ -1506,6 +1513,14 @@ public LoadClient(int client)
 		bclcookie4f[client][2] = SQL_FetchInt(hQuery,9);
 	}
 	return;
+}
+
+public Action reloadcl(Handle timer, int client)
+{
+	if (IsClientConnected(client) && IsClientAuthorized(client))
+	{
+		LoadClient(client);
+	}
 }
 
 public Action reloadclients(int args)
