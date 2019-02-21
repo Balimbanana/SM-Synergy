@@ -33,7 +33,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.67"
+#define PLUGIN_VERSION "1.68"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1290,13 +1290,13 @@ readoutputstp(char[] targn, char[] output, float origin[3], int activator)
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 						ReplaceString(tmpchar,sizeof(tmpchar),output,"",false);
 						char lineorgrescom[128][16];
-						ExplodeString(tmpchar, " ", lineorgres, 16, 64);
+						//ExplodeString(tmpchar, " ", lineorgres, 16, 64);
 						ExplodeString(tmpchar, ",", lineorgrescom, 16, 64);
-						int targnend = StrContains(lineorgres[1],",",false);
-						ReplaceString(lineorgres[1],sizeof(lineorgres[]),lineorgres[1][targnend],"");
+						//int targnend = StrContains(lineorgres[1],",",false);
+						//ReplaceString(lineorgres[1],sizeof(lineorgres[]),lineorgres[1][targnend],"");
 						float delay = StringToFloat(lineorgrescom[3]);
-						if (debuglvl == 3) PrintToServer("TPOutput %s",lineorgres[1],line);
-						findpointtp(-1,lineorgres[1],activator,delay);
+						if (debuglvl == 3) PrintToServer("TPOutput %s",lineorgrescom[1],line);
+						findpointtp(-1,lineorgrescom[1],activator,delay);
 						break;
 					}
 				}
