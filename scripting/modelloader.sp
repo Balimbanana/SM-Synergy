@@ -9,7 +9,7 @@
 #define REQUIRE_EXTENSIONS
 
 #define PLUGIN_VERSION "1.61"
-#define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloader.txt"
+#define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
 public Plugin:myinfo = 
 {
