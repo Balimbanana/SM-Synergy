@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.67"
-			"Previous"	"1.66"
+			"Latest"  	"1.68"
+			"Previous"	"1.67"
 		}
 		
 		"Notes"	"Added additional scenario checks to point_teleport !player setups."
