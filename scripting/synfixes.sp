@@ -33,7 +33,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.66"
+#define PLUGIN_VERSION "1.67"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1270,7 +1270,7 @@ readoutputstp(char[] targn, char[] output, float origin[3], int activator)
 		char originchar[64];
 		Format(originchar,sizeof(originchar),"%i %i %i",RoundFloat(origin[0]),RoundFloat(origin[1]),RoundFloat(origin[2]));
 		bool readnextlines = false;
-		char lineorgres[64][32];
+		char lineorgres[128][32];
 		char lineoriginfixup[64];
 		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
 		{
@@ -1284,18 +1284,17 @@ readoutputstp(char[] targn, char[] output, float origin[3], int activator)
 				{
 					if (StrContains(line,",teleport,",false) != -1)
 					{
-						char tmpchar[64];
+						char tmpchar[128];
 						Format(tmpchar,sizeof(tmpchar),line);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"onmapspawn\" ","",false);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+						ReplaceString(tmpchar,sizeof(tmpchar),output,"",false);
+						char lineorgrescom[128][16];
 						ExplodeString(tmpchar, " ", lineorgres, 16, 64);
+						ExplodeString(tmpchar, ",", lineorgrescom, 16, 64);
 						int targnend = StrContains(lineorgres[1],",",false);
-						char delaystr[16];
-						Format(delaystr,sizeof(delaystr),lineorgres[1][targnend+11]);
-						int delayend = StrContains(delaystr,",",false);
-						ReplaceString(delaystr,64,delaystr[delayend],"");
-						ReplaceString(lineorgres[1],64,lineorgres[1][targnend],"");
-						float delay = StringToFloat(delaystr);
+						ReplaceString(lineorgres[1],sizeof(lineorgres[]),lineorgres[1][targnend],"");
+						float delay = StringToFloat(lineorgrescom[3]);
 						if (debuglvl == 3) PrintToServer("TPOutput %s",lineorgres[1]);
 						findpointtp(-1,lineorgres[1],activator,delay);
 						break;
@@ -1310,7 +1309,7 @@ readoutputstp(char[] targn, char[] output, float origin[3], int activator)
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				ExplodeString(tmpchar, " ", lineorgres, 16, 64);
 				int targnend = StrContains(lineorgres[1],":",false);
-				char delaystr[16];
+				char delaystr[24];
 				Format(delaystr,sizeof(delaystr),lineorgres[1][targnend+11]);
 				int delayend = StrContains(delaystr,":",false);
 				ReplaceString(delaystr,64,delaystr[delayend],"");
