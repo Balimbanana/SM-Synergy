@@ -33,7 +33,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.65"
+#define PLUGIN_VERSION "1.66"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -195,11 +195,18 @@ public void OnMapStart()
 	HookEntityOutput("logic_relay","OnTrigger",EntityOutput:trigtp);
 	HookEntityOutput("trigger_multiple","OnTrigger",EntityOutput:trigtp);
 	HookEntityOutput("trigger_multiple","OnStartTouch",EntityOutput:trigtp);
+	HookEntityOutput("trigger_coop","OnTrigger",EntityOutput:trigtp);
+	HookEntityOutput("trigger_coop","OnStartTouch",EntityOutput:trigtp);
 	HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigtp);
 	HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigtp);
 	HookEntityOutput("scripted_sequence","OnEndSequence",EntityOutput:trigtp);
+	HookEntityOutput("scripted_scene","OnStart",EntityOutput:trigtp);
 	HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
 	HookEntityOutput("func_button","OnUseLocked",EntityOutput:trigtp);
+	HookEntityOutput("func_door","OnOpen",EntityOutput:trigtp);
+	HookEntityOutput("func_door","OnFullyOpen",EntityOutput:trigtp);
+	HookEntityOutput("func_door","OnClose",EntityOutput:trigtp);
+	HookEntityOutput("func_door","OnFullyClosed",EntityOutput:trigtp);
 	
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
@@ -532,7 +539,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 			PlayerOrigin[2] = (Location[2] + 10);
 			Location[0] = (PlayerOrigin[0] + (10 * Cosine(DegToRad(clangles[1]))));
 			Location[1] = (PlayerOrigin[1] + (10 * Sine(DegToRad(clangles[1]))));
-			Location[2] = (PlayerOrigin[2] + 10);
+			Location[2] = PlayerOrigin[2];
 			if (voteact == 1)
 			{
 				int al = FindEntityByClassname(MaxClients+1,"npc_alyx");
@@ -998,7 +1005,7 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			char targn[64];
 			GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
 			float origin[3];
-			GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
+			GetEntPropVector(caller,Prop_Send,"m_vecAbsOrigin",origin);
 			if (strlen(targn) > 0)
 			{
 				char tmpout[32];
@@ -1361,6 +1368,36 @@ findpointtp(int ent, char[] targn, int cl, float delay)
 			}
 			else TeleportEntity(cl,origin,angs,NULL_VECTOR);
 		}
+		else if ((StrEqual(targn,enttargn,false)) && ((StrEqual(pttarget,"!player",false)) || (StrEqual(pttarget,"player",false))))
+		{
+			float origin[3];
+			GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",origin);
+			float angs[3];
+			GetEntPropVector(thisent,Prop_Data,"m_angAbsRotation",angs);
+			origin[2]+=1.0;
+			if (delay > 0.1)
+			{
+				char originstr[24];
+				char angstr[16];
+				Format(originstr,sizeof(originstr),"%1.f %1.f %1.f",origin[0],origin[1],origin[2]);
+				Format(angstr,sizeof(angstr),"%1.f %1.f",angs[0],angs[1]);
+				Handle dp = CreateDataPack();
+				WritePackString(dp,originstr);
+				WritePackString(dp,angstr);
+				CreateTimer(delay,teleportdelayallply,dp);
+			}
+			else
+			{
+				for (int i = 1;i<MaxClients+1;i++)
+				{
+					if (IsValidEntity(i))
+						if (IsClientConnected(i))
+							if (IsClientInGame(i))
+								if (IsPlayerAlive(i))
+									TeleportEntity(i,origin,angs,NULL_VECTOR);
+				}
+			}
+		}
 		else findpointtp(thisent,targn,cl,delay);
 	}
 }
@@ -1393,6 +1430,35 @@ public Action teleportdelay(Handle timer, Handle dp)
 					angs[1] = StringToFloat(angarr[1]);
 					TeleportEntity(cl,origin,angs,NULL_VECTOR);
 				}
+	}
+}
+
+public Action teleportdelayallply(Handle timer, Handle dp)
+{
+	ResetPack(dp);
+	char originstr[24];
+	ReadPackString(dp,originstr,sizeof(originstr));
+	char angstr[16];
+	ReadPackString(dp,angstr,sizeof(angstr));
+	CloseHandle(dp);
+	float origin[3];
+	float angs[3];
+	char originarr[24][3];
+	char angarr[16][3];
+	ExplodeString(originstr, " ", originarr, 3, 24);
+	ExplodeString(angstr, " ", angarr, 3, 16);
+	origin[0] = StringToFloat(originarr[0]);
+	origin[1] = StringToFloat(originarr[1]);
+	origin[2] = StringToFloat(originarr[2]);
+	angs[0] = StringToFloat(angarr[0]);
+	angs[1] = StringToFloat(angarr[1]);
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if (IsValidEntity(i))
+			if (IsClientConnected(i))
+				if (IsClientInGame(i))
+					if (IsPlayerAlive(i))
+						TeleportEntity(i,origin,angs,NULL_VECTOR);
 	}
 }
 
