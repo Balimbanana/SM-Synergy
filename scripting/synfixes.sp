@@ -1005,7 +1005,8 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			char targn[64];
 			GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
 			float origin[3];
-			GetEntPropVector(caller,Prop_Send,"m_vecAbsOrigin",origin);
+			if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
 			if (strlen(targn) > 0)
 			{
 				char tmpout[32];
