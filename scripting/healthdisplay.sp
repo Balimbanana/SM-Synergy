@@ -432,6 +432,8 @@ public Action ShowTimer(Handle timer)
 										else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Larry");
 										else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Arthur");
 										else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Sarah");
+										else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"John");
+										else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Mitch");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
 									}
