@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.68"
-			"Previous"	"1.67"
+			"Latest"  	"1.69"
+			"Previous"	"1.68"
 		}
 		
-		"Notes"	"Added additional scenario checks to point_teleport !player setups."
+		"Notes"	"Added fix for elevators made with func_doors to create a brush so players dont fall through."
 	}
 	
 	"Files"
