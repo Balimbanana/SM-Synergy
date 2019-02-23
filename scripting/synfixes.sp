@@ -18,6 +18,7 @@ Handle entlist = INVALID_HANDLE;
 Handle entnames = INVALID_HANDLE;
 Handle physboxarr = INVALID_HANDLE;
 Handle physboxharr = INVALID_HANDLE;
+Handle elevlist = INVALID_HANDLE;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 int WeapList = -1;
@@ -33,7 +34,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.68"
+#define PLUGIN_VERSION "1.69"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -127,6 +128,7 @@ public void OnPluginStart()
 	entnames = CreateArray(128);
 	physboxarr = CreateArray(64);
 	physboxharr = CreateArray(64);
+	elevlist = CreateArray(64);
 	RegConsoleCmd("alyx",fixalyx);
 	RegConsoleCmd("barney",fixbarney);
 	RegConsoleCmd("stuck",stuckblck);
@@ -147,6 +149,7 @@ public void OnMapStart()
 	ClearArray(entnames);
 	ClearArray(physboxarr);
 	ClearArray(physboxharr);
+	ClearArray(elevlist);
 	char gamedescoriginal[24];
 	GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
 	if (StrEqual(gamedescoriginal,"synergy 56.16",false)) syn56act = true;
@@ -189,6 +192,8 @@ public void OnMapStart()
 	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:mapendchg);
 	HookEntityOutput("npc_citizen","OnDeath",EntityOutput:entdeath);
 	HookEntityOutput("func_physbox","OnPhysGunPunt",EntityOutput:physpunt);
+	HookEntityOutput("func_door","OnOpen",EntityOutput:createelev);
+	HookEntityOutput("func_door","OnClose",EntityOutput:createelev);
 	
 	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
 	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
@@ -207,6 +212,10 @@ public void OnMapStart()
 	HookEntityOutput("func_door","OnFullyOpen",EntityOutput:trigtp);
 	HookEntityOutput("func_door","OnClose",EntityOutput:trigtp);
 	HookEntityOutput("func_door","OnFullyClosed",EntityOutput:trigtp);
+	HookEntityOutput("prop_door_rotating","OnOpen",EntityOutput:trigtp);
+	HookEntityOutput("prop_door_rotating","OnFullyOpen",EntityOutput:trigtp);
+	HookEntityOutput("prop_door_rotating","OnClose",EntityOutput:trigtp);
+	HookEntityOutput("prop_door_rotating","OnFullyClosed",EntityOutput:trigtp);
 	
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
@@ -1012,6 +1021,45 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 				char tmpout[32];
 				Format(tmpout,sizeof(tmpout),output);
 				readoutputstp(targn,tmpout,origin,activator);
+			}
+		}
+	}
+}
+
+public Action createelev(const char[] output, int caller, int activator, float delay)
+{
+	if (FindValueInArray(elevlist,caller) == -1)
+	{
+		PushArrayCell(elevlist,caller);
+		char targn[32];
+		GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
+		if (strlen(targn) > 0)
+		{
+			char mdlname[64];
+			float elevorg[3];
+			float angs[3];
+			if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",elevorg);
+			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",elevorg);
+			if (HasEntProp(caller,Prop_Data,"m_angRotation")) GetEntPropVector(caller,Prop_Data,"m_angRotation",angs);
+			GetEntPropString(caller,Prop_Data,"m_ModelName",mdlname,sizeof(mdlname));
+			if (strlen(mdlname) > 0)
+			{
+				int brushent = CreateEntityByName("func_brush");
+				DispatchKeyValue(brushent,"model",mdlname);
+				DispatchKeyValue(brushent,"rendermode","10");
+				DispatchKeyValue(brushent,"renderamt","255");
+				DispatchKeyValue(brushent,"rendercolor","0 0 0");
+				DispatchKeyValue(brushent,"disablereceiveshadows","1");
+				DispatchKeyValue(brushent,"DisableShadows","1");
+				DispatchKeyValue(brushent,"parentname",targn);
+				DispatchKeyValue(brushent,"solid","6");
+				elevorg[2] = elevorg[2]-1.0;
+				TeleportEntity(brushent,elevorg,angs,NULL_VECTOR);
+				DispatchSpawn(brushent);
+				ActivateEntity(brushent);
+				SetVariantString(targn);
+				AcceptEntityInput(brushent,"SetParent");
+				if (debuglvl == 3) PrintToServer("Created brush at %1.f %1.f %1.f with model of:\n%s parented to %s",elevorg[0],elevorg[1],elevorg[2],mdlname,targn);
 			}
 		}
 	}
