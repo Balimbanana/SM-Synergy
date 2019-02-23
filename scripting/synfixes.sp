@@ -34,7 +34,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.69"
+#define PLUGIN_VERSION "1.70"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1051,14 +1051,13 @@ public Action createelev(const char[] output, int caller, int activator, float d
 				DispatchKeyValue(brushent,"rendercolor","0 0 0");
 				DispatchKeyValue(brushent,"disablereceiveshadows","1");
 				DispatchKeyValue(brushent,"DisableShadows","1");
-				DispatchKeyValue(brushent,"parentname",targn);
 				DispatchKeyValue(brushent,"solid","6");
 				elevorg[2] = elevorg[2]-1.0;
 				TeleportEntity(brushent,elevorg,angs,NULL_VECTOR);
 				DispatchSpawn(brushent);
 				ActivateEntity(brushent);
-				SetVariantString(targn);
-				AcceptEntityInput(brushent,"SetParent");
+				SetVariantString("!activator");
+				AcceptEntityInput(brushent,"SetParent",caller);
 				if (debuglvl == 3) PrintToServer("Created brush at %1.f %1.f %1.f with model of:\n%s parented to %s",elevorg[0],elevorg[1],elevorg[2],mdlname,targn);
 			}
 		}
