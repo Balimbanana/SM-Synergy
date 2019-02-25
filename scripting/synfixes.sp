@@ -198,27 +198,30 @@ public void OnMapStart()
 		}
 	}
 	
-	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
-	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
-	HookEntityOutput("logic_relay","OnTrigger",EntityOutput:trigtp);
-	HookEntityOutput("trigger_multiple","OnTrigger",EntityOutput:trigtp);
-	HookEntityOutput("trigger_multiple","OnStartTouch",EntityOutput:trigtp);
-	HookEntityOutput("trigger_coop","OnTrigger",EntityOutput:trigtp);
-	HookEntityOutput("trigger_coop","OnStartTouch",EntityOutput:trigtp);
-	HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigtp);
-	HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigtp);
-	HookEntityOutput("scripted_sequence","OnEndSequence",EntityOutput:trigtp);
-	HookEntityOutput("scripted_scene","OnStart",EntityOutput:trigtp);
-	HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
-	HookEntityOutput("func_button","OnUseLocked",EntityOutput:trigtp);
-	HookEntityOutput("func_door","OnOpen",EntityOutput:trigtp);
-	HookEntityOutput("func_door","OnFullyOpen",EntityOutput:trigtp);
-	HookEntityOutput("func_door","OnClose",EntityOutput:trigtp);
-	HookEntityOutput("func_door","OnFullyClosed",EntityOutput:trigtp);
-	//HookEntityOutput("prop_door_rotating","OnOpen",EntityOutput:trigtp);
-	//HookEntityOutput("prop_door_rotating","OnFullyOpen",EntityOutput:trigtp);
-	//HookEntityOutput("prop_door_rotating","OnClose",EntityOutput:trigtp);
-	//HookEntityOutput("prop_door_rotating","OnFullyClosed",EntityOutput:trigtp);
+	if (FindEntityByClassname(-1,"point_teleport") != -1)
+	{
+		HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
+		HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
+		HookEntityOutput("logic_relay","OnTrigger",EntityOutput:trigtp);
+		HookEntityOutput("trigger_multiple","OnTrigger",EntityOutput:trigtp);
+		HookEntityOutput("trigger_multiple","OnStartTouch",EntityOutput:trigtp);
+		HookEntityOutput("trigger_coop","OnTrigger",EntityOutput:trigtp);
+		HookEntityOutput("trigger_coop","OnStartTouch",EntityOutput:trigtp);
+		HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigtp);
+		HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigtp);
+		HookEntityOutput("scripted_sequence","OnEndSequence",EntityOutput:trigtp);
+		HookEntityOutput("scripted_scene","OnStart",EntityOutput:trigtp);
+		HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
+		HookEntityOutput("func_button","OnUseLocked",EntityOutput:trigtp);
+		HookEntityOutput("func_door","OnOpen",EntityOutput:trigtp);
+		HookEntityOutput("func_door","OnFullyOpen",EntityOutput:trigtp);
+		HookEntityOutput("func_door","OnClose",EntityOutput:trigtp);
+		HookEntityOutput("func_door","OnFullyClosed",EntityOutput:trigtp);
+		//HookEntityOutput("prop_door_rotating","OnOpen",EntityOutput:trigtp);
+		//HookEntityOutput("prop_door_rotating","OnFullyOpen",EntityOutput:trigtp);
+		//HookEntityOutput("prop_door_rotating","OnClose",EntityOutput:trigtp);
+		//HookEntityOutput("prop_door_rotating","OnFullyClosed",EntityOutput:trigtp);
+	}
 	
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
