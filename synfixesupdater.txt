@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.71"
-			"Previous"	"1.70"
+			"Latest"  	"1.72"
+			"Previous"	"1.71"
 		}
 		
-		"Notes"	"Only hook elevators outside HL2, Ep1, Ep2."
+		"Notes"	"Added edict guard check on phys_bone_follower."
 	}
 	
 	"Files"
