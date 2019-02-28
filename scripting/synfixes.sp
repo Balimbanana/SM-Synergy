@@ -34,7 +34,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.71"
+#define PLUGIN_VERSION "1.72"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1648,6 +1648,10 @@ public OnEntityCreated(int entity, const char[] classname)
 	if (StrEqual(classname,"npc_vortigaunt",false))
 	{
 		CreateTimer(1.0,rechkcol,entity);
+	}
+	if (StrEqual(classname,"phys_bone_follower",false))
+	{
+		if (GetEntityCount() > 2000) AcceptEntityInput(entity,"kill");
 	}
 }
 
