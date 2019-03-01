@@ -11,6 +11,8 @@ bool enterfrom08pb = false;
 bool reloadingmap = false;
 bool allowvotereloadsaves = false; //Set by cvar sm_reloadsaves
 bool allowvotecreatesaves = false; //Set by cvar sm_createsaves
+bool rmsaves = false; //Set by cvar sm_disabletransition
+bool rmreloaded = false;
 int reloadtype = 0;
 float votetime = 0.0;
 float perclimit = 0.80; //Set by cvar sm_voterestore
@@ -28,7 +30,7 @@ public Plugin:myinfo =
 	name = "SynSaveRestore",
 	author = "Balimbanana",
 	description = "Allows you to create persistent saves and reload them per-map.",
-	version = "1.1",
+	version = "1.2",
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
@@ -73,6 +75,11 @@ public void OnPluginStart()
 	perclimitsave = GetConVarFloat(votecspercenth);
 	HookConVarChange(votecspercenth, restrictvotepercsch);
 	CloseHandle(votecspercenth);
+	Handle disabletransitionh = CreateConVar("sm_disabletransition", "0", "Disable transition save/reloads.", _, true, 0.0, true, 1.0);
+	if (GetConVarInt(disabletransitionh) == 1) rmsaves = true;
+	else rmsaves = false;
+	HookConVarChange(disabletransitionh, disabletransitionch);
+	CloseHandle(disabletransitionh);
 }
 
 public votereloadcvar(Handle convar, const char[] oldValue, const char[] newValue)
@@ -95,6 +102,12 @@ public restrictvotepercch(Handle convar, const char[] oldValue, const char[] new
 public restrictvotepercsch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	perclimitsave = StringToFloat(newValue);
+}
+
+public disabletransitionch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) rmsaves = true;
+	else rmsaves = false;
 }
 
 public Action votereloadchk(int client, int args)
@@ -807,6 +820,7 @@ public void OnMapStart()
 			enterfrom04pb = false;
 		if ((enterfrom03pb) && (StrEqual(mapbuf,"d1_town_02",false)))
 		{
+			findrmstarts(-1,"info_player_start");
 			int loginp = CreateEntityByName("logic_auto");
 			DispatchKeyValue(loginp, "spawnflags","1");
 			DispatchKeyValue(loginp, "OnMapSpawn","edt_alley_push,Enable,,0,1");
@@ -823,10 +837,12 @@ public void OnMapStart()
 			enterfrom03pb = false;
 		if ((enterfrom08pb) && (StrEqual(mapbuf,"d2_coast_07",false)))
 		{
+			findrmstarts(-1,"info_player_start");
 			int loginp = CreateEntityByName("logic_auto");
 			DispatchKeyValue(loginp, "spawnflags","1");
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_shiz,Trigger,,0,1");
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_4,0,1");
+			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
 			DispatchSpawn(loginp);
 			ActivateEntity(loginp);
 		}
@@ -861,11 +877,81 @@ public void OnMapStart()
 	ClearArray(globalsarr);
 	ClearArray(globalsiarr);
 	Format(reloadthissave,sizeof(reloadthissave),"");
+	if (rmsaves)
+	{
+		HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:onchangelevel);
+		if (rmreloaded)
+		{
+			Handle savedirrmh = OpenDirectory(savedir, false);
+			char subfilen[32];
+			while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
+			{
+				if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+				{
+					if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+					{
+						Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+						DeleteFile(subfilen,false);
+					}
+				}
+			}
+			CloseHandle(savedirrmh);
+		}
+		rmreloaded = false;
+	}
+}
+
+public Action onchangelevel(const char[] output, int caller, int activator, float delay)
+{
+	char maptochange[64];
+	char curmapbuf[64];
+	GetCurrentMap(curmapbuf,sizeof(curmapbuf));
+	GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
+	if ((StrEqual(curmapbuf,"d1_town_03",false)) && (StrEqual(maptochange,"d1_town_02",false)))
+	{
+		reloadingmap = true;
+		enterfrom03pb = true;
+	}
+	else if ((StrEqual(curmapbuf,"d2_coast_08",false)) && (StrEqual(maptochange,"d2_coast_07",false)))
+	{
+		reloadingmap = true;
+		enterfrom08pb = true;
+	}
+	else if ((StrEqual(curmapbuf,"ep2_outland_04",false)) && (StrEqual(maptochange,"ep2_outland_02",false)))
+	{
+		reloadingmap = true;
+		enterfrom04pb = true;
+	}
+	else reloadingmap = true;
+	Handle savedirh = OpenDirectory(savedir, false);
+	char subfilen[32];
+	while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
+	{
+		if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+		{
+			if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+			{
+				Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+				DeleteFile(subfilen,false);
+			}
+		}
+	}
+	CloseHandle(savedirh);
+	rmreloaded = true;
 }
 
 public Action changelevel(Handle timer)
 {
 	ServerCommand("changelevel %s",mapbuf);
+}
+
+findrmstarts(int start, char[] type)
+{
+	int thisent = FindEntityByClassname(start,type);
+	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	{
+		AcceptEntityInput(thisent,"Kill");
+	}
 }
 
 findtrigs(int start, char[] type)
