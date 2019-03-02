@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.61"
-			"Previous"	"1.6"
+			"Latest"  	"1.62"
+			"Previous"	"1.61"
 		}
 		
-		"Notes"	"Added updater and open source."
+		"Notes"	"Default model for non-stored clients now set by client cvar."
 	}
 	
 	"Files"
