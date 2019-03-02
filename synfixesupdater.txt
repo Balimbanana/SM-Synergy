@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.72"
-			"Previous"	"1.71"
+			"Latest"  	"1.73"
+			"Previous"	"1.72"
 		}
 		
-		"Notes"	"Added edict guard check on phys_bone_follower."
+		"Notes"	"Added vote global set."
 	}
 	
 	"Files"
