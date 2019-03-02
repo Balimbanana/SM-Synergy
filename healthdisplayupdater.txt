@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.72"
-			"Previous"	"1.71"
+			"Latest"  	"1.73"
+			"Previous"	"1.72"
 		}
 		
-		"Notes"	"Added John and Mitch friend and more CL load checks."
+		"Notes"	"Changed bitsets, set show friendlies default 1 for new clients."
 	}
 	
 	"Files"
