@@ -1,6 +1,11 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#undef REQUIRE_PLUGIN
+#undef REQUIRE_EXTENSIONS
+#tryinclude <voteglobalset>
+#define REQUIRE_PLUGIN
+#define REQUIRE_EXTENSIONS
 
 bool enterfrom04 = false;
 bool enterfrom04pb = false;
@@ -13,6 +18,8 @@ bool allowvotereloadsaves = false; //Set by cvar sm_reloadsaves
 bool allowvotecreatesaves = false; //Set by cvar sm_createsaves
 bool rmsaves = false; //Set by cvar sm_disabletransition
 bool rmreloaded = false;
+bool transitionply = false;
+int WeapList = -1;
 int reloadtype = 0;
 float votetime = 0.0;
 float perclimit = 0.80; //Set by cvar sm_voterestore
@@ -20,6 +27,9 @@ float perclimitsave = 0.60; //Set by cvar sm_votecreatesave
 
 Handle globalsarr = INVALID_HANDLE;
 Handle globalsiarr = INVALID_HANDLE;
+Handle transitionid = INVALID_HANDLE;
+Handle transitiondp = INVALID_HANDLE;
+Handle equiparr = INVALID_HANDLE;
 
 char mapbuf[128];
 char savedir[64];
@@ -30,18 +40,9 @@ public Plugin:myinfo =
 	name = "SynSaveRestore",
 	author = "Balimbanana",
 	description = "Allows you to create persistent saves and reload them per-map.",
-	version = "1.2",
+	version = "1.3",
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
-
-enum voteType
-{
-	question
-}
-Menu g_hVoteMenu = null;
-new voteType:g_voteType = voteType:question;
-#define VOTE_NO "###no###"
-#define VOTE_YES "###yes###"
 
 public void OnPluginStart()
 {
@@ -49,6 +50,9 @@ public void OnPluginStart()
 	LoadTranslations("basevotes.phrases");
 	globalsarr = CreateArray(32);
 	globalsiarr = CreateArray(32);
+	transitionid = CreateArray(MAXPLAYERS);
+	transitiondp = CreateArray(MAXPLAYERS);
+	equiparr = CreateArray(32);
 	RegAdminCmd("savegame",savecurgame,ADMFLAG_RESERVATION,".");
 	RegAdminCmd("loadgame",loadgame,ADMFLAG_PASSWORD,".");
 	RegAdminCmd("deletesave",delsave,ADMFLAG_PASSWORD,".");
@@ -75,11 +79,25 @@ public void OnPluginStart()
 	perclimitsave = GetConVarFloat(votecspercenth);
 	HookConVarChange(votecspercenth, restrictvotepercsch);
 	CloseHandle(votecspercenth);
-	Handle disabletransitionh = CreateConVar("sm_disabletransition", "0", "Disable transition save/reloads.", _, true, 0.0, true, 1.0);
-	if (GetConVarInt(disabletransitionh) == 1) rmsaves = true;
-	else rmsaves = false;
+	Handle disabletransitionh = CreateConVar("sm_disabletransition", "0", "Disable transition save/reloads.", _, true, 0.0, true, 2.0);
+	if (GetConVarInt(disabletransitionh) == 2)
+	{
+		rmsaves = true;
+		transitionply = true;
+	}
+	else if (GetConVarInt(disabletransitionh) == 1)
+	{
+		rmsaves = true;
+		transitionply = false;
+	}
+	else if (GetConVarInt(disabletransitionh) == 0)
+	{
+		rmsaves = false;
+		transitionply = false;
+	}
 	HookConVarChange(disabletransitionh, disabletransitionch);
 	CloseHandle(disabletransitionh);
+	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 }
 
 public votereloadcvar(Handle convar, const char[] oldValue, const char[] newValue)
@@ -106,8 +124,21 @@ public restrictvotepercsch(Handle convar, const char[] oldValue, const char[] ne
 
 public disabletransitionch(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	if (StringToInt(newValue) == 1) rmsaves = true;
-	else rmsaves = false;
+	if (StringToInt(newValue) == 2)
+	{
+		rmsaves = true;
+		transitionply = true;
+	}
+	else if (StringToInt(newValue) == 1)
+	{
+		rmsaves = true;
+		transitionply = false;
+	}
+	else if (StringToInt(newValue) == 0)
+	{
+		rmsaves = false;
+		transitionply = false;
+	}
 }
 
 public Action votereloadchk(int client, int args)
@@ -548,7 +579,15 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 		char info[32];
 		menu.GetItem(param2, info, sizeof(info));
 		if (StrEqual(info,"back",false))
+		{
 			votereloadchk(param1,0);
+			return 0;
+		}
+		else if (voteinprogress)
+		{
+			PrintToChat(param1,"There is a vote already in progress.");
+			return 0;
+		}
 		else if ((StrEqual(info,"map",false)) && (votetime <= Time))
 		{
 			new String:buff[32];
@@ -562,6 +601,7 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			g_hVoteMenu.DisplayVoteToAll(20);
 			votetime = Time + 60;
 			reloadtype = 2;
+			voteinprogress = true;
 		}
 		else if ((StrEqual(info,"createsave",false)) && (votetime <= Time))
 		{
@@ -576,6 +616,7 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			g_hVoteMenu.DisplayVoteToAll(20);
 			votetime = Time + 60;
 			reloadtype = 4;
+			voteinprogress = true;
 		}
 		else if ((StrEqual(info,"checkpoint",false)) && (votetime <= Time))
 		{
@@ -590,6 +631,7 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			g_hVoteMenu.DisplayVoteToAll(20);
 			votetime = Time + 60;
 			reloadtype = 1;
+			voteinprogress = true;
 		}
 		else if ((strlen(info) > 1) && (strlen(reloadthissave) < 1) && (votetime <= Time))
 		{
@@ -605,6 +647,7 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			votetime = Time + 60;
 			reloadtype = 3;
 			Format(reloadthissave,sizeof(reloadthissave),info);
+			voteinprogress = true;
 		}
 		else if (votetime > Time)
 			PrintToChat(param1,"You must wait %i seconds.",RoundFloat(votetime)-RoundFloat(Time));
@@ -777,6 +820,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 
 public void OnMapStart()
 {
+	voteinprogress = false;
 	Handle savedirh = FindConVar("sv_savedir");
 	if (savedirh != INVALID_HANDLE)
 	{
@@ -876,6 +920,7 @@ public void OnMapStart()
 	}
 	ClearArray(globalsarr);
 	ClearArray(globalsiarr);
+	ClearArray(equiparr);
 	Format(reloadthissave,sizeof(reloadthissave),"");
 	if (rmsaves)
 	{
@@ -892,12 +937,63 @@ public void OnMapStart()
 					{
 						Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
 						DeleteFile(subfilen,false);
+						Handle subfiletarg = OpenFile(subfilen,"wb");
+						if (subfiletarg != INVALID_HANDLE)
+						{
+							WriteFileLine(subfiletarg,"");
+						}
+						CloseHandle(subfiletarg);
 					}
 				}
 			}
 			CloseHandle(savedirrmh);
 		}
+		if (transitionply)
+		{
+			findent(MaxClients+1,"info_player_equip");
+			for (int j; j<GetArraySize(equiparr); j++)
+			{
+				int jtmp = GetArrayCell(equiparr, j);
+				if (IsValidEntity(jtmp))
+					AcceptEntityInput(jtmp,"Disable");
+			}
+			CreateTimer(61.0,transitiontimeout);
+		}
 		rmreloaded = false;
+	}
+}
+
+public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
+{
+	if (rmsaves)
+	{
+		Handle savedirrmh = OpenDirectory(savedir, false);
+		char subfilen[32];
+		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
+		{
+			if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+			{
+				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+				{
+					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+					DeleteFile(subfilen,false);
+				}
+			}
+		}
+		CloseHandle(savedirrmh);
+	}
+	return true;
+}
+
+public Action transitiontimeout(Handle timer)
+{
+	ClearArray(transitionid);
+	ClearArray(transitiondp);
+	for (int j; j<GetArraySize(equiparr); j++)
+	{
+		int jtmp = GetArrayCell(equiparr, j);
+		if (IsValidEntity(jtmp))
+			AcceptEntityInput(jtmp,"Enable");
 	}
 }
 
@@ -938,6 +1034,173 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 	}
 	CloseHandle(savedirh);
 	rmreloaded = true;
+	if (transitionply)
+	{
+		char SteamID[32];
+		Handle dp = INVALID_HANDLE;
+		int curh,cura;
+		char tmp[16];
+		char weapname[24];
+		char weapnamepamm[32];
+		for (int i = 1;i<MaxClients+1;i++)
+		{
+			if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
+			{
+				GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
+				PushArrayString(transitionid,SteamID);
+				dp = CreateDataPack();
+				curh = GetEntProp(i,Prop_Data,"m_iHealth");
+				WritePackCell(dp,curh);
+				cura = GetEntProp(i,Prop_Data,"m_ArmorValue");
+				WritePackCell(dp,cura);
+				int score = GetEntProp(i,Prop_Data,"m_iPoints");
+				int kills = GetEntProp(i,Prop_Data,"m_iFrags");
+				int deaths = GetEntProp(i,Prop_Data,"m_iDeaths");
+				int suitset = GetEntProp(i,Prop_Send,"m_bWearingSuit");
+				WritePackCell(dp,score);
+				WritePackCell(dp,kills);
+				WritePackCell(dp,deaths);
+				WritePackCell(dp,suitset);
+				for (int j = 0;j<33;j++)
+				{
+					int ammchk = GetEntProp(i, Prop_Send, "m_iAmmo", _, j);
+					if (ammchk > 0)
+					{
+						Format(tmp,sizeof(tmp),"%i %i",j,ammchk);
+						WritePackString(dp,tmp);
+					}
+				}
+				if (WeapList != -1)
+				{
+					for (int j; j<48; j += 4)
+					{
+						int tmpi = GetEntDataEnt2(i,WeapList + j);
+						if (tmpi != -1)
+						{
+							GetEntityClassname(tmpi,weapname,sizeof(weapname));
+							PrintToServer("Weap %s ammo %i",weapname,GetEntProp(tmpi,Prop_Data,"m_iClip1"));
+							Format(weapnamepamm,sizeof(weapnamepamm),"%s %i",weapname,GetEntProp(tmpi,Prop_Data,"m_iClip1"));
+							WritePackString(dp,weapnamepamm);
+						}
+					}
+				}
+				WritePackString(dp,"endofpack");
+				PushArrayCell(transitiondp,dp);
+			}
+		}
+	}
+}
+
+public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
+{
+	if (transitionply)
+	{
+		int client = GetClientOfUserId(GetEventInt(event,"userid"));
+		CreateTimer(0.1, transitionspawn, client);
+	}
+	return Plugin_Continue;
+}
+
+public OnClientPutInServer(int client)
+{
+	CreateTimer(0.5,transitionspawn,client);
+}
+
+public Action transitionspawn(Handle timer, any client)
+{
+	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && IsValidEntity(client) && !IsFakeClient(client))
+	{
+		char SteamID[32];
+		GetClientAuthId(client,AuthId_Steam2,SteamID,sizeof(SteamID));
+		int arrindx = FindStringInArray(transitionid,SteamID);
+		if (arrindx != -1)
+		{
+			if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_equip");
+			for (int j; j<GetArraySize(equiparr); j++)
+			{
+				int jtmp = GetArrayCell(equiparr, j);
+				if (IsValidEntity(jtmp))
+					AcceptEntityInput(jtmp,"Disable");
+			}
+			char ammoset[24];
+			char ammosetexp[24][2];
+			char ammosettype[24];
+			char ammosetamm[16];
+			RemoveFromArray(transitionid,arrindx);
+			Handle dp = GetArrayCell(transitiondp,arrindx);
+			ResetPack(dp);
+			int curh = ReadPackCell(dp);
+			int cura = ReadPackCell(dp);
+			int score = ReadPackCell(dp);
+			int kills = ReadPackCell(dp);
+			int deaths = ReadPackCell(dp);
+			int suitset = ReadPackCell(dp);
+			SetEntProp(client,Prop_Data,"m_iHealth",curh);
+			SetEntProp(client,Prop_Data,"m_ArmorValue",cura);
+			SetEntProp(client,Prop_Data,"m_iPoints",score);
+			SetEntProp(client,Prop_Data,"m_iFrags",kills);
+			SetEntProp(client,Prop_Data,"m_iDeaths",deaths);
+			SetEntProp(client,Prop_Send,"m_bWearingSuit",suitset);
+			ReadPackString(dp,ammoset,sizeof(ammoset));
+			while (!StrEqual(ammoset,"endofpack",false))
+			{
+				if (StrContains(ammoset,"weapon_",false) == -1)
+				{
+					ExplodeString(ammoset," ",ammosetexp,2,24);
+					int ammindx = StringToInt(ammosetexp[0]);
+					int ammset = StringToInt(ammosetexp[1]);
+					SetEntProp(client,Prop_Send,"m_iAmmo",ammset,_,ammindx);
+				}
+				else if (StrContains(ammoset,"weapon_",false) != -1)
+				{
+					int breakstr = StrContains(ammoset," ",false);
+					Format(ammosettype,sizeof(ammosettype),"%s",ammoset);
+					Format(ammosetamm,sizeof(ammosetamm),"%s",ammoset[breakstr+1]);
+					ReplaceString(ammosettype,sizeof(ammosettype),ammoset[breakstr],"");
+					int weapindx = GivePlayerItem(client,ammosettype);
+					if (weapindx != -1)
+					{
+						int weapamm = StringToInt(ammosetamm);
+						SetEntProp(weapindx,Prop_Data,"m_iClip1",weapamm)
+					}
+				}
+				ReadPackString(dp,ammoset,sizeof(ammoset));
+			}
+			CloseHandle(dp);
+			RemoveFromArray(transitiondp,arrindx);
+			int saveover = CreateEntityByName("logic_autosave");
+			DispatchSpawn(saveover);
+			ActivateEntity(saveover);
+			AcceptEntityInput(saveover,"Save");
+			AcceptEntityInput(saveover,"kill");
+		}
+		else
+		{
+			if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_equip");
+			for (int j; j<GetArraySize(equiparr); j++)
+			{
+				int jtmp = GetArrayCell(equiparr, j);
+				if (IsValidEntity(jtmp))
+					AcceptEntityInput(jtmp,"EquipPlayer",client);
+			}
+		}
+	}
+	else if ((IsClientConnected(client)) && (!IsFakeClient(client)))
+	{
+		CreateTimer(1.0, transitionspawn, client);
+	}
+}
+
+findent(int ent, char[] clsname)
+{
+	int thisent = FindEntityByClassname(ent,clsname);
+	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	{
+		int bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
+		if (bdisabled == 0)
+			PushArrayCell(equiparr,thisent);
+		findent(thisent++,clsname);
+	}
 }
 
 public Action changelevel(Handle timer)
