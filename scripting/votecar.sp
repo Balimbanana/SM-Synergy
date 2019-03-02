@@ -1,6 +1,11 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#undef REQUIRE_PLUGIN
+#undef REQUIRE_EXTENSIONS
+#tryinclude <voteglobalset>
+#define REQUIRE_PLUGIN
+#define REQUIRE_EXTENSIONS
 
 Handle globalsarr = INVALID_HANDLE;
 Handle vehiclecustomdir = INVALID_HANDLE;
@@ -10,9 +15,6 @@ bool restrictbyvehon = false;
 bool plyhasenteredvehicle = false;
 int restrictrm = 0;
 
-Menu g_hVoteMenu = null;
-#define VOTE_NO "###no###"
-#define VOTE_YES "###yes###"
 float perclimit = 0.66;
 float delaylimit = 66.0;
 
@@ -44,7 +46,7 @@ public Plugin:myinfo =
 	name = "CCreateVehicle",
 	author = "Balimbanana",
 	description = "Creates vehicles with error correction",
-	version = "1.0",
+	version = "1.1",
 	url = "https://github.com/Balimbanana/SM-Synergy/"
 }
 
@@ -100,6 +102,7 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
+	voteinprogress = false;
 	GetCurrentMap(mapbuf, sizeof(mapbuf));
 	//collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	ClearArray(globalsarr);
@@ -188,13 +191,6 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	return Plugin_Continue;
 }
 
-enum voteType
-{
-	question
-}
-
-new voteType:g_voteType = voteType:question;
-
 public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 {
 	float Time = GetTickedTime();
@@ -208,7 +204,7 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 			return 0;
 		}
 	}
-	if ((action == MenuAction_Select) && (votetime[param1] <= Time))
+	if ((action == MenuAction_Select) && (votetime[param1] <= Time) && (!voteinprogress))
 	{
 		menu.GetItem(param2, info, sizeof(info));
 		if (StrEqual(info,"remvh",false))
@@ -291,6 +287,10 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 	else if (action == MenuAction_End)
 	{
 		delete menu;
+	}
+	else if (voteinprogress)
+	{
+		PrintToChat(param1,"There is a vote already in progress.");
 	}
 	else if (votetime[param1] > Time)
 	{
