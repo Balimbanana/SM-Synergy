@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.61"
+#define PLUGIN_VERSION "1.62"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
 public Plugin:myinfo = 
@@ -172,9 +172,8 @@ public LoadClient(int client)
 	char Query[128];
 	if (!Stored(client))
 	{
-		char chk1[500];
-		Format(chk1,sizeof(chk1),"INSERT INTO modelloader VALUES( '%s', 'male_01.mdl');",SteamIDbuf[client]);
-		SQL_Query(Handle_Database,chk1);
+		QueryClientConVar(client,"cl_playermodel",plymdlchk);
+		return;
 	}
 	Format(Query,sizeof(Query),"SELECT mdl FROM modelloader WHERE SteamID = '%s';",SteamIDbuf[client]);
 	Handle hQuery = SQL_Query(Handle_Database,Query);
@@ -185,6 +184,19 @@ public LoadClient(int client)
 		LogError("SQLite error: %s with query %s",Err,Query);
 	}
 	SQL_FetchString(hQuery, 0, desmodel[client], sizeof(desmodel[]));
+	return;
+}
+
+public void plymdlchk(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, any value)
+{
+	if (strlen(cvarValue) > 0)
+	{
+		char chk1[500];
+		Format(chk1,sizeof(chk1),"INSERT INTO modelloader VALUES( '%s', '%s');",SteamIDbuf[client],cvarValue);
+		SQL_Query(Handle_Database,chk1);
+		LoadClient(client);
+		CreateTimer(0.1, setmodeltimer, client);
+	}
 }
 
 public OnClientAuthorized(int client, const char[] szAuth)
