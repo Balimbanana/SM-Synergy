@@ -6,6 +6,7 @@
 #tryinclude <SteamWorks>
 #tryinclude <updater>
 #tryinclude <mapchooser>
+#tryinclude <voteglobalset>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
@@ -27,14 +28,13 @@ int restrictmode = 0;
 bool restrictact = false;
 bool friendlyfire = false;
 bool seqenablecheck = true;
-bool voteinprogress = false;
 bool instswitch = true;
 bool forcehdr = false;
 bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 
-#define PLUGIN_VERSION "1.72"
+#define PLUGIN_VERSION "1.73"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -46,22 +46,11 @@ public Plugin:myinfo =
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
-Menu g_hVoteMenu = null;
-#define VOTE_NO "###no###"
-#define VOTE_YES "###yes###"
 float perclimit = 0.66;
 float delaylimit = 66.0;
 float votetime[64];
 int clused = 0;
 int voteact = 0;
-
-
-enum voteType
-{
-	question
-}
-
-new voteType:g_voteType = voteType:question;
 
 public void OnPluginStart()
 {
