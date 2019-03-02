@@ -3,6 +3,8 @@
 #include <sdkhooks>
 #undef REQUIRE_PLUGIN
 #undef REQUIRE_EXTENSIONS
+#tryinclude <SteamWorks>
+#tryinclude <updater>
 #tryinclude <voteglobalset>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
@@ -35,12 +37,15 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
+#define PLUGIN_VERSION "1.4"
+#define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
+
 public Plugin:myinfo = 
 {
 	name = "SynSaveRestore",
 	author = "Balimbanana",
 	description = "Allows you to create persistent saves and reload them per-map.",
-	version = "1.3",
+	version = PLUGIN_VERSION,
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
@@ -60,6 +65,7 @@ public void OnPluginStart()
 	RegConsoleCmd("votereloadmap",votereloadmap);
 	RegConsoleCmd("votereloadsave",votereload);
 	RegConsoleCmd("voterecreatesave",votecreatesave);
+	HookEvent("player_spawn",OnPlayerSpawn,EventHookMode_Post);
 	char savepath[256];
 	BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves");
 	if (!DirExists(savepath)) CreateDirectory(savepath,511);
@@ -98,6 +104,20 @@ public void OnPluginStart()
 	HookConVarChange(disabletransitionh, disabletransitionch);
 	CloseHandle(disabletransitionh);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
+}
+
+public OnLibraryAdded(const char[] name)
+{
+    if (StrEqual(name,"updater",false))
+    {
+        Updater_AddPlugin(UPDATE_URL);
+    }
+}
+
+public Updater_OnPluginUpdated()
+{
+	Handle nullpl = INVALID_HANDLE;
+	ReloadPlugin(nullpl);
 }
 
 public votereloadcvar(Handle convar, const char[] oldValue, const char[] newValue)
@@ -874,8 +894,31 @@ public void OnMapStart()
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_vint_trav_gman,Kill,,0,-1");
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_removeme_t03,Kill,,0,-1");
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_vint_stopplayerjump_1,Kill,,0,-1");
+			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
+			DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
 			DispatchSpawn(loginp);
 			ActivateEntity(loginp);
+			int trigtpstart = CreateEntityByName("info_teleport_destination");
+			DispatchKeyValue(trigtpstart,"targetname","syn_transition_dest");
+			DispatchKeyValue(trigtpstart,"angles","0 70 0");
+			DispatchSpawn(trigtpstart);
+			ActivateEntity(trigtpstart);
+			float tporigin[3];
+			tporigin[0] = -3735.0;
+			tporigin[1] = -5.0;
+			tporigin[2] = -3440.0;
+			TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
+			trigtpstart = CreateEntityByName("trigger_teleport");
+			DispatchKeyValue(trigtpstart,"spawnflags","1");
+			DispatchKeyValue(trigtpstart,"targetname","syn_starttptransition");
+			DispatchKeyValue(trigtpstart,"model","*1");
+			DispatchKeyValue(trigtpstart,"target","syn_transition_dest");
+			DispatchSpawn(trigtpstart);
+			ActivateEntity(trigtpstart);
+			tporigin[0] = -736.0;
+			tporigin[1] = 864.0;
+			tporigin[2] = -3350.0;
+			TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
 		}
 		else if (enterfrom03pb)
 			enterfrom03pb = false;
@@ -887,8 +930,30 @@ public void OnMapStart()
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_shiz,Trigger,,0,1");
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_4,0,1");
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
+			DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
 			DispatchSpawn(loginp);
 			ActivateEntity(loginp);
+			int trigtpstart = CreateEntityByName("info_teleport_destination");
+			DispatchKeyValue(trigtpstart,"targetname","syn_transition_dest");
+			DispatchKeyValue(trigtpstart,"angles","0 180 0");
+			DispatchSpawn(trigtpstart);
+			ActivateEntity(trigtpstart);
+			float tporigin[3];
+			tporigin[0] = 3200.0;
+			tporigin[1] = 5216.0;
+			tporigin[2] = 1544.0;
+			TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
+			trigtpstart = CreateEntityByName("trigger_teleport");
+			DispatchKeyValue(trigtpstart,"spawnflags","1");
+			DispatchKeyValue(trigtpstart,"targetname","syn_starttptransition");
+			DispatchKeyValue(trigtpstart,"model","*9");
+			DispatchKeyValue(trigtpstart,"target","syn_transition_dest");
+			DispatchSpawn(trigtpstart);
+			ActivateEntity(trigtpstart);
+			tporigin[0] = -7616.0;
+			tporigin[1] = 5856.0;
+			tporigin[2] = 1601.0;
+			TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
 		}
 		else if (enterfrom08pb)
 			enterfrom08pb = false;
@@ -962,7 +1027,7 @@ public void OnMapStart()
 		rmreloaded = false;
 	}
 }
-
+/*
 public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 {
 	if (rmsaves)
@@ -977,6 +1042,12 @@ public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 				{
 					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
 					DeleteFile(subfilen,false);
+					Handle subfiletarg = OpenFile(subfilen,"wb");
+					if (subfiletarg != INVALID_HANDLE)
+					{
+						WriteFileLine(subfiletarg,"");
+					}
+					CloseHandle(subfiletarg);
 				}
 			}
 		}
@@ -984,7 +1055,7 @@ public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 	}
 	return true;
 }
-
+*/
 public Action transitiontimeout(Handle timer)
 {
 	ClearArray(transitionid);
@@ -1029,6 +1100,12 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			{
 				Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
 				DeleteFile(subfilen,false);
+				Handle subfiletarg = OpenFile(subfilen,"wb");
+				if (subfiletarg != INVALID_HANDLE)
+				{
+					WriteFileLine(subfiletarg,"");
+				}
+				CloseHandle(subfiletarg);
 			}
 		}
 	}
@@ -1183,12 +1260,19 @@ public Action transitionspawn(Handle timer, any client)
 				if (IsValidEntity(jtmp))
 					AcceptEntityInput(jtmp,"EquipPlayer",client);
 			}
+			if (GetArraySize(equiparr) < 1) CreateTimer(0.1,delayequip);
 		}
 	}
 	else if ((IsClientConnected(client)) && (!IsFakeClient(client)))
 	{
 		CreateTimer(1.0, transitionspawn, client);
 	}
+}
+
+public Action delayequip(Handle timer)
+{
+	findent(MaxClients+1,"info_player_equip");
+	return Plugin_Handled;
 }
 
 findent(int ent, char[] clsname)
