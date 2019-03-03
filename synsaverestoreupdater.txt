@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.5"
-			"Previous"	"1.4"
+			"Latest"  	"1.51"
+			"Previous"	"1.5"
 		}
 		
 		"Notes"	"Added transition entities and player origins/angles."
