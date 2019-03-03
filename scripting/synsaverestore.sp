@@ -1055,12 +1055,15 @@ public void OnMapStart()
 					angs[1] = ReadPackFloat(dp);
 					angs[2] = ReadPackFloat(dp);
 					ReadPackString(dp,vehscript,sizeof(vehscript));
+					char spawnflags[32];
+					ReadPackString(dp,spawnflags,sizeof(spawnflags));
 					int ent = CreateEntityByName(clsname);
 					if (ent != -1)
 					{
 						DispatchKeyValue(ent,"targetname",targn)
 						DispatchKeyValue(ent,"model",mdl);
 						if (strlen(vehscript) > 0) DispatchKeyValue(ent,"VehicleScript",vehscript);
+						DispatchKeyValue(ent,"spawnflags",spawnflags);
 						DispatchSpawn(ent);
 						ActivateEntity(ent);
 						if (curh != 0) SetEntProp(ent,Prop_Data,"m_iHealth",curh);
@@ -1288,7 +1291,7 @@ findtouchingents(float mins[3], float maxs[3])
 			{
 				char clsname[32];
 				GetEntityClassname(i,clsname,sizeof(clsname));
-				if ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1))
+				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)))
 				{
 					Handle dp = CreateDataPack();
 					porigin[0]-=landmarkorigin[0];
@@ -1298,10 +1301,16 @@ findtouchingents(float mins[3], float maxs[3])
 					if (strlen(targn) < 1) Format(targn,sizeof(targn),"transitionent");
 					int curh = 0;
 					char vehscript[64];
+					char spawnflags[32];
 					if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 					if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 					if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
 					if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
+					if (HasEntProp(i,Prop_Data,"m_spawnflags"))
+					{
+						int sf = GetEntProp(i,Prop_Data,"m_spawnflags");
+						Format(spawnflags,sizeof(spawnflags),"%i",sf);
+					}
 					WritePackString(dp,clsname);
 					WritePackString(dp,targn);
 					WritePackString(dp,mdl);
@@ -1313,6 +1322,7 @@ findtouchingents(float mins[3], float maxs[3])
 					WritePackFloat(dp,angs[1]);
 					WritePackFloat(dp,angs[2]);
 					WritePackString(dp,vehscript);
+					WritePackString(dp,spawnflags);
 					PushArrayCell(transitionents,dp);
 				}
 				else if (StrEqual(clsname,"player",false))
