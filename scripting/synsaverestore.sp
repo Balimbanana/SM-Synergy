@@ -1042,6 +1042,7 @@ public void OnMapStart()
 					int curh = ReadPackCell(dp);
 					float porigin[3];
 					float angs[3];
+					char vehscript[64];
 					porigin[0] = ReadPackFloat(dp);
 					porigin[1] = ReadPackFloat(dp);
 					porigin[2] = ReadPackFloat(dp);
@@ -1051,11 +1052,13 @@ public void OnMapStart()
 					angs[0] = ReadPackFloat(dp);
 					angs[1] = ReadPackFloat(dp);
 					angs[2] = ReadPackFloat(dp);
+					ReadPackString(dp,vehscript,sizeof(vehscript));
 					int ent = CreateEntityByName(clsname);
 					if (ent != -1)
 					{
 						DispatchKeyValue(ent,"targetname",targn)
 						DispatchKeyValue(ent,"model",mdl);
+						if (strlen(vehscript) > 0) DispatchKeyValue(ent,"VehicleScript",vehscript);
 						DispatchSpawn(ent);
 						ActivateEntity(ent);
 						if (curh != 0) SetEntProp(ent,Prop_Data,"m_iHealth",curh);
@@ -1282,9 +1285,11 @@ findtouchingents(float mins[3], float maxs[3])
 					GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
 					if (strlen(targn) < 1) Format(targn,sizeof(targn),"transitionent");
 					int curh = 0;
+					char vehscript[64];
 					if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 					if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 					if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
+					if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
 					WritePackString(dp,clsname);
 					WritePackString(dp,targn);
 					WritePackString(dp,mdl);
@@ -1295,6 +1300,7 @@ findtouchingents(float mins[3], float maxs[3])
 					WritePackFloat(dp,angs[0]);
 					WritePackFloat(dp,angs[1]);
 					WritePackFloat(dp,angs[2]);
+					WritePackString(dp,vehscript);
 					PushArrayCell(transitionents,dp);
 				}
 			}
