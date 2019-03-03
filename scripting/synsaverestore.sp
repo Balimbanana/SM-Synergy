@@ -19,25 +19,27 @@ bool reloadingmap = false;
 bool allowvotereloadsaves = false; //Set by cvar sm_reloadsaves
 bool allowvotecreatesaves = false; //Set by cvar sm_createsaves
 bool rmsaves = false; //Set by cvar sm_disabletransition
-bool rmreloaded = false;
 bool transitionply = false;
 int WeapList = -1;
 int reloadtype = 0;
 float votetime = 0.0;
 float perclimit = 0.80; //Set by cvar sm_voterestore
 float perclimitsave = 0.60; //Set by cvar sm_votecreatesave
+float landmarkorigin[3];
 
 Handle globalsarr = INVALID_HANDLE;
 Handle globalsiarr = INVALID_HANDLE;
 Handle transitionid = INVALID_HANDLE;
 Handle transitiondp = INVALID_HANDLE;
+Handle transitionents = INVALID_HANDLE;
 Handle equiparr = INVALID_HANDLE;
 
+char landmarkname[64];
 char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.4"
+#define PLUGIN_VERSION "1.5"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -57,6 +59,7 @@ public void OnPluginStart()
 	globalsiarr = CreateArray(32);
 	transitionid = CreateArray(MAXPLAYERS);
 	transitiondp = CreateArray(MAXPLAYERS);
+	transitionents = CreateArray(128);
 	equiparr = CreateArray(32);
 	RegAdminCmd("savegame",savecurgame,ADMFLAG_RESERVATION,".");
 	RegAdminCmd("loadgame",loadgame,ADMFLAG_PASSWORD,".");
@@ -990,48 +993,6 @@ public void OnMapStart()
 	if (rmsaves)
 	{
 		HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:onchangelevel);
-		if (rmreloaded)
-		{
-			Handle savedirrmh = OpenDirectory(savedir, false);
-			char subfilen[32];
-			while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
-			{
-				if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
-				{
-					if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
-					{
-						Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-						DeleteFile(subfilen,false);
-						Handle subfiletarg = OpenFile(subfilen,"wb");
-						if (subfiletarg != INVALID_HANDLE)
-						{
-							WriteFileLine(subfiletarg,"");
-						}
-						CloseHandle(subfiletarg);
-					}
-				}
-			}
-			CloseHandle(savedirrmh);
-		}
-		if (transitionply)
-		{
-			findent(MaxClients+1,"info_player_equip");
-			for (int j; j<GetArraySize(equiparr); j++)
-			{
-				int jtmp = GetArrayCell(equiparr, j);
-				if (IsValidEntity(jtmp))
-					AcceptEntityInput(jtmp,"Disable");
-			}
-			CreateTimer(61.0,transitiontimeout);
-		}
-		rmreloaded = false;
-	}
-}
-/*
-public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
-{
-	if (rmsaves)
-	{
 		Handle savedirrmh = OpenDirectory(savedir, false);
 		char subfilen[32];
 		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
@@ -1052,10 +1013,93 @@ public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 			}
 		}
 		CloseHandle(savedirrmh);
+		char curmapchk[32];
+		Format(curmapchk,sizeof(curmapchk),"savedir/%s.hl1",mapbuf);
+		if (!FileExists(curmapchk))
+		{
+			Handle subfiletarg = OpenFile(curmapchk,"wb");
+			if (subfiletarg != INVALID_HANDLE)
+			{
+				WriteFileLine(subfiletarg,"");
+			}
+			CloseHandle(subfiletarg);
+		}
+		Format(curmapchk,sizeof(curmapchk),"savedir/%s.hl2",mapbuf);
+		if (!FileExists(curmapchk))
+		{
+			Handle subfiletarg = OpenFile(curmapchk,"wb");
+			if (subfiletarg != INVALID_HANDLE)
+			{
+				WriteFileLine(subfiletarg,"");
+			}
+			CloseHandle(subfiletarg);
+		}
+		Format(curmapchk,sizeof(curmapchk),"savedir/%s.hl3",mapbuf);
+		if (!FileExists(curmapchk))
+		{
+			Handle subfiletarg = OpenFile(curmapchk,"wb");
+			if (subfiletarg != INVALID_HANDLE)
+			{
+				WriteFileLine(subfiletarg,"");
+			}
+			CloseHandle(subfiletarg);
+		}
+		if (transitionply)
+		{
+			findent(MaxClients+1,"info_player_equip");
+			for (int j; j<GetArraySize(equiparr); j++)
+			{
+				int jtmp = GetArrayCell(equiparr, j);
+				if (IsValidEntity(jtmp))
+					AcceptEntityInput(jtmp,"Disable");
+			}
+			CreateTimer(61.0,transitiontimeout);
+		}
+		if (strlen(landmarkname) > 0)
+		{
+			findlandmark(-1,"info_landmark");
+			if (GetArraySize(transitionents) > 0)
+			{
+				for (int i = 0;i<GetArraySize(transitionents);i++)
+				{
+					Handle dp = GetArrayCell(transitionents,i);
+					ResetPack(dp);
+					char clsname[32];
+					char targn[32];
+					char mdl[64];
+					ReadPackString(dp,clsname,sizeof(clsname));
+					ReadPackString(dp,targn,sizeof(targn));
+					ReadPackString(dp,mdl,sizeof(mdl));
+					int curh = ReadPackCell(dp);
+					float porigin[3];
+					float angs[3];
+					porigin[0] = ReadPackFloat(dp);
+					porigin[1] = ReadPackFloat(dp);
+					porigin[2] = ReadPackFloat(dp);
+					porigin[0]+=landmarkorigin[0];
+					porigin[1]+=landmarkorigin[1];
+					porigin[2]+=landmarkorigin[2];
+					angs[0] = ReadPackFloat(dp);
+					angs[1] = ReadPackFloat(dp);
+					angs[2] = ReadPackFloat(dp);
+					int ent = CreateEntityByName(clsname);
+					if (ent != -1)
+					{
+						DispatchKeyValue(ent,"targetname",targn)
+						DispatchKeyValue(ent,"model",mdl);
+						DispatchSpawn(ent);
+						ActivateEntity(ent);
+						if (curh != 0) SetEntProp(ent,Prop_Data,"m_iHealth",curh);
+						TeleportEntity(ent,porigin,angs,NULL_VECTOR);
+					}
+					CloseHandle(dp);
+				}
+			}
+		}
+		ClearArray(transitionents);
 	}
-	return true;
 }
-*/
+
 public Action transitiontimeout(Handle timer)
 {
 	ClearArray(transitionid);
@@ -1110,9 +1154,13 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		}
 	}
 	CloseHandle(savedirh);
-	rmreloaded = true;
 	if (transitionply)
 	{
+		GetEntPropString(caller,Prop_Data,"m_szLandmarkName",landmarkname,sizeof(landmarkname));
+		findlandmark(-1,"info_landmark");
+		findlandmark(-1,"trigger_transition");
+		float plyorigin[3];
+		float plyangs[3];
 		char SteamID[32];
 		Handle dp = INVALID_HANDLE;
 		int curh,cura;
@@ -1123,6 +1171,11 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		{
 			if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
 			{
+				GetClientAbsOrigin(i,plyorigin);
+				plyorigin[0]-=landmarkorigin[0]
+				plyorigin[1]-=landmarkorigin[1]
+				plyorigin[2]-=landmarkorigin[2]
+				GetClientAbsAngles(i,plyangs);
 				GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
 				PushArrayString(transitionid,SteamID);
 				dp = CreateDataPack();
@@ -1134,10 +1187,17 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 				int kills = GetEntProp(i,Prop_Data,"m_iFrags");
 				int deaths = GetEntProp(i,Prop_Data,"m_iDeaths");
 				int suitset = GetEntProp(i,Prop_Send,"m_bWearingSuit");
+				int medkitamm = GetEntProp(i,Prop_Send,"m_iHealthPack");
 				WritePackCell(dp,score);
 				WritePackCell(dp,kills);
 				WritePackCell(dp,deaths);
 				WritePackCell(dp,suitset);
+				WritePackCell(dp,medkitamm);
+				WritePackFloat(dp,plyangs[0]);
+				WritePackFloat(dp,plyangs[1]);
+				WritePackFloat(dp,plyorigin[0]);
+				WritePackFloat(dp,plyorigin[1]);
+				WritePackFloat(dp,plyorigin[2]);
 				for (int j = 0;j<33;j++)
 				{
 					int ammchk = GetEntProp(i, Prop_Send, "m_iAmmo", _, j);
@@ -1155,7 +1215,6 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 						if (tmpi != -1)
 						{
 							GetEntityClassname(tmpi,weapname,sizeof(weapname));
-							PrintToServer("Weap %s ammo %i",weapname,GetEntProp(tmpi,Prop_Data,"m_iClip1"));
 							Format(weapnamepamm,sizeof(weapnamepamm),"%s %i",weapname,GetEntProp(tmpi,Prop_Data,"m_iClip1"));
 							WritePackString(dp,weapnamepamm);
 						}
@@ -1163,6 +1222,81 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 				}
 				WritePackString(dp,"endofpack");
 				PushArrayCell(transitiondp,dp);
+			}
+		}
+	}
+	else
+	{
+		Format(landmarkname,sizeof(landmarkname),"");
+		landmarkorigin[0] = 0.0;
+		landmarkorigin[1] = 0.0;
+		landmarkorigin[2] = 0.0;
+	}
+}
+
+findlandmark(int ent,char[] classname)
+{
+	int thisent = FindEntityByClassname(ent,classname);
+	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	{
+		char targn[64];
+		GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
+		if (StrEqual(targn,landmarkname))
+		{
+			if (StrEqual(classname,"info_landmark",false)) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",landmarkorigin);
+			else if (StrEqual(classname,"trigger_transition"))
+			{
+				float mins[3];
+				float maxs[3];
+				GetEntPropVector(thisent,Prop_Send,"m_vecMins",mins);
+				GetEntPropVector(thisent,Prop_Send,"m_vecMaxs",maxs);
+				findtouchingents(mins,maxs);
+			}
+		}
+		findlandmark(thisent++,classname);
+	}
+}
+
+findtouchingents(float mins[3], float maxs[3])
+{
+	char targn[32];
+	char mdl[64];
+	float porigin[3];
+	float angs[3];
+	for (int i = 1;i<2048;i++)
+	{
+		if (IsValidEntity(i) && IsEntNetworkable(i))
+		{
+			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
+			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
+			if ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]))
+			{
+				char clsname[32];
+				GetEntityClassname(i,clsname,sizeof(clsname));
+				if ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1))
+				{
+					Handle dp = CreateDataPack();
+					porigin[0]-=landmarkorigin[0];
+					porigin[1]-=landmarkorigin[1];
+					porigin[2]-=landmarkorigin[2];
+					GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+					if (strlen(targn) < 1) Format(targn,sizeof(targn),"transitionent");
+					int curh = 0;
+					if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
+					if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+					if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
+					WritePackString(dp,clsname);
+					WritePackString(dp,targn);
+					WritePackString(dp,mdl);
+					WritePackCell(dp,curh);
+					WritePackFloat(dp,porigin[0]);
+					WritePackFloat(dp,porigin[1]);
+					WritePackFloat(dp,porigin[2]);
+					WritePackFloat(dp,angs[0]);
+					WritePackFloat(dp,angs[1]);
+					WritePackFloat(dp,angs[2]);
+					PushArrayCell(transitionents,dp);
+				}
 			}
 		}
 	}
@@ -1212,12 +1346,24 @@ public Action transitionspawn(Handle timer, any client)
 			int kills = ReadPackCell(dp);
 			int deaths = ReadPackCell(dp);
 			int suitset = ReadPackCell(dp);
+			int medkitamm = ReadPackCell(dp);
+			float plyorigin[3];
+			float angs[3];
+			angs[0] = ReadPackFloat(dp);
+			angs[1] = ReadPackFloat(dp);
+			plyorigin[0] = ReadPackFloat(dp);
+			plyorigin[1] = ReadPackFloat(dp);
+			plyorigin[2] = ReadPackFloat(dp);
+			plyorigin[0]+=landmarkorigin[0];
+			plyorigin[1]+=landmarkorigin[1];
+			plyorigin[2]+=landmarkorigin[2];
 			SetEntProp(client,Prop_Data,"m_iHealth",curh);
 			SetEntProp(client,Prop_Data,"m_ArmorValue",cura);
 			SetEntProp(client,Prop_Data,"m_iPoints",score);
 			SetEntProp(client,Prop_Data,"m_iFrags",kills);
 			SetEntProp(client,Prop_Data,"m_iDeaths",deaths);
 			SetEntProp(client,Prop_Send,"m_bWearingSuit",suitset);
+			SetEntProp(client,Prop_Send,"m_iHealthPack",medkitamm);
 			ReadPackString(dp,ammoset,sizeof(ammoset));
 			while (!StrEqual(ammoset,"endofpack",false))
 			{
@@ -1245,11 +1391,7 @@ public Action transitionspawn(Handle timer, any client)
 			}
 			CloseHandle(dp);
 			RemoveFromArray(transitiondp,arrindx);
-			int saveover = CreateEntityByName("logic_autosave");
-			DispatchSpawn(saveover);
-			ActivateEntity(saveover);
-			AcceptEntityInput(saveover,"Save");
-			AcceptEntityInput(saveover,"kill");
+			TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
 		}
 		else
 		{
