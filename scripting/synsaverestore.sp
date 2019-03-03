@@ -992,9 +992,9 @@ public void OnMapStart()
 	ClearArray(globalsiarr);
 	ClearArray(equiparr);
 	Format(reloadthissave,sizeof(reloadthissave),"");
+	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:onchangelevel);
 	if (rmsaves)
 	{
-		HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:onchangelevel);
 		Handle savedirrmh = OpenDirectory(savedir, false);
 		char subfilen[32];
 		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
@@ -1123,132 +1123,135 @@ public Action transitiontimeout(Handle timer)
 
 public Action onchangelevel(const char[] output, int caller, int activator, float delay)
 {
-	char maptochange[64];
-	char curmapbuf[64];
-	GetCurrentMap(curmapbuf,sizeof(curmapbuf));
-	GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
-	if ((StrEqual(curmapbuf,"d1_town_03",false)) && (StrEqual(maptochange,"d1_town_02",false)))
+	if (rmsaves)
 	{
-		reloadingmap = true;
-		enterfrom03pb = true;
-	}
-	else if ((StrEqual(curmapbuf,"d2_coast_08",false)) && (StrEqual(maptochange,"d2_coast_07",false)))
-	{
-		reloadingmap = true;
-		enterfrom08pb = true;
-	}
-	else if ((StrEqual(curmapbuf,"ep2_outland_04",false)) && (StrEqual(maptochange,"ep2_outland_02",false)))
-	{
-		reloadingmap = true;
-		enterfrom04pb = true;
-	}
-	else reloadingmap = true;
-	Handle savedirh = OpenDirectory(savedir, false);
-	char subfilen[32];
-	while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
-	{
-		if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+		char maptochange[64];
+		char curmapbuf[64];
+		GetCurrentMap(curmapbuf,sizeof(curmapbuf));
+		GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
+		if ((StrEqual(curmapbuf,"d1_town_03",false)) && (StrEqual(maptochange,"d1_town_02",false)))
 		{
-			if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+			reloadingmap = true;
+			enterfrom03pb = true;
+		}
+		else if ((StrEqual(curmapbuf,"d2_coast_08",false)) && (StrEqual(maptochange,"d2_coast_07",false)))
+		{
+			reloadingmap = true;
+			enterfrom08pb = true;
+		}
+		else if ((StrEqual(curmapbuf,"ep2_outland_04",false)) && (StrEqual(maptochange,"ep2_outland_02",false)))
+		{
+			reloadingmap = true;
+			enterfrom04pb = true;
+		}
+		else reloadingmap = true;
+		Handle savedirh = OpenDirectory(savedir, false);
+		char subfilen[32];
+		while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
+		{
+			if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
 			{
-				Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-				DeleteFile(subfilen,false);
-				Handle subfiletarg = OpenFile(subfilen,"wb");
-				if (subfiletarg != INVALID_HANDLE)
+				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 				{
-					WriteFileLine(subfiletarg,"");
+					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+					DeleteFile(subfilen,false);
+					Handle subfiletarg = OpenFile(subfilen,"wb");
+					if (subfiletarg != INVALID_HANDLE)
+					{
+						WriteFileLine(subfiletarg,"");
+					}
+					CloseHandle(subfiletarg);
 				}
-				CloseHandle(subfiletarg);
 			}
 		}
-	}
-	CloseHandle(savedirh);
-	if (transitionply)
-	{
-		GetEntPropString(caller,Prop_Data,"m_szLandmarkName",landmarkname,sizeof(landmarkname));
-		findlandmark(-1,"info_landmark");
-		findlandmark(-1,"trigger_transition");
-		float plyorigin[3];
-		float plyangs[3];
-		char SteamID[32];
-		Handle dp = INVALID_HANDLE;
-		int curh,cura;
-		char tmp[16];
-		char weapname[24];
-		char weapnamepamm[32];
-		for (int i = 1;i<MaxClients+1;i++)
+		CloseHandle(savedirh);
+		if (transitionply)
 		{
-			if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
+			GetEntPropString(caller,Prop_Data,"m_szLandmarkName",landmarkname,sizeof(landmarkname));
+			findlandmark(-1,"info_landmark");
+			findlandmark(-1,"trigger_transition");
+			float plyorigin[3];
+			float plyangs[3];
+			char SteamID[32];
+			Handle dp = INVALID_HANDLE;
+			int curh,cura;
+			char tmp[16];
+			char weapname[24];
+			char weapnamepamm[32];
+			for (int i = 1;i<MaxClients+1;i++)
 			{
-				GetClientAbsAngles(i,plyangs);
-				GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
-				if (FindStringInArray(transitionplyorigin,SteamID) != -1)
+				if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
 				{
-					GetClientAbsOrigin(i,plyorigin);
-					plyorigin[0]-=landmarkorigin[0];
-					plyorigin[1]-=landmarkorigin[1];
-					plyorigin[2]-=landmarkorigin[2];
-				}
-				else
-				{
-					plyorigin[0] = 0.0;
-					plyorigin[1] = 0.0;
-					plyorigin[2] = 0.0;
-				}
-				PushArrayString(transitionid,SteamID);
-				dp = CreateDataPack();
-				curh = GetEntProp(i,Prop_Data,"m_iHealth");
-				WritePackCell(dp,curh);
-				cura = GetEntProp(i,Prop_Data,"m_ArmorValue");
-				WritePackCell(dp,cura);
-				int score = GetEntProp(i,Prop_Data,"m_iPoints");
-				int kills = GetEntProp(i,Prop_Data,"m_iFrags");
-				int deaths = GetEntProp(i,Prop_Data,"m_iDeaths");
-				int suitset = GetEntProp(i,Prop_Send,"m_bWearingSuit");
-				int medkitamm = GetEntProp(i,Prop_Send,"m_iHealthPack");
-				WritePackCell(dp,score);
-				WritePackCell(dp,kills);
-				WritePackCell(dp,deaths);
-				WritePackCell(dp,suitset);
-				WritePackCell(dp,medkitamm);
-				WritePackFloat(dp,plyangs[0]);
-				WritePackFloat(dp,plyangs[1]);
-				WritePackFloat(dp,plyorigin[0]);
-				WritePackFloat(dp,plyorigin[1]);
-				WritePackFloat(dp,plyorigin[2]);
-				for (int j = 0;j<33;j++)
-				{
-					int ammchk = GetEntProp(i, Prop_Send, "m_iAmmo", _, j);
-					if (ammchk > 0)
+					GetClientAbsAngles(i,plyangs);
+					GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
+					if (FindStringInArray(transitionplyorigin,SteamID) != -1)
 					{
-						Format(tmp,sizeof(tmp),"%i %i",j,ammchk);
-						WritePackString(dp,tmp);
+						GetClientAbsOrigin(i,plyorigin);
+						plyorigin[0]-=landmarkorigin[0];
+						plyorigin[1]-=landmarkorigin[1];
+						plyorigin[2]-=landmarkorigin[2];
 					}
-				}
-				if (WeapList != -1)
-				{
-					for (int j; j<48; j += 4)
+					else
 					{
-						int tmpi = GetEntDataEnt2(i,WeapList + j);
-						if (tmpi != -1)
+						plyorigin[0] = 0.0;
+						plyorigin[1] = 0.0;
+						plyorigin[2] = 0.0;
+					}
+					PushArrayString(transitionid,SteamID);
+					dp = CreateDataPack();
+					curh = GetEntProp(i,Prop_Data,"m_iHealth");
+					WritePackCell(dp,curh);
+					cura = GetEntProp(i,Prop_Data,"m_ArmorValue");
+					WritePackCell(dp,cura);
+					int score = GetEntProp(i,Prop_Data,"m_iPoints");
+					int kills = GetEntProp(i,Prop_Data,"m_iFrags");
+					int deaths = GetEntProp(i,Prop_Data,"m_iDeaths");
+					int suitset = GetEntProp(i,Prop_Send,"m_bWearingSuit");
+					int medkitamm = GetEntProp(i,Prop_Send,"m_iHealthPack");
+					WritePackCell(dp,score);
+					WritePackCell(dp,kills);
+					WritePackCell(dp,deaths);
+					WritePackCell(dp,suitset);
+					WritePackCell(dp,medkitamm);
+					WritePackFloat(dp,plyangs[0]);
+					WritePackFloat(dp,plyangs[1]);
+					WritePackFloat(dp,plyorigin[0]);
+					WritePackFloat(dp,plyorigin[1]);
+					WritePackFloat(dp,plyorigin[2]);
+					for (int j = 0;j<33;j++)
+					{
+						int ammchk = GetEntProp(i, Prop_Send, "m_iAmmo", _, j);
+						if (ammchk > 0)
 						{
-							GetEntityClassname(tmpi,weapname,sizeof(weapname));
-							Format(weapnamepamm,sizeof(weapnamepamm),"%s %i",weapname,GetEntProp(tmpi,Prop_Data,"m_iClip1"));
-							WritePackString(dp,weapnamepamm);
+							Format(tmp,sizeof(tmp),"%i %i",j,ammchk);
+							WritePackString(dp,tmp);
 						}
 					}
+					if (WeapList != -1)
+					{
+						for (int j; j<48; j += 4)
+						{
+							int tmpi = GetEntDataEnt2(i,WeapList + j);
+							if (tmpi != -1)
+							{
+								GetEntityClassname(tmpi,weapname,sizeof(weapname));
+								Format(weapnamepamm,sizeof(weapnamepamm),"%s %i",weapname,GetEntProp(tmpi,Prop_Data,"m_iClip1"));
+								WritePackString(dp,weapnamepamm);
+							}
+						}
+					}
+					WritePackString(dp,"endofpack");
+					PushArrayCell(transitiondp,dp);
 				}
-				WritePackString(dp,"endofpack");
-				PushArrayCell(transitiondp,dp);
 			}
 		}
-	}
-	else
-	{
-		Format(landmarkname,sizeof(landmarkname),"");
-		landmarkorigin[0] = 0.0;
-		landmarkorigin[1] = 0.0;
-		landmarkorigin[2] = 0.0;
+		else
+		{
+			Format(landmarkname,sizeof(landmarkname),"");
+			landmarkorigin[0] = 0.0;
+			landmarkorigin[1] = 0.0;
+			landmarkorigin[2] = 0.0;
+		}
 	}
 }
 
