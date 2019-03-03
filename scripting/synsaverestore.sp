@@ -31,6 +31,7 @@ Handle globalsarr = INVALID_HANDLE;
 Handle globalsiarr = INVALID_HANDLE;
 Handle transitionid = INVALID_HANDLE;
 Handle transitiondp = INVALID_HANDLE;
+Handle transitionplyorigin = INVALID_HANDLE;
 Handle transitionents = INVALID_HANDLE;
 Handle equiparr = INVALID_HANDLE;
 
@@ -39,7 +40,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.5"
+#define PLUGIN_VERSION "1.51"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -59,6 +60,7 @@ public void OnPluginStart()
 	globalsiarr = CreateArray(32);
 	transitionid = CreateArray(MAXPLAYERS);
 	transitiondp = CreateArray(MAXPLAYERS);
+	transitionplyorigin = CreateArray(MAXPLAYERS);
 	transitionents = CreateArray(128);
 	equiparr = CreateArray(32);
 	RegAdminCmd("savegame",savecurgame,ADMFLAG_RESERVATION,".");
@@ -1107,6 +1109,7 @@ public Action transitiontimeout(Handle timer)
 {
 	ClearArray(transitionid);
 	ClearArray(transitiondp);
+	ClearArray(transitionplyorigin);
 	for (int j; j<GetArraySize(equiparr); j++)
 	{
 		int jtmp = GetArrayCell(equiparr, j);
@@ -1174,12 +1177,21 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		{
 			if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
 			{
-				GetClientAbsOrigin(i,plyorigin);
-				plyorigin[0]-=landmarkorigin[0]
-				plyorigin[1]-=landmarkorigin[1]
-				plyorigin[2]-=landmarkorigin[2]
 				GetClientAbsAngles(i,plyangs);
 				GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
+				if (FindStringInArray(transitionplyorigin,SteamID) != -1)
+				{
+					GetClientAbsOrigin(i,plyorigin);
+					plyorigin[0]-=landmarkorigin[0];
+					plyorigin[1]-=landmarkorigin[1];
+					plyorigin[2]-=landmarkorigin[2];
+				}
+				else
+				{
+					plyorigin[0] = 0.0;
+					plyorigin[1] = 0.0;
+					plyorigin[2] = 0.0;
+				}
 				PushArrayString(transitionid,SteamID);
 				dp = CreateDataPack();
 				curh = GetEntProp(i,Prop_Data,"m_iHealth");
@@ -1303,6 +1315,12 @@ findtouchingents(float mins[3], float maxs[3])
 					WritePackString(dp,vehscript);
 					PushArrayCell(transitionents,dp);
 				}
+				else if (StrEqual(clsname,"player",false))
+				{
+					char SteamID[32];
+					GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
+					PushArrayString(transitionplyorigin,SteamID);
+				}
 			}
 		}
 	}
@@ -1397,7 +1415,7 @@ public Action transitionspawn(Handle timer, any client)
 			}
 			CloseHandle(dp);
 			RemoveFromArray(transitiondp,arrindx);
-			TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
+			if ((plyorigin[0] != 0.0) && (plyorigin[1] != 0.0) && (plyorigin[2] != 0.0)) TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
 		}
 		else
 		{
