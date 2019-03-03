@@ -1013,37 +1013,6 @@ public void OnMapStart()
 			}
 		}
 		CloseHandle(savedirrmh);
-		char curmapchk[32];
-		Format(curmapchk,sizeof(curmapchk),"savedir/%s.hl1",mapbuf);
-		if (!FileExists(curmapchk))
-		{
-			Handle subfiletarg = OpenFile(curmapchk,"wb");
-			if (subfiletarg != INVALID_HANDLE)
-			{
-				WriteFileLine(subfiletarg,"");
-			}
-			CloseHandle(subfiletarg);
-		}
-		Format(curmapchk,sizeof(curmapchk),"savedir/%s.hl2",mapbuf);
-		if (!FileExists(curmapchk))
-		{
-			Handle subfiletarg = OpenFile(curmapchk,"wb");
-			if (subfiletarg != INVALID_HANDLE)
-			{
-				WriteFileLine(subfiletarg,"");
-			}
-			CloseHandle(subfiletarg);
-		}
-		Format(curmapchk,sizeof(curmapchk),"savedir/%s.hl3",mapbuf);
-		if (!FileExists(curmapchk))
-		{
-			Handle subfiletarg = OpenFile(curmapchk,"wb");
-			if (subfiletarg != INVALID_HANDLE)
-			{
-				WriteFileLine(subfiletarg,"");
-			}
-			CloseHandle(subfiletarg);
-		}
 		if (transitionply)
 		{
 			findent(MaxClients+1,"info_player_equip");
@@ -1097,6 +1066,37 @@ public void OnMapStart()
 			}
 		}
 		ClearArray(transitionents);
+	}
+	char curmapchk[32];
+	Format(curmapchk,sizeof(curmapchk),"%s/%s.hl1",savedir,mapbuf);
+	if (!FileExists(curmapchk))
+	{
+		Handle subfiletarg = OpenFile(curmapchk,"wb");
+		if (subfiletarg != INVALID_HANDLE)
+		{
+			WriteFileLine(subfiletarg,"");
+		}
+		CloseHandle(subfiletarg);
+	}
+	Format(curmapchk,sizeof(curmapchk),"%s/%s.hl2",savedir,mapbuf);
+	if (!FileExists(curmapchk))
+	{
+		Handle subfiletarg = OpenFile(curmapchk,"wb");
+		if (subfiletarg != INVALID_HANDLE)
+		{
+			WriteFileLine(subfiletarg,"");
+		}
+		CloseHandle(subfiletarg);
+	}
+	Format(curmapchk,sizeof(curmapchk),"%s/%s.hl3",savedir,mapbuf);
+	if (!FileExists(curmapchk))
+	{
+		Handle subfiletarg = OpenFile(curmapchk,"wb");
+		if (subfiletarg != INVALID_HANDLE)
+		{
+			WriteFileLine(subfiletarg,"");
+		}
+		CloseHandle(subfiletarg);
 	}
 }
 
