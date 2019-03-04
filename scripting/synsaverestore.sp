@@ -22,6 +22,7 @@ bool rmsaves = false; //Set by cvar sm_disabletransition
 bool transitionply = false;
 int WeapList = -1;
 int reloadtype = 0;
+int logsv = -1;
 float votetime = 0.0;
 float perclimit = 0.80; //Set by cvar sm_voterestore
 float perclimitsave = 0.60; //Set by cvar sm_votecreatesave
@@ -33,6 +34,7 @@ Handle transitionid = INVALID_HANDLE;
 Handle transitiondp = INVALID_HANDLE;
 Handle transitionplyorigin = INVALID_HANDLE;
 Handle transitionents = INVALID_HANDLE;
+Handle timouthndl = INVALID_HANDLE;
 Handle equiparr = INVALID_HANDLE;
 
 char landmarkname[64];
@@ -40,7 +42,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.51"
+#define PLUGIN_VERSION "1.52"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -93,11 +95,21 @@ public void OnPluginStart()
 	Handle disabletransitionh = CreateConVar("sm_disabletransition", "0", "Disable transition save/reloads.", _, true, 0.0, true, 2.0);
 	if (GetConVarInt(disabletransitionh) == 2)
 	{
+		Handle svcvar = FindConVar("mp_save_disable");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
+		svcvar = FindConVar("sv_autosave");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
+		CloseHandle(svcvar);
 		rmsaves = true;
 		transitionply = true;
 	}
 	else if (GetConVarInt(disabletransitionh) == 1)
 	{
+		Handle svcvar = FindConVar("mp_save_disable");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
+		svcvar = FindConVar("sv_autosave");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
+		CloseHandle(svcvar);
 		rmsaves = true;
 		transitionply = false;
 	}
@@ -153,11 +165,21 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 	{
 		rmsaves = true;
 		transitionply = true;
+		Handle svcvar = FindConVar("mp_save_disable");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
+		svcvar = FindConVar("sv_autosave");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
+		CloseHandle(svcvar);
 	}
 	else if (StringToInt(newValue) == 1)
 	{
 		rmsaves = true;
 		transitionply = false;
+		Handle svcvar = FindConVar("mp_save_disable");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
+		svcvar = FindConVar("sv_autosave");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
+		CloseHandle(svcvar);
 	}
 	else if (StringToInt(newValue) == 0)
 	{
@@ -845,6 +867,12 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 
 public void OnMapStart()
 {
+	logsv = CreateEntityByName("logic_autosave");
+	if ((logsv != -1) && (IsValidEntity(logsv)))
+	{
+		DispatchSpawn(logsv);
+		ActivateEntity(logsv);
+	}
 	voteinprogress = false;
 	Handle savedirh = FindConVar("sv_savedir");
 	if (savedirh != INVALID_HANDLE)
@@ -1015,6 +1043,7 @@ public void OnMapStart()
 			}
 		}
 		CloseHandle(savedirrmh);
+		if ((logsv != -1) && (IsValidEntity(logsv))) AcceptEntityInput(logsv,"Save");
 		if (transitionply)
 		{
 			findent(MaxClients+1,"info_player_equip");
@@ -1024,7 +1053,8 @@ public void OnMapStart()
 				if (IsValidEntity(jtmp))
 					AcceptEntityInput(jtmp,"Disable");
 			}
-			CreateTimer(61.0,transitiontimeout);
+			if (timouthndl != INVALID_HANDLE) KillTimer(timouthndl);
+			timouthndl = CreateTimer(121.0,transitiontimeout);
 		}
 		if (strlen(landmarkname) > 0)
 		{
@@ -1110,6 +1140,7 @@ public void OnMapStart()
 
 public Action transitiontimeout(Handle timer)
 {
+	timouthndl = INVALID_HANDLE;
 	ClearArray(transitionid);
 	ClearArray(transitiondp);
 	ClearArray(transitionplyorigin);
@@ -1125,6 +1156,10 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 {
 	if (rmsaves)
 	{
+		if (timouthndl != INVALID_HANDLE) KillTimer(timouthndl);
+		ClearArray(transitionid);
+		ClearArray(transitiondp);
+		ClearArray(transitionplyorigin);
 		char maptochange[64];
 		char curmapbuf[64];
 		GetCurrentMap(curmapbuf,sizeof(curmapbuf));
@@ -1153,7 +1188,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			{
 				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 				{
-					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+					Format(subfilen,sizeof(subfilen),"%s/%s",savedir,subfilen);
 					DeleteFile(subfilen,false);
 					Handle subfiletarg = OpenFile(subfilen,"wb");
 					if (subfiletarg != INVALID_HANDLE)
@@ -1327,6 +1362,7 @@ findtouchingents(float mins[3], float maxs[3])
 					WritePackString(dp,vehscript);
 					WritePackString(dp,spawnflags);
 					PushArrayCell(transitionents,dp);
+					AcceptEntityInput(i,"kill");
 				}
 				else if (StrEqual(clsname,"player",false))
 				{
@@ -1349,9 +1385,12 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 	return Plugin_Continue;
 }
 
-public OnClientPutInServer(int client)
+public OnClientAuthorized(int client, const char[] szAuth)
 {
-	CreateTimer(0.5,transitionspawn,client);
+	if (rmsaves)
+	{
+		if ((logsv != -1) && (IsValidEntity(logsv))) AcceptEntityInput(logsv,"Save");
+	}
 }
 
 public Action transitionspawn(Handle timer, any client)
