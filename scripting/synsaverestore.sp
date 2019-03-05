@@ -1072,6 +1072,7 @@ public void OnMapStart()
 					ReadPackString(dp,clsname,sizeof(clsname));
 					ReadPackString(dp,targn,sizeof(targn));
 					ReadPackString(dp,mdl,sizeof(mdl));
+					if (!IsModelPrecached(mdl)) PrecacheModel(mdl);
 					int curh = ReadPackCell(dp);
 					float porigin[3];
 					float angs[3];
