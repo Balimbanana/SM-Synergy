@@ -1055,7 +1055,6 @@ public void OnMapStart()
 				if (IsValidEntity(jtmp))
 					AcceptEntityInput(jtmp,"Disable");
 			}
-			if (timouthndl != INVALID_HANDLE) KillTimer(timouthndl);
 			timouthndl = CreateTimer(121.0,transitiontimeout);
 		}
 		if (strlen(landmarkname) > 0)
