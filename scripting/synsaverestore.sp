@@ -42,7 +42,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.52"
+#define PLUGIN_VERSION "1.53"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -267,21 +267,19 @@ public Action votecreatesave(int client, int args)
 
 public Action savecurgame(int client, int args)
 {
-	int loginp = FindEntityByClassname(0, "logic_autosave");
-	if (loginp == -1)
+	if ((logsv != 0) && (logsv != -1) && (IsValidEntity(logsv)))
 	{
-		loginp = CreateEntityByName("logic_autosave");
-		if (loginp != -1)
-		{
-			DispatchKeyValue(loginp, "targetname","syn_autosave");
-			DispatchSpawn(loginp);
-			ActivateEntity(loginp);
-			AcceptEntityInput(loginp,"Save");
-		}
+		saveresetveh();
 	}
-	else if ((loginp > 0) || (loginp < -1))
+	else
 	{
-		AcceptEntityInput(loginp,"Save");
+		logsv = CreateEntityByName("logic_autosave");
+		if ((logsv != -1) && (IsValidEntity(logsv)))
+		{
+			DispatchSpawn(logsv);
+			ActivateEntity(logsv);
+			saveresetveh();
+		}
 	}
 	char savepath[256];
 	BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves/%s",mapbuf);
@@ -564,6 +562,12 @@ public Action reloadtimer(Handle timer)
 	DispatchSpawn(thereload);
 	ActivateEntity(thereload);
 	AcceptEntityInput(thereload, "Reload");
+	for (int j; j<GetArraySize(equiparr); j++)
+	{
+		int jtmp = GetArrayCell(equiparr, j);
+		if (IsValidEntity(jtmp))
+			AcceptEntityInput(jtmp,"Enable");
+	}
 }
 
 public Action delsave(int client, int args)
@@ -826,21 +830,19 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 			}
 			else if (reloadtype == 4)
 			{
-				int loginp = FindEntityByClassname(0, "logic_autosave");
-				if (loginp == -1)
+				if ((logsv != 0) && (logsv != -1) && (IsValidEntity(logsv)))
 				{
-					loginp = CreateEntityByName("logic_autosave");
-					if (loginp != -1)
-					{
-						DispatchKeyValue(loginp, "targetname","syn_autosave");
-						DispatchSpawn(loginp);
-						ActivateEntity(loginp);
-						AcceptEntityInput(loginp,"Save");
-					}
+					saveresetveh();
 				}
-				else if ((loginp > 0) || (loginp < -1))
+				else
 				{
-					AcceptEntityInput(loginp,"Save");
+					logsv = CreateEntityByName("logic_autosave");
+					if ((logsv != -1) && (IsValidEntity(logsv)))
+					{
+						DispatchSpawn(logsv);
+						ActivateEntity(logsv);
+						saveresetveh();
+					}
 				}
 				char savepath[256];
 				BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves/%s",mapbuf);
@@ -1043,7 +1045,7 @@ public void OnMapStart()
 			}
 		}
 		CloseHandle(savedirrmh);
-		if ((logsv != -1) && (IsValidEntity(logsv))) AcceptEntityInput(logsv,"Save");
+		if ((logsv != -1) && (IsValidEntity(logsv))) saveresetveh();
 		if (transitionply)
 		{
 			findent(MaxClients+1,"info_player_equip");
@@ -1087,13 +1089,19 @@ public void OnMapStart()
 					ReadPackString(dp,vehscript,sizeof(vehscript));
 					char spawnflags[32];
 					ReadPackString(dp,spawnflags,sizeof(spawnflags));
+					char additionalequip[32];
+					ReadPackString(dp,additionalequip,sizeof(additionalequip));
+					char skin[4];
+					ReadPackString(dp,skin,sizeof(skin));
 					int ent = CreateEntityByName(clsname);
 					if (ent != -1)
 					{
 						DispatchKeyValue(ent,"targetname",targn)
 						DispatchKeyValue(ent,"model",mdl);
 						if (strlen(vehscript) > 0) DispatchKeyValue(ent,"VehicleScript",vehscript);
+						if (strlen(additionalequip) > 0) DispatchKeyValue(ent,"AdditionalEquipment",additionalequip);
 						DispatchKeyValue(ent,"spawnflags",spawnflags);
+						DispatchKeyValue(ent,"skin",skin);
 						DispatchSpawn(ent);
 						ActivateEntity(ent);
 						if (curh != 0) SetEntProp(ent,Prop_Data,"m_iHealth",curh);
@@ -1339,15 +1347,23 @@ findtouchingents(float mins[3], float maxs[3])
 					if (strlen(targn) < 1) Format(targn,sizeof(targn),"transitionent");
 					int curh = 0;
 					char vehscript[64];
+					char additionalequip[32];
 					char spawnflags[32];
+					char skin[4];
 					if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 					if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 					if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
 					if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
+					if (HasEntProp(i,Prop_Data,"m_spawnEquipment")) GetEntPropString(i,Prop_Data,"m_spawnEquipment",additionalequip,sizeof(additionalequip));
 					if (HasEntProp(i,Prop_Data,"m_spawnflags"))
 					{
 						int sf = GetEntProp(i,Prop_Data,"m_spawnflags");
 						Format(spawnflags,sizeof(spawnflags),"%i",sf);
+					}
+					if (HasEntProp(i,Prop_Data,"m_spawnflags"))
+					{
+						int sk = GetEntProp(i,Prop_Data,"m_nSkin");
+						Format(skin,sizeof(skin),"%i",sk);
 					}
 					WritePackString(dp,clsname);
 					WritePackString(dp,targn);
@@ -1361,6 +1377,8 @@ findtouchingents(float mins[3], float maxs[3])
 					WritePackFloat(dp,angs[2]);
 					WritePackString(dp,vehscript);
 					WritePackString(dp,spawnflags);
+					WritePackString(dp,additionalequip);
+					WritePackString(dp,skin);
 					PushArrayCell(transitionents,dp);
 					AcceptEntityInput(i,"kill");
 				}
@@ -1385,11 +1403,87 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 	return Plugin_Continue;
 }
 
+public Action restoreaim(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		float restoreang[3];
+		ResetPack(dp);
+		int cl = ReadPackCell(dp);
+		if ((IsClientInGame(cl)) && (IsPlayerAlive(cl)))
+		{
+			restoreang[1] = ReadPackFloat(dp);
+			TeleportEntity(cl,NULL_VECTOR,restoreang,NULL_VECTOR);
+		}
+		CloseHandle(dp);
+	}
+	return Plugin_Handled;
+}
+
 public OnClientAuthorized(int client, const char[] szAuth)
 {
 	if (rmsaves)
 	{
-		if ((logsv != -1) && (IsValidEntity(logsv))) AcceptEntityInput(logsv,"Save");
+		if ((logsv != -1) && (IsValidEntity(logsv)))
+		{
+			saveresetveh();
+		}
+	}
+}
+
+void saveresetveh()
+{
+	int vehicles[MAXPLAYERS];
+	float steerpos[MAXPLAYERS];
+	int vehon[MAXPLAYERS];
+	float throttle[MAXPLAYERS];
+	int speed[MAXPLAYERS];
+	float restoreang[3];
+	float ang0[MAXPLAYERS];
+	float ang1[MAXPLAYERS];
+	float ang2[MAXPLAYERS];
+	int gearsound[MAXPLAYERS];
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
+		{
+			vehicles[i] = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+			if (vehicles[i] > MaxClients)
+			{
+				char clsname[32];
+				GetEntityClassname(vehicles[i],clsname,sizeof(clsname));
+				if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
+				{
+					steerpos[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering");
+					throttle[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle");
+					vehon[i] = GetEntProp(vehicles[i],Prop_Data,"m_bIsOn");
+					speed[i] = GetEntProp(vehicles[i],Prop_Data,"m_nSpeed");
+					GetEntPropVector(i,Prop_Data,"m_angRotation",restoreang);
+					ang1[i] = restoreang[1];
+					gearsound[i] = GetEntProp(vehicles[i],Prop_Data,"m_iSoundGear");
+				}
+			}
+		}
+	}
+	AcceptEntityInput(logsv,"Save");
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if ((vehicles[i] != 0) && (IsValidEntity(vehicles[i])))
+		{
+			SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering",steerpos[i]);
+			SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle",throttle[i]);
+			SetEntProp(vehicles[i],Prop_Data,"m_bIsOn",vehon[i]);
+			SetEntProp(vehicles[i],Prop_Data,"m_nSpeed",speed[i]);
+			SetEntProp(vehicles[i],Prop_Data,"m_controls.handbrake",1);
+			SetEntProp(vehicles[i],Prop_Data,"m_iSoundGear",gearsound[i]);
+			restoreang[0] = ang0[i];
+			restoreang[1] = ang1[i];
+			restoreang[2] = ang2[i];
+			Handle dp = CreateDataPack();
+			WritePackCell(dp,i);
+			WritePackFloat(dp,ang1[i]);
+			CreateTimer(0.01,restoreaim,dp);
+		}
 	}
 }
 
