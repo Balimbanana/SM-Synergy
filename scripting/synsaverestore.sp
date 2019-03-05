@@ -1336,7 +1336,7 @@ findtouchingents(float mins[3], float maxs[3])
 			{
 				char clsname[32];
 				GetEntityClassname(i,clsname,sizeof(clsname));
-				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)))
+				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)))
 				{
 					Handle dp = CreateDataPack();
 					porigin[0]-=landmarkorigin[0];
@@ -1359,7 +1359,7 @@ findtouchingents(float mins[3], float maxs[3])
 						int sf = GetEntProp(i,Prop_Data,"m_spawnflags");
 						Format(spawnflags,sizeof(spawnflags),"%i",sf);
 					}
-					if (HasEntProp(i,Prop_Data,"m_spawnflags"))
+					if (HasEntProp(i,Prop_Data,"m_nSkin"))
 					{
 						int sk = GetEntProp(i,Prop_Data,"m_nSkin");
 						Format(skin,sizeof(skin),"%i",sk);
