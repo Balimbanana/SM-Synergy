@@ -1093,6 +1093,8 @@ public void OnMapStart()
 					ReadPackString(dp,additionalequip,sizeof(additionalequip));
 					char skin[4];
 					ReadPackString(dp,skin,sizeof(skin));
+					char hdwtype[4];
+					ReadPackString(dp,hdwtype,sizeof(hdwtype));
 					int ent = CreateEntityByName(clsname);
 					if (ent != -1)
 					{
@@ -1100,6 +1102,7 @@ public void OnMapStart()
 						DispatchKeyValue(ent,"model",mdl);
 						if (strlen(vehscript) > 0) DispatchKeyValue(ent,"VehicleScript",vehscript);
 						if (strlen(additionalequip) > 0) DispatchKeyValue(ent,"AdditionalEquipment",additionalequip);
+						if (strlen(hdwtype) > 0) DispatchKeyValue(ent,"hardware",hdwtype);
 						DispatchKeyValue(ent,"spawnflags",spawnflags);
 						DispatchKeyValue(ent,"skin",skin);
 						DispatchSpawn(ent);
@@ -1350,6 +1353,7 @@ findtouchingents(float mins[3], float maxs[3])
 					char additionalequip[32];
 					char spawnflags[32];
 					char skin[4];
+					char hdwtype[4];
 					if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 					if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 					if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
@@ -1365,6 +1369,11 @@ findtouchingents(float mins[3], float maxs[3])
 						int sk = GetEntProp(i,Prop_Data,"m_nSkin");
 						Format(skin,sizeof(skin),"%i",sk);
 					}
+					if (HasEntProp(i,Prop_Data,"m_nHardwareType"))
+					{
+						int hdw = GetEntProp(i,Prop_Data,"m_nHardwareType");
+						Format(hdwtype,sizeof(hdwtype),"%i",hdw);
+					}
 					WritePackString(dp,clsname);
 					WritePackString(dp,targn);
 					WritePackString(dp,mdl);
@@ -1379,6 +1388,7 @@ findtouchingents(float mins[3], float maxs[3])
 					WritePackString(dp,spawnflags);
 					WritePackString(dp,additionalequip);
 					WritePackString(dp,skin);
+					WritePackString(dp,hdwtype);
 					PushArrayCell(transitionents,dp);
 					AcceptEntityInput(i,"kill");
 				}
