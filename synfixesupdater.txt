@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.74"
-			"Previous"	"1.73"
+			"Latest"  	"1.75"
+			"Previous"	"1.74"
 		}
 		
-		"Notes"	"Added another collision check. Added vehicle map save resets to make driving smoother."
+		"Notes"	"Added additional check to hooked inputs."
 	}
 	
 	"Files"
