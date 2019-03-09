@@ -33,8 +33,9 @@ bool forcehdr = false;
 bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
+bool vehiclemaphook = false;
 
-#define PLUGIN_VERSION "1.73"
+#define PLUGIN_VERSION "1.74"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -187,30 +188,28 @@ public void OnMapStart()
 		}
 	}
 	
-	if (FindEntityByClassname(-1,"point_teleport") != -1)
-	{
-		HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
-		HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
-		HookEntityOutput("logic_relay","OnTrigger",EntityOutput:trigtp);
-		HookEntityOutput("trigger_multiple","OnTrigger",EntityOutput:trigtp);
-		HookEntityOutput("trigger_multiple","OnStartTouch",EntityOutput:trigtp);
-		HookEntityOutput("trigger_coop","OnTrigger",EntityOutput:trigtp);
-		HookEntityOutput("trigger_coop","OnStartTouch",EntityOutput:trigtp);
-		HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigtp);
-		HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigtp);
-		HookEntityOutput("scripted_sequence","OnEndSequence",EntityOutput:trigtp);
-		HookEntityOutput("scripted_scene","OnStart",EntityOutput:trigtp);
-		HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
-		HookEntityOutput("func_button","OnUseLocked",EntityOutput:trigtp);
-		HookEntityOutput("func_door","OnOpen",EntityOutput:trigtp);
-		HookEntityOutput("func_door","OnFullyOpen",EntityOutput:trigtp);
-		HookEntityOutput("func_door","OnClose",EntityOutput:trigtp);
-		HookEntityOutput("func_door","OnFullyClosed",EntityOutput:trigtp);
-		//HookEntityOutput("prop_door_rotating","OnOpen",EntityOutput:trigtp);
-		//HookEntityOutput("prop_door_rotating","OnFullyOpen",EntityOutput:trigtp);
-		//HookEntityOutput("prop_door_rotating","OnClose",EntityOutput:trigtp);
-		//HookEntityOutput("prop_door_rotating","OnFullyClosed",EntityOutput:trigtp);
-	}
+	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
+	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
+	HookEntityOutput("logic_relay","OnTrigger",EntityOutput:trigtp);
+	HookEntityOutput("trigger_multiple","OnTrigger",EntityOutput:trigtp);
+	HookEntityOutput("trigger_multiple","OnStartTouch",EntityOutput:trigtp);
+	HookEntityOutput("trigger_coop","OnTrigger",EntityOutput:trigtp);
+	HookEntityOutput("trigger_coop","OnStartTouch",EntityOutput:trigtp);
+	HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigtp);
+	HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigtp);
+	HookEntityOutput("scripted_sequence","OnEndSequence",EntityOutput:trigtp);
+	HookEntityOutput("scripted_scene","OnStart",EntityOutput:trigtp);
+	HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
+	HookEntityOutput("func_button","OnUseLocked",EntityOutput:trigtp);
+	HookEntityOutput("func_door","OnOpen",EntityOutput:trigtp);
+	HookEntityOutput("func_door","OnFullyOpen",EntityOutput:trigtp);
+	HookEntityOutput("func_door","OnClose",EntityOutput:trigtp);
+	HookEntityOutput("func_door","OnFullyClosed",EntityOutput:trigtp);
+	//HookEntityOutput("prop_door_rotating","OnOpen",EntityOutput:trigtp);
+	//HookEntityOutput("prop_door_rotating","OnFullyOpen",EntityOutput:trigtp);
+	//HookEntityOutput("prop_door_rotating","OnClose",EntityOutput:trigtp);
+	//HookEntityOutput("prop_door_rotating","OnFullyClosed",EntityOutput:trigtp);
+	CreateTimer(0.1,rehooksaves);
 	
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
@@ -224,7 +223,8 @@ public void OnMapStart()
 	findentlist(MaxClients+1,"npc_*");
 	int jstat = FindEntityByClassname(MaxClients+1,"prop_vehicle_jeep");
 	int jspawn = FindEntityByClassname(MaxClients+1,"info_vehicle_spawn");
-	if ((jstat != -1) || (jspawn != -1))
+	int jstatmp = FindEntityByClassname(MaxClients+1,"prop_vehicle_mp");
+	if ((jstat != -1) || (jspawn != -1) || (jstatmp != -1))
 	{
 		Handle cvarchk = FindConVar("sv_player_push");
 		if (cvarchk != INVALID_HANDLE)
@@ -239,6 +239,7 @@ public void OnMapStart()
 			}
 		}
 		CloseHandle(cvarchk);
+		vehiclemaphook = true;
 	}
 	for (int j; j<GetArraySize(entlist); j++)
 	{
@@ -739,7 +740,7 @@ public Action elevatorstartpost(Handle timer, int elev)
 			{
 				char clsname[32];
 				GetEntityClassname(i,clsname,sizeof(clsname));
-				if ((StrEqual(clsname,"prop_physics",false)) || (StrEqual(clsname,"prop_ragdoll",false)))
+				if ((StrEqual(clsname,"prop_physics",false)) || (StrEqual(clsname,"prop_ragdoll",false)) || (StrContains(clsname,"item_",false) != -1))
 				{
 					float proporigin[3];
 					GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",proporigin);
@@ -1011,12 +1012,10 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			float origin[3];
 			if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
 			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
-			if (strlen(targn) > 0)
-			{
-				char tmpout[32];
-				Format(tmpout,sizeof(tmpout),output);
-				readoutputstp(targn,tmpout,origin,activator);
-			}
+			char tmpout[32];
+			Format(tmpout,sizeof(tmpout),output);
+			if (FindEntityByClassname(-1,"point_teleport") != -1) readoutputstp(targn,tmpout,"Teleport",origin,activator);
+			if (vehiclemaphook) readoutputstp(targn,tmpout,"Save",origin,activator);
 		}
 	}
 }
@@ -1301,7 +1300,7 @@ readoutputs(int scriptent, char[] targn)
 	CloseHandle(filehandle);
 }
 
-readoutputstp(char[] targn, char[] output, float origin[3], int activator)
+readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int activator)
 {
 	Handle filehandle = OpenFile(mapbuf,"r");
 	if (filehandle != INVALID_HANDLE)
@@ -1311,8 +1310,12 @@ readoutputstp(char[] targn, char[] output, float origin[3], int activator)
 		Format(tmpoutpchk,sizeof(tmpoutpchk),"\"%s,AddOutput,%s ",targn,output);
 		char originchar[64];
 		Format(originchar,sizeof(originchar),"%i %i %i",RoundFloat(origin[0]),RoundFloat(origin[1]),RoundFloat(origin[2]));
+		char inputadded[64];
+		Format(inputadded,sizeof(inputadded),":%s::",input);
+		char inputdef[64];
+		Format(inputdef,sizeof(inputdef),",%s,,",input);
 		bool readnextlines = false;
-		char lineorgres[128][32];
+		char lineorgres[16][64];
 		char lineoriginfixup[64];
 		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
 		{
@@ -1324,27 +1327,32 @@ readoutputstp(char[] targn, char[] output, float origin[3], int activator)
 					readnextlines = false;
 				else
 				{
-					if (StrContains(line,",teleport,",false) != -1)
+					if (StrContains(line,inputdef,false) != -1)
 					{
 						char tmpchar[128];
 						Format(tmpchar,sizeof(tmpchar),line);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"onmapspawn\" ","",false);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 						ReplaceString(tmpchar,sizeof(tmpchar),output,"",false);
-						char lineorgrescom[128][16];
+						char lineorgrescom[16][64];
 						//ExplodeString(tmpchar, " ", lineorgres, 16, 64);
 						ExplodeString(tmpchar, ",", lineorgrescom, 16, 64);
 						//int targnend = StrContains(lineorgres[1],",",false);
 						//ReplaceString(lineorgres[1],sizeof(lineorgres[]),lineorgres[1][targnend],"");
 						ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
 						float delay = StringToFloat(lineorgrescom[3]);
-						if (debuglvl == 3) PrintToServer("TPOutput %s %s",lineorgrescom[0],line);
-						findpointtp(-1,lineorgrescom[0],activator,delay);
+						if (debuglvl == 3) PrintToServer("%s Output %s %s",input,lineorgrescom[0],line);
+						if (StrEqual(input,"teleport",false)) findpointtp(-1,lineorgrescom[0],activator,delay);
+						else if (StrEqual(input,"save",false))
+						{
+							resetvehicles(delay);
+							if (delay == 0.0) CreateTimer(0.01,recallreset);
+						}
 						break;
 					}
 				}
 			}
-			if ((StrContains(line,tmpoutpchk,false) != -1) && (StrContains(line,":teleport::",false) != -1))
+			if ((StrContains(line,tmpoutpchk,false) != -1) && (strlen(targn) > 0) && (StrContains(line,inputadded,false) != -1))
 			{
 				char tmpchar[128];
 				Format(tmpchar,sizeof(tmpchar),line);
@@ -1352,14 +1360,21 @@ readoutputstp(char[] targn, char[] output, float origin[3], int activator)
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				ExplodeString(tmpchar, " ", lineorgres, 16, 64);
 				int targnend = StrContains(lineorgres[1],":",false);
+				int inputstrlen = strlen(input);
+				inputstrlen+=3;
 				char delaystr[24];
-				Format(delaystr,sizeof(delaystr),lineorgres[1][targnend+11]);
+				Format(delaystr,sizeof(delaystr),lineorgres[1][targnend+inputstrlen]);
 				int delayend = StrContains(delaystr,":",false);
 				ReplaceString(delaystr,64,delaystr[delayend],"");
 				ReplaceString(lineorgres[1],64,lineorgres[1][targnend],"");
-				if (debuglvl == 3) PrintToServer("TPAddedOutput %s %s",lineorgres[1],line);
+				if (debuglvl == 3) PrintToServer("%s AddedOutput %s %s",input,lineorgres[1],line);
 				float delay = StringToFloat(delaystr);
-				findpointtp(-1,lineorgres[1],activator,delay);
+				if (StrEqual(input,"teleport",false)) findpointtp(-1,lineorgres[1],activator,delay);
+				else if (StrEqual(input,"save",false))
+				{
+					resetvehicles(delay);
+					if (delay == 0.0) CreateTimer(0.01,recallreset);
+				}
 				break;
 			}
 			if (StrContains(line,"\"origin\"",false) == 0)
@@ -1614,6 +1629,74 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 	return Plugin_Continue;
 }
 
+public Action rehooksaves(Handle timer)
+{
+	findsavetrigs(-1,"trigger_autosave");
+}
+
+public Action findsavetrigs(int ent, char[] clsname)
+{
+	int thisent = FindEntityByClassname(ent,clsname);
+	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	{
+		float origins[3];
+		char mdlnum[16];
+		GetEntPropVector(thisent, Prop_Send, "m_vecOrigin", origins);
+		GetEntPropString(thisent, Prop_Data, "m_ModelName", mdlnum,sizeof(mdlnum));
+		CreateTrig(origins,mdlnum);
+		findsavetrigs(thisent++,clsname);
+	}
+	return Plugin_Handled;
+}
+
+CreateTrig(float origins[3], char[] mdlnum)
+{
+	int autostrig = CreateEntityByName("trigger_once");
+	DispatchKeyValue(autostrig,"model",mdlnum);
+	DispatchKeyValue(autostrig,"spawnflags","1");
+	TeleportEntity(autostrig,origins,NULL_VECTOR,NULL_VECTOR);
+	DispatchSpawn(autostrig);
+	ActivateEntity(autostrig);
+	HookSingleEntityOutput(autostrig,"OnStartTouch",EntityOutput:autostrigout,true);
+}
+
+public Action autostrigout(const char[] output, int caller, int activator, float delay)
+{
+	resetvehicles(0.0);
+}
+
+void resetvehicles(float delay)
+{
+	if (vehiclemaphook)
+	{
+		if (delay > 0.0) CreateTimer(delay,recallreset);
+		else
+		{
+			for (int i = 1;i<MaxClients+1;i++)
+			{
+				if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
+				{
+					int vehicles = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+					if (vehicles > MaxClients)
+					{
+						char clsname[32];
+						GetEntityClassname(vehicles,clsname,sizeof(clsname));
+						if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
+						{
+							SetEntProp(vehicles,Prop_Data,"m_controls.handbrake",1);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+public Action recallreset(Handle timer)
+{
+	resetvehicles(0.0);
+}
+
 public OnEntityCreated(int entity, const char[] classname)
 {
 	if ((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false)) && (FindValueInArray(entlist,entity) == -1))
@@ -1678,13 +1761,22 @@ public Action StartTouchprop(int entity, int other)
 	{
 		char clscoll[64];
 		GetEntityClassname(other,clscoll,sizeof(clscoll));
-		if (StrEqual(clscoll,"prop_dynamic",false))
+		if ((StrEqual(clscoll,"prop_dynamic",false)) || (StrEqual(clscoll,"func_clip_vphysics",false)))
 		{
 			char clscollname[64];
 			GetEntPropString(other,Prop_Data,"m_iName",clscollname,sizeof(clscollname));
 			if (strlen(clscollname) > 0)
 			{
 				if ((StrContains(clscollname,"elev",false) != -1) || (StrContains(clscollname,"basket",false) != -1))
+					AcceptEntityInput(entity,"kill");
+			}
+			int parentchk = 0;
+			if (HasEntProp(other,Prop_Data,"m_hParent"))
+				parentchk = GetEntPropEnt(other,Prop_Data,"m_hParent");
+			if (parentchk < 1)
+			{
+				GetEntityClassname(parentchk,clscoll,sizeof(clscoll));
+				if (StrEqual(clscoll,"func_tracktrain",false))
 					AcceptEntityInput(entity,"kill");
 			}
 		}
