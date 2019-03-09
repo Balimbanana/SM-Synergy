@@ -20,6 +20,7 @@ bool allowvotereloadsaves = false; //Set by cvar sm_reloadsaves
 bool allowvotecreatesaves = false; //Set by cvar sm_createsaves
 bool rmsaves = false; //Set by cvar sm_disabletransition
 bool transitionply = false;
+bool reloadaftersetup = false;
 int WeapList = -1;
 int reloadtype = 0;
 int logsv = -1;
@@ -42,7 +43,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.53"
+#define PLUGIN_VERSION "1.54"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -133,8 +134,7 @@ public OnLibraryAdded(const char[] name)
 
 public Updater_OnPluginUpdated()
 {
-	Handle nullpl = INVALID_HANDLE;
-	ReloadPlugin(nullpl);
+	reloadaftersetup = true;
 }
 
 public votereloadcvar(Handle convar, const char[] oldValue, const char[] newValue)
@@ -348,6 +348,29 @@ public Action savecurgamedp(Handle timer, any dp)
 	CloseHandle(dp);
 	Format(fchk,sizeof(fchk),"%s\\%s",savepath,ctimestamp);
 	if (!DirExists(fchk)) CreateDirectory(fchk,511);
+	char nullb[2];
+	//BuildPath(Path_SM,nullb,sizeof(nullb),"data/SynSaves/%s/%s/playerinfo.txt",mapbuf,ctimestamp);
+	char plyinffile[256];
+	Format(plyinffile,sizeof(plyinffile),"%s\\%s\\playerinfo.txt",savepath,ctimestamp);
+	//Format(plyinffile,sizeof(plyinffile),"%s\\playerinfo.txt",savedir);
+	ReplaceString(plyinffile,sizeof(plyinffile),"/","\\");
+	Handle plyinf = OpenFile(plyinffile,"w");
+	char SteamID[32];
+	float plyangs[3];
+	float plyorigin[3];
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
+		{
+			GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
+			GetClientAbsAngles(i,plyangs);
+			GetClientAbsOrigin(i,plyorigin);
+			char push[128];
+			Format(push,sizeof(push),"%sb%1.f %1.f %1.fb%1.f %1.f %1.f",SteamID,plyangs[0],plyangs[1],plyangs[2],plyorigin[0],plyorigin[1],plyorigin[2]);
+			WriteFileLine(plyinf,push);
+		}
+	}
+	CloseHandle(plyinf);
 	Handle savedirh = OpenDirectory(savedir, false);
 	char subfilen[32];
 	while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
@@ -364,7 +387,6 @@ public Action savecurgamedp(Handle timer, any dp)
 					Format(savepathsf,sizeof(savepathsf),subfilen);
 					ReplaceString(savepathsf,sizeof(savepathsf),savedir,"");
 					ReplaceString(savepathsf,sizeof(savepathsf),"\\","");
-					char nullb[2];
 					BuildPath(Path_SM,nullb,sizeof(nullb),"data/SynSaves/%s/%s/%s",mapbuf,ctimestamp,savepathsf);
 					Format(savepathsf,sizeof(savepathsf),"%s/%s/%s",savepath,ctimestamp,savepathsf);
 					ReplaceString(savepathsf,sizeof(savepathsf),"/","\\");
@@ -487,7 +509,7 @@ loadthissave(char[] info)
 		{
 			if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
 			{
-				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)) && (!StrEqual(subfilen,"playerinfo.txt",false)))
 				{
 					char subfilensm[256];
 					Format(subfilensm,sizeof(subfilensm),"%s\\%s",savepath,subfilen);
@@ -512,7 +534,34 @@ loadthissave(char[] info)
 				}
 			}
 		}
+		char plyinffile[256];
+		Format(plyinffile,sizeof(plyinffile),"%s/playerinfo.txt",savepath,info);
+		Handle dp = INVALID_HANDLE;
+		if (FileExists(plyinffile,false))
+		{
+			dp = CreateDataPack();
+			Handle reloadids = CreateArray(64);
+			Handle reloadangs = CreateArray(64);
+			Handle reloadorgs = CreateArray(64);
+			char sets[3][64];
+			char line[72];
+			Handle plyinf = OpenFile(plyinffile,"r");
+			while(!IsEndOfFile(plyinf)&&ReadFileLine(plyinf,line,sizeof(line)))
+			{
+				TrimString(line);
+				ExplodeString(line,"b",sets,3,64);
+				PushArrayString(reloadids,sets[0]);
+				PushArrayString(reloadangs,sets[1]);
+				PushArrayString(reloadorgs,sets[2]);
+				PrintToServer("%s %s %s",sets[0],sets[1],sets[2]);
+			}
+			CloseHandle(plyinf);
+			WritePackCell(dp,reloadids);
+			WritePackCell(dp,reloadangs);
+			WritePackCell(dp,reloadorgs);
+		}
 		CreateTimer(1.0,reloadtimer);
+		CreateTimer(1.1,reloadtimersetupcl,dp);
 	}
 }
 
@@ -562,11 +611,81 @@ public Action reloadtimer(Handle timer)
 	DispatchSpawn(thereload);
 	ActivateEntity(thereload);
 	AcceptEntityInput(thereload, "Reload");
-	for (int j; j<GetArraySize(equiparr); j++)
+	if (GetArraySize(equiparr) > 0)
 	{
-		int jtmp = GetArrayCell(equiparr, j);
-		if (IsValidEntity(jtmp))
-			AcceptEntityInput(jtmp,"Enable");
+		for (int j; j<GetArraySize(equiparr); j++)
+		{
+			int jtmp = GetArrayCell(equiparr, j);
+			if (IsValidEntity(jtmp))
+				AcceptEntityInput(jtmp,"Enable");
+		}
+	}
+}
+
+public Action reloadtimersetupcl(Handle timer, Handle dp)
+{
+	if (GetArraySize(equiparr) > 0)
+	{
+		for (int j; j<GetArraySize(equiparr); j++)
+		{
+			int jtmp = GetArrayCell(equiparr, j);
+			if (IsValidEntity(jtmp))
+				AcceptEntityInput(jtmp,"Enable");
+		}
+	}
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		Handle reloadids = ReadPackCell(dp);
+		Handle reloadangs = ReadPackCell(dp);
+		Handle reloadorgs = ReadPackCell(dp);
+		CloseHandle(dp);
+		if (GetArraySize(reloadids) > 0)
+		{
+			float angs[3];
+			float origin[3];
+			char sets[3][64];
+			for (int i = 1;i<MaxClients+1;i++)
+			{
+				if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
+				{
+					char SteamID[32];
+					GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
+					int arrindx = FindStringInArray(reloadids,SteamID);
+					char angch[32];
+					char originch[32];
+					if (arrindx != -1)
+					{
+						GetArrayString(reloadangs,arrindx,angch,sizeof(angch));
+						GetArrayString(reloadorgs,arrindx,originch,sizeof(originch));
+						ExplodeString(angch," ",sets,3,64);
+						angs[0] = StringToFloat(sets[0]);
+						angs[1] = StringToFloat(sets[1]);
+						angs[2] = StringToFloat(sets[2]);
+						ExplodeString(originch," ",sets,3,64);
+						origin[0] = StringToFloat(sets[0]);
+						origin[1] = StringToFloat(sets[1]);
+						origin[2] = StringToFloat(sets[2]);
+						TeleportEntity(i,origin,angs,NULL_VECTOR);
+					}
+					else
+					{
+						int rand = GetRandomInt(0,GetArraySize(reloadids)-1);
+						GetArrayString(reloadangs,rand,angch,sizeof(angch));
+						GetArrayString(reloadorgs,rand,originch,sizeof(originch));
+						ExplodeString(angch," ",sets,3,64);
+						angs[0] = StringToFloat(sets[0]);
+						angs[1] = StringToFloat(sets[1]);
+						angs[2] = StringToFloat(sets[2]);
+						ExplodeString(originch," ",sets,3,64);
+						origin[0] = StringToFloat(sets[0]);
+						origin[1] = StringToFloat(sets[1]);
+						origin[2] = StringToFloat(sets[2]);
+						TeleportEntity(i,origin,angs,NULL_VECTOR);
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -1049,11 +1168,14 @@ public void OnMapStart()
 		if (transitionply)
 		{
 			findent(MaxClients+1,"info_player_equip");
-			for (int j; j<GetArraySize(equiparr); j++)
+			if (GetArraySize(equiparr) > 0)
 			{
-				int jtmp = GetArrayCell(equiparr, j);
-				if (IsValidEntity(jtmp))
-					AcceptEntityInput(jtmp,"Disable");
+				for (int j; j<GetArraySize(equiparr); j++)
+				{
+					int jtmp = GetArrayCell(equiparr, j);
+					if (IsValidEntity(jtmp))
+						AcceptEntityInput(jtmp,"Disable");
+				}
 			}
 			timouthndl = CreateTimer(121.0,transitiontimeout);
 		}
@@ -1095,6 +1217,8 @@ public void OnMapStart()
 					ReadPackString(dp,skin,sizeof(skin));
 					char hdwtype[4];
 					ReadPackString(dp,hdwtype,sizeof(hdwtype));
+					char parentname[32];
+					ReadPackString(dp,parentname,sizeof(parentname));
 					int ent = CreateEntityByName(clsname);
 					if (ent != -1)
 					{
@@ -1103,6 +1227,7 @@ public void OnMapStart()
 						if (strlen(vehscript) > 0) DispatchKeyValue(ent,"VehicleScript",vehscript);
 						if (strlen(additionalequip) > 0) DispatchKeyValue(ent,"AdditionalEquipment",additionalequip);
 						if (strlen(hdwtype) > 0) DispatchKeyValue(ent,"hardware",hdwtype);
+						if (strlen(parentname) > 0) DispatchKeyValue(ent,"ParentName",parentname);
 						DispatchKeyValue(ent,"spawnflags",spawnflags);
 						DispatchKeyValue(ent,"skin",skin);
 						DispatchSpawn(ent);
@@ -1155,11 +1280,32 @@ public Action transitiontimeout(Handle timer)
 	ClearArray(transitionid);
 	ClearArray(transitiondp);
 	ClearArray(transitionplyorigin);
-	for (int j; j<GetArraySize(equiparr); j++)
+	if (GetArraySize(equiparr) > 0)
 	{
-		int jtmp = GetArrayCell(equiparr, j);
-		if (IsValidEntity(jtmp))
-			AcceptEntityInput(jtmp,"Enable");
+		for (int j; j<GetArraySize(equiparr); j++)
+		{
+			int jtmp = GetArrayCell(equiparr, j);
+			if (IsValidEntity(jtmp))
+				AcceptEntityInput(jtmp,"Enable");
+		}
+	}
+	if (reloadaftersetup)
+	{
+		Handle nullpl = INVALID_HANDLE;
+		ReloadPlugin(nullpl);
+	}
+}
+
+public void OnPluginEnd()
+{
+	if (GetArraySize(equiparr) > 0)
+	{
+		for (int j; j<GetArraySize(equiparr); j++)
+		{
+			int jtmp = GetArrayCell(equiparr, j);
+			if (IsValidEntity(jtmp))
+				AcceptEntityInput(jtmp,"Enable");
+		}
 	}
 }
 
@@ -1340,6 +1486,7 @@ findtouchingents(float mins[3], float maxs[3])
 			{
 				char clsname[32];
 				GetEntityClassname(i,clsname,sizeof(clsname));
+				//Add func_tracktrain check if exists on next map OnTransition might not fire
 				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)))
 				{
 					Handle dp = CreateDataPack();
@@ -1354,6 +1501,7 @@ findtouchingents(float mins[3], float maxs[3])
 					char spawnflags[32];
 					char skin[4];
 					char hdwtype[4];
+					char parentname[32];
 					if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 					if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 					if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
@@ -1374,6 +1522,11 @@ findtouchingents(float mins[3], float maxs[3])
 						int hdw = GetEntProp(i,Prop_Data,"m_nHardwareType");
 						Format(hdwtype,sizeof(hdwtype),"%i",hdw);
 					}
+					if (HasEntProp(i,Prop_Data,"m_hParent"))
+					{
+						int par = GetEntPropEnt(i,Prop_Data,"m_hParent");
+						GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
+					}
 					WritePackString(dp,clsname);
 					WritePackString(dp,targn);
 					WritePackString(dp,mdl);
@@ -1389,8 +1542,8 @@ findtouchingents(float mins[3], float maxs[3])
 					WritePackString(dp,additionalequip);
 					WritePackString(dp,skin);
 					WritePackString(dp,hdwtype);
+					WritePackString(dp,parentname);
 					PushArrayCell(transitionents,dp);
-					AcceptEntityInput(i,"kill");
 				}
 				else if (StrEqual(clsname,"player",false))
 				{
@@ -1507,11 +1660,15 @@ public Action transitionspawn(Handle timer, any client)
 		if (arrindx != -1)
 		{
 			if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_equip");
-			for (int j; j<GetArraySize(equiparr); j++)
+			//Possibility of no equips found.
+			if (GetArraySize(equiparr) > 0)
 			{
-				int jtmp = GetArrayCell(equiparr, j);
-				if (IsValidEntity(jtmp))
-					AcceptEntityInput(jtmp,"Disable");
+				for (int j; j<GetArraySize(equiparr); j++)
+				{
+					int jtmp = GetArrayCell(equiparr, j);
+					if (IsValidEntity(jtmp))
+						AcceptEntityInput(jtmp,"Disable");
+				}
 			}
 			char ammoset[24];
 			char ammosetexp[24][2];
@@ -1576,11 +1733,14 @@ public Action transitionspawn(Handle timer, any client)
 		else
 		{
 			if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_equip");
-			for (int j; j<GetArraySize(equiparr); j++)
+			if (GetArraySize(equiparr) > 0)
 			{
-				int jtmp = GetArrayCell(equiparr, j);
-				if (IsValidEntity(jtmp))
-					AcceptEntityInput(jtmp,"EquipPlayer",client);
+				for (int j; j<GetArraySize(equiparr); j++)
+				{
+					int jtmp = GetArrayCell(equiparr, j);
+					if (IsValidEntity(jtmp))
+						AcceptEntityInput(jtmp,"EquipPlayer",client);
+				}
 			}
 			if (GetArraySize(equiparr) < 1) CreateTimer(0.1,delayequip);
 		}
