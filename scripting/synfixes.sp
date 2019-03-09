@@ -35,7 +35,7 @@ bool linact = false;
 bool syn56act = false;
 bool vehiclemaphook = false;
 
-#define PLUGIN_VERSION "1.74"
+#define PLUGIN_VERSION "1.75"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1348,7 +1348,6 @@ readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int ac
 							resetvehicles(delay);
 							if (delay == 0.0) CreateTimer(0.01,recallreset);
 						}
-						break;
 					}
 				}
 			}
