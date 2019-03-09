@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.03"
-			"Previous"	"1.02"
+			"Latest"  	"1.04"
+			"Previous"	"1.03"
 		}
 		
-		"Notes"	"Added model validity check when creating entities."
+		"Notes"	"Added model validity precached models check when creating entities."
 	}
 	
 	"Files"
