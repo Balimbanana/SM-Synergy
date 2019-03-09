@@ -1769,6 +1769,7 @@ public Action StartTouchprop(int entity, int other)
 			{
 				if ((StrContains(clscollname,"elev",false) != -1) || (StrContains(clscollname,"basket",false) != -1))
 					AcceptEntityInput(entity,"kill");
+				return Plugin_Continue;
 			}
 			int parentchk = 0;
 			if (HasEntProp(other,Prop_Data,"m_hParent"))
@@ -1778,11 +1779,13 @@ public Action StartTouchprop(int entity, int other)
 				GetEntityClassname(parentchk,clscoll,sizeof(clscoll));
 				if (StrEqual(clscoll,"func_tracktrain",false))
 					AcceptEntityInput(entity,"kill");
+				return Plugin_Continue;
 			}
 		}
 		else if ((StrEqual(clscoll,"func_tracktrain",false)) || (StrEqual(clscoll,"func_brush",false)))
 			AcceptEntityInput(entity,"kill");
 	}
+	return Plugin_Continue;
 }
 
 public Action OnWeaponUse(int client, int weapon)
