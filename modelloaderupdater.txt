@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.62"
-			"Previous"	"1.61"
+			"Latest"  	"1.63"
+			"Previous"	"1.62"
 		}
 		
-		"Notes"	"Default model for non-stored clients now set by client cvar."
+		"Notes"	"Removed donstat in base setmodel as it is not as accurate, removed custom model item if no models found."
 	}
 	
 	"Files"
