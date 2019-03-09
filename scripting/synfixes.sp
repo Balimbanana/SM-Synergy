@@ -1324,7 +1324,10 @@ readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int ac
 			if (readnextlines)
 			{
 				if ((StrEqual(line,"}",false)) || (StrEqual(line,"{",false)))
+				{
 					readnextlines = false;
+					break;
+				}
 				else
 				{
 					if (StrContains(line,inputdef,false) != -1)
