@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.62"
+#define PLUGIN_VERSION "1.63"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
 public Plugin:myinfo = 
@@ -337,8 +337,8 @@ public Action setmodel(int client, const char[] model)
 		if ((found > -1) && (!(StrEqual(model,""))))
 		{
 			int donstat = 1;
-			if (HasEntProp(client,Prop_Send,"m_iSynergyDonorStat"))
-				donstat = GetEntProp(client, Prop_Send, "m_iSynergyDonorStat");
+			//if (HasEntProp(client,Prop_Send,"m_iSynergyDonorStat"))
+			//	donstat = GetEntProp(client, Prop_Send, "m_iSynergyDonorStat");
 			if ((StrContains( model, "hero") != -1) && (donstat > 0))
 			{
 				if (StrContains( model, "normal") != -1)
@@ -856,7 +856,7 @@ public Action modelmenu(int client, int args)
 	DrawPanelItem(panel, "Female Citizen");
 	DrawPanelItem(panel, "Male Rebel");
 	DrawPanelItem(panel, "Female Rebel");
-	DrawPanelItem(panel, "Custom");
+	if (GetArraySize(modelarray) > 0) DrawPanelItem(panel, "Custom");
  
 	SendPanelToClient(panel, client, PanelHandler, 20);
  
