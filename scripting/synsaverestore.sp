@@ -35,6 +35,7 @@ Handle transitionid = INVALID_HANDLE;
 Handle transitiondp = INVALID_HANDLE;
 Handle transitionplyorigin = INVALID_HANDLE;
 Handle transitionents = INVALID_HANDLE;
+Handle ignoreent = INVALID_HANDLE;
 Handle timouthndl = INVALID_HANDLE;
 Handle equiparr = INVALID_HANDLE;
 
@@ -65,6 +66,7 @@ public void OnPluginStart()
 	transitiondp = CreateArray(MAXPLAYERS);
 	transitionplyorigin = CreateArray(MAXPLAYERS);
 	transitionents = CreateArray(128);
+	ignoreent = CreateArray(128);
 	equiparr = CreateArray(32);
 	RegAdminCmd("savegame",savecurgame,ADMFLAG_RESERVATION,".");
 	RegAdminCmd("loadgame",loadgame,ADMFLAG_PASSWORD,".");
@@ -1140,6 +1142,7 @@ public void OnMapStart()
 	ClearArray(globalsarr);
 	ClearArray(globalsiarr);
 	ClearArray(equiparr);
+	ClearArray(ignoreent);
 	Format(reloadthissave,sizeof(reloadthissave),"");
 	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:onchangelevel);
 	if (rmsaves)
@@ -1362,13 +1365,11 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			GetEntPropString(caller,Prop_Data,"m_szLandmarkName",landmarkname,sizeof(landmarkname));
 			findlandmark(-1,"info_landmark");
 			findlandmark(-1,"trigger_transition");
-			/*
 			float mins[3];
 			float maxs[3];
 			GetEntPropVector(caller,Prop_Send,"m_vecMins",mins);
 			GetEntPropVector(caller,Prop_Send,"m_vecMaxs",maxs);
 			findtouchingents(mins,maxs);
-			*/
 			float plyorigin[3];
 			float plyangs[3];
 			char SteamID[32];
@@ -1485,7 +1486,7 @@ findtouchingents(float mins[3], float maxs[3])
 	float angs[3];
 	for (int i = 1;i<2048;i++)
 	{
-		if (IsValidEntity(i) && IsEntNetworkable(i))
+		if (IsValidEntity(i) && IsEntNetworkable(i) && (FindValueInArray(ignoreent,i) == -1))
 		{
 			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
 			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
@@ -1551,6 +1552,7 @@ findtouchingents(float mins[3], float maxs[3])
 					WritePackString(dp,hdwtype);
 					WritePackString(dp,parentname);
 					PushArrayCell(transitionents,dp);
+					PushArrayCell(ignoreent,i);
 				}
 				else if (StrEqual(clsname,"player",false))
 				{
