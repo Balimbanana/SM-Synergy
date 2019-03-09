@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.55"
+#define PLUGIN_VERSION "1.56"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -269,9 +269,18 @@ public Action votecreatesave(int client, int args)
 
 public Action savecurgame(int client, int args)
 {
+	if (GetArraySize(equiparr) > 0)
+	{
+		for (int j; j<GetArraySize(equiparr); j++)
+		{
+			int jtmp = GetArrayCell(equiparr, j);
+			if (IsValidEntity(jtmp))
+				AcceptEntityInput(jtmp,"Enable");
+		}
+	}
 	if ((logsv != 0) && (logsv != -1) && (IsValidEntity(logsv)))
 	{
-		saveresetveh();
+		saveresetveh(false);
 	}
 	else
 	{
@@ -280,7 +289,7 @@ public Action savecurgame(int client, int args)
 		{
 			DispatchSpawn(logsv);
 			ActivateEntity(logsv);
-			saveresetveh();
+			saveresetveh(false);
 		}
 	}
 	char savepath[256];
@@ -953,7 +962,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 			{
 				if ((logsv != 0) && (logsv != -1) && (IsValidEntity(logsv)))
 				{
-					saveresetveh();
+					saveresetveh(false);
 				}
 				else
 				{
@@ -962,7 +971,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 					{
 						DispatchSpawn(logsv);
 						ActivateEntity(logsv);
-						saveresetveh();
+						saveresetveh(false);
 					}
 				}
 				char savepath[256];
@@ -1167,7 +1176,8 @@ public void OnMapStart()
 			}
 		}
 		CloseHandle(savedirrmh);
-		if ((logsv != -1) && (IsValidEntity(logsv))) saveresetveh();
+		CreateTimer(0.1,redel);
+		if ((logsv != -1) && (IsValidEntity(logsv))) saveresetveh(false);
 		if (transitionply)
 		{
 			findent(MaxClients+1,"info_player_equip");
@@ -1275,6 +1285,11 @@ public void OnMapStart()
 		}
 		CloseHandle(subfiletarg);
 	}
+}
+
+public Action redel(Handle timer)
+{
+	saveresetveh(true);
 }
 
 public Action transitiontimeout(Handle timer)
@@ -1533,7 +1548,7 @@ findtouchingents(float mins[3], float maxs[3])
 					if (HasEntProp(i,Prop_Data,"m_hParent"))
 					{
 						int par = GetEntPropEnt(i,Prop_Data,"m_hParent");
-						GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
+						if (par != -1) GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
 					}
 					WritePackString(dp,clsname);
 					WritePackString(dp,targn);
@@ -1562,6 +1577,11 @@ findtouchingents(float mins[3], float maxs[3])
 				}
 			}
 		}
+	}
+	for (int i = 0;i<GetArraySize(ignoreent);i++)
+	{
+		int j = GetArrayCell(ignoreent,i);
+		if (IsValidEntity(j)) AcceptEntityInput(j,"kill");
 	}
 }
 
@@ -1598,7 +1618,7 @@ public OnClientAuthorized(int client, const char[] szAuth)
 	{
 		if ((logsv != -1) && (IsValidEntity(logsv)))
 		{
-			saveresetveh();
+			saveresetveh(true);
 		}
 		else
 		{
@@ -1607,14 +1627,37 @@ public OnClientAuthorized(int client, const char[] szAuth)
 			{
 				DispatchSpawn(logsv);
 				ActivateEntity(logsv);
-				saveresetveh();
+				saveresetveh(true);
 			}
 		}
 	}
 }
 
-void saveresetveh()
+void saveresetveh(bool rmsave)
 {
+	if (rmsave)
+	{
+		Handle savedirrmh = OpenDirectory(savedir, false);
+		char subfilen[32];
+		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
+		{
+			if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+			{
+				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+				{
+					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+					DeleteFile(subfilen,false);
+					Handle subfiletarg = OpenFile(subfilen,"wb");
+					if (subfiletarg != INVALID_HANDLE)
+					{
+						WriteFileLine(subfiletarg,"");
+					}
+					CloseHandle(subfiletarg);
+				}
+			}
+		}
+		CloseHandle(savedirrmh);
+	}
 	int vehicles[MAXPLAYERS];
 	float steerpos[MAXPLAYERS];
 	int vehon[MAXPLAYERS];
@@ -1670,6 +1713,18 @@ void saveresetveh()
 }
 
 public Action transitionspawn(Handle timer, any client)
+{
+	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && IsValidEntity(client) && !IsFakeClient(client))
+	{
+		CreateTimer(0.1, anotherdelay, client);
+	}
+	else if ((IsClientConnected(client)) && (!IsFakeClient(client)))
+	{
+		CreateTimer(1.0, transitionspawn, client);
+	}
+}
+
+public Action anotherdelay(Handle timer, int client)
 {
 	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && IsValidEntity(client) && !IsFakeClient(client))
 	{
@@ -1763,10 +1818,6 @@ public Action transitionspawn(Handle timer, any client)
 			}
 			if (GetArraySize(equiparr) < 1) CreateTimer(0.1,delayequip);
 		}
-	}
-	else if ((IsClientConnected(client)) && (!IsFakeClient(client)))
-	{
-		CreateTimer(1.0, transitionspawn, client);
 	}
 }
 
