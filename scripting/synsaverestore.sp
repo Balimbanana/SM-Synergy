@@ -43,7 +43,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.54"
+#define PLUGIN_VERSION "1.55"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1362,6 +1362,13 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			GetEntPropString(caller,Prop_Data,"m_szLandmarkName",landmarkname,sizeof(landmarkname));
 			findlandmark(-1,"info_landmark");
 			findlandmark(-1,"trigger_transition");
+			/*
+			float mins[3];
+			float maxs[3];
+			GetEntPropVector(caller,Prop_Send,"m_vecMins",mins);
+			GetEntPropVector(caller,Prop_Send,"m_vecMaxs",maxs);
+			findtouchingents(mins,maxs);
+			*/
 			float plyorigin[3];
 			float plyangs[3];
 			char SteamID[32];
@@ -1590,6 +1597,16 @@ public OnClientAuthorized(int client, const char[] szAuth)
 		if ((logsv != -1) && (IsValidEntity(logsv)))
 		{
 			saveresetveh();
+		}
+		else
+		{
+			logsv = CreateEntityByName("logic_autosave");
+			if ((logsv != -1) && (IsValidEntity(logsv)))
+			{
+				DispatchSpawn(logsv);
+				ActivateEntity(logsv);
+				saveresetveh();
+			}
 		}
 	}
 }
