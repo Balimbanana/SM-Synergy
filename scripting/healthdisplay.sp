@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.73"
+#define PLUGIN_VERSION "1.74"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -35,13 +35,6 @@ int bclcookie3[MAXPLAYERS+1];
 int bclcookie4[MAXPLAYERS+1][3];
 int bclcookie4f[MAXPLAYERS+1][3];
 int hChanged[MAXPLAYERS+1];
-
-//CLupdate chk
-#define HD_C_Type 1
-#define HD_C_Ver 2
-#define HD_C_Friendlies 4
-#define HD_C_FCol 8
-#define HD_C_ECol 16
 
 public void OnPluginStart()
 {
@@ -165,25 +158,25 @@ public Action sethealthtype(int client, int args)
 		{
 			PrintToChat(client,"Set HealthDisplay to show HudText.");
 			bclcookie[client] = 0;
-			hChanged[client] |= HD_C_Type;
+			hChanged[client] = 1;
 		}
 		else if (numset == 2)
 		{
 			PrintToChat(client,"Set HealthDisplay to show Hint.");
 			bclcookie[client] = 1;
-			hChanged[client] |= HD_C_Type;
+			hChanged[client] = 1;
 		}
 		else if (numset == 3)
 		{
 			PrintToChat(client,"Set HealthDisplay to show CenterText.");
 			bclcookie[client] = 2;
-			hChanged[client] |= HD_C_Type;
+			hChanged[client] = 1;
 		}
 		else
 		{
 			PrintToChat(client,"Disabled HealthDisplay.");
 			bclcookie[client] = 3;
-			hChanged[client] |= HD_C_Type;
+			hChanged[client] = 1;
 		}
 	}
 	return Plugin_Handled;
@@ -207,19 +200,19 @@ public Action sethealthfriendly(int client, int args)
 		{
 			PrintToChat(client,"Set HealthDisplay to hide friendly npcs health.");
 			bclcookie3[client] = 0;
-			hChanged[client] |= HD_C_Friendlies;
+			hChanged[client] = 1;
 		}
 		else if (numset == 1)
 		{
 			PrintToChat(client,"Set HealthDisplay to show friendly npcs health.");
 			bclcookie3[client] = 1;
-			hChanged[client] |= HD_C_Friendlies;
+			hChanged[client] = 1;
 		}
 		else if (numset == 2)
 		{
 			PrintToChat(client,"Set HealthDisplay to show friendly npcs health with friend: or enemy:.");
 			bclcookie3[client] = 2;
-			hChanged[client] |= HD_C_Friendlies;
+			hChanged[client] = 1;
 		}
 		else
 		{
@@ -251,13 +244,13 @@ public Action sethealthnum(int client, int args)
 		{
 			PrintToChat(client,"Set HealthDisplay to show percentage.");
 			bclcookie2[client] = 0;
-			hChanged[client] |= HD_C_Ver;
+			hChanged[client] = 1;
 		}
 		else if (numset == 2)
 		{
 			PrintToChat(client,"Set HealthDisplay to show hit points.");
 			bclcookie2[client] = 1;
-			hChanged[client] |= HD_C_Ver;
+			hChanged[client] = 1;
 		}
 	}
 	return Plugin_Handled;
@@ -1257,63 +1250,63 @@ public PanelHandlerDisplayFull(Menu menu, MenuAction action, int param1, int par
 		{
 			PrintToChat(param1,"Set HealthDisplay to show percentage.");
 			bclcookie2[param1] = 0;
-			hChanged[param1] |= HD_C_Ver;
+			hChanged[param1] = 1;
 			Display_HudNum(param1,0);
 		}
 		else if (StrEqual(info,"sethp",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show hit points.");
 			bclcookie2[param1] = 1;
-			hChanged[param1] |= HD_C_Ver;
+			hChanged[param1] = 1;
 			Display_HudNum(param1,0);
 		}
 		else if (StrEqual(info,"friend0",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to hide friendly npcs health.");
 			bclcookie3[param1] = 0;
-			hChanged[param1] |= HD_C_Friendlies;
+			hChanged[param1] = 1;
 			Display_HudFriendlies(param1,0);
 		}
 		else if (StrEqual(info,"friend1",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show friendly npcs health.");
 			bclcookie3[param1] = 1;
-			hChanged[param1] |= HD_C_Friendlies;
+			hChanged[param1] = 1;
 			Display_HudFriendlies(param1,0);
 		}
 		else if (StrEqual(info,"friend2",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show friendly npcs health with friend: or enemy:.");
 			bclcookie3[param1] = 2;
-			hChanged[param1] |= HD_C_Friendlies;
+			hChanged[param1] = 1;
 			Display_HudFriendlies(param1,0);
 		}
 		else if (StrEqual(info,"settext",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show HudText.");
 			bclcookie[param1] = 0;
-			hChanged[param1] |= HD_C_Type;
+			hChanged[param1] = 1;
 			Display_HudTypes(param1,0);
 		}
 		else if (StrEqual(info,"sethint",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show Hint.");
 			bclcookie[param1] = 1;
-			hChanged[param1] |= HD_C_Type;
+			hChanged[param1] = 1;
 			Display_HudTypes(param1,0);
 		}
 		else if (StrEqual(info,"setcent",false))
 		{
 			PrintToChat(param1,"Set HealthDisplay to show CenterText.");
 			bclcookie[param1] = 2;
-			hChanged[param1] |= HD_C_Type;
+			hChanged[param1] = 1;
 			Display_HudTypes(param1,0);
 		}
 		else if (StrEqual(info,"setdisable",false))
 		{
 			PrintToChat(param1,"Disabled HealthDisplay.");
 			bclcookie[param1] = 3;
-			hChanged[param1] |= HD_C_Type;
+			hChanged[param1] = 1;
 			Display_HudTypes(param1,0);
 		}
 		else if (StrEqual(info,"backtotop",false)) showinf(param1,10);
@@ -1370,84 +1363,84 @@ public PanelHandlerDisplay(Menu menu, MenuAction action, int param1, int param2)
 			bclcookie4[param1][0] = 255;
 			bclcookie4[param1][1] = 0;
 			bclcookie4[param1][2] = 0;
-			hChanged[param1] |= HD_C_ECol;
+			hChanged[param1] = 1;
 		}
 		else if (StrEqual(info,"en green",false))
 		{
 			bclcookie4[param1][0] = 0;
 			bclcookie4[param1][1] = 255;
 			bclcookie4[param1][2] = 0;
-			hChanged[param1] |= HD_C_ECol;
+			hChanged[param1] = 1;
 		}
 		else if (StrEqual(info,"en blue",false))
 		{
 			bclcookie4[param1][0] = 0;
 			bclcookie4[param1][1] = 0;
 			bclcookie4[param1][2] = 255;
-			hChanged[param1] |= HD_C_ECol;
+			hChanged[param1] = 1;
 		}
 		else if (StrEqual(info,"en yellow",false))
 		{
 			bclcookie4[param1][0] = 255;
 			bclcookie4[param1][1] = 255;
 			bclcookie4[param1][2] = 0;
-			hChanged[param1] |= HD_C_ECol;
+			hChanged[param1] = 1;
 		}
 		else if (StrEqual(info,"en white",false))
 		{
 			bclcookie4[param1][0] = 255;
 			bclcookie4[param1][1] = 255;
 			bclcookie4[param1][2] = 255;
-			hChanged[param1] |= HD_C_ECol;
+			hChanged[param1] = 1;
 		}
 		else if (StrEqual(info,"en purple",false))
 		{
 			bclcookie4[param1][0] = 255;
 			bclcookie4[param1][1] = 0;
 			bclcookie4[param1][2] = 255;
-			hChanged[param1] |= HD_C_ECol;
+			hChanged[param1] = 1;
 		}
 		else if (StrEqual(info,"ff red",false))
 		{
 			bclcookie4f[param1][0] = 255;
 			bclcookie4f[param1][1] = 0;
 			bclcookie4f[param1][2] = 0;
-			hChanged[param1] |= HD_C_FCol;
+			hChanged[param1] = 1;
 		}
 		else if (StrEqual(info,"ff green",false))
 		{
 			bclcookie4f[param1][0] = 0;
 			bclcookie4f[param1][1] = 255;
 			bclcookie4f[param1][2] = 0;
-			hChanged[param1] |= HD_C_FCol;
+			hChanged[param1] = 1;
 		}
 		else if (StrEqual(info,"ff blue",false))
 		{
 			bclcookie4f[param1][0] = 0;
 			bclcookie4f[param1][1] = 0;
 			bclcookie4f[param1][2] = 255;
-			hChanged[param1] |= HD_C_FCol;
+			hChanged[param1] = 1;
 		}
 		else if (StrEqual(info,"ff yellow",false))
 		{
 			bclcookie4f[param1][0] = 255;
 			bclcookie4f[param1][1] = 255;
 			bclcookie4f[param1][2] = 0;
-			hChanged[param1] |= HD_C_FCol;
+			hChanged[param1] = 1;
 		}
 		else if (StrEqual(info,"ff white",false))
 		{
 			bclcookie4f[param1][0] = 255;
 			bclcookie4f[param1][1] = 255;
 			bclcookie4f[param1][2] = 255;
-			hChanged[param1] |= HD_C_FCol;
+			hChanged[param1] = 1;
 		}
 		else if (StrEqual(info,"ff purple",false))
 		{
 			bclcookie4f[param1][0] = 255;
 			bclcookie4f[param1][1] = 0;
 			bclcookie4f[param1][2] = 255;
-			hChanged[param1] |= HD_C_FCol;
+			hChanged[param1] = 1;
 		}
 		if (StrContains(info,"ff ",false) != -1) Display_HudFriendSelect(param1,0);
 		else if (StrContains(info,"en ",false) != -1) Display_HudEnemySelect(param1,0);
@@ -1557,39 +1550,24 @@ public CLStoreInTable(int client)
 	if (IsCLStored(client) && (hChanged[client]))
 	{
 		StrCat(Query,500,"UPDATE healthdisplay SET ");
-		if (hChanged[client] & HD_C_Type)
-		{
-			Format(Temp,100,"H1 = %i, ",bclcookie[client]);
-			StrCat(Query,500,Temp);
-		}
-		if (hChanged[client] & HD_C_Ver)
-		{
-			Format(Temp,100,"H2 = %i, ",bclcookie2[client]);
-			StrCat(Query,500,Temp);
-		}
-		if (hChanged[client] & HD_C_Friendlies)
-		{
-			Format(Temp,100,"H3 = %i, ",bclcookie3[client]);
-			StrCat(Query,500,Temp);
-		}
-		if (hChanged[client] & HD_C_FCol)
-		{
-			Format(Temp,100,"H4 = %i, ",bclcookie4[client][0]);
-			StrCat(Query,500,Temp);
-			Format(Temp,100,"H5 = %i, ",bclcookie4[client][1]);
-			StrCat(Query,500,Temp);
-			Format(Temp,100,"H6 = %i, ",bclcookie4[client][2]);
-			StrCat(Query,500,Temp);
-		}
-		if (hChanged[client] & HD_C_ECol)
-		{
-			Format(Temp,100,"H7 = %i, ",bclcookie4f[client][0]);
-			StrCat(Query,500,Temp);
-			Format(Temp,100,"H8 = %i, ",bclcookie4f[client][1]);
-			StrCat(Query,500,Temp);
-			Format(Temp,100,"H9 = %i, ",bclcookie4f[client][2]);
-			StrCat(Query,500,Temp);
-		}
+		Format(Temp,100,"H1 = %i, ",bclcookie[client]);
+		StrCat(Query,500,Temp);
+		Format(Temp,100,"H2 = %i, ",bclcookie2[client]);
+		StrCat(Query,500,Temp);
+		Format(Temp,100,"H3 = %i, ",bclcookie3[client]);
+		StrCat(Query,500,Temp);
+		Format(Temp,100,"H4 = %i, ",bclcookie4[client][0]);
+		StrCat(Query,500,Temp);
+		Format(Temp,100,"H5 = %i, ",bclcookie4[client][1]);
+		StrCat(Query,500,Temp);
+		Format(Temp,100,"H6 = %i, ",bclcookie4[client][2]);
+		StrCat(Query,500,Temp);
+		Format(Temp,100,"H7 = %i, ",bclcookie4f[client][0]);
+		StrCat(Query,500,Temp);
+		Format(Temp,100,"H8 = %i, ",bclcookie4f[client][1]);
+		StrCat(Query,500,Temp);
+		Format(Temp,100,"H9 = %i, ",bclcookie4f[client][2]);
+		StrCat(Query,500,Temp);
 		Query[strlen(Query)-2] = '\0';
 		Format(Temp,100," WHERE SteamID = '%s';",SteamID[client]);
 		StrCat(Query,500,Temp);
