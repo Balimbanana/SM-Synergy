@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.54"
-			"Previous"	"1.53"
+			"Latest"  	"1.55"
+			"Previous"	"1.54"
 		}
 		
 		"Notes"	"Added more transition keys for certain entities. Added fix to stopping vehicles on save."
