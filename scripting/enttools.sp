@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.03"
+#define PLUGIN_VERSION "1.04"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -115,7 +115,7 @@ public Action CreateStuff(int client, int args)
 				{
 					if (StrEqual(tmp,"model",false))
 					{
-						if (!FileExists(tmp2,true,NULL_STRING))
+						if ((!FileExists(tmp2,true,NULL_STRING)) && (!IsModelPrecached(tmp2)))
 						{
 							PrintToChat(client,"The model %s was not found.",tmp2);
 							AcceptEntityInput(stuff,"kill");
