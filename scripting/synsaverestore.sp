@@ -1810,7 +1810,7 @@ public Action anotherdelay(Handle timer, int client)
 			CloseHandle(dp);
 			RemoveFromArray(transitiondp,arrindx);
 			if ((plyorigin[0] != 0.0) && (plyorigin[1] != 0.0) && (plyorigin[2] != 0.0)) TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
-			if ((curweapindx > MaxClients) && (IsValidEntity(curweapindx))) EquipPlayerWeapon(client,curweapindx);
+			if ((curweapindx > MaxClients) && (IsValidEntity(curweapindx))) ClientCommand(client,"use %s",curweapindx);
 		}
 		else
 		{
