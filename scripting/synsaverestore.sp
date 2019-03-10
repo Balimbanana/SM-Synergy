@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.57"
+#define PLUGIN_VERSION "1.58"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1682,13 +1682,13 @@ void saveresetveh(bool rmsave)
 				GetEntityClassname(vehicles[i],clsname,sizeof(clsname));
 				if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
 				{
-					steerpos[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering");
-					throttle[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle");
-					vehon[i] = GetEntProp(vehicles[i],Prop_Data,"m_bIsOn");
-					speed[i] = GetEntProp(vehicles[i],Prop_Data,"m_nSpeed");
-					GetEntPropVector(i,Prop_Data,"m_angRotation",restoreang);
+					if (HasEntProp(vehicles[i],Prop_Data,"m_controls.steering")) steerpos[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering");
+					if (HasEntProp(vehicles[i],Prop_Data,"m_controls.throttle")) throttle[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle");
+					if (HasEntProp(vehicles[i],Prop_Data,"m_bIsOn")) vehon[i] = GetEntProp(vehicles[i],Prop_Data,"m_bIsOn");
+					if (HasEntProp(vehicles[i],Prop_Data,"m_nSpeed")) speed[i] = GetEntProp(vehicles[i],Prop_Data,"m_nSpeed");
+					if (HasEntProp(vehicles[i],Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",restoreang);
 					ang1[i] = restoreang[1];
-					gearsound[i] = GetEntProp(vehicles[i],Prop_Data,"m_iSoundGear");
+					if (HasEntProp(vehicles[i],Prop_Data,"m_iSoundGear")) gearsound[i] = GetEntProp(vehicles[i],Prop_Data,"m_iSoundGear");
 				}
 			}
 		}
@@ -1698,12 +1698,12 @@ void saveresetveh(bool rmsave)
 	{
 		if ((vehicles[i] != 0) && (IsValidEntity(vehicles[i])))
 		{
-			SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering",steerpos[i]);
-			SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle",throttle[i]);
-			SetEntProp(vehicles[i],Prop_Data,"m_bIsOn",vehon[i]);
-			SetEntProp(vehicles[i],Prop_Data,"m_nSpeed",speed[i]);
-			SetEntProp(vehicles[i],Prop_Data,"m_controls.handbrake",1);
-			SetEntProp(vehicles[i],Prop_Data,"m_iSoundGear",gearsound[i]);
+			if (HasEntProp(vehicles[i],Prop_Data,"m_controls.steering")) SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering",steerpos[i]);
+			if (HasEntProp(vehicles[i],Prop_Data,"m_controls.throttle")) SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle",throttle[i]);
+			if (HasEntProp(vehicles[i],Prop_Data,"m_bIsOn")) SetEntProp(vehicles[i],Prop_Data,"m_bIsOn",vehon[i]);
+			if (HasEntProp(vehicles[i],Prop_Data,"m_nSpeed")) SetEntProp(vehicles[i],Prop_Data,"m_nSpeed",speed[i]);
+			if (HasEntProp(vehicles[i],Prop_Data,"m_iSoundGear")) SetEntProp(vehicles[i],Prop_Data,"m_iSoundGear",gearsound[i]);
+			if (HasEntProp(vehicles[i],Prop_Data,"m_controls.handbrake")) SetEntProp(vehicles[i],Prop_Data,"m_controls.handbrake",1);
 			restoreang[0] = ang0[i];
 			restoreang[1] = ang1[i];
 			restoreang[2] = ang2[i];
