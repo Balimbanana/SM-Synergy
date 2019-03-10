@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.56"
-			"Previous"	"1.55"
+			"Latest"  	"1.57"
+			"Previous"	"1.56"
 		}
 		
-		"Notes"	"Added more transition keys for certain entities. Added fix to stopping vehicles on save."
+		"Notes"	"Added more transition keys for certain entities."
 	}
 	
 	"Files"
