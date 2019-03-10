@@ -164,12 +164,12 @@ public void OnMapStart()
 		HookEntityOutput("logic_choreographed_scene","OnStart",EntityOutput:trigout);
 		HookEntityOutput("instanced_scripted_scene","OnStart",EntityOutput:trigout);
 		HookEntityOutput("func_tracktrain","OnStart",EntityOutput:elevatorstart);
-		HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:mapendchg);
-		HookEntityOutput("npc_citizen","OnDeath",EntityOutput:entdeath);
-		HookEntityOutput("func_physbox","OnPhysGunPunt",EntityOutput:physpunt);
 		HookEntityOutput("func_door","OnOpen",EntityOutput:createelev);
 		HookEntityOutput("func_door","OnClose",EntityOutput:createelev);
 	}
+	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:mapendchg);
+	HookEntityOutput("npc_citizen","OnDeath",EntityOutput:entdeath);
+	HookEntityOutput("func_physbox","OnPhysGunPunt",EntityOutput:physpunt);
 	Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
 	char buff[64];
 	while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
