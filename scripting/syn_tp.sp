@@ -6,7 +6,7 @@ public Plugin:myinfo =
 	name = "Synergy Save/Teleport",
 	author = "Balimbanana",
 	description = "Allows people to save and teleport to their saved positions.",
-	version = "1.0",
+	version = "1.1",
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
@@ -38,7 +38,7 @@ public void OnPluginStart()
 	HookConVarChange(teleportcdh, teleportcdch);
 	teleportcd = GetConVarFloat(teleportcdh);
 	CloseHandle(teleportcdh);
-	Handle teleportdish = CreateConVar("savetp_disable","0","Disables save/teleport.", _, true, 0.0, true, 1.0);
+	Handle teleportdish = CreateConVar("savetp_disable","0","Disables save/teleport. 2 will enable only for js_ and coop_ maps.", _, true, 0.0, true, 2.0);
 	HookConVarChange(teleportdish, teleportdisch);
 	tpdisable = GetConVarBool(teleportdish);
 	CloseHandle(teleportdish);
@@ -72,7 +72,16 @@ public teleportcdch(Handle convar, const char[] oldValue, const char[] newValue)
 
 public teleportdisch(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	if (StringToInt(newValue) == 1)
+	if (StringToInt(newValue) == 2)
+	{
+		char mapbuf[64];
+		GetCurrentMap(mapbuf,sizeof(mapbuf));
+		if ((StrContains(mapbuf,"coop_",false) != -1) || (StrContains(mapbuf,"js_",false) != -1))
+			tpdisable = false;
+		else
+			tpdisable = true;
+	}
+	else if (StringToInt(newValue) == 1)
 		tpdisable = true;
 	else
 		tpdisable = false;
@@ -174,5 +183,16 @@ public void OnMapStart()
 		saveset[i] = false;
 		citshowcl[i] = 0;
 		antispamchk[i] = 0.0;
+	}
+	Handle cvar = FindConVar("savetp_disable");
+	int cvarint = GetConVarInt(cvar);
+	if (cvarint == 2)
+	{
+		char mapbuf[64];
+		GetCurrentMap(mapbuf,sizeof(mapbuf));
+		if ((StrContains(mapbuf,"coop_",false) != -1) || (StrContains(mapbuf,"js_",false) != -1))
+			tpdisable = false;
+		else
+			tpdisable = true;
 	}
 }
