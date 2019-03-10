@@ -35,7 +35,7 @@ bool linact = false;
 bool syn56act = false;
 bool vehiclemaphook = false;
 
-#define PLUGIN_VERSION "1.75"
+#define PLUGIN_VERSION "1.76"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1776,7 +1776,7 @@ public Action StartTouchprop(int entity, int other)
 			int parentchk = 0;
 			if (HasEntProp(other,Prop_Data,"m_hParent"))
 				parentchk = GetEntPropEnt(other,Prop_Data,"m_hParent");
-			if (parentchk < 1)
+			if ((parentchk > MaxClients) && (IsValidEntity(parentchk)))
 			{
 				GetEntityClassname(parentchk,clscoll,sizeof(clscoll));
 				if (StrEqual(clscoll,"func_tracktrain",false))
@@ -1947,10 +1947,17 @@ findentlist(int ent, char[] clsname)
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
-		if (StrEqual(clsname,"npc_template_maker",false))
+		if ((StrEqual(clsname,"npc_template_maker",false)) || (StrEqual(clsname,"npc_maker",false)))
 		{
 			int maxnpc = GetEntProp(thisent,Prop_Data,"m_nMaxNumNPCs");
-			if ((maxnpc > spawneramt) && (restrictact))
+			char rescls[32];
+			if (HasEntProp(thisent,Prop_Data,"m_iszNPCClassname")) GetEntPropString(thisent,Prop_Data,"m_iszNPCClassname",rescls,sizeof(rescls));
+			if ((StrEqual(rescls,"npc_vortigaunt",false)) || (StrEqual(rescls,"npc_helicopter",false)) || (StrEqual(rescls,"npc_combinegunship",false)))
+			{
+				SetVariantInt(1);
+				AcceptEntityInput(thisent,"SetMaxChildren");
+			}
+			else if ((maxnpc > spawneramt) && (restrictact))
 			{
 				if (debuglvl == 1) PrintToServer("%i has %i max npcs resetting to %i",thisent,maxnpc,spawneramt);
 				SetVariantInt(spawneramt);
