@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.75"
-			"Previous"	"1.74"
+			"Latest"  	"1.76"
+			"Previous"	"1.75"
 		}
 		
 		"Notes"	"Added additional check to hooked inputs."
