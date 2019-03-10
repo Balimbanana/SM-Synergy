@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.56"
+#define PLUGIN_VERSION "1.57"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1391,6 +1391,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			Handle dp = INVALID_HANDLE;
 			int curh,cura;
 			char tmp[16];
+			char curweap[24];
 			char weapname[24];
 			char weapnamepamm[32];
 			for (int i = 1;i<MaxClients+1;i++)
@@ -1433,6 +1434,8 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					WritePackFloat(dp,plyorigin[0]);
 					WritePackFloat(dp,plyorigin[1]);
 					WritePackFloat(dp,plyorigin[2]);
+					GetClientWeapon(i,curweap,sizeof(curweap));
+					WritePackString(dp,curweap);
 					for (int j = 0;j<33;j++)
 					{
 						int ammchk = GetEntProp(i, Prop_Send, "m_iAmmo", _, j);
@@ -1748,6 +1751,7 @@ public Action anotherdelay(Handle timer, int client)
 			char ammosetexp[24][2];
 			char ammosettype[24];
 			char ammosetamm[16];
+			char curweap[24];
 			RemoveFromArray(transitionid,arrindx);
 			Handle dp = GetArrayCell(transitiondp,arrindx);
 			ResetPack(dp);
@@ -1758,6 +1762,7 @@ public Action anotherdelay(Handle timer, int client)
 			int deaths = ReadPackCell(dp);
 			int suitset = ReadPackCell(dp);
 			int medkitamm = ReadPackCell(dp);
+			int curweapindx = -1;
 			float plyorigin[3];
 			float angs[3];
 			angs[0] = ReadPackFloat(dp);
@@ -1768,6 +1773,7 @@ public Action anotherdelay(Handle timer, int client)
 			plyorigin[0]+=landmarkorigin[0];
 			plyorigin[1]+=landmarkorigin[1];
 			plyorigin[2]+=landmarkorigin[2];
+			ReadPackString(dp,curweap,sizeof(curweap));
 			SetEntProp(client,Prop_Data,"m_iHealth",curh);
 			SetEntProp(client,Prop_Data,"m_ArmorValue",cura);
 			SetEntProp(client,Prop_Data,"m_iPoints",score);
@@ -1795,7 +1801,8 @@ public Action anotherdelay(Handle timer, int client)
 					if (weapindx != -1)
 					{
 						int weapamm = StringToInt(ammosetamm);
-						SetEntProp(weapindx,Prop_Data,"m_iClip1",weapamm)
+						SetEntProp(weapindx,Prop_Data,"m_iClip1",weapamm);
+						if (StrEqual(ammosettype,curweap,false)) curweapindx = weapindx;
 					}
 				}
 				ReadPackString(dp,ammoset,sizeof(ammoset));
@@ -1803,6 +1810,7 @@ public Action anotherdelay(Handle timer, int client)
 			CloseHandle(dp);
 			RemoveFromArray(transitiondp,arrindx);
 			if ((plyorigin[0] != 0.0) && (plyorigin[1] != 0.0) && (plyorigin[2] != 0.0)) TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
+			if ((curweapindx > MaxClients) && (IsValidEntity(curweapindx))) EquipPlayerWeapon(client,curweapindx);
 		}
 		else
 		{
