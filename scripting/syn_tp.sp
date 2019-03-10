@@ -40,7 +40,10 @@ public void OnPluginStart()
 	CloseHandle(teleportcdh);
 	Handle teleportdish = CreateConVar("savetp_disable","0","Disables save/teleport. 2 will enable only for js_ and coop_ maps.", _, true, 0.0, true, 2.0);
 	HookConVarChange(teleportdish, teleportdisch);
-	tpdisable = GetConVarBool(teleportdish);
+	if (GetConVarInt(teleportdish) == 1)
+		tpdisable = true;
+	else
+		tpdisable = false;
 	CloseHandle(teleportdish);
 }
 
