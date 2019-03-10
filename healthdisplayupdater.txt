@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.74"
-			"Previous"	"1.73"
+			"Latest"  	"1.75"
+			"Previous"	"1.74"
 		}
 		
-		"Notes"	"Changed store sets."
+		"Notes"	"Added another npc HT."
 	}
 	
 	"Files"
