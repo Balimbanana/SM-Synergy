@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.58"
-			"Previous"	"1.57"
+			"Latest"  	"1.59"
+			"Previous"	"1.58"
 		}
 		
-		"Notes"	"Added additional check for vehicle types."
+		"Notes"	"Added rm to mapend."
 	}
 	
 	"Files"
