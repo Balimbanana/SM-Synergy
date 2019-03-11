@@ -99,9 +99,9 @@ public void OnPluginStart()
 	if (GetConVarInt(disabletransitionh) == 2)
 	{
 		Handle svcvar = FindConVar("mp_save_disable");
-		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
-		svcvar = FindConVar("sv_autosave");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
+		svcvar = FindConVar("sv_autosave");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
 		CloseHandle(svcvar);
 		rmsaves = true;
 		transitionply = true;
@@ -109,9 +109,9 @@ public void OnPluginStart()
 	else if (GetConVarInt(disabletransitionh) == 1)
 	{
 		Handle svcvar = FindConVar("mp_save_disable");
-		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
-		svcvar = FindConVar("sv_autosave");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
+		svcvar = FindConVar("sv_autosave");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
 		CloseHandle(svcvar);
 		rmsaves = true;
 		transitionply = false;
@@ -168,9 +168,9 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 		rmsaves = true;
 		transitionply = true;
 		Handle svcvar = FindConVar("mp_save_disable");
-		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
-		svcvar = FindConVar("sv_autosave");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
+		svcvar = FindConVar("sv_autosave");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
 		CloseHandle(svcvar);
 	}
 	else if (StringToInt(newValue) == 1)
@@ -178,9 +178,9 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 		rmsaves = true;
 		transitionply = false;
 		Handle svcvar = FindConVar("mp_save_disable");
-		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
-		svcvar = FindConVar("sv_autosave");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
+		svcvar = FindConVar("sv_autosave");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
 		CloseHandle(svcvar);
 	}
 	else if (StringToInt(newValue) == 0)
