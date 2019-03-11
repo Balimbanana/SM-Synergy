@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.58"
+#define PLUGIN_VERSION "1.59"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1253,43 +1253,70 @@ public void OnMapStart()
 			}
 		}
 		ClearArray(transitionents);
-	}
-	char curmapchk[32];
-	Format(curmapchk,sizeof(curmapchk),"%s/%s.hl1",savedir,mapbuf);
-	if (!FileExists(curmapchk))
-	{
-		Handle subfiletarg = OpenFile(curmapchk,"wb");
-		if (subfiletarg != INVALID_HANDLE)
+		char curmapchk[32];
+		Format(curmapchk,sizeof(curmapchk),"%s/%s.hl1",savedir,mapbuf);
+		if (!FileExists(curmapchk))
 		{
-			WriteFileLine(subfiletarg,"");
+			Handle subfiletarg = OpenFile(curmapchk,"wb");
+			if (subfiletarg != INVALID_HANDLE)
+			{
+				WriteFileLine(subfiletarg,"");
+			}
+			CloseHandle(subfiletarg);
 		}
-		CloseHandle(subfiletarg);
-	}
-	Format(curmapchk,sizeof(curmapchk),"%s/%s.hl2",savedir,mapbuf);
-	if (!FileExists(curmapchk))
-	{
-		Handle subfiletarg = OpenFile(curmapchk,"wb");
-		if (subfiletarg != INVALID_HANDLE)
+		Format(curmapchk,sizeof(curmapchk),"%s/%s.hl2",savedir,mapbuf);
+		if (!FileExists(curmapchk))
 		{
-			WriteFileLine(subfiletarg,"");
+			Handle subfiletarg = OpenFile(curmapchk,"wb");
+			if (subfiletarg != INVALID_HANDLE)
+			{
+				WriteFileLine(subfiletarg,"");
+			}
+			CloseHandle(subfiletarg);
 		}
-		CloseHandle(subfiletarg);
-	}
-	Format(curmapchk,sizeof(curmapchk),"%s/%s.hl3",savedir,mapbuf);
-	if (!FileExists(curmapchk))
-	{
-		Handle subfiletarg = OpenFile(curmapchk,"wb");
-		if (subfiletarg != INVALID_HANDLE)
+		Format(curmapchk,sizeof(curmapchk),"%s/%s.hl3",savedir,mapbuf);
+		if (!FileExists(curmapchk))
 		{
-			WriteFileLine(subfiletarg,"");
+			Handle subfiletarg = OpenFile(curmapchk,"wb");
+			if (subfiletarg != INVALID_HANDLE)
+			{
+				WriteFileLine(subfiletarg,"");
+			}
+			CloseHandle(subfiletarg);
 		}
-		CloseHandle(subfiletarg);
 	}
 }
 
 public Action redel(Handle timer)
 {
 	saveresetveh(true);
+}
+
+public void OnMapEnd()
+{
+	if (rmsaves)
+	{
+		Handle savedirrmh = OpenDirectory(savedir, false);
+		char subfilen[32];
+		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
+		{
+			if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+			{
+				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+				{
+					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+					DeleteFile(subfilen,false);
+					Handle subfiletarg = OpenFile(subfilen,"wb");
+					if (subfiletarg != INVALID_HANDLE)
+					{
+						WriteFileLine(subfiletarg,"");
+					}
+					CloseHandle(subfiletarg);
+				}
+			}
+		}
+		CloseHandle(savedirrmh);
+	}
 }
 
 public Action transitiontimeout(Handle timer)
