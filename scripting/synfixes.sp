@@ -187,6 +187,7 @@ public void OnMapStart()
 			}
 		}
 	}
+	CloseHandle(mdirlisting);
 	
 	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
 	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
