@@ -35,7 +35,7 @@ bool linact = false;
 bool syn56act = false;
 bool vehiclemaphook = false;
 
-#define PLUGIN_VERSION "1.76"
+#define PLUGIN_VERSION "1.77"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1614,6 +1614,11 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 		damage = 0.0;
 		return Plugin_Changed;
 	}
+	if ((attacker == 0) && (inflictor == 0))
+	{
+		damage = 0.0;
+		return Plugin_Changed;
+	}
 	//Check disconnect projectile hit ply
 	//m_bThrownByPlayer
 	//m_nPhysgunState
@@ -1674,6 +1679,7 @@ void resetvehicles(float delay)
 		if (delay > 0.0) CreateTimer(delay,recallreset);
 		else
 		{
+			Handle ignorelist = CreateArray(64);
 			for (int i = 1;i<MaxClients+1;i++)
 			{
 				if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
@@ -1683,13 +1689,15 @@ void resetvehicles(float delay)
 					{
 						char clsname[32];
 						GetEntityClassname(vehicles,clsname,sizeof(clsname));
-						if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
+						if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)) && (FindValueInArray(ignorelist,vehicles) == -1))
 						{
 							SetEntProp(vehicles,Prop_Data,"m_controls.handbrake",1);
+							PushArrayCell(ignorelist,vehicles);
 						}
 					}
 				}
 			}
+			CloseHandle(ignorelist);
 		}
 	}
 }
@@ -1968,7 +1976,29 @@ findentlist(int ent, char[] clsname)
 		findentlist(thisent++,clsname);
 	}
 }
-
+/*
+public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
+{
+	if (impulse == 100)
+	{
+		int vehicles = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
+		if (vehicles > MaxClients)
+		{
+			char clsname[32];
+			GetEntityClassname(vehicles,clsname,sizeof(clsname));
+			if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
+			{
+				if (HasEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn"))
+				{
+					if (GetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn")) SetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn",0);
+					else SetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn",1);
+					EmitSoundToAll("items/flashlight1.wav", vehicles, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+				}
+			}
+		}
+	}
+}
+*/
 public pushch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1)
