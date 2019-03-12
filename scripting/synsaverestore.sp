@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.59"
+#define PLUGIN_VERSION "1.60"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -99,9 +99,9 @@ public void OnPluginStart()
 	if (GetConVarInt(disabletransitionh) == 2)
 	{
 		Handle svcvar = FindConVar("mp_save_disable");
-		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
-		svcvar = FindConVar("sv_autosave");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
+		svcvar = FindConVar("sv_autosave");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
 		CloseHandle(svcvar);
 		rmsaves = true;
 		transitionply = true;
@@ -109,9 +109,9 @@ public void OnPluginStart()
 	else if (GetConVarInt(disabletransitionh) == 1)
 	{
 		Handle svcvar = FindConVar("mp_save_disable");
-		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
-		svcvar = FindConVar("sv_autosave");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
+		svcvar = FindConVar("sv_autosave");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
 		CloseHandle(svcvar);
 		rmsaves = true;
 		transitionply = false;
@@ -168,9 +168,9 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 		rmsaves = true;
 		transitionply = true;
 		Handle svcvar = FindConVar("mp_save_disable");
-		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
-		svcvar = FindConVar("sv_autosave");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
+		svcvar = FindConVar("sv_autosave");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
 		CloseHandle(svcvar);
 	}
 	else if (StringToInt(newValue) == 1)
@@ -178,9 +178,9 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 		rmsaves = true;
 		transitionply = false;
 		Handle svcvar = FindConVar("mp_save_disable");
-		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
-		svcvar = FindConVar("sv_autosave");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
+		svcvar = FindConVar("sv_autosave");
+		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
 		CloseHandle(svcvar);
 	}
 	else if (StringToInt(newValue) == 0)
@@ -1089,12 +1089,17 @@ public void OnMapStart()
 			enterfrom03pb = false;
 		if ((enterfrom08pb) && (StrEqual(mapbuf,"d2_coast_07",false)))
 		{
+			if ((rmsaves) && (GetArraySize(transitionents) > 0)) findtransitionback(-1);
 			findrmstarts(-1,"info_player_start");
 			int loginp = CreateEntityByName("logic_auto");
 			DispatchKeyValue(loginp, "spawnflags","1");
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_shiz,Trigger,,0,1");
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_4,0,1");
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
+			DispatchKeyValue(loginp, "OnMapSpawn","dropship,kill,,0,1");
+			DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Unlock,,0,-1");
+			DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Close,,0.1,-1");
+			DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Lock,,0.5,-1");
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
 			DispatchSpawn(loginp);
 			ActivateEntity(loginp);
@@ -1232,27 +1237,38 @@ public void OnMapStart()
 					ReadPackString(dp,hdwtype,sizeof(hdwtype));
 					char parentname[32];
 					ReadPackString(dp,parentname,sizeof(parentname));
+					char state[4];
+					ReadPackString(dp,state,sizeof(state));
+					char target[32];
+					ReadPackString(dp,target,sizeof(target));
+					int doorstate = ReadPackCell(dp);
+					int sleepstate = ReadPackCell(dp);
 					int ent = CreateEntityByName(clsname);
 					if (ent != -1)
 					{
-						DispatchKeyValue(ent,"targetname",targn)
+						if (strlen(targn) > 0) DispatchKeyValue(ent,"targetname",targn)
 						DispatchKeyValue(ent,"model",mdl);
 						if (strlen(vehscript) > 0) DispatchKeyValue(ent,"VehicleScript",vehscript);
 						if (strlen(additionalequip) > 0) DispatchKeyValue(ent,"AdditionalEquipment",additionalequip);
 						if (strlen(hdwtype) > 0) DispatchKeyValue(ent,"hardware",hdwtype);
 						if (strlen(parentname) > 0) DispatchKeyValue(ent,"ParentName",parentname);
+						if (strlen(state) > 0) DispatchKeyValue(ent,"State",state);
+						if (strlen(target) > 0) DispatchKeyValue(ent,"Target",target);
 						DispatchKeyValue(ent,"spawnflags",spawnflags);
 						DispatchKeyValue(ent,"skin",skin);
 						DispatchSpawn(ent);
 						ActivateEntity(ent);
 						if (curh != 0) SetEntProp(ent,Prop_Data,"m_iHealth",curh);
 						TeleportEntity(ent,porigin,angs,NULL_VECTOR);
+						if (HasEntProp(ent,Prop_Data,"m_eDoorState")) SetEntProp(ent,Prop_Data,"m_eDoorState",doorstate);
+						if (HasEntProp(ent,Prop_Data,"m_SleepState")) SetEntProp(ent,Prop_Data,"m_SleepState",sleepstate);
 					}
 					CloseHandle(dp);
 				}
 			}
 		}
 		ClearArray(transitionents);
+		resetareaportals(-1);
 		char curmapchk[32];
 		Format(curmapchk,sizeof(curmapchk),"%s/%s.hl1",savedir,mapbuf);
 		if (!FileExists(curmapchk))
@@ -1294,7 +1310,7 @@ public Action redel(Handle timer)
 
 public void OnMapEnd()
 {
-	if (rmsaves)
+	if ((rmsaves) && (reloadingmap))
 	{
 		Handle savedirrmh = OpenDirectory(savedir, false);
 		char subfilen[32];
@@ -1368,20 +1384,17 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
 		if ((StrEqual(curmapbuf,"d1_town_03",false)) && (StrEqual(maptochange,"d1_town_02",false)))
 		{
-			reloadingmap = true;
 			enterfrom03pb = true;
 		}
 		else if ((StrEqual(curmapbuf,"d2_coast_08",false)) && (StrEqual(maptochange,"d2_coast_07",false)))
 		{
-			reloadingmap = true;
 			enterfrom08pb = true;
 		}
 		else if ((StrEqual(curmapbuf,"ep2_outland_04",false)) && (StrEqual(maptochange,"ep2_outland_02",false)))
 		{
-			reloadingmap = true;
 			enterfrom04pb = true;
 		}
-		else reloadingmap = true;
+		reloadingmap = true;
 		Handle savedirh = OpenDirectory(savedir, false);
 		char subfilen[32];
 		while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
@@ -1411,7 +1424,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			float maxs[3];
 			GetEntPropVector(caller,Prop_Send,"m_vecMins",mins);
 			GetEntPropVector(caller,Prop_Send,"m_vecMaxs",maxs);
-			findtouchingents(mins,maxs);
+			findtouchingents(mins,maxs,false);
 			float plyorigin[3];
 			float plyangs[3];
 			char SteamID[32];
@@ -1516,14 +1529,49 @@ findlandmark(int ent,char[] classname)
 				float maxs[3];
 				GetEntPropVector(thisent,Prop_Send,"m_vecMins",mins);
 				GetEntPropVector(thisent,Prop_Send,"m_vecMaxs",maxs);
-				findtouchingents(mins,maxs);
+				findtouchingents(mins,maxs,false);
 			}
 		}
 		findlandmark(thisent++,classname);
 	}
 }
 
-findtouchingents(float mins[3], float maxs[3])
+findtransitionback(int ent)
+{
+	int thisent = FindEntityByClassname(ent,"trigger_transition");
+	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	{
+		char targn[64];
+		GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
+		if (StrEqual(targn,landmarkname))
+		{
+			float mins[3];
+			float maxs[3];
+			GetEntPropVector(thisent,Prop_Send,"m_vecMins",mins);
+			GetEntPropVector(thisent,Prop_Send,"m_vecMaxs",maxs);
+			findtouchingents(mins,maxs,true);
+		}
+		findtransitionback(thisent++);
+	}
+}
+
+resetareaportals(int ent)
+{
+	int thisent = FindEntityByClassname(ent,"func_areaportal");
+	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	{
+		char targ[64];
+		GetEntPropString(thisent,Prop_Data,"m_target",targ,sizeof(targ));
+		char addinp[72];
+		Format(addinp,sizeof(addinp),"Target %s",targ);
+		SetVariantString(addinp);
+		AcceptEntityInput(thisent,"AddOutput");
+		SetEntPropString(thisent,Prop_Data,"m_target",targ);
+		resetareaportals(thisent++);
+	}
+}
+
+findtouchingents(float mins[3], float maxs[3], bool remove)
 {
 	char targn[32];
 	char mdl[64];
@@ -1540,66 +1588,91 @@ findtouchingents(float mins[3], float maxs[3])
 				char clsname[32];
 				GetEntityClassname(i,clsname,sizeof(clsname));
 				//Add func_tracktrain check if exists on next map OnTransition might not fire
-				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)))
+				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)))
 				{
-					Handle dp = CreateDataPack();
-					porigin[0]-=landmarkorigin[0];
-					porigin[1]-=landmarkorigin[1];
-					porigin[2]-=landmarkorigin[2];
-					GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-					if (strlen(targn) < 1) Format(targn,sizeof(targn),"transitionent");
-					int curh = 0;
-					char vehscript[64];
-					char additionalequip[32];
-					char spawnflags[32];
-					char skin[4];
-					char hdwtype[4];
-					char parentname[32];
-					if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
-					if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-					if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
-					if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
-					if (HasEntProp(i,Prop_Data,"m_spawnEquipment")) GetEntPropString(i,Prop_Data,"m_spawnEquipment",additionalequip,sizeof(additionalequip));
-					if (HasEntProp(i,Prop_Data,"m_spawnflags"))
+					if (remove)
 					{
-						int sf = GetEntProp(i,Prop_Data,"m_spawnflags");
-						Format(spawnflags,sizeof(spawnflags),"%i",sf);
+						AcceptEntityInput(i,"kill");
 					}
-					if (HasEntProp(i,Prop_Data,"m_nSkin"))
+					else
 					{
-						int sk = GetEntProp(i,Prop_Data,"m_nSkin");
-						Format(skin,sizeof(skin),"%i",sk);
+						Handle dp = CreateDataPack();
+						porigin[0]-=landmarkorigin[0];
+						porigin[1]-=landmarkorigin[1];
+						porigin[2]-=landmarkorigin[2];
+						GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+						int curh = 0;
+						char vehscript[64];
+						char additionalequip[32];
+						char spawnflags[32];
+						char skin[4];
+						char hdwtype[4];
+						char parentname[32];
+						char state[4];
+						char target[32];
+						int doorstate, sleepstate;
+						if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
+						if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+						if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
+						if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
+						if (HasEntProp(i,Prop_Data,"m_spawnEquipment")) GetEntPropString(i,Prop_Data,"m_spawnEquipment",additionalequip,sizeof(additionalequip));
+						if (HasEntProp(i,Prop_Data,"m_spawnflags"))
+						{
+							int sf = GetEntProp(i,Prop_Data,"m_spawnflags");
+							Format(spawnflags,sizeof(spawnflags),"%i",sf);
+						}
+						if (HasEntProp(i,Prop_Data,"m_nSkin"))
+						{
+							int sk = GetEntProp(i,Prop_Data,"m_nSkin");
+							Format(skin,sizeof(skin),"%i",sk);
+						}
+						if (HasEntProp(i,Prop_Data,"m_nHardwareType"))
+						{
+							int hdw = GetEntProp(i,Prop_Data,"m_nHardwareType");
+							Format(hdwtype,sizeof(hdwtype),"%i",hdw);
+						}
+						if (HasEntProp(i,Prop_Data,"m_hParent"))
+						{
+							int par = GetEntPropEnt(i,Prop_Data,"m_hParent");
+							if (par != -1) GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
+						}
+						if (HasEntProp(i,Prop_Data,"m_state"))
+						{
+							int istate = GetEntProp(i,Prop_Data,"m_state");
+							Format(state,sizeof(state),"%i",istate);
+							PrintToServer("State %s",state);
+						}
+						if (HasEntProp(i,Prop_Data,"m_target"))
+						{
+							if (StrEqual(clsname,"npc_combinedropship",false)) GetEntPropString(i,Prop_Data,"m_target",target,sizeof(target));
+						}
+						if (HasEntProp(i,Prop_Data,"m_eDoorState")) doorstate = GetEntProp(i,Prop_Data,"m_eDoorState");
+						if (HasEntProp(i,Prop_Data,"m_SleepState")) sleepstate = GetEntProp(i,Prop_Data,"m_SleepState");
+						WritePackString(dp,clsname);
+						WritePackString(dp,targn);
+						WritePackString(dp,mdl);
+						WritePackCell(dp,curh);
+						WritePackFloat(dp,porigin[0]);
+						WritePackFloat(dp,porigin[1]);
+						WritePackFloat(dp,porigin[2]);
+						WritePackFloat(dp,angs[0]);
+						WritePackFloat(dp,angs[1]);
+						WritePackFloat(dp,angs[2]);
+						WritePackString(dp,vehscript);
+						WritePackString(dp,spawnflags);
+						WritePackString(dp,additionalequip);
+						WritePackString(dp,skin);
+						WritePackString(dp,hdwtype);
+						WritePackString(dp,parentname);
+						WritePackString(dp,state);
+						WritePackString(dp,target);
+						WritePackCell(dp,doorstate);
+						WritePackCell(dp,sleepstate);
+						PushArrayCell(transitionents,dp);
+						PushArrayCell(ignoreent,i);
 					}
-					if (HasEntProp(i,Prop_Data,"m_nHardwareType"))
-					{
-						int hdw = GetEntProp(i,Prop_Data,"m_nHardwareType");
-						Format(hdwtype,sizeof(hdwtype),"%i",hdw);
-					}
-					if (HasEntProp(i,Prop_Data,"m_hParent"))
-					{
-						int par = GetEntPropEnt(i,Prop_Data,"m_hParent");
-						if (par != -1) GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
-					}
-					WritePackString(dp,clsname);
-					WritePackString(dp,targn);
-					WritePackString(dp,mdl);
-					WritePackCell(dp,curh);
-					WritePackFloat(dp,porigin[0]);
-					WritePackFloat(dp,porigin[1]);
-					WritePackFloat(dp,porigin[2]);
-					WritePackFloat(dp,angs[0]);
-					WritePackFloat(dp,angs[1]);
-					WritePackFloat(dp,angs[2]);
-					WritePackString(dp,vehscript);
-					WritePackString(dp,spawnflags);
-					WritePackString(dp,additionalequip);
-					WritePackString(dp,skin);
-					WritePackString(dp,hdwtype);
-					WritePackString(dp,parentname);
-					PushArrayCell(transitionents,dp);
-					PushArrayCell(ignoreent,i);
 				}
-				else if (StrEqual(clsname,"player",false))
+				else if ((StrEqual(clsname,"player",false)) && (!remove))
 				{
 					char SteamID[32];
 					GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
@@ -1789,7 +1862,6 @@ public Action anotherdelay(Handle timer, int client)
 			int deaths = ReadPackCell(dp);
 			int suitset = ReadPackCell(dp);
 			int medkitamm = ReadPackCell(dp);
-			int curweapindx = -1;
 			float plyorigin[3];
 			float angs[3];
 			angs[0] = ReadPackFloat(dp);
@@ -1829,7 +1901,6 @@ public Action anotherdelay(Handle timer, int client)
 					{
 						int weapamm = StringToInt(ammosetamm);
 						SetEntProp(weapindx,Prop_Data,"m_iClip1",weapamm);
-						if (StrEqual(ammosettype,curweap,false)) curweapindx = weapindx;
 					}
 				}
 				ReadPackString(dp,ammoset,sizeof(ammoset));
@@ -1837,7 +1908,7 @@ public Action anotherdelay(Handle timer, int client)
 			CloseHandle(dp);
 			RemoveFromArray(transitiondp,arrindx);
 			if ((plyorigin[0] != 0.0) && (plyorigin[1] != 0.0) && (plyorigin[2] != 0.0)) TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
-			if ((curweapindx != -1) && (curweapindx != 0) && (IsValidEntity(curweapindx))) EquipPlayerWeapon(client,curweapindx);
+			ClientCommand(client,"use %s",curweap);
 		}
 		else
 		{
