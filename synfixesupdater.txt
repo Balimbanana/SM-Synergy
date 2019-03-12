@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.76"
-			"Previous"	"1.75"
+			"Latest"  	"1.77"
+			"Previous"	"1.76"
 		}
 		
-		"Notes"	"Added additional check to hooked inputs."
+		"Notes"	"Blocked killing npcs in sequences with vehicles (d2_coast_03)."
 	}
 	
 	"Files"
