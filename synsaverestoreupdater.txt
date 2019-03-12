@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.59"
-			"Previous"	"1.58"
+			"Latest"  	"1.60"
+			"Previous"	"1.59"
 		}
 		
-		"Notes"	"Added rm to mapend."
+		"Notes"	"Added more transition keys, fixed transition area portals, fixed equipped weapon transition."
 	}
 	
 	"Files"
