@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.60"
+#define PLUGIN_VERSION "1.61"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1697,7 +1697,7 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 	}
 	return Plugin_Continue;
 }
-
+/*
 public Action restoreaim(Handle timer, Handle dp)
 {
 	if (dp != INVALID_HANDLE)
@@ -1714,7 +1714,7 @@ public Action restoreaim(Handle timer, Handle dp)
 	}
 	return Plugin_Handled;
 }
-
+*/
 public OnClientAuthorized(int client, const char[] szAuth)
 {
 	if (rmsaves)
@@ -1807,10 +1807,12 @@ void saveresetveh(bool rmsave)
 			restoreang[0] = ang0[i];
 			restoreang[1] = ang1[i];
 			restoreang[2] = ang2[i];
+			/*
 			Handle dp = CreateDataPack();
 			WritePackCell(dp,i);
 			WritePackFloat(dp,ang1[i]);
 			CreateTimer(0.01,restoreaim,dp);
+			*/
 		}
 	}
 }
