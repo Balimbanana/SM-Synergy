@@ -177,7 +177,7 @@ public Action votecarskin(int client, int args)
 		SetVariantInt(skinnum);
 		AcceptEntityInput(plyvehicle[client],"Skin");
 	}
-	else PrintToChat(client,"%T",client,"NoVehicle");
+	else PrintToChat(client,"%T","NoVehicle",client);
 	return Plugin_Handled;
 }
 
