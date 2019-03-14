@@ -1,0 +1,19 @@
+"Updater"
+{
+	"Information"
+	{
+		"Version"
+		{
+			"Latest"  	"1.0"
+			"Previous"	"0.99"
+		}
+		
+		"Notes"	"Init."
+	}
+	
+	"Files"
+	{
+		"Plugin"	"Path_SM/plugins/synmodes.smx"
+		"Source"	"Path_SM/scripting/synmodes.sp"
+	}
+}
