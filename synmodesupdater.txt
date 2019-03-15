@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.02"
-			"Previous"	"1.01"
+			"Latest"  	"1.03"
+			"Previous"	"1.02"
 		}
 		
-		"Notes"	"Added autoexec and instspawnply cmd."
+		"Notes"	"Fixed cltouchend func."
 	}
 	
 	"Files"
