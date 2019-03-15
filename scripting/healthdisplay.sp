@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.75"
+#define PLUGIN_VERSION "1.76"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -38,6 +38,8 @@ int hChanged[MAXPLAYERS+1];
 
 public void OnPluginStart()
 {
+	LoadTranslations("healthdisplay.phrases");
+	LoadTranslations("colors.phrases");
 	airelarr = CreateArray(64);
 	htarr = CreateArray(64);
 	liarr = CreateArray(64);
@@ -116,22 +118,32 @@ public Action showinf(int client, int args)
 {
 	if (client == 0) return Plugin_Handled;
 	Menu menu = new Menu(PanelHandlerDisplayFull);
-	menu.SetTitle("HealthDisplay Settings");
-	menu.AddItem("type","Health Message Type");
-	menu.AddItem("friendlies","Health Friendlies Settings");
-	menu.AddItem("num","Health Number Settings");
-	menu.AddItem("color","Health Message Colors");
+	char titledisp[64];
+	Format(titledisp,sizeof(titledisp),"%T","HealthMenuTitle",client);
+	menu.SetTitle(titledisp);
+	char hdtype[64];
+	Format(hdtype,sizeof(hdtype),"%T","HealthMenuType",client);
+	menu.AddItem("type",hdtype);
+	char hdfr[64];
+	Format(hdfr,sizeof(hdfr),"%T","HealthMenuFR",client);
+	menu.AddItem("friendlies",hdfr);
+	char hdnum[64];
+	Format(hdnum,sizeof(hdnum),"%T","HealthMenuNum",client);
+	menu.AddItem("num",hdnum);
+	char hdcol[64];
+	Format(hdcol,sizeof(hdcol),"%T","HealthMenuCol",client);
+	menu.AddItem("color",hdcol);
 	menu.ExitButton = true;
 	menu.Display(client, 120);
 	if (args != 10)
 	{
 		PrintToChat(client,"!healthtype <1-4>");
-		PrintToChat(client,"Sets the type of message that is displayed for health stats. 4 disables.");
+		PrintToChat(client,"%T","HealthTypeDesc",client);
 		PrintToChat(client,"!healthfriendlies <0-2>");
-		PrintToChat(client,"Sets whether or not to show friendly npc health.");
+		PrintToChat(client,"%T","HealthFriendlyDesc",client);
 		PrintToChat(client,"!healthnum <1-2>");
-		PrintToChat(client,"Sets the way health is shown, 1 is percent, 2 is hit points.");
-		PrintToChat(client,"!healthcolor Shows menu for setting enemy and friendlies colors. Only applies to !healthtype 1");
+		PrintToChat(client,"%T","HealthNum",client);
+		PrintToChat(client,"%T","HealthColMenu",client);
 	}
 	return Plugin_Handled;
 }
@@ -141,8 +153,8 @@ public Action sethealthtype(int client, int args)
 	if (client == 0) return Plugin_Handled;
 	if (args < 1)
 	{
-		PrintToChat(client,"Usage: !healthtype <1-4>");
-		PrintToChat(client,"Sets the type of message that is displayed for health stats.\n4 disables.");
+		PrintToChat(client,"!healthtype <1-4>");
+		PrintToChat(client,"%T","HealthTypeDesc",client);
 		return Plugin_Handled;
 	}
 	else if (args == 1)
@@ -150,34 +162,40 @@ public Action sethealthtype(int client, int args)
 		char h[4];
 		GetCmdArg(1,h,sizeof(h));
 		int numset = StringToInt(h);
+		char sethdto[128];
+		char setting[64];
 		if (numset == 0)
 		{
-			PrintToChat(client,"Invalid number");
+			PrintToChat(client,"%T","InvalidNum",client);
+			return Plugin_Handled;
 		}
 		else if (numset == 1)
 		{
-			PrintToChat(client,"Set HealthDisplay to show HudText.");
+			Format(setting,sizeof(setting),"%T","HudText",client);
 			bclcookie[client] = 0;
 			hChanged[client] = 1;
 		}
 		else if (numset == 2)
 		{
-			PrintToChat(client,"Set HealthDisplay to show Hint.");
+			Format(setting,sizeof(setting),"%T","HintTxt",client);
 			bclcookie[client] = 1;
 			hChanged[client] = 1;
 		}
 		else if (numset == 3)
 		{
-			PrintToChat(client,"Set HealthDisplay to show CenterText.");
+			Format(setting,sizeof(setting),"%T","CenterTxt",client);
 			bclcookie[client] = 2;
 			hChanged[client] = 1;
 		}
 		else
 		{
-			PrintToChat(client,"Disabled HealthDisplay.");
+			PrintToChat(client,"%T","DisabledHD",client);
 			bclcookie[client] = 3;
 			hChanged[client] = 1;
+			return Plugin_Handled;
 		}
+		Format(sethdto,sizeof(sethdto),"%T","HealthSetTo",client,setting);
+		PrintToChat(client,"%s",sethdto);
 	}
 	return Plugin_Handled;
 }
@@ -187,8 +205,8 @@ public Action sethealthfriendly(int client, int args)
 	if (client == 0) return Plugin_Handled;
 	if (args < 1)
 	{
-		PrintToChat(client,"Usage: !healthfriendlies <0-2>");
-		PrintToChat(client,"Sets whether or not to show friendly npc health. 2 shows Friend: name or Enemy: name");
+		PrintToChat(client,"!healthfriendlies <0-2>");
+		PrintToChat(client,"%T","HealthFriendlyDesc",client);
 		return Plugin_Handled;
 	}
 	else if (args == 1)
@@ -196,28 +214,33 @@ public Action sethealthfriendly(int client, int args)
 		char h[4];
 		GetCmdArg(1,h,sizeof(h));
 		int numset = StringToInt(h);
+		char sethdto[128];
+		char setting[64];
 		if (numset == 0)
 		{
-			PrintToChat(client,"Set HealthDisplay to hide friendly npcs health.");
+			Format(setting,sizeof(setting),"%T","EnemiesOnly",client);
 			bclcookie3[client] = 0;
 			hChanged[client] = 1;
 		}
 		else if (numset == 1)
 		{
-			PrintToChat(client,"Set HealthDisplay to show friendly npcs health.");
+			Format(setting,sizeof(setting),"%T","Friendlies",client);
 			bclcookie3[client] = 1;
 			hChanged[client] = 1;
 		}
 		else if (numset == 2)
 		{
-			PrintToChat(client,"Set HealthDisplay to show friendly npcs health with friend: or enemy:.");
+			Format(setting,sizeof(setting),"%T","FriendliesWith",client);
 			bclcookie3[client] = 2;
 			hChanged[client] = 1;
 		}
 		else
 		{
-			PrintToChat(client,"Invalid number");
+			PrintToChat(client,"%T","InvalidNum",client);
+			return Plugin_Handled;
 		}
+		Format(sethdto,sizeof(sethdto),"%T","HealthSetTo",client,setting);
+		PrintToChat(client,"%s",sethdto);
 	}
 	return Plugin_Handled;
 }
@@ -227,8 +250,8 @@ public Action sethealthnum(int client, int args)
 	if (client == 0) return Plugin_Handled;
 	if (args < 1)
 	{
-		PrintToChat(client,"Usage: !healthnum <1-2>");
-		PrintToChat(client,"Sets the way health is shown, 1 is percent, 2 is hit points.");
+		PrintToChat(client,"!healthnum <1-2>");
+		PrintToChat(client,"%T","HealthNum",client);
 		return Plugin_Handled;
 	}
 	else if (args == 1)
@@ -236,22 +259,27 @@ public Action sethealthnum(int client, int args)
 		char h[4];
 		GetCmdArg(1,h,sizeof(h));
 		int numset = StringToInt(h);
+		char sethdto[128];
+		char setting[64];
 		if ((numset == 0) || (numset > 2))
 		{
-			PrintToChat(client,"Invalid number");
+			PrintToChat(client,"%T","InvalidNum",client);
+			return Plugin_Handled;
 		}
 		else if (numset == 1)
 		{
-			PrintToChat(client,"Set HealthDisplay to show percentage.");
+			Format(setting,sizeof(setting),"%T","Percentage",client);
 			bclcookie2[client] = 0;
 			hChanged[client] = 1;
 		}
 		else if (numset == 2)
 		{
-			PrintToChat(client,"Set HealthDisplay to show hit points.");
+			Format(setting,sizeof(setting),"%T","HitPoints",client);
 			bclcookie2[client] = 1;
 			hChanged[client] = 1;
 		}
+		Format(sethdto,sizeof(sethdto),"%T","HealthSetTo",client,setting);
+		PrintToChat(client,"%s",sethdto);
 	}
 	return Plugin_Handled;
 }
@@ -1136,12 +1164,24 @@ public Action Display_HudTypes(int client, int args)
 {
 	if (client == 0) return Plugin_Handled;
 	Menu menu = new Menu(PanelHandlerDisplayFull);
-	menu.SetTitle("HealthDisplay Number Settings");
-	menu.AddItem("settext","Show as HudText");
-	menu.AddItem("sethint","Show as Hint");
-	menu.AddItem("setcent","Show as Center Text");
-	menu.AddItem("setdisable","Disable HealthDisplay");
-	menu.AddItem("backtotop","Back");
+	char titleset[64];
+	Format(titleset,sizeof(titleset),"%T","HealthMenuType",client);
+	menu.SetTitle(titleset);
+	char hudtxt[64];
+	Format(hudtxt,sizeof(hudtxt),"%T","HudText",client);
+	menu.AddItem("settext",hudtxt);
+	char hinttxt[64];
+	Format(hinttxt,sizeof(hinttxt),"%T","HintTxt",client);
+	menu.AddItem("sethint",hinttxt);
+	char centertxt[64];
+	Format(centertxt,sizeof(centertxt),"%T","CenterTxt",client);
+	menu.AddItem("setcent",centertxt);
+	char disablehd[64];
+	Format(disablehd,sizeof(disablehd),"%T","DisabledHD",client);
+	menu.AddItem("setdisable",disablehd);
+	char back[32];
+	Format(back,sizeof(back),"%T","BackButton",client);
+	menu.AddItem("backtotop",back);
 	menu.ExitButton = true;
 	menu.Display(client, 120);
 	return Plugin_Handled;
@@ -1151,10 +1191,18 @@ public Action Display_HudNum(int client, int args)
 {
 	if (client == 0) return Plugin_Handled;
 	Menu menu = new Menu(PanelHandlerDisplayFull);
-	menu.SetTitle("HealthDisplay Number Settings");
-	menu.AddItem("setperc","Show as percent");
-	menu.AddItem("sethp","Show as HP");
-	menu.AddItem("backtotop","Back");
+	char titleset[64];
+	Format(titleset,sizeof(titleset),"%T","HealthMenuNum",client);
+	menu.SetTitle(titleset);
+	char percdisp[64];
+	Format(percdisp,sizeof(percdisp),"%T","Percentage",client);
+	menu.AddItem("setperc",percdisp);
+	char hpdisp[64];
+	Format(hpdisp,sizeof(hpdisp),"%T","HitPoints",client);
+	menu.AddItem("sethp",hpdisp);
+	char back[32];
+	Format(back,sizeof(back),"%T","BackButton",client);
+	menu.AddItem("backtotop",back);
 	menu.ExitButton = true;
 	menu.Display(client, 120);
 	return Plugin_Handled;
@@ -1164,11 +1212,21 @@ public Action Display_HudFriendlies(int client, int args)
 {
 	if (client == 0) return Plugin_Handled;
 	Menu menu = new Menu(PanelHandlerDisplayFull);
-	menu.SetTitle("HealthDisplay Friendlies Settings");
-	menu.AddItem("friend0","Show Only Enemies");
-	menu.AddItem("friend1","Show Friends and Enemies");
-	menu.AddItem("friend2","Show Enemy: name Friend: name");
-	menu.AddItem("backtotop","Back");
+	char titleset[64];
+	Format(titleset,sizeof(titleset),"%T","HealthMenuFR",client);
+	menu.SetTitle(titleset);
+	char enemonly[64];
+	Format(enemonly,sizeof(enemonly),"%T","EnemiesOnly",client);
+	menu.AddItem("friend0",enemonly);
+	char frenwo[64];
+	Format(frenwo,sizeof(frenwo),"%T","Friendlies",client);
+	menu.AddItem("friend1",frenwo);
+	char franden[64];
+	Format(franden,sizeof(franden),"%T","FriendliesWith",client);
+	menu.AddItem("friend2",franden);
+	char back[32];
+	Format(back,sizeof(back),"%T","BackButton",client);
+	menu.AddItem("backtotop",back);
 	menu.ExitButton = true;
 	menu.Display(client, 120);
 	return Plugin_Handled;
@@ -1179,15 +1237,23 @@ public Action Display_HudSelect(int client, int args)
 	if (client == 0) return Plugin_Handled;
 	if (bclcookie[client] != 0)
 	{
-		PrintToChat(client,"Colors only apply to !healthtype 1");
+		PrintToChat(client,"%T","ColorsApply",client);
 		return Plugin_Handled;
 	}
-	if (bclcookie3[client] != 2) PrintToChat(client,"Friendlies colors only applies to !healthfriendlies 2");
+	if (bclcookie3[client] < 1) PrintToChat(client,"%T","ColorsApplyType",client);
 	Menu menu = new Menu(PanelHandlerDisplayt);
-	menu.SetTitle("HealthDisplay Colors");
-	menu.AddItem("friendlies","Friendlies Colors");
-	menu.AddItem("enemies","Enemies Colors");
-	menu.AddItem("back","Back");
+	char titleset[64];
+	Format(titleset,sizeof(titleset),"%T","HealthMenuCol",client);
+	menu.SetTitle(titleset);
+	char frcol[64];
+	Format(frcol,sizeof(frcol),"%T","FriendliesCol",client);
+	menu.AddItem("friendlies",frcol);
+	char encol[64];
+	Format(encol,sizeof(encol),"%T","EnemiesCol",client);
+	menu.AddItem("enemies",encol);
+	char back[32];
+	Format(back,sizeof(back),"%T","BackButton",client);
+	menu.AddItem("back",back);
 	menu.ExitButton = true;
 	menu.Display(client, 120);
 	return Plugin_Handled;
@@ -1198,18 +1264,34 @@ public Action Display_HudFriendSelect(int client, int args)
 	if (client == 0) return Plugin_Handled;
 	if (bclcookie[client] != 0)
 	{
-		PrintToChat(client,"Colors only apply to !healthtype 1");
+		PrintToChat(client,"%T","ColorsApply",client);
 		return Plugin_Handled;
 	}
 	Menu menu = new Menu(PanelHandlerDisplay);
-	menu.SetTitle("HealthDisplay Friendlies Color");
-	menu.AddItem("ff red","Red");
-	menu.AddItem("ff green","Green");
-	menu.AddItem("ff blue","Blue");
-	menu.AddItem("ff yellow","Yellow");
-	menu.AddItem("ff white","White");
-	menu.AddItem("ff purple","Purple");
-	menu.AddItem("back","Back");
+	char titleset[64];
+	Format(titleset,sizeof(titleset),"%T","FriendliesCol",client);
+	menu.SetTitle(titleset);
+	char red[32];
+	Format(red,sizeof(red),"%T","Red",client);
+	menu.AddItem("ff red",red);
+	char green[32];
+	Format(green,sizeof(green),"%T","Green",client);
+	menu.AddItem("ff green",green);
+	char blue[32];
+	Format(blue,sizeof(blue),"%T","Blue",client);
+	menu.AddItem("ff blue",blue);
+	char yellow[32];
+	Format(yellow,sizeof(yellow),"%T","Yellow",client);
+	menu.AddItem("ff yellow",yellow);
+	char white[32];
+	Format(white,sizeof(white),"%T","White",client);
+	menu.AddItem("ff white",white);
+	char purple[32];
+	Format(purple,sizeof(purple),"%T","Purple",client);
+	menu.AddItem("ff purple",purple);
+	char back[32];
+	Format(back,sizeof(back),"%T","BackButton",client);
+	menu.AddItem("back",back);
 	menu.ExitButton = true;
 	menu.Display(client, 120);
 	return Plugin_Handled;
@@ -1220,18 +1302,34 @@ public Action Display_HudEnemySelect(int client, int args)
 	if (client == 0) return Plugin_Handled;
 	if (bclcookie[client] != 0)
 	{
-		PrintToChat(client,"Colors only apply to !healthtype 1");
+		PrintToChat(client,"%T","ColorsApply",client);
 		return Plugin_Handled;
 	}
 	Menu menu = new Menu(PanelHandlerDisplay);
-	menu.SetTitle("HealthDisplay Enemy Color");
-	menu.AddItem("en red","Red");
-	menu.AddItem("en green","Green");
-	menu.AddItem("en blue","Blue");
-	menu.AddItem("en yellow","Yellow");
-	menu.AddItem("en white","White");
-	menu.AddItem("en purple","Purple");
-	menu.AddItem("back","Back");
+	char titleset[64];
+	Format(titleset,sizeof(titleset),"%T","EnemiesCol",client);
+	menu.SetTitle(titleset);
+	char red[32];
+	Format(red,sizeof(red),"%T","Red",client);
+	menu.AddItem("en red",red);
+	char green[32];
+	Format(green,sizeof(green),"%T","Green",client);
+	menu.AddItem("en green",green);
+	char blue[32];
+	Format(blue,sizeof(blue),"%T","Blue",client);
+	menu.AddItem("en blue",blue);
+	char yellow[32];
+	Format(yellow,sizeof(yellow),"%T","Yellow",client);
+	menu.AddItem("en yellow",yellow);
+	char white[32];
+	Format(white,sizeof(white),"%T","White",client);
+	menu.AddItem("en white",white);
+	char purple[32];
+	Format(purple,sizeof(purple),"%T","Purple",client);
+	menu.AddItem("en purple",purple);
+	char back[32];
+	Format(back,sizeof(back),"%T","BackButton",client);
+	menu.AddItem("back",back);
 	menu.ExitButton = true;
 	menu.Display(client, 120);
 	return Plugin_Handled;
@@ -1243,74 +1341,99 @@ public PanelHandlerDisplayFull(Menu menu, MenuAction action, int param1, int par
 	menu.GetItem(param2, info, sizeof(info));
 	if (action == MenuAction_Select)
 	{
-		if (StrEqual(info,"type",false)) Display_HudTypes(param1,0);
-		else if (StrEqual(info,"friendlies",false)) Display_HudFriendlies(param1,0);
-		else if (StrEqual(info,"num",false)) Display_HudNum(param1,0);
-		else if (StrEqual(info,"color",false)) Display_HudSelect(param1,0);
+		char sethdto[128];
+		char setting[64];
+		if (StrEqual(info,"type",false))
+		{
+			Display_HudTypes(param1,0);
+			return 0;
+		}
+		else if (StrEqual(info,"friendlies",false))
+		{
+			Display_HudFriendlies(param1,0);
+			return 0;
+		}
+		else if (StrEqual(info,"num",false))
+		{
+			Display_HudNum(param1,0);
+			return 0;
+		}
+		else if (StrEqual(info,"color",false))
+		{
+			Display_HudSelect(param1,0);
+			return 0;
+		}
 		else if (StrEqual(info,"setperc",false))
 		{
-			PrintToChat(param1,"Set HealthDisplay to show percentage.");
+			Format(setting,sizeof(setting),"%T","Percentage",param1);
 			bclcookie2[param1] = 0;
 			hChanged[param1] = 1;
 			Display_HudNum(param1,0);
 		}
 		else if (StrEqual(info,"sethp",false))
 		{
-			PrintToChat(param1,"Set HealthDisplay to show hit points.");
+			Format(setting,sizeof(setting),"%T","HitPoints",param1);
 			bclcookie2[param1] = 1;
 			hChanged[param1] = 1;
 			Display_HudNum(param1,0);
 		}
 		else if (StrEqual(info,"friend0",false))
 		{
-			PrintToChat(param1,"Set HealthDisplay to hide friendly npcs health.");
+			Format(setting,sizeof(setting),"%T","EnemiesOnly",param1);
 			bclcookie3[param1] = 0;
 			hChanged[param1] = 1;
 			Display_HudFriendlies(param1,0);
 		}
 		else if (StrEqual(info,"friend1",false))
 		{
-			PrintToChat(param1,"Set HealthDisplay to show friendly npcs health.");
+			Format(setting,sizeof(setting),"%T","Friendlies",param1);
 			bclcookie3[param1] = 1;
 			hChanged[param1] = 1;
 			Display_HudFriendlies(param1,0);
 		}
 		else if (StrEqual(info,"friend2",false))
 		{
-			PrintToChat(param1,"Set HealthDisplay to show friendly npcs health with friend: or enemy:.");
+			Format(setting,sizeof(setting),"%T","FriendliesWith",param1);
 			bclcookie3[param1] = 2;
 			hChanged[param1] = 1;
 			Display_HudFriendlies(param1,0);
 		}
 		else if (StrEqual(info,"settext",false))
 		{
-			PrintToChat(param1,"Set HealthDisplay to show HudText.");
+			Format(setting,sizeof(setting),"%T","HudText",param1);
 			bclcookie[param1] = 0;
 			hChanged[param1] = 1;
 			Display_HudTypes(param1,0);
 		}
 		else if (StrEqual(info,"sethint",false))
 		{
-			PrintToChat(param1,"Set HealthDisplay to show Hint.");
+			Format(setting,sizeof(setting),"%T","HintTxt",param1);
 			bclcookie[param1] = 1;
 			hChanged[param1] = 1;
 			Display_HudTypes(param1,0);
 		}
 		else if (StrEqual(info,"setcent",false))
 		{
-			PrintToChat(param1,"Set HealthDisplay to show CenterText.");
+			Format(setting,sizeof(setting),"%T","CenterTxt",param1);
 			bclcookie[param1] = 2;
 			hChanged[param1] = 1;
 			Display_HudTypes(param1,0);
 		}
 		else if (StrEqual(info,"setdisable",false))
 		{
-			PrintToChat(param1,"Disabled HealthDisplay.");
+			PrintToChat(param1,"%T","DisabledHD",param1);
 			bclcookie[param1] = 3;
 			hChanged[param1] = 1;
 			Display_HudTypes(param1,0);
+			return 0;
 		}
-		else if (StrEqual(info,"backtotop",false)) showinf(param1,10);
+		else if (StrEqual(info,"backtotop",false))
+		{
+			showinf(param1,10);
+			return 0;
+		}
+		Format(sethdto,sizeof(sethdto),"%T","HealthSetTo",param1,setting);
+		PrintToChat(param1,"%s",sethdto);
 	}
 	else if (action == MenuAction_Cancel)
 	{
@@ -1320,6 +1443,7 @@ public PanelHandlerDisplayFull(Menu menu, MenuAction action, int param1, int par
 	{
 		delete menu;
 	}
+	return 0;
 }
 
 public PanelHandlerDisplayt(Menu menu, MenuAction action, int param1, int param2)
