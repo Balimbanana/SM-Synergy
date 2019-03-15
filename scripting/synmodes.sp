@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.02"
+#define PLUGIN_VERSION "1.03"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -2253,31 +2253,41 @@ bool cltouchend(int client)
 	if (GetArraySize(changelevels) < 1)
 	{
 		findtrigs(-1,"trigger_changelevel");
-		int arr[64];
 		for (int i = 0;i<GetArraySize(changelevels);i++)
 		{
-			//int offs = FindDataMapInfo(i,"m_hTouchingEntities");
-			GetEntDataArray(i,1128,arr,MaxClients,4);
-			for (int j = 0;i<MaxClients;i++)
+			int j = GetArrayCell(changelevels,j);
+			if (IsValidEntity(j))
 			{
-				PrintToServer("%i %i",arr[j],client);
-				if (arr[j] == client)
+				float mins[3];
+				float maxs[3];
+				GetEntPropVector(j,Prop_Send,"m_vecMins",mins);
+				GetEntPropVector(j,Prop_Send,"m_vecMaxs",maxs);
+				float porigin[3];
+				GetClientAbsOrigin(client,porigin);
+				if ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]))
+				{
 					return true;
+				}
 			}
 		}
 	}
 	else
 	{
-		int arr[64];
 		for (int i = 0;i<GetArraySize(changelevels);i++)
 		{
-			//int offs = FindDataMapInfo(i,"m_hTouchingEntities");
-			GetEntDataArray(i,1128,arr,MaxClients,1);
-			for (int j = 0;j<MaxClients;j++)
+			int j = GetArrayCell(changelevels,j);
+			if (IsValidEntity(j))
 			{
-				PrintToServer("%i %i",arr[j],client);
-				if (arr[j] == client)
+				float mins[3];
+				float maxs[3];
+				GetEntPropVector(j,Prop_Send,"m_vecMins",mins);
+				GetEntPropVector(j,Prop_Send,"m_vecMaxs",maxs);
+				float porigin[3];
+				GetClientAbsOrigin(client,porigin);
+				if ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]))
+				{
 					return true;
+				}
 			}
 		}
 	}
