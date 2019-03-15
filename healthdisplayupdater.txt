@@ -4,16 +4,18 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.75"
-			"Previous"	"1.74"
+			"Latest"  	"1.76"
+			"Previous"	"1.75"
 		}
 		
-		"Notes"	"Added another npc HT."
+		"Notes"	"Added translations."
 	}
 	
 	"Files"
 	{
 		"Plugin"	"Path_SM/plugins/healthdisplay.smx"
+		"Plugin"	"Path_SM/translations/colors.phrases.txt"
+		"Plugin"	"Path_SM/translations/healthdisplay.phrases.txt"
 		"Source"	"Path_SM/scripting/healthdisplay.sp"
 	}
 }
