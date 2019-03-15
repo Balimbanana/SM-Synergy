@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION "1.01"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -300,6 +300,24 @@ public gmch(Handle convar, const char[] oldValue, const char[] newValue)
 
 public Action setinstspawn(int client, int args)
 {
+	if (client == 0)
+	{
+		if (args < 1) PrintToServer("instantspawn <0 1 2> 0 is off, 1 is instant, 2 is %i second timer.",clspawntimemax);
+		else
+		{
+			char h[8];
+			GetCmdArg(1,h,sizeof(h));
+			int set = StringToInt(h);
+			if (set > 1) set = 2;
+			else if (set < 0) set = 0;
+			Handle chcv = FindConVar("sm_instspawn");
+			if (chcv != INVALID_HANDLE)
+				SetConVarInt(chcv,set,false,false);
+			CloseHandle(chcv);
+			//ServerCommand("synconfoverr %i",set);
+		}
+		return Plugin_Handled;
+	}
 	if (GetUserFlagBits(client)&ADMFLAG_CUSTOM1 > 0 || GetUserFlagBits(client)&ADMFLAG_ROOT > 0)
 	{
 		if (args < 1)
@@ -318,7 +336,7 @@ public Action setinstspawn(int client, int args)
 			if (chcv != INVALID_HANDLE)
 				SetConVarInt(chcv,set,false,false);
 			CloseHandle(chcv);
-			ServerCommand("synconfoverr %i",set);
+			//ServerCommand("synconfoverr %i",set);
 		}
 		return Plugin_Handled;
 	}
