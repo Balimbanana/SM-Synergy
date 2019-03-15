@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.62"
+#define PLUGIN_VERSION "1.63"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -124,6 +124,7 @@ public void OnPluginStart()
 	HookConVarChange(disabletransitionh, disabletransitionch);
 	CloseHandle(disabletransitionh);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
+	AutoExecConfig(true, "synsaverestore");
 }
 
 public OnLibraryAdded(const char[] name)
@@ -1188,13 +1189,16 @@ public void OnMapStart()
 				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 				{
 					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-					DeleteFile(subfilen,false);
-					Handle subfiletarg = OpenFile(subfilen,"wb");
-					if (subfiletarg != INVALID_HANDLE)
+					if (StrContains(subfilen,"autosave.hl1",false) == -1)
 					{
-						WriteFileLine(subfiletarg,"");
+						DeleteFile(subfilen,false);
+						Handle subfiletarg = OpenFile(subfilen,"wb");
+						if (subfiletarg != INVALID_HANDLE)
+						{
+							WriteFileLine(subfiletarg,"");
+						}
+						CloseHandle(subfiletarg);
 					}
-					CloseHandle(subfiletarg);
 				}
 			}
 		}
@@ -1339,13 +1343,16 @@ public void OnMapEnd()
 				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 				{
 					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-					DeleteFile(subfilen,false);
-					Handle subfiletarg = OpenFile(subfilen,"wb");
-					if (subfiletarg != INVALID_HANDLE)
+					if (StrContains(subfilen,"autosave.hl1",false) == -1)
 					{
-						WriteFileLine(subfiletarg,"");
+						DeleteFile(subfilen,false);
+						Handle subfiletarg = OpenFile(subfilen,"wb");
+						if (subfiletarg != INVALID_HANDLE)
+						{
+							WriteFileLine(subfiletarg,"");
+						}
+						CloseHandle(subfiletarg);
 					}
-					CloseHandle(subfiletarg);
 				}
 			}
 		}
@@ -1422,13 +1429,16 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 				{
 					Format(subfilen,sizeof(subfilen),"%s/%s",savedir,subfilen);
-					DeleteFile(subfilen,false);
-					Handle subfiletarg = OpenFile(subfilen,"wb");
-					if (subfiletarg != INVALID_HANDLE)
+					if (StrContains(subfilen,"autosave.hl1",false) == -1)
 					{
-						WriteFileLine(subfiletarg,"");
+						DeleteFile(subfilen,false);
+						Handle subfiletarg = OpenFile(subfilen,"wb");
+						if (subfiletarg != INVALID_HANDLE)
+						{
+							WriteFileLine(subfiletarg,"");
+						}
+						CloseHandle(subfiletarg);
 					}
-					CloseHandle(subfiletarg);
 				}
 			}
 		}
@@ -1606,7 +1616,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 				char clsname[32];
 				GetEntityClassname(i,clsname,sizeof(clsname));
 				//Add func_tracktrain check if exists on next map OnTransition might not fire
-				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)))
+				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)))
 				{
 					if (remove)
 					{
@@ -1652,7 +1662,17 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 						if (HasEntProp(i,Prop_Data,"m_hParent"))
 						{
 							int par = GetEntPropEnt(i,Prop_Data,"m_hParent");
-							if (par != -1) GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
+							if (par != -1)
+							{
+								GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
+								char parentcls[32];
+								GetEntityClassname(par,parentcls,sizeof(parentcls));
+								if (StrEqual(parentcls,"func_door",false))
+								{
+									CloseHandle(dp);
+									AcceptEntityInput(i,"kill");
+								}
+							}
 						}
 						if (HasEntProp(i,Prop_Data,"m_state"))
 						{
@@ -1767,13 +1787,16 @@ void saveresetveh(bool rmsave)
 				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 				{
 					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-					DeleteFile(subfilen,false);
-					Handle subfiletarg = OpenFile(subfilen,"wb");
-					if (subfiletarg != INVALID_HANDLE)
+					if (StrContains(subfilen,"autosave.hl1",false) == -1)
 					{
-						WriteFileLine(subfiletarg,"");
+						DeleteFile(subfilen,false);
+						Handle subfiletarg = OpenFile(subfilen,"wb");
+						if (subfiletarg != INVALID_HANDLE)
+						{
+							WriteFileLine(subfiletarg,"");
+						}
+						CloseHandle(subfiletarg);
 					}
-					CloseHandle(subfiletarg);
 				}
 			}
 		}
@@ -1927,7 +1950,7 @@ public Action anotherdelay(Handle timer, int client)
 			}
 			CloseHandle(dp);
 			RemoveFromArray(transitiondp,arrindx);
-			if ((plyorigin[0] != 0.0) && (plyorigin[1] != 0.0) && (plyorigin[2] != 0.0) && (!StrEqual(mapbuf,"d1_trainstation_06",false))) TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
+			if ((plyorigin[0] != 0.0) && (plyorigin[1] != 0.0) && (plyorigin[2] != 0.0) && (!StrEqual(mapbuf,"d1_trainstation_06",false)) && (!StrEqual(mapbuf,"d1_town_02",false))) TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
 			ClientCommand(client,"use %s",curweap);
 		}
 		else
