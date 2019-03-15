@@ -114,6 +114,12 @@ public OnLibraryAdded(const char[] name)
     }
 }
 
+public Updater_OnPluginUpdated()
+{
+	Handle nullpl = INVALID_HANDLE;
+	ReloadPlugin(nullpl);
+}
+
 public Action showinf(int client, int args)
 {
 	if (client == 0) return Plugin_Handled;
