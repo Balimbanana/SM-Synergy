@@ -36,7 +36,7 @@ bool syn56act = false;
 bool vehiclemaphook = false;
 bool playerteleports = false;
 
-#define PLUGIN_VERSION "1.78"
+#define PLUGIN_VERSION "1.79"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1313,7 +1313,6 @@ readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int ac
 				if ((StrEqual(line,"}",false)) || (StrEqual(line,"{",false)))
 				{
 					readnextlines = false;
-					break;
 				}
 				else
 				{
