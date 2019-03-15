@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.78"
-			"Previous"	"1.77"
+			"Latest"  	"1.79"
+			"Previous"	"1.78"
 		}
 		
 		"Notes"	"Reconfigured hooks for multi-firing entities to only check once. Added precache to roller code2.wav."
