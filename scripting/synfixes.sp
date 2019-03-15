@@ -34,6 +34,7 @@ bool mapchoosercheck = false;
 bool linact = false;
 bool syn56act = false;
 bool vehiclemaphook = false;
+bool playerteleports = false;
 
 #define PLUGIN_VERSION "1.78"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
@@ -133,6 +134,7 @@ public void OnPluginStart()
 public void OnMapStart()
 {
 	voteinprogress = false;
+	playerteleports = false;
 	entrefresh = 0.0;
 	ClearArray(entlist);
 	ClearArray(equiparr);
@@ -232,7 +234,7 @@ public void OnMapStart()
 			if ((StrEqual(clsname,"npc_citizen",false)) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(jtmp, SDKHook_OnTakeDamage, OnTakeDamage);
 		}
 	}
-	if (!IsSoundPrecached("npc\\roller\\code2.wav")) PrecacheSound("npc\\roller\\code2.wav",true);
+	PrecacheSound("npc\\roller\\code2.wav",true);
 }
 
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs)
@@ -999,7 +1001,7 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			char clsname[32];
 			GetEntityClassname(caller,clsname,sizeof(clsname));
 			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"trigger_coop",false))) UnhookSingleEntityOutput(caller,tmpout,EntityOutput:trigtp);
-			if (FindEntityByClassname(-1,"point_teleport") != -1) readoutputstp(targn,tmpout,"Teleport",origin,activator);
+			if (playerteleports) readoutputstp(targn,tmpout,"Teleport",origin,activator);
 			if (vehiclemaphook) readoutputstp(targn,tmpout,"Save",origin,activator);
 		}
 	}
@@ -1634,6 +1636,12 @@ void FindSaveTPHooks()
 				HookSingleEntityOutput(i,"OnTrigger",EntityOutput:trigtp);
 				HookSingleEntityOutput(i,"OnStartTouch",EntityOutput:trigtp);
 				HookSingleEntityOutput(i,"OnPlayersIn",EntityOutput:trigtp);
+			}
+			else if (StrEqual(clsname,"point_teleport",false))
+			{
+				char pttarget[32];
+				GetEntPropString(i,Prop_Data,"m_target",pttarget,sizeof(pttarget));
+				if ((StrEqual(pttarget,"!activator",false)) || (StrEqual(pttarget,"!player",false)) || (StrEqual(pttarget,"player",false))) playerteleports = true;
 			}
 		}
 	}
