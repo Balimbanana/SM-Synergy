@@ -35,7 +35,7 @@ bool linact = false;
 bool syn56act = false;
 bool vehiclemaphook = false;
 
-#define PLUGIN_VERSION "1.77"
+#define PLUGIN_VERSION "1.78"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -189,27 +189,7 @@ public void OnMapStart()
 	}
 	CloseHandle(mdirlisting);
 	
-	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
-	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
-	HookEntityOutput("logic_relay","OnTrigger",EntityOutput:trigtp);
-	HookEntityOutput("trigger_multiple","OnTrigger",EntityOutput:trigtp);
-	HookEntityOutput("trigger_multiple","OnStartTouch",EntityOutput:trigtp);
-	HookEntityOutput("trigger_coop","OnTrigger",EntityOutput:trigtp);
-	HookEntityOutput("trigger_coop","OnStartTouch",EntityOutput:trigtp);
-	HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigtp);
-	HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigtp);
-	HookEntityOutput("scripted_sequence","OnEndSequence",EntityOutput:trigtp);
-	HookEntityOutput("scripted_scene","OnStart",EntityOutput:trigtp);
-	HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
-	HookEntityOutput("func_button","OnUseLocked",EntityOutput:trigtp);
-	HookEntityOutput("func_door","OnOpen",EntityOutput:trigtp);
-	HookEntityOutput("func_door","OnFullyOpen",EntityOutput:trigtp);
-	HookEntityOutput("func_door","OnClose",EntityOutput:trigtp);
-	HookEntityOutput("func_door","OnFullyClosed",EntityOutput:trigtp);
-	//HookEntityOutput("prop_door_rotating","OnOpen",EntityOutput:trigtp);
-	//HookEntityOutput("prop_door_rotating","OnFullyOpen",EntityOutput:trigtp);
-	//HookEntityOutput("prop_door_rotating","OnClose",EntityOutput:trigtp);
-	//HookEntityOutput("prop_door_rotating","OnFullyClosed",EntityOutput:trigtp);
+	FindSaveTPHooks();
 	CreateTimer(0.1,rehooksaves);
 	
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
@@ -252,6 +232,7 @@ public void OnMapStart()
 			if ((StrEqual(clsname,"npc_citizen",false)) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(jtmp, SDKHook_OnTakeDamage, OnTakeDamage);
 		}
 	}
+	if (!IsSoundPrecached("npc\\roller\\code2.wav")) PrecacheSound("npc\\roller\\code2.wav",true);
 }
 
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs)
@@ -1015,6 +996,9 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
 			char tmpout[32];
 			Format(tmpout,sizeof(tmpout),output);
+			char clsname[32];
+			GetEntityClassname(caller,clsname,sizeof(clsname));
+			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"trigger_coop",false))) UnhookSingleEntityOutput(caller,tmpout,EntityOutput:trigtp);
 			if (FindEntityByClassname(-1,"point_teleport") != -1) readoutputstp(targn,tmpout,"Teleport",origin,activator);
 			if (vehiclemaphook) readoutputstp(targn,tmpout,"Save",origin,activator);
 		}
@@ -1637,6 +1621,41 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 	return Plugin_Continue;
 }
 
+void FindSaveTPHooks()
+{
+	for (int i = MaxClients+1; i<GetMaxEntities(); i++)
+	{
+		if (IsValidEntity(i) && IsEntNetworkable(i))
+		{
+			char clsname[32];
+			GetEntityClassname(i,clsname,sizeof(clsname));
+			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"trigger_coop",false)))
+			{
+				HookSingleEntityOutput(i,"OnTrigger",EntityOutput:trigtp);
+				HookSingleEntityOutput(i,"OnStartTouch",EntityOutput:trigtp);
+				HookSingleEntityOutput(i,"OnPlayersIn",EntityOutput:trigtp);
+			}
+		}
+	}
+	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
+	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
+	HookEntityOutput("logic_relay","OnTrigger",EntityOutput:trigtp);
+	HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigtp);
+	HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigtp);
+	HookEntityOutput("scripted_sequence","OnEndSequence",EntityOutput:trigtp);
+	HookEntityOutput("scripted_scene","OnStart",EntityOutput:trigtp);
+	HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
+	HookEntityOutput("func_button","OnUseLocked",EntityOutput:trigtp);
+	HookEntityOutput("func_door","OnOpen",EntityOutput:trigtp);
+	HookEntityOutput("func_door","OnFullyOpen",EntityOutput:trigtp);
+	HookEntityOutput("func_door","OnClose",EntityOutput:trigtp);
+	HookEntityOutput("func_door","OnFullyClosed",EntityOutput:trigtp);
+	//HookEntityOutput("prop_door_rotating","OnOpen",EntityOutput:trigtp);
+	//HookEntityOutput("prop_door_rotating","OnFullyOpen",EntityOutput:trigtp);
+	//HookEntityOutput("prop_door_rotating","OnClose",EntityOutput:trigtp);
+	//HookEntityOutput("prop_door_rotating","OnFullyClosed",EntityOutput:trigtp);
+}
+
 public Action rehooksaves(Handle timer)
 {
 	findsavetrigs(-1,"trigger_autosave");
@@ -1694,6 +1713,7 @@ void resetvehicles(float delay)
 						{
 							SetEntProp(vehicles,Prop_Data,"m_controls.handbrake",1);
 							PushArrayCell(ignorelist,vehicles);
+							if (debuglvl == 3) PrintToServer("Reset %i vehicle over save.",vehicles);
 						}
 					}
 				}
@@ -1710,7 +1730,7 @@ public Action recallreset(Handle timer)
 
 public OnEntityCreated(int entity, const char[] classname)
 {
-	if ((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false)) && (FindValueInArray(entlist,entity) == -1))
+	if ((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false)) && (!StrEqual(classname,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(classname,"npc_bullseye",false)) && (FindValueInArray(entlist,entity) == -1))
 	{
 		PushArrayCell(entlist,entity);
 		if ((StrEqual(classname,"npc_citizen",false)) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
