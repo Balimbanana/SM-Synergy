@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.61"
-			"Previous"	"1.60"
+			"Latest"  	"1.62"
+			"Previous"	"1.61"
 		}
 		
-		"Notes"	"Disable restoreaim for now."
+		"Notes"	"Prevent backtrack over transition rebuild."
 	}
 	
 	"Files"
