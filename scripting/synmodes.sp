@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.01"
+#define PLUGIN_VERSION "1.02"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -75,6 +75,7 @@ public OnPluginStart()
 	RegAdminCmd("gamemode",setupdm,ADMFLAG_ROOT,".");
 	RegConsoleCmd("showscoresdm",scoreboardsh);
 	RegConsoleCmd("instantspawn",setinstspawn);
+	RegAdminCmd("instspawnply",spawnallply,ADMFLAG_BAN,".");
 	
 	equiparr = CreateArray(16);
 	RegConsoleCmd("spec_next",Atkspecpress);
@@ -147,6 +148,7 @@ public OnPluginStart()
 	resetmode = GetConVarInt(resetmodeh);
 	CloseHandle(resetmodeh);
 	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
+	AutoExecConfig(true, "synmodes");
 }
 
 public OnLibraryAdded(const char[] name)
@@ -222,6 +224,7 @@ public instspawnch(Handle convar, const char[] oldValue, const char[] newValue)
 		CloseHandle(resdelay);
 		instspawnuse = false;
 		instspawnb = false;
+		spawnallply(0,0);
 	}
 }
 
@@ -2080,6 +2083,40 @@ public Action saysoundslist(int client, int args)
 	if (client == 0) PrintToServer("*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy*");
 	else PrintToChat(client,"*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy*");
 	return Plugin_Handled;
+}
+
+public Action spawnallply(int client, int args)
+{
+	if (args == 0)
+	{
+		for (int i = 1;i<MaxClients+1;i++)
+		{
+			if (IsClientInGame(i) && !IsPlayerAlive(i))
+			{
+				char name[64];
+				GetClientName(i,name,sizeof(name));
+				if (client == 0) PrintToServer("Respawned %i %s",i,name);
+				else PrintToChat(client,"Respawned %i %s",i,name);
+				clused = client;
+				CreateTimer(0.1,tpclspawnnew,i);
+			}
+		}
+	}
+	else
+	{
+		char h[4];
+		GetCmdArg(1,h,sizeof(h));
+		int i = StringToInt(h);
+		if (IsClientInGame(i) && !IsPlayerAlive(i))
+		{
+			char name[64];
+			GetClientName(i,name,sizeof(name));
+			if (client == 0) PrintToServer("Respawned %i %s",i,name);
+			else PrintToChat(client,"Respawned %i %s",i,name);
+			clused = client;
+			CreateTimer(0.1,tpclspawnnew,i);
+		}
+	}
 }
 
 public Action OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
