@@ -1,0 +1,128 @@
+"Phrases"
+{
+	"HealthMenuTitle"
+	{
+		"en"			"HealthDisplay Settings"
+	}
+	
+	"HealthMenuType"
+	{
+		"en"			"Health Message Type"
+	}
+	
+	"HealthMenuFR"
+	{
+		"en"			"Health Friendlies Settings"
+	}
+	
+	"HealthMenuNum"
+	{
+		"en"			"Health Number Settings"
+	}
+	
+	"HealthMenuCol"
+	{
+		"en"			"Health Message Colors"
+	}
+	
+	"HealthTypeDesc"
+	{
+		"en"			"Sets the type of message that is displayed for health stats. 4 disables."
+	}
+	
+	"HealthFriendlyDesc"
+	{
+		"en"			"Sets whether or not to show friendly npc health. 1 shows friends and enemies, 2 shows Friend: and Enemy:"
+	}
+	
+	"HealthNum"
+	{
+		"en"			"Sets the way health is shown, 1 is percent, 2 is hit points."
+	}
+	
+	"HealthColMenu"
+	{
+		"en"			"!healthcolor Shows menu for setting enemy and friendlies colors. Only applies to !healthtype 1"
+	}
+	
+	"HealthSetTo"
+	{
+		"#format"		"{1:s}"
+		"en"			"Set HealthDisplay to show {1}"
+	}
+	
+	"EnemiesOnly"
+	{
+		"en"			"Only enemies health."
+	}
+	
+	"Friendlies"
+	{
+		"en"			"Friendly npcs health."
+	}
+	
+	"FriendliesWith"
+	{
+		"en"			"Friendly npcs health with friend: or enemy:."
+	}
+	
+	"HudText"
+	{
+		"en"			"Hud Text"
+	}
+	
+	"HintTxt"
+	{
+		"en"			"Hint Text"
+	}
+	
+	"CenterTxt"
+	{
+		"en"			"Center Text"
+	}
+	
+	"Percentage"
+	{
+		"en"			"Percentage."
+	}
+	
+	"HitPoints"
+	{
+		"en"			"Hit Points."
+	}
+	
+	"ColorsApply"
+	{
+		"en"			"Colors only apply to !healthtype 1"
+	}
+	
+	"ColorsApplyType"
+	{
+		"en"			"Friendlies colors only applies to !healthfriendlies 1 or 2"
+	}
+	
+	"FriendliesCol"
+	{
+		"en"			"Friendlies Colors"
+	}
+	
+	"EnemiesCol"
+	{
+		"en"			"Enemies Colors"
+	}
+	
+	"BackButton"
+	{
+		"en"			"Back"
+	}
+	
+	"InvalidNum"
+	{
+		"en"			"Invalid number"
+	}
+	
+	"DisabledHD"
+	{
+		"en"			"Disabled HealthDisplay"
+	}
+}
