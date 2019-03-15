@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.0"
-			"Previous"	"0.99"
+			"Latest"  	"1.01"
+			"Previous"	"1.0"
 		}
 		
-		"Notes"	"Init."
+		"Notes"	"Fixed instantspawn cmd from server console."
 	}
 	
 	"Files"
