@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.61"
+#define PLUGIN_VERSION "1.62"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1151,6 +1151,24 @@ public void OnMapStart()
 				ActivateEntity(loginp);
 			}
 		}
+		int prevmap = FindEntityByClassname(-1,"trigger_changelevel");
+		if (prevmap != -1)
+		{
+			int sf = GetEntProp(prevmap,Prop_Data,"m_spawnflags");
+			if (sf & 4) AcceptEntityInput(prevmap,"Disable");
+		}
+		int prevmap2 = FindEntityByClassname(prevmap+1,"trigger_changelevel");
+		if (prevmap2 != -1)
+		{
+			int sf = GetEntProp(prevmap2,Prop_Data,"m_spawnflags");
+			if (sf & 4) AcceptEntityInput(prevmap2,"Disable");
+		}
+		int prevmap3 = FindEntityByClassname(prevmap2+1,"trigger_changelevel");
+		if (prevmap3 != -1)
+		{
+			int sf = GetEntProp(prevmap3,Prop_Data,"m_spawnflags");
+			if (sf & 4) AcceptEntityInput(prevmap3,"Disable");
+		}
 		reloadingmap = false;
 	}
 	ClearArray(globalsarr);
@@ -1909,7 +1927,7 @@ public Action anotherdelay(Handle timer, int client)
 			}
 			CloseHandle(dp);
 			RemoveFromArray(transitiondp,arrindx);
-			if ((plyorigin[0] != 0.0) && (plyorigin[1] != 0.0) && (plyorigin[2] != 0.0)) TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
+			if ((plyorigin[0] != 0.0) && (plyorigin[1] != 0.0) && (plyorigin[2] != 0.0) && (!StrEqual(mapbuf,"d1_trainstation_06",false))) TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
 			ClientCommand(client,"use %s",curweap);
 		}
 		else
