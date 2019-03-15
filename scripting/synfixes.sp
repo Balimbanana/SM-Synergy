@@ -36,7 +36,7 @@ bool syn56act = false;
 bool vehiclemaphook = false;
 bool playerteleports = false;
 
-#define PLUGIN_VERSION "1.79"
+#define PLUGIN_VERSION "1.80"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1665,6 +1665,102 @@ void FindSaveTPHooks()
 
 public Action rehooksaves(Handle timer)
 {
+	int weapres = CreateEntityByName("game_weapon_manager");
+	if (weapres != -1)
+	{
+		DispatchKeyValue(weapres,"weaponname","weapon_smg1");
+		DispatchKeyValue(weapres,"maxpieces","20");
+		DispatchSpawn(weapres);
+		ActivateEntity(weapres);
+	}
+	weapres = CreateEntityByName("game_weapon_manager");
+	if (weapres != -1)
+	{
+		DispatchKeyValue(weapres,"weaponname","weapon_ar2");
+		DispatchKeyValue(weapres,"maxpieces","20");
+		DispatchSpawn(weapres);
+		ActivateEntity(weapres);
+	}
+	weapres = CreateEntityByName("game_weapon_manager");
+	if (weapres != -1)
+	{
+		DispatchKeyValue(weapres,"weaponname","weapon_pistol");
+		DispatchKeyValue(weapres,"maxpieces","20");
+		DispatchSpawn(weapres);
+		ActivateEntity(weapres);
+	}
+	weapres = CreateEntityByName("game_weapon_manager");
+	if (weapres != -1)
+	{
+		DispatchKeyValue(weapres,"weaponname","weapon_357");
+		DispatchKeyValue(weapres,"maxpieces","20");
+		DispatchSpawn(weapres);
+		ActivateEntity(weapres);
+	}
+	weapres = CreateEntityByName("game_weapon_manager");
+	if (weapres != -1)
+	{
+		DispatchKeyValue(weapres,"weaponname","weapon_crowbar");
+		DispatchKeyValue(weapres,"maxpieces","20");
+		DispatchSpawn(weapres);
+		ActivateEntity(weapres);
+	}
+	weapres = CreateEntityByName("game_weapon_manager");
+	if (weapres != -1)
+	{
+		DispatchKeyValue(weapres,"weaponname","weapon_bugbait");
+		DispatchKeyValue(weapres,"maxpieces","20");
+		DispatchSpawn(weapres);
+		ActivateEntity(weapres);
+	}
+	weapres = CreateEntityByName("game_weapon_manager");
+	if (weapres != -1)
+	{
+		DispatchKeyValue(weapres,"weaponname","weapon_physcannon");
+		DispatchKeyValue(weapres,"maxpieces","20");
+		DispatchSpawn(weapres);
+		ActivateEntity(weapres);
+	}
+	weapres = CreateEntityByName("game_weapon_manager");
+	if (weapres != -1)
+	{
+		DispatchKeyValue(weapres,"weaponname","weapon_rpg");
+		DispatchKeyValue(weapres,"maxpieces","20");
+		DispatchSpawn(weapres);
+		ActivateEntity(weapres);
+	}
+	weapres = CreateEntityByName("game_weapon_manager");
+	if (weapres != -1)
+	{
+		DispatchKeyValue(weapres,"weaponname","weapon_crossbow");
+		DispatchKeyValue(weapres,"maxpieces","20");
+		DispatchSpawn(weapres);
+		ActivateEntity(weapres);
+	}
+	weapres = CreateEntityByName("game_weapon_manager");
+	if (weapres != -1)
+	{
+		DispatchKeyValue(weapres,"weaponname","weapon_stunstick");
+		DispatchKeyValue(weapres,"maxpieces","20");
+		DispatchSpawn(weapres);
+		ActivateEntity(weapres);
+	}
+	weapres = CreateEntityByName("game_weapon_manager");
+	if (weapres != -1)
+	{
+		DispatchKeyValue(weapres,"weaponname","weapon_slam");
+		DispatchKeyValue(weapres,"maxpieces","20");
+		DispatchSpawn(weapres);
+		ActivateEntity(weapres);
+	}
+	weapres = CreateEntityByName("game_weapon_manager");
+	if (weapres != -1)
+	{
+		DispatchKeyValue(weapres,"weaponname","weapon_shotgun");
+		DispatchKeyValue(weapres,"maxpieces","20");
+		DispatchSpawn(weapres);
+		ActivateEntity(weapres);
+	}
 	findsavetrigs(-1,"trigger_autosave");
 }
 
