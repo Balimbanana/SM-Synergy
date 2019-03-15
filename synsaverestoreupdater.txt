@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.62"
-			"Previous"	"1.61"
+			"Latest"  	"1.63"
+			"Previous"	"1.62"
 		}
 		
-		"Notes"	"Prevent backtrack over transition rebuild."
+		"Notes"	"Filtered more entities by type, parent class, etc. Filtered deleting certain save data on sm_disabletransition."
 	}
 	
 	"Files"
