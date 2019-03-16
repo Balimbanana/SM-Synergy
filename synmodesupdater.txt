@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.03"
-			"Previous"	"1.02"
+			"Latest"  	"1.04"
+			"Previous"	"1.03"
 		}
 		
-		"Notes"	"Fixed cltouchend func."
+		"Notes"	"Added class re check to cltouchend."
 	}
 	
 	"Files"
