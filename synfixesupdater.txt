@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.81"
-			"Previous"	"1.80"
+			"Latest"  	"1.82"
+			"Previous"	"1.81"
 		}
 		
-		"Notes"	"Removed certain other multi-hooks."
+		"Notes"	"Completely rewrote save/tp hooks to parse cache once and store for future calls."
 	}
 	
 	"Files"
