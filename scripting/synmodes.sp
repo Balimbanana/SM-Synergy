@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.03"
+#define PLUGIN_VERSION "1.04"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -2278,6 +2278,14 @@ bool cltouchend(int client)
 			int j = GetArrayCell(changelevels,j);
 			if (IsValidEntity(j))
 			{
+				char clschk[32];
+				GetEntityClassname(j,clschk,sizeof(clschk));
+				if (!StrEqual(clschk,"trigger_changelevel",false))
+				{
+					ClearArray(changelevels);
+					findtrigs(-1,"trigger_changelevel");
+					break;
+				}
 				float mins[3];
 				float maxs[3];
 				GetEntPropVector(j,Prop_Send,"m_vecMins",mins);
@@ -2299,7 +2307,6 @@ findtrigs(int ent, char[] clsname)
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
-		PrintToServer("Found %i",thisent);
 		if((thisent >= MaxClients+1) && (FindValueInArray(changelevels, thisent) == -1))
 		{
 			PushArrayCell(changelevels, thisent);
@@ -2410,6 +2417,7 @@ public OnMapStart()
 	CloseHandle(mdirlisting);
 	ClearArray(roundhchk);
 	ClearArray(respawnids);
+	ClearArray(changelevels);
 	scoreshow = -1;
 	scoreshowstat = -1;
 	hasstarted = true;
