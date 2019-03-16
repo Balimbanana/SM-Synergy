@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.80"
-			"Previous"	"1.79"
+			"Latest"  	"1.81"
+			"Previous"	"1.80"
 		}
 		
-		"Notes"	"Added game_weapon_manager to most weapons to help against edict limit."
+		"Notes"	"Removed certain other multi-hooks."
 	}
 	
 	"Files"
