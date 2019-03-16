@@ -16,6 +16,8 @@
 		"Plugin"	"Path_SM/plugins/healthdisplay.smx"
 		"Plugin"	"Path_SM/translations/colors.phrases.txt"
 		"Plugin"	"Path_SM/translations/healthdisplay.phrases.txt"
+		"Plugin"	"Path_SM/translations/ru/colors.phrases.txt"
+		"Plugin"	"Path_SM/translations/ru/healthdisplay.phrases.txt"
 		"Source"	"Path_SM/scripting/healthdisplay.sp"
 	}
 }
