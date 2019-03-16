@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.63"
-			"Previous"	"1.62"
+			"Latest"  	"1.64"
+			"Previous"	"1.63"
 		}
 		
 		"Notes"	"Filtered more entities by type, parent class, etc. Filtered deleting certain save data on sm_disabletransition."
