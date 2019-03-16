@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.04"
+#define PLUGIN_VERSION "1.05"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -62,7 +62,6 @@ public Action CreateStuff(int client, int args)
 			PrintToConsole(client,"Unable to create entity %s",ent);
 			return Plugin_Handled;
 		}
-		TeleportEntity(stuff, Original, NULL_VECTOR, NULL_VECTOR);
 		char fullstr[512];
 		Format(fullstr,sizeof(fullstr),"%s",ent);
 		for (int v = 0; v<args+1; v++)
@@ -75,10 +74,19 @@ public Action CreateStuff(int client, int args)
 				int v1 = v+1;
 				GetCmdArg(v1,tmp2,sizeof(tmp2));
 				DispatchKeyValue(stuff,tmp,tmp2);
+				if (StrEqual(tmp,"origin",false))
+				{
+					char originch[3][16];
+					ExplodeString(tmp2," ",originch,3,16);
+					Original[0] = StringToFloat(originch[0]);
+					Original[1] = StringToFloat(originch[1]);
+					Original[2] = StringToFloat(originch[2]);
+				}
 				Format(fullstr,sizeof(fullstr),"%s %s %s",fullstr,tmp,tmp2);
 				v++;
 			}
 		}
+		TeleportEntity(stuff, Original, NULL_VECTOR, NULL_VECTOR);
 		PrintToConsole(client,"%s",fullstr);
 		DispatchSpawn(stuff);
 		ActivateEntity(stuff);
@@ -88,6 +96,7 @@ public Action CreateStuff(int client, int args)
 		float PlayerOrigin[3];
 		float Angles[3];
 		float Location[3];
+		bool vehiclemodeldefined = false
 		GetClientAbsOrigin(client, Location);
 		GetClientEyeAngles(client, Angles);
 		PlayerOrigin[0] = (Location[0] + (100 * Cosine(DegToRad(Angles[1]))));
@@ -99,7 +108,6 @@ public Action CreateStuff(int client, int args)
 			PrintToChat(client,"Unable to create entity %s",ent);
 			return Plugin_Handled;
 		}
-		TeleportEntity(stuff, PlayerOrigin, NULL_VECTOR, NULL_VECTOR);
 		char fullstr[512];
 		Format(fullstr,sizeof(fullstr),"%s",ent);
 		for (int v = 0; v<args+1; v++)
@@ -115,6 +123,7 @@ public Action CreateStuff(int client, int args)
 				{
 					if (StrEqual(tmp,"model",false))
 					{
+						vehiclemodeldefined = true;
 						if ((!FileExists(tmp2,true,NULL_STRING)) && (!IsModelPrecached(tmp2)))
 						{
 							PrintToChat(client,"The model %s was not found.",tmp2);
@@ -123,11 +132,25 @@ public Action CreateStuff(int client, int args)
 						}
 					}
 					DispatchKeyValue(stuff,tmp,tmp2);
+					if (StrEqual(tmp,"origin",false))
+					{
+						char originch[3][16];
+						ExplodeString(tmp2," ",originch,3,16);
+						PlayerOrigin[0] = StringToFloat(originch[0]);
+						PlayerOrigin[1] = StringToFloat(originch[1]);
+						PlayerOrigin[2] = StringToFloat(originch[2]);
+					}
 				}
 				Format(fullstr,sizeof(fullstr),"%s %s %s",fullstr,tmp,tmp2);
 				v++;
 			}
 		}
+		if ((StrContains(ent,"prop_vehicle",false) != -1) && (!vehiclemodeldefined))
+		{
+			PrintToChat(client,"Model must be defined for this type of entity.");
+			return Plugin_Handled;
+		}
+		TeleportEntity(stuff, PlayerOrigin, NULL_VECTOR, NULL_VECTOR);
 		PrintToConsole(client,"%s",fullstr);
 		DispatchSpawn(stuff);
 		ActivateEntity(stuff);
@@ -399,16 +422,23 @@ public Action getinf(int client, int args)
 		char targname[64];
 		char globname[64];
 		float vec[3];
+		float angs[3];
 		int parent = 0;
+		int ammotype = -1;
 		vec[0] = -1.1;
+		angs[0] = -1.1;
 		GetEntityClassname(targ, ent, sizeof(ent));
 		GetEntPropString(targ,Prop_Data,"m_iName",targname,sizeof(targname));
 		if (HasEntProp(targ,Prop_Data,"m_iGlobalname"))
 			GetEntPropString(targ,Prop_Data,"m_iGlobalname",globname,sizeof(globname));
 		if (HasEntProp(targ,Prop_Send,"m_vecOrigin"))
 			GetEntPropVector(targ,Prop_Send,"m_vecOrigin",vec);
+		if (HasEntProp(targ,Prop_Send,"m_angRotation"))
+			GetEntPropVector(targ,Prop_Send,"m_angRotation",angs);
 		if (HasEntProp(targ,Prop_Data,"m_hParent"))
 			parent = GetEntPropEnt(targ,Prop_Data,"m_hParent");
+		if (HasEntProp(targ,Prop_Data,"m_nAmmoType"))
+			ammotype = GetEntProp(targ,Prop_Data,"m_nAmmoType");
 		char cmodel[64];
 		GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 		int spawnflagsi = GetEntityFlags(targ);
@@ -427,10 +457,14 @@ public Action getinf(int client, int args)
 			Format(inf,sizeof(inf),"Name: %s ",targname);
 		if (strlen(globname) > 0)
 			Format(inf,sizeof(inf),"%sGlobalName: %s ",inf,globname);
+		if (ammotype != -1)
+			Format(inf,sizeof(inf),"%sAmmoType: %i",inf,ammotype);
 		if (spawnflagsi != 0)
 			Format(inf,sizeof(inf),"%sSpawnflags: %i",inf,spawnflagsi);
 		if (vec[0] != -1.1)
 			Format(inf,sizeof(inf),"%s\nVec: %i %i %i",inf,RoundFloat(vec[0]),RoundFloat(vec[1]),RoundFloat(vec[2]));
+		if (angs[0] != -1.1)
+			Format(inf,sizeof(inf),"%s Ang: %i %i %i",inf,RoundFloat(angs[0]),RoundFloat(angs[1]),RoundFloat(angs[2]));
 		PrintToChat(client,"%s",inf);
 		if (HasEntProp(targ,Prop_Data,"m_bCarriedByPlayer"))
 		{
@@ -543,8 +577,24 @@ public Action setprops(int client, int args)
 		}
 		else if (StrEqual(propname,"hud",false) || StrEqual(propname,"suit",false))
 		{
-			pdata = false
+			pdata = false;
 			Format(propname,sizeof(propname),"m_bWearingSuit");
+		}
+		else if (StrEqual(propname,"team",false))
+		{
+			pdata = true;
+			Format(propname,sizeof(propname),"m_iTeamNum");
+		}
+		else if (StrEqual(propname,"mega",false))
+		{
+			pdata = false;
+			Format(propname,sizeof(propname),"m_bMegaState");
+			if (StrEqual(first,"!self",false)) targ = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+		}
+		else if (StrEqual(propname,"rendermode",false))
+		{
+			pdata = true;
+			Format(propname,sizeof(propname),"m_nRenderMode");
 		}
 		GetCmdArg(3, secondintchk, sizeof(secondintchk))
 		float secondfl = StringToFloat(secondintchk);
