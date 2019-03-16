@@ -37,7 +37,7 @@ bool syn56act = false;
 bool vehiclemaphook = false;
 bool playerteleports = false;
 
-#define PLUGIN_VERSION "1.81"
+#define PLUGIN_VERSION "1.82"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
