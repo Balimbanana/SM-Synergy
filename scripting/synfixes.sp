@@ -1000,7 +1000,7 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			Format(tmpout,sizeof(tmpout),output);
 			char clsname[32];
 			GetEntityClassname(caller,clsname,sizeof(clsname));
-			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"logic_relay",false)) || (StrEqual(clsname,"trigger_coop",false))) UnhookSingleEntityOutput(caller,tmpout,EntityOutput:trigtp);
+			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"logic_relay",false)) || (StrEqual(clsname,"func_door",false)) || (StrEqual(clsname,"trigger_coop",false))) UnhookSingleEntityOutput(caller,tmpout,EntityOutput:trigtp);
 			if (playerteleports) readoutputstp(targn,tmpout,"Teleport",origin,activator);
 			if (vehiclemaphook) readoutputstp(targn,tmpout,"Save",origin,activator);
 		}
@@ -1646,6 +1646,13 @@ void FindSaveTPHooks()
 			{
 				HookSingleEntityOutput(i,"OnTrigger",EntityOutput:trigtp);
 			}
+			else if (StrEqual(clsname,"func_door",false))
+			{
+				HookSingleEntityOutput(i,"OnOpen",EntityOutput:trigtp);
+				HookSingleEntityOutput(i,"OnFullyOpen",EntityOutput:trigtp);
+				HookSingleEntityOutput(i,"OnClose",EntityOutput:trigtp);
+				HookSingleEntityOutput(i,"OnFullyClosed",EntityOutput:trigtp);
+			}
 		}
 	}
 	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
@@ -1653,10 +1660,6 @@ void FindSaveTPHooks()
 	HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigtp);
 	HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
 	HookEntityOutput("func_button","OnUseLocked",EntityOutput:trigtp);
-	HookEntityOutput("func_door","OnOpen",EntityOutput:trigtp);
-	HookEntityOutput("func_door","OnFullyOpen",EntityOutput:trigtp);
-	HookEntityOutput("func_door","OnClose",EntityOutput:trigtp);
-	HookEntityOutput("func_door","OnFullyClosed",EntityOutput:trigtp);
 	//HookEntityOutput("prop_door_rotating","OnOpen",EntityOutput:trigtp);
 	//HookEntityOutput("prop_door_rotating","OnFullyOpen",EntityOutput:trigtp);
 	//HookEntityOutput("prop_door_rotating","OnClose",EntityOutput:trigtp);
