@@ -36,7 +36,7 @@ bool syn56act = false;
 bool vehiclemaphook = false;
 bool playerteleports = false;
 
-#define PLUGIN_VERSION "1.80"
+#define PLUGIN_VERSION "1.81"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1000,7 +1000,7 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			Format(tmpout,sizeof(tmpout),output);
 			char clsname[32];
 			GetEntityClassname(caller,clsname,sizeof(clsname));
-			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"trigger_coop",false))) UnhookSingleEntityOutput(caller,tmpout,EntityOutput:trigtp);
+			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"logic_relay",false)) || (StrEqual(clsname,"trigger_coop",false))) UnhookSingleEntityOutput(caller,tmpout,EntityOutput:trigtp);
 			if (playerteleports) readoutputstp(targn,tmpout,"Teleport",origin,activator);
 			if (vehiclemaphook) readoutputstp(targn,tmpout,"Save",origin,activator);
 		}
@@ -1642,15 +1642,15 @@ void FindSaveTPHooks()
 				GetEntPropString(i,Prop_Data,"m_target",pttarget,sizeof(pttarget));
 				if ((StrEqual(pttarget,"!activator",false)) || (StrEqual(pttarget,"!player",false)) || (StrEqual(pttarget,"player",false))) playerteleports = true;
 			}
+			else if (StrEqual(clsname,"logic_relay",false))
+			{
+				HookSingleEntityOutput(i,"OnTrigger",EntityOutput:trigtp);
+			}
 		}
 	}
 	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
 	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
-	HookEntityOutput("logic_relay","OnTrigger",EntityOutput:trigtp);
 	HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigtp);
-	HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigtp);
-	HookEntityOutput("scripted_sequence","OnEndSequence",EntityOutput:trigtp);
-	HookEntityOutput("scripted_scene","OnStart",EntityOutput:trigtp);
 	HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
 	HookEntityOutput("func_button","OnUseLocked",EntityOutput:trigtp);
 	HookEntityOutput("func_door","OnOpen",EntityOutput:trigtp);
