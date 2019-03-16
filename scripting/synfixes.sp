@@ -20,6 +20,7 @@ Handle entnames = INVALID_HANDLE;
 Handle physboxarr = INVALID_HANDLE;
 Handle physboxharr = INVALID_HANDLE;
 Handle elevlist = INVALID_HANDLE;
+Handle inputsarrorigincls = INVALID_HANDLE;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 int WeapList = -1;
@@ -120,6 +121,7 @@ public void OnPluginStart()
 	physboxarr = CreateArray(64);
 	physboxharr = CreateArray(64);
 	elevlist = CreateArray(64);
+	inputsarrorigincls = CreateArray(768);
 	RegConsoleCmd("alyx",fixalyx);
 	RegConsoleCmd("barney",fixbarney);
 	RegConsoleCmd("stuck",stuckblck);
@@ -142,6 +144,7 @@ public void OnMapStart()
 	ClearArray(physboxarr);
 	ClearArray(physboxharr);
 	ClearArray(elevlist);
+	ClearArray(inputsarrorigincls);
 	char gamedescoriginal[24];
 	GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
 	if (StrEqual(gamedescoriginal,"synergy 56.16",false)) syn56act = true;
@@ -1289,81 +1292,108 @@ readoutputs(int scriptent, char[] targn)
 
 readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int activator)
 {
-	Handle filehandle = OpenFile(mapbuf,"r");
-	if (filehandle != INVALID_HANDLE)
+	if (GetArraySize(inputsarrorigincls) < 1) readoutputsforinputs();
+	else
 	{
-		char line[128];
 		char tmpoutpchk[128];
 		Format(tmpoutpchk,sizeof(tmpoutpchk),"\"%s,AddOutput,%s ",targn,output);
 		char originchar[64];
 		Format(originchar,sizeof(originchar),"%i %i %i",RoundFloat(origin[0]),RoundFloat(origin[1]),RoundFloat(origin[2]));
+		char origintargnfind[128];
+		if (strlen(targn) > 0) Format(origintargnfind,sizeof(origintargnfind),"%s\"%s\"",targn,originchar);
+		else Format(origintargnfind,sizeof(origintargnfind),"notargn\"%s\"",originchar);
+		int arrindx = -1;
+		char tmpch[128];
+		for (int i = 0;i<GetArraySize(inputsarrorigincls);i++)
+		{
+			GetArrayString(inputsarrorigincls,i,tmpch,sizeof(tmpch));
+			if ((StrContains(tmpch,origintargnfind,false) != -1) || (StrContains(tmpch,tmpoutpchk,false) != -1))
+			{
+				arrindx = i;
+				break;
+			}
+		}
+		if (arrindx == -1) return;
+		char originclschar[128];
+		char clsorfixup[16][128];
+		GetArrayString(inputsarrorigincls,arrindx,originclschar,sizeof(originclschar));
+		if (StrContains(originclschar,tmpoutpchk,false) != -1)
+		{
+			char tmpoutrem[64];
+			Format(tmpoutrem,sizeof(tmpoutrem),tmpoutpchk);
+			Format(tmpoutrem,sizeof(tmpoutrem),"%s\"%s\" \"",tmpoutrem,output);
+			ReplaceString(tmpoutrem,sizeof(tmpoutpchk),tmpoutpchk,"");
+			ReplaceString(originclschar,sizeof(originclschar),tmpoutpchk,tmpoutrem);
+		}
+		ExplodeString(originclschar,"\"",clsorfixup,16,128);
 		char inputadded[64];
 		Format(inputadded,sizeof(inputadded),":%s::",input);
 		char inputdef[64];
 		Format(inputdef,sizeof(inputdef),",%s,,",input);
-		bool readnextlines = false;
-		char lineorgres[16][64];
-		char lineoriginfixup[64];
-		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
+		if ((StrEqual(originchar,clsorfixup[1],false)) || (StrEqual(targn,clsorfixup[0],false)) || (StrContains(inputadded,clsorfixup[1],false)))
 		{
-			lineoriginfixup = "";
-			TrimString(line);
-			if (readnextlines)
+			char lineorgrescom[16][64];
+			if ((StrContains(clsorfixup[5],",") != -1) && (StrContains(clsorfixup[5],"::") == -1))
 			{
-				if ((StrEqual(line,"}",false)) || (StrEqual(line,"{",false)))
-				{
-					readnextlines = false;
-				}
-				else
-				{
-					if (StrContains(line,inputdef,false) != -1)
-					{
-						char tmpchar[128];
-						Format(tmpchar,sizeof(tmpchar),line);
-						ReplaceString(tmpchar,sizeof(tmpchar),"\"onmapspawn\" ","",false);
-						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-						ReplaceString(tmpchar,sizeof(tmpchar),output,"",false);
-						char lineorgrescom[16][64];
-						//ExplodeString(tmpchar, " ", lineorgres, 16, 64);
-						ExplodeString(tmpchar, ",", lineorgrescom, 16, 64);
-						//int targnend = StrContains(lineorgres[1],",",false);
-						//ReplaceString(lineorgres[1],sizeof(lineorgres[]),lineorgres[1][targnend],"");
-						ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
-						float delay = StringToFloat(lineorgrescom[3]);
-						if (debuglvl == 3) PrintToServer("%s Output %s %s",input,lineorgrescom[0],line);
-						if (StrEqual(input,"teleport",false)) findpointtp(-1,lineorgrescom[0],activator,delay);
-						else if (StrEqual(input,"save",false))
-						{
-							resetvehicles(delay);
-							if (delay == 0.0) CreateTimer(0.01,recallreset);
-						}
-					}
-				}
-			}
-			if ((StrContains(line,tmpoutpchk,false) != -1) && (strlen(targn) > 0) && (StrContains(line,inputadded,false) != -1))
-			{
-				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"onmapspawn\" ","",false);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-				ExplodeString(tmpchar, " ", lineorgres, 16, 64);
-				int targnend = StrContains(lineorgres[1],":",false);
-				int inputstrlen = strlen(input);
-				inputstrlen+=3;
-				char delaystr[24];
-				Format(delaystr,sizeof(delaystr),lineorgres[1][targnend+inputstrlen]);
-				int delayend = StrContains(delaystr,":",false);
-				ReplaceString(delaystr,64,delaystr[delayend],"");
-				ReplaceString(lineorgres[1],64,lineorgres[1][targnend],"");
-				if (debuglvl == 3) PrintToServer("%s AddedOutput %s %s",input,lineorgres[1],line);
-				float delay = StringToFloat(delaystr);
-				if (StrEqual(input,"teleport",false)) findpointtp(-1,lineorgres[1],activator,delay);
+				if (StrContains(clsorfixup[3],output,false) == -1) return;
+				ExplodeString(clsorfixup[5],",",lineorgrescom,16,64);
+				ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
+				float delay = StringToFloat(lineorgrescom[3]);
+				if (debuglvl >= 2) PrintToServer("%s Output %s %s",input,lineorgrescom[0],clsorfixup[5]);
+				if (StrEqual(input,"teleport",false)) findpointtp(-1,lineorgrescom[0],activator,delay);
 				else if (StrEqual(input,"save",false))
 				{
 					resetvehicles(delay);
 					if (delay == 0.0) CreateTimer(0.01,recallreset);
 				}
-				break;
+			}
+			else
+			{
+				ExplodeString(clsorfixup[5],":",lineorgrescom,16,64);
+				if (StrContains(clsorfixup[3],output,false) == -1) return;
+				char delaystr[64];
+				Format(delaystr,sizeof(delaystr),lineorgrescom[3]);
+				ReplaceString(lineorgrescom[1],64,lineorgrescom[1],"");
+				float delay = StringToFloat(lineorgrescom[3]);
+				if (debuglvl >= 2) PrintToServer("%s AddedOutput %s %s",input,lineorgrescom[0],clsorfixup[5]);
+				if (StrEqual(input,"teleport",false)) findpointtp(-1,lineorgrescom[0],activator,delay);
+				else if (StrEqual(input,"save",false))
+				{
+					resetvehicles(delay);
+					if (delay == 0.0) CreateTimer(0.01,recallreset);
+				}
+			}
+		}
+	}
+	return;
+}
+
+readoutputsforinputs()
+{
+	Handle filehandle = OpenFile(mapbuf,"r");
+	if (filehandle != INVALID_HANDLE)
+	{
+		char line[128];
+		char inputadded[64];
+		Format(inputadded,sizeof(inputadded),":Teleport::");
+		char inputdef[64];
+		Format(inputdef,sizeof(inputdef),",Teleport,,");
+		char inputadded2[64];
+		Format(inputadded2,sizeof(inputadded2),":Save::");
+		char inputdef2[64];
+		Format(inputdef2,sizeof(inputdef2),",Save,,");
+		char lineorgres[128];
+		char lineorgresexpl[4][16];
+		char lineoriginfixup[64];
+		char lineadj[128];
+		bool hastargn = false;
+		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
+		{
+			TrimString(line);
+			if ((StrEqual(line,"{",false)) || (StrEqual(line,"}",false)))
+			{
+				lineoriginfixup = "";
+				hastargn = false;
 			}
 			if (StrContains(line,"\"origin\"",false) == 0)
 			{
@@ -1371,12 +1401,33 @@ readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int ac
 				Format(tmpchar,sizeof(tmpchar),line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-				ExplodeString(tmpchar, " ", lineorgres, 4, 16);
-				Format(lineoriginfixup,sizeof(lineoriginfixup),"%i %i %i",RoundFloat(StringToFloat(lineorgres[0])),RoundFloat(StringToFloat(lineorgres[1])),RoundFloat(StringToFloat(lineorgres[2])))
+				ExplodeString(tmpchar, " ", lineorgresexpl, 4, 16);
+				Format(lineoriginfixup,sizeof(lineoriginfixup),"%i %i %i\"",RoundFloat(StringToFloat(lineorgresexpl[0])),RoundFloat(StringToFloat(lineorgresexpl[1])),RoundFloat(StringToFloat(lineorgresexpl[2])))
 			}
-			if (StrEqual(originchar,lineoriginfixup,false))
+			else if (StrContains(line,"\"targetname\"",false) == 0)
 			{
-				readnextlines = true;
+				char tmpchar[72];
+				Format(tmpchar,sizeof(tmpchar),line);
+				ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" \"","");
+				ReplaceString(tmpchar,sizeof(tmpchar),"\"","");
+				Format(lineoriginfixup,sizeof(lineoriginfixup),"%s\"%s",tmpchar,lineoriginfixup);
+				hastargn = true;
+			}
+			else if (((StrContains(line,",AddOutput,",false) != -1) && ((StrContains(line,inputadded,false) != -1) || (StrContains(line,inputadded2,false) != -1))) || (StrContains(line,inputdef,false) != -1) || (StrContains(line,inputdef2,false) != -1))
+			{
+				Format(lineorgres,sizeof(lineorgres),line);
+				ReplaceString(lineorgres,sizeof(lineorgres),"\"OnMapSpawn\" ","");
+				if (!hastargn)
+				{
+					Format(lineoriginfixup,sizeof(lineoriginfixup),"notargn\"%s",lineoriginfixup);
+					hastargn = true;
+				}
+				Format(lineadj,sizeof(lineadj),"%s %s",lineoriginfixup,lineorgres);
+				if (FindStringInArray(inputsarrorigincls,lineadj) == -1)
+				{
+					PushArrayString(inputsarrorigincls,lineadj);
+					if (debuglvl == 3) PrintToServer("%s",lineadj);
+				}
 			}
 		}
 	}
@@ -1630,13 +1681,7 @@ void FindSaveTPHooks()
 		{
 			char clsname[32];
 			GetEntityClassname(i,clsname,sizeof(clsname));
-			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"trigger_coop",false)))
-			{
-				HookSingleEntityOutput(i,"OnTrigger",EntityOutput:trigtp);
-				HookSingleEntityOutput(i,"OnStartTouch",EntityOutput:trigtp);
-				HookSingleEntityOutput(i,"OnPlayersIn",EntityOutput:trigtp);
-			}
-			else if (StrEqual(clsname,"point_teleport",false))
+			if (StrEqual(clsname,"point_teleport",false))
 			{
 				char pttarget[32];
 				GetEntPropString(i,Prop_Data,"m_target",pttarget,sizeof(pttarget));
@@ -1655,6 +1700,10 @@ void FindSaveTPHooks()
 			}
 		}
 	}
+	HookEntityOutput("trigger_coop","OnPlayersIn",EntityOutput:trigtp);
+	HookEntityOutput("trigger_coop","OnStartTouch",EntityOutput:trigtp);
+	HookEntityOutput("trigger_multiple","OnTrigger",EntityOutput:trigtp);
+	HookEntityOutput("trigger_multiple","OnStartTouch",EntityOutput:trigtp);
 	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
 	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
 	HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigtp);
@@ -1765,6 +1814,7 @@ public Action rehooksaves(Handle timer)
 		ActivateEntity(weapres);
 	}
 	findsavetrigs(-1,"trigger_autosave");
+	readoutputsforinputs();
 }
 
 public Action findsavetrigs(int ent, char[] clsname)
