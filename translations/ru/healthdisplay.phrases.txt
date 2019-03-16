@@ -1,0 +1,128 @@
+"Phrases"
+{
+	"HealthMenuTitle"
+	{
+		"ru"			"HealthDisplay Настройки"
+	}
+	
+	"HealthMenuType"
+	{
+		"ru"			"Тип сообщения здоровья"
+	}
+	
+	"HealthMenuFR"
+	{
+		"ru"			"Настройки здоровья союзников"
+	}
+	
+	"HealthMenuNum"
+	{
+		"ru"			"Настройки уровня здоровья"
+	}
+	
+	"HealthMenuCol"
+	{
+		"ru"			"Цвет сообщений здоровья"
+	}
+	
+	"HealthTypeDesc"
+	{
+		"ru"			"Тип сообщения, отображаемого для статуса здоровья. 4 отключить."
+	}
+	
+	"HealthFriendlyDesc"
+	{
+		"ru"			"Отображение здоровья дружественных npc. 1 показывать союзников и противников, 2 показывает Союзник: и Противник:"
+	}
+	
+	"HealthNum"
+	{
+		"ru"			"Тип отображения здоровья, 1 - в процентах, 2 - в единицах здоровья."
+	}
+	
+	"HealthColMenu"
+	{
+		"ru"			"!healthcolor Меню настройки цвета противников и союзников. Настраивается только при !healthtype 1"
+	}
+	
+	"HealthSetTo"
+	{
+		"#format"		"{1:s}"
+		"ru"			"HealthDisplay отображает {1}"
+	}
+	
+	"EnemiesOnly"
+	{
+		"ru"			"Здоровье только противников."
+	}
+	
+	"Friendlies"
+	{
+		"ru"			"Здоровье дружелюбных npc."
+	}
+	
+	"FriendliesWith"
+	{
+		"ru"			"Здоровье дружелебных npc с союзник: или противник:."
+	}
+	
+	"HudText"
+	{
+		"ru"			"Hud текст"
+	}
+	
+	"HintTxt"
+	{
+		"ru"			"Текст подсказкой"
+	}
+	
+	"CenterTxt"
+	{
+		"ru"			"Текст по центру"
+	}
+	
+	"Percentage"
+	{
+		"ru"			"Проценты."
+	}
+	
+	"HitPoints"
+	{
+		"ru"			"Единицы здоровья."
+	}
+	
+	"ColorsApply"
+	{
+		"ru"			"Цвета применяются только при !healthtype 1"
+	}
+	
+	"ColorsApplyType"
+	{
+		"ru"			"Цвет дружелюбных применяется только при !healthfriendlies 1 or 2"
+	}
+	
+	"FriendliesCol"
+	{
+		"ru"			"Цвет дружелюбных"
+	}
+	
+	"EnemiesCol"
+	{
+		"ru"			"Цвет противников"
+	}
+	
+	"BackButton"
+	{
+		"ru"			"Назад"
+	}
+	
+	"InvalidNum"
+	{
+		"ru"			"Неверный номер"
+	}
+	
+	"DisabledHD"
+	{
+		"ru"			"Отключен HealthDisplay"
+	}
+}
