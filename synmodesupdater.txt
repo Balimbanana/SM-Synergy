@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.04"
-			"Previous"	"1.03"
+			"Latest"  	"1.05"
+			"Previous"	"1.04"
 		}
 		
-		"Notes"	"Added class re check to cltouchend."
+		"Notes"	"Rewrote save/checkpoints hooks to parse cache once."
 	}
 	
 	"Files"
