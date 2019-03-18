@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.65"
-			"Previous"	"1.64"
+			"Latest"  	"1.66"
+			"Previous"	"1.65"
 		}
 		
-		"Notes"	"Added previous level save data check when sm_disabletransition is changed."
+		"Notes"	"Added previous level save data check when sm_disabletransition is changed, increased subfile buffer."
 	}
 	
 	"Files"
