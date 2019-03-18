@@ -37,7 +37,7 @@ bool syn56act = false;
 bool vehiclemaphook = false;
 bool playerteleports = false;
 
-#define PLUGIN_VERSION "1.82"
+#define PLUGIN_VERSION "1.83"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1353,7 +1353,7 @@ readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int ac
 				if (StrContains(clsorfixup[3],output,false) == -1) return;
 				char delaystr[64];
 				Format(delaystr,sizeof(delaystr),lineorgrescom[3]);
-				ReplaceString(lineorgrescom[1],64,lineorgrescom[1],"");
+				//ReplaceString(lineorgrescom[1],64,lineorgrescom[1],"");
 				float delay = StringToFloat(lineorgrescom[3]);
 				if (debuglvl >= 2) PrintToServer("%s AddedOutput %s %s",input,lineorgrescom[0],clsorfixup[5]);
 				if (StrEqual(input,"teleport",false)) findpointtp(-1,lineorgrescom[0],activator,delay);
