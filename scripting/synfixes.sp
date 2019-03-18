@@ -37,7 +37,7 @@ bool syn56act = false;
 bool vehiclemaphook = false;
 bool playerteleports = false;
 
-#define PLUGIN_VERSION "1.83"
+#define PLUGIN_VERSION "1.84"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1651,7 +1651,7 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 		damage = 0.0;
 		return Plugin_Changed;
 	}
-	if ((attacker == 0) && (inflictor == 0))
+	if ((attacker == 0) && (inflictor == 0) && (damagetype != 32))
 	{
 		damage = 0.0;
 		return Plugin_Changed;
