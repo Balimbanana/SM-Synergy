@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.65"
+#define PLUGIN_VERSION "1.66"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -174,7 +174,7 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
 		CloseHandle(svcvar);
 		Handle savedirrmh = OpenDirectory(savedir, false);
-		char subfilen[32];
+		char subfilen[64];
 		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
 		{
 			if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
@@ -207,7 +207,7 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
 		CloseHandle(svcvar);
 		Handle savedirrmh = OpenDirectory(savedir, false);
-		char subfilen[32];
+		char subfilen[64];
 		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
 		{
 			if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
@@ -273,7 +273,7 @@ public Action votereload(int client, int args)
 		Handle savedirh = OpenDirectory(savepath, false);
 		if (savedirh != INVALID_HANDLE)
 		{
-			char subfilen[32];
+			char subfilen[64];
 			char fullist[512];
 			while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
 			{
@@ -430,7 +430,7 @@ public Action savecurgamedp(Handle timer, any dp)
 	}
 	CloseHandle(plyinf);
 	Handle savedirh = OpenDirectory(savedir, false);
-	char subfilen[32];
+	char subfilen[64];
 	while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
 	{
 		if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
@@ -486,7 +486,7 @@ public Action loadgame(int client, int args)
 		else PrintToChat(client,"Could not find any save games for this map.");
 		return Plugin_Handled;
 	}
-	char subfilen[32];
+	char subfilen[64];
 	char fullist[512];
 	bool foundsaves = false;
 	while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
@@ -760,7 +760,7 @@ public Action delsave(int client, int args)
 		else PrintToChat(client,"Could not find any save games for this map.");
 		return Plugin_Handled;
 	}
-	char subfilen[32];
+	char subfilen[64];
 	char fullist[512];
 	bool foundsaves = false;
 	while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
@@ -1061,6 +1061,7 @@ public void OnMapStart()
 			ReplaceString(savedir,sizeof(savedir),"\\","");
 		else if (StrContains(savedir,"/",false) != -1)
 			ReplaceString(savedir,sizeof(savedir),"/","");
+		PrintToServer("%s",savedir);
 	}
 	CloseHandle(savedirh);
 	enterfrom04 = true;
@@ -1227,7 +1228,7 @@ public void OnMapStart()
 	if (rmsaves)
 	{
 		Handle savedirrmh = OpenDirectory(savedir, false);
-		char subfilen[32];
+		char subfilen[64];
 		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
 		{
 			if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
@@ -1381,7 +1382,7 @@ public void OnMapEnd()
 	if ((rmsaves) && (reloadingmap))
 	{
 		Handle savedirrmh = OpenDirectory(savedir, false);
-		char subfilen[32];
+		char subfilen[64];
 		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
 		{
 			if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
@@ -1467,7 +1468,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		}
 		reloadingmap = true;
 		Handle savedirh = OpenDirectory(savedir, false);
-		char subfilen[32];
+		char subfilen[64];
 		while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
 		{
 			if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
@@ -1825,7 +1826,7 @@ void saveresetveh(bool rmsave)
 	if (rmsave)
 	{
 		Handle savedirrmh = OpenDirectory(savedir, false);
-		char subfilen[32];
+		char subfilen[64];
 		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
 		{
 			if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
