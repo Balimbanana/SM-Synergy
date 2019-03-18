@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.82"
-			"Previous"	"1.81"
+			"Latest"  	"1.83"
+			"Previous"	"1.82"
 		}
 		
 		"Notes"	"Completely rewrote save/tp hooks to parse cache once and store for future calls."
