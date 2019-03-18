@@ -1061,7 +1061,6 @@ public void OnMapStart()
 			ReplaceString(savedir,sizeof(savedir),"\\","");
 		else if (StrContains(savedir,"/",false) != -1)
 			ReplaceString(savedir,sizeof(savedir),"/","");
-		PrintToServer("%s",savedir);
 	}
 	CloseHandle(savedirh);
 	enterfrom04 = true;
