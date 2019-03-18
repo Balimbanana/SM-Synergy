@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.66"
+#define PLUGIN_VERSION "1.67"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -173,29 +173,6 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 		svcvar = FindConVar("sv_autosave");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
 		CloseHandle(svcvar);
-		Handle savedirrmh = OpenDirectory(savedir, false);
-		char subfilen[64];
-		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
-		{
-			if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
-			{
-				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
-				{
-					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-					if (StrContains(subfilen,"autosave.hl1",false) == -1)
-					{
-						DeleteFile(subfilen,false);
-						Handle subfiletarg = OpenFile(subfilen,"wb");
-						if (subfiletarg != INVALID_HANDLE)
-						{
-							WriteFileLine(subfiletarg,"");
-						}
-						CloseHandle(subfiletarg);
-					}
-				}
-			}
-		}
-		CloseHandle(savedirrmh);
 	}
 	else if (StringToInt(newValue) == 1)
 	{
@@ -206,29 +183,6 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 		svcvar = FindConVar("sv_autosave");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
 		CloseHandle(svcvar);
-		Handle savedirrmh = OpenDirectory(savedir, false);
-		char subfilen[64];
-		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
-		{
-			if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
-			{
-				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
-				{
-					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-					if (StrContains(subfilen,"autosave.hl1",false) == -1)
-					{
-						DeleteFile(subfilen,false);
-						Handle subfiletarg = OpenFile(subfilen,"wb");
-						if (subfiletarg != INVALID_HANDLE)
-						{
-							WriteFileLine(subfiletarg,"");
-						}
-						CloseHandle(subfiletarg);
-					}
-				}
-			}
-		}
-		CloseHandle(savedirrmh);
 	}
 	else if (StringToInt(newValue) == 0)
 	{
