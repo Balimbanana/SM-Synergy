@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.67"
+#define PLUGIN_VERSION "1.68"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -95,7 +95,7 @@ public void OnPluginStart()
 	perclimitsave = GetConVarFloat(votecspercenth);
 	HookConVarChange(votecspercenth, restrictvotepercsch);
 	CloseHandle(votecspercenth);
-	Handle disabletransitionh = CreateConVar("sm_disabletransition", "0", "Disable transition save/reloads.", _, true, 0.0, true, 2.0);
+	Handle disabletransitionh = CreateConVar("sm_disabletransition", "2", "Disable transition save/reloads. 2 rebuilds transitions using SourceMod.", _, true, 0.0, true, 2.0);
 	if (GetConVarInt(disabletransitionh) == 2)
 	{
 		Handle svcvar = FindConVar("mp_save_disable");
