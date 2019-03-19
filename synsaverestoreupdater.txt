@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.67"
-			"Previous"	"1.66"
+			"Latest"  	"1.68"
+			"Previous"	"1.67"
 		}
 		
-		"Notes"	"Added previous level save data check when sm_disabletransition is changed, increased subfile buffer."
+		"Notes"	"Changed sm_disabletransition to default 2 as it seems to be at a good stability level."
 	}
 	
 	"Files"
