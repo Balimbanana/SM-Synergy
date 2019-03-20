@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.69"
+#define PLUGIN_VERSION "1.70"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1923,6 +1923,11 @@ public Action anotherdelay(Handle timer, int client)
 				plyorigin[0]+=320.0;
 				plyorigin[1]+=160.0;
 				plyorigin[2]+=180.0;
+			}
+			else if (StrEqual(mapbuf,"d3_c17_08",false))
+			{
+				plyorigin[1]+=250.0;
+				plyorigin[2]+=30.0;
 			}
 			ReadPackString(dp,curweap,sizeof(curweap));
 			SetEntProp(client,Prop_Data,"m_iHealth",curh);
