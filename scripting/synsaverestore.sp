@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.68"
+#define PLUGIN_VERSION "1.69"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1609,9 +1609,11 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 	{
 		if (IsValidEntity(i) && IsEntNetworkable(i) && (FindValueInArray(ignoreent,i) == -1))
 		{
+			int alwaystransition = 0;
+			if (HasEntProp(i,Prop_Data,"m_bAlwaysTransition")) alwaystransition = GetEntProp(i,Prop_Data,"m_bAlwaysTransition");
 			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
 			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
-			if ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]))
+			if ((alwaystransition) || ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2])))
 			{
 				char clsname[32];
 				GetEntityClassname(i,clsname,sizeof(clsname));
