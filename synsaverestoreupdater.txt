@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.69"
-			"Previous"	"1.68"
+			"Latest"  	"1.70"
+			"Previous"	"1.69"
 		}
 		
 		"Notes"	"Added m_bAlwaysTransition checks for transitions."
