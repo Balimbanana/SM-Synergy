@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.68"
-			"Previous"	"1.67"
+			"Latest"  	"1.69"
+			"Previous"	"1.68"
 		}
 		
-		"Notes"	"Changed sm_disabletransition to default 2 as it seems to be at a good stability level."
+		"Notes"	"Added m_bAlwaysTransition checks for transitions."
 	}
 	
 	"Files"
