@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.70"
-			"Previous"	"1.69"
+			"Latest"  	"1.71"
+			"Previous"	"1.70"
 		}
 		
-		"Notes"	"Added m_bAlwaysTransition checks for transitions."
+		"Notes"	"Fixed previous level transition disable checks. Added crouching transitions. Additional equip check."
 	}
 	
 	"Files"
