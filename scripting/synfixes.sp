@@ -37,7 +37,7 @@ bool syn56act = false;
 bool vehiclemaphook = false;
 bool playerteleports = false;
 
-#define PLUGIN_VERSION "1.84"
+#define PLUGIN_VERSION "1.85"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -692,7 +692,7 @@ public Action resetrot(Handle timer)
 					AcceptEntityInput(i,"Start");
 				}
 			}
-			else if ((HasEntProp(i,Prop_Data,"m_vecOrigin")) && (StrContains(clsname,"func_",false) == -1) && (StrContains(clsname,"trigger_",false) == -1) && (StrContains(clsname,"point_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (StrContains(clsname,"npc_",false) == -1) && (StrContains(clsname,"monster_",false) == -1) && (StrContains(clsname,"info_",false) == -1) && (StrContains(clsname,"env_",false) == -1) && (StrContains(clsname,"scripted",false) == -1) && (!StrEqual(clsname,"momentary_rot_button",false)) && (!StrEqual(clsname,"syn_transition_wall",false)) && (!StrEqual(clsname,"prop_dynamic",false)) && (StrContains(clsname,"light_",false) == -1))
+			else if ((HasEntProp(i,Prop_Data,"m_vecOrigin")) && (StrContains(clsname,"func_",false) == -1) && (StrContains(clsname,"trigger_",false) == -1) && (StrContains(clsname,"point_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (!StrEqual(clsname,"material_modify_control",false)) && (StrContains(clsname,"npc_",false) == -1) && (StrContains(clsname,"monster_",false) == -1) && (StrContains(clsname,"info_",false) == -1) && (StrContains(clsname,"env_",false) == -1) && (StrContains(clsname,"scripted",false) == -1) && (!StrEqual(clsname,"momentary_rot_button",false)) && (!StrEqual(clsname,"syn_transition_wall",false)) && (!StrEqual(clsname,"prop_dynamic",false)) && (StrContains(clsname,"light_",false) == -1))
 			{
 				float pos[3];
 				GetEntPropVector(i,Prop_Data,"m_vecOrigin",pos);
