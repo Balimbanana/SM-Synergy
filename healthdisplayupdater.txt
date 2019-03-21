@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.76"
-			"Previous"	"1.75"
+			"Latest"  	"1.77"
+			"Previous"	"1.76"
 		}
 		
-		"Notes"	"Added translations."
+		"Notes"	"Added m_bHackedByAlyx checks for friendlies."
 	}
 	
 	"Files"
