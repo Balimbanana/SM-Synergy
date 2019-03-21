@@ -2075,6 +2075,11 @@ public Action anotherdelay(Handle timer, int client)
 				plyorigin[1]+=250.0;
 				plyorigin[2]+=30.0;
 			}
+			else if (StrEqual(mapbuf,"cd3_2",false))
+			{
+				plyorigin[0]-=310.0;
+				plyorigin[1]+=116.0;
+			}
 			ReadPackString(dp,curweap,sizeof(curweap));
 			SetEntProp(client,Prop_Data,"m_iHealth",curh);
 			SetEntProp(client,Prop_Data,"m_ArmorValue",cura);
