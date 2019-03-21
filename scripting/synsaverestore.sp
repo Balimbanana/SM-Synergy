@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.70"
+#define PLUGIN_VERSION "1.71"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -123,6 +123,7 @@ public void OnPluginStart()
 	}
 	HookConVarChange(disabletransitionh, disabletransitionch);
 	CloseHandle(disabletransitionh);
+	RegServerCmd("changelevel",resettransition);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	AutoExecConfig(true, "synsaverestore");
 }
@@ -1048,6 +1049,14 @@ public void OnMapStart()
 		}
 		else if (enterfrom04pb)
 			enterfrom04pb = false;
+		if (StrEqual(mapbuf,"ep1_c17_00",false))
+		{
+			int loginp = CreateEntityByName("logic_auto");
+			DispatchKeyValue(loginp, "spawnflags","1");
+			DispatchKeyValue(loginp, "OnMapSpawn","ss_alyx_duckunder,BeginSequence,,5,-1");
+			DispatchSpawn(loginp);
+			ActivateEntity(loginp);
+		}
 		if ((enterfrom03pb) && (StrEqual(mapbuf,"d1_town_02",false)))
 		{
 			findrmstarts(-1,"info_player_start");
@@ -1152,24 +1161,7 @@ public void OnMapStart()
 				ActivateEntity(loginp);
 			}
 		}
-		int prevmap = FindEntityByClassname(-1,"trigger_changelevel");
-		if (prevmap != -1)
-		{
-			int sf = GetEntProp(prevmap,Prop_Data,"m_spawnflags");
-			if (sf & 4) AcceptEntityInput(prevmap,"Disable");
-		}
-		int prevmap2 = FindEntityByClassname(prevmap+1,"trigger_changelevel");
-		if (prevmap2 != -1)
-		{
-			int sf = GetEntProp(prevmap2,Prop_Data,"m_spawnflags");
-			if (sf & 4) AcceptEntityInput(prevmap2,"Disable");
-		}
-		int prevmap3 = FindEntityByClassname(prevmap2+1,"trigger_changelevel");
-		if (prevmap3 != -1)
-		{
-			int sf = GetEntProp(prevmap3,Prop_Data,"m_spawnflags");
-			if (sf & 4) AcceptEntityInput(prevmap3,"Disable");
-		}
+		findprevlvls(-1);
 		reloadingmap = false;
 	}
 	ClearArray(globalsarr);
@@ -1358,6 +1350,13 @@ public void OnMapEnd()
 		}
 		CloseHandle(savedirrmh);
 	}
+	else if (!reloadingmap)
+	{
+		ClearArray(transitionid);
+		ClearArray(transitiondp);
+		ClearArray(transitionplyorigin);
+		ClearArray(equiparr);
+	}
 }
 
 public Action transitiontimeout(Handle timer)
@@ -1393,6 +1392,18 @@ public void OnPluginEnd()
 				AcceptEntityInput(jtmp,"Enable");
 		}
 	}
+}
+
+public Action resettransition(int args)
+{
+	if (!reloadingmap)
+	{
+		ClearArray(transitionid);
+		ClearArray(transitiondp);
+		ClearArray(transitionplyorigin);
+		ClearArray(equiparr);
+	}
+	return Plugin_Continue;
 }
 
 public Action onchangelevel(const char[] output, int caller, int activator, float delay)
@@ -1492,11 +1503,13 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					int deaths = GetEntProp(i,Prop_Data,"m_iDeaths");
 					int suitset = GetEntProp(i,Prop_Send,"m_bWearingSuit");
 					int medkitamm = GetEntProp(i,Prop_Send,"m_iHealthPack");
+					int crouching = GetEntProp(i,Prop_Send,"m_bDucked");
 					WritePackCell(dp,score);
 					WritePackCell(dp,kills);
 					WritePackCell(dp,deaths);
 					WritePackCell(dp,suitset);
 					WritePackCell(dp,medkitamm);
+					WritePackCell(dp,crouching);
 					WritePackFloat(dp,plyangs[0]);
 					WritePackFloat(dp,plyangs[1]);
 					WritePackFloat(dp,plyorigin[0]);
@@ -1580,6 +1593,17 @@ findtransitionback(int ent)
 			findtouchingents(mins,maxs,true);
 		}
 		findtransitionback(thisent++);
+	}
+}
+
+findprevlvls(int ent)
+{
+	int thisent = FindEntityByClassname(ent,"trigger_transition");
+	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	{
+		int sf = GetEntProp(thisent,Prop_Data,"m_spawnflags");
+		if (sf & 4) AcceptEntityInput(thisent,"Disable");
+		findprevlvls(thisent++);
 	}
 }
 
@@ -1883,7 +1907,32 @@ public Action anotherdelay(Handle timer, int client)
 		{
 			if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_equip");
 			//Possibility of no equips found.
+			bool recheck = false;
 			if (GetArraySize(equiparr) > 0)
+			{
+				for (int j; j<GetArraySize(equiparr); j++)
+				{
+					int jtmp = GetArrayCell(equiparr, j);
+					if (IsValidEntity(jtmp))
+					{
+						if (IsEntNetworkable(jtmp))
+						{
+							char clscheck[32];
+							GetEntityClassname(jtmp,clscheck,sizeof(clscheck));
+							if (StrEqual(clscheck,"info_player_equip",false))
+								AcceptEntityInput(jtmp,"Disable");
+							else
+							{
+								ClearArray(equiparr);
+								findent(MaxClients+1,"info_player_equip");
+								recheck = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+			if ((recheck) && (GetArraySize(equiparr) > 0))
 			{
 				for (int j; j<GetArraySize(equiparr); j++)
 				{
@@ -1907,6 +1956,7 @@ public Action anotherdelay(Handle timer, int client)
 			int deaths = ReadPackCell(dp);
 			int suitset = ReadPackCell(dp);
 			int medkitamm = ReadPackCell(dp);
+			int crouching = ReadPackCell(dp);
 			float plyorigin[3];
 			float angs[3];
 			angs[0] = ReadPackFloat(dp);
@@ -1937,6 +1987,7 @@ public Action anotherdelay(Handle timer, int client)
 			SetEntProp(client,Prop_Data,"m_iDeaths",deaths);
 			SetEntProp(client,Prop_Send,"m_bWearingSuit",suitset);
 			SetEntProp(client,Prop_Send,"m_iHealthPack",medkitamm);
+			SetEntProp(client,Prop_Send,"m_bDucking",crouching);
 			ReadPackString(dp,ammoset,sizeof(ammoset));
 			while (!StrEqual(ammoset,"endofpack",false))
 			{
@@ -1970,13 +2021,44 @@ public Action anotherdelay(Handle timer, int client)
 		else
 		{
 			if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_equip");
+			bool recheck = false;
 			if (GetArraySize(equiparr) > 0)
 			{
 				for (int j; j<GetArraySize(equiparr); j++)
 				{
 					int jtmp = GetArrayCell(equiparr, j);
 					if (IsValidEntity(jtmp))
+					{
+						if (IsEntNetworkable(jtmp))
+						{
+							char clscheck[32];
+							GetEntityClassname(jtmp,clscheck,sizeof(clscheck));
+							if (StrEqual(clscheck,"info_player_equip",false))
+							{
+								AcceptEntityInput(jtmp,"Disable");
+								AcceptEntityInput(jtmp,"EquipPlayer",client);
+							}
+							else
+							{
+								ClearArray(equiparr);
+								findent(MaxClients+1,"info_player_equip");
+								recheck = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+			if ((recheck) && (GetArraySize(equiparr) > 0))
+			{
+				for (int j; j<GetArraySize(equiparr); j++)
+				{
+					int jtmp = GetArrayCell(equiparr, j);
+					if (IsValidEntity(jtmp))
+					{
+						AcceptEntityInput(jtmp,"Disable");
 						AcceptEntityInput(jtmp,"EquipPlayer",client);
+					}
 				}
 			}
 			if (GetArraySize(equiparr) < 1) CreateTimer(0.1,delayequip);
