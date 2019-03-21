@@ -44,7 +44,7 @@ char mapbuf[128];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.71"
+#define PLUGIN_VERSION "1.72"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -378,8 +378,40 @@ public Action savecurgamedp(Handle timer, any dp)
 			GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
 			GetClientAbsAngles(i,plyangs);
 			GetClientAbsOrigin(i,plyorigin);
-			char push[128];
-			Format(push,sizeof(push),"%sb%1.f %1.f %1.fb%1.f %1.f %1.f",SteamID,plyangs[0],plyangs[1],plyangs[2],plyorigin[0],plyorigin[1],plyorigin[2]);
+			int vck = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+			if (vck > 0) plyorigin[2]+=60.0;
+			char curweap[24];
+			char weapname[24];
+			char ammbufchk[500];
+			GetClientWeapon(i,curweap,sizeof(curweap));
+			if (strlen(curweap) < 1) Format(curweap,sizeof(curweap),"hands");
+			for (int j = 0;j<33;j++)
+			{
+				int ammchk = GetEntProp(i, Prop_Send, "m_iAmmo", _, j);
+				if (ammchk > 0)
+				{
+					Format(ammbufchk,sizeof(ammbufchk),"%s%i %i ",ammbufchk,j,ammchk);
+				}
+			}
+			if (WeapList != -1)
+			{
+				for (int j; j<48; j += 4)
+				{
+					int tmpi = GetEntDataEnt2(i,WeapList + j);
+					if (tmpi != -1)
+					{
+						GetEntityClassname(tmpi,weapname,sizeof(weapname));
+						Format(ammbufchk,sizeof(ammbufchk),"%s%s %i ",ammbufchk,weapname,GetEntProp(tmpi,Prop_Data,"m_iClip1"));
+					}
+				}
+			}
+			int curh = GetEntProp(i,Prop_Data,"m_iHealth");
+			int cura = GetEntProp(i,Prop_Data,"m_ArmorValue");
+			int medkitamm = GetEntProp(i,Prop_Send,"m_iHealthPack");
+			int crouching = GetEntProp(i,Prop_Send,"m_bDucked");
+			int suitset = GetEntProp(i,Prop_Send,"m_bWearingSuit");
+			char push[564];
+			Format(push,sizeof(push),"%sb%1.f %1.f %1.fb%1.f %1.f %1.fb%sb%i %i %i %i %ib%s",SteamID,plyangs[0],plyangs[1],plyangs[2],plyorigin[0],plyorigin[1],plyorigin[2],curweap,curh,cura,medkitamm,crouching,suitset,ammbufchk);
 			WriteFileLine(plyinf,push);
 		}
 	}
@@ -556,22 +588,37 @@ loadthissave(char[] info)
 			Handle reloadids = CreateArray(64);
 			Handle reloadangs = CreateArray(64);
 			Handle reloadorgs = CreateArray(64);
-			char sets[3][64];
-			char line[72];
+			Handle reloadammset = CreateArray(64);
+			Handle reloadstatsset = CreateArray(64);
+			Handle reloadcurweaps = CreateArray(64);
+			char sets[6][64];
+			char line[600];
 			Handle plyinf = OpenFile(plyinffile,"r");
 			while(!IsEndOfFile(plyinf)&&ReadFileLine(plyinf,line,sizeof(line)))
 			{
 				TrimString(line);
-				ExplodeString(line,"b",sets,3,64);
+				ExplodeString(line,"b",sets,6,64);
 				PushArrayString(reloadids,sets[0]);
 				PushArrayString(reloadangs,sets[1]);
 				PushArrayString(reloadorgs,sets[2]);
-				PrintToServer("%s %s %s",sets[0],sets[1],sets[2]);
+				PushArrayString(reloadcurweaps,sets[3]);
+				PushArrayString(reloadstatsset,sets[4]);
+				ReplaceString(line,sizeof(line),sets[0],"");
+				ReplaceString(line,sizeof(line),sets[1],"");
+				ReplaceString(line,sizeof(line),sets[2],"");
+				ReplaceString(line,sizeof(line),sets[3],"");
+				ReplaceString(line,sizeof(line),sets[4],"");
+				ReplaceString(line,sizeof(line),"bbbbb","");
+				if (strlen(line) > 1) PushArrayString(reloadammset,line);
 			}
 			CloseHandle(plyinf);
 			WritePackCell(dp,reloadids);
 			WritePackCell(dp,reloadangs);
 			WritePackCell(dp,reloadorgs);
+			WritePackCell(dp,reloadammset);
+			WritePackCell(dp,reloadstatsset);
+			WritePackCell(dp,reloadcurweaps);
+			WritePackString(dp,sets[3]);
 		}
 		CreateTimer(1.0,reloadtimer);
 		CreateTimer(1.1,reloadtimersetupcl,dp);
@@ -652,6 +699,9 @@ public Action reloadtimersetupcl(Handle timer, Handle dp)
 		Handle reloadids = ReadPackCell(dp);
 		Handle reloadangs = ReadPackCell(dp);
 		Handle reloadorgs = ReadPackCell(dp);
+		Handle reloadammset = ReadPackCell(dp);
+		Handle reloadstatsset = ReadPackCell(dp);
+		Handle reloadcurweaps = ReadPackCell(dp);
 		CloseHandle(dp);
 		if (GetArraySize(reloadids) > 0)
 		{
@@ -667,19 +717,60 @@ public Action reloadtimersetupcl(Handle timer, Handle dp)
 					int arrindx = FindStringInArray(reloadids,SteamID);
 					char angch[32];
 					char originch[32];
+					char ammoch[600];
+					char ammosets[32][32];
+					char statsch[64];
+					char statssets[5][24];
 					if (arrindx != -1)
 					{
 						GetArrayString(reloadangs,arrindx,angch,sizeof(angch));
 						GetArrayString(reloadorgs,arrindx,originch,sizeof(originch));
+						if (GetArraySize(reloadammset) > 0)
+						{
+							GetArrayString(reloadammset,arrindx,ammoch,sizeof(ammoch));
+							ExplodeString(ammoch," ",ammosets,32,32);
+							for (int j = 0;j<32;j++)
+							{
+								int arrplus = j+1;
+								if (StrContains(ammosets[j],"weapon_",false) != -1)
+								{
+									int weapindx = GivePlayerItem(i,ammosets[j]);
+									if (weapindx != -1)
+									{
+										int weapamm = StringToInt(ammosets[arrplus]);
+										SetEntProp(weapindx,Prop_Data,"m_iClip1",weapamm);
+									}
+								}
+								else if ((strlen(ammosets[j]) > 0) && (strlen(ammosets[arrplus]) > 0))
+								{
+									int ammindx = StringToInt(ammosets[j]);
+									int ammset = StringToInt(ammosets[arrplus]);
+									SetEntProp(i,Prop_Send,"m_iAmmo",ammset,_,ammindx);
+								}
+								j++;
+							}
+						}
+						if (GetArraySize(reloadstatsset) > 0)
+						{
+							GetArrayString(reloadstatsset,arrindx,statsch,sizeof(statsch));
+							ExplodeString(statsch," ",statssets,5,24);
+							if (StringToInt(statssets[0]) > 0) SetEntProp(i,Prop_Data,"m_iHealth",StringToInt(statssets[0]));
+							if (StringToInt(statssets[1]) > -1) SetEntProp(i,Prop_Data,"m_ArmorValue",StringToInt(statssets[1]));
+							if (StringToInt(statssets[2]) > -1) SetEntProp(i,Prop_Send,"m_iHealthPack",StringToInt(statssets[2]));
+							if (StringToInt(statssets[3]) > -1) SetEntProp(i,Prop_Send,"m_bDucking",StringToInt(statssets[3]));
+							if (StringToInt(statssets[4]) > -1) SetEntProp(i,Prop_Send,"m_bWearingSuit",StringToInt(statssets[4]));
+						}
 						ExplodeString(angch," ",sets,3,64);
 						angs[0] = StringToFloat(sets[0]);
 						angs[1] = StringToFloat(sets[1]);
-						angs[2] = StringToFloat(sets[2]);
 						ExplodeString(originch," ",sets,3,64);
 						origin[0] = StringToFloat(sets[0]);
 						origin[1] = StringToFloat(sets[1]);
 						origin[2] = StringToFloat(sets[2]);
 						TeleportEntity(i,origin,angs,NULL_VECTOR);
+						char curweap[24];
+						if (GetArraySize(reloadcurweaps) > 0) GetArrayString(reloadcurweaps,arrindx,curweap,sizeof(curweap));
+						if (strlen(curweap) > 0) ClientCommand(i,"use %s",curweap);
 					}
 					else
 					{
@@ -689,7 +780,6 @@ public Action reloadtimersetupcl(Handle timer, Handle dp)
 						ExplodeString(angch," ",sets,3,64);
 						angs[0] = StringToFloat(sets[0]);
 						angs[1] = StringToFloat(sets[1]);
-						angs[2] = StringToFloat(sets[2]);
 						ExplodeString(originch," ",sets,3,64);
 						origin[0] = StringToFloat(sets[0]);
 						origin[1] = StringToFloat(sets[1]);
@@ -699,6 +789,12 @@ public Action reloadtimersetupcl(Handle timer, Handle dp)
 				}
 			}
 		}
+		CloseHandle(reloadids);
+		CloseHandle(reloadangs);
+		CloseHandle(reloadorgs);
+		CloseHandle(reloadammset);
+		CloseHandle(reloadstatsset);
+		CloseHandle(reloadcurweaps);
 	}
 }
 
