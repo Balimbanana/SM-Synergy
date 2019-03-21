@@ -1,0 +1,322 @@
+#include <sourcemod>
+#include <sdktools>
+#include <clientprefs>
+#include "dbi.inc"
+
+float gotocd[MAXPLAYERS+1];
+//Handle colh = INVALID_HANDLE; //OC checks
+Handle bclcookieh = INVALID_HANDLE;
+bool bclcookie[MAXPLAYERS+1];
+
+public Plugin:myinfo =
+{
+	name = "Player-Teleport by Dr. HyperKiLLeR",
+	author = "Dr. HyperKiLLeR Edited by Balimbanana for Synergy",
+	description = "Go to a player or teleport a player to you",
+	version = "1.2.0.0",
+	url = ""
+};
+
+public void OnPluginStart()
+{
+	bclcookieh = RegClientCookie("GotoRestrict", "SM_Goto Restrict Settings", CookieAccess_Private);
+	//RegAdminCmd("sm_goto", Command_Goto, ADMFLAG_SLAY,"Go to a player");
+	RegConsoleCmd("sm_goto", Command_Goto);
+	RegConsoleCmd("sm_moveto", Command_Goto);
+	RegConsoleCmd("sm_nogoto", setnogoto);
+	RegAdminCmd("sm_bring", Command_Bring, ADMFLAG_SLAY,"Teleport a player to you");
+
+	CreateConVar("goto_version", "1.2", "Dr. HyperKiLLeRs Player Teleport",FCVAR_SPONLY|FCVAR_UNLOGGED|FCVAR_DONTRECORD|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	//colh = FindConVar("mp_playercollide");
+}
+
+public void OnMapStart()
+{
+	CreateTimer(1.0,reloadclcookies);
+}
+
+public Action setnogoto(int client, int args)
+{
+	if (client == 0) return Plugin_Handled;
+	int numset;
+	if (args < 1)
+	{
+		if (bclcookie[client]) numset = 0;
+		if (!bclcookie[client]) numset = 1;
+	}
+	else
+	{
+		char h[4];
+		GetCmdArg(1,h,sizeof(h));
+		numset = StringToInt(h);
+	}
+	if (numset == 0)
+	{
+		PrintToChat(client,"Allowed people to goto you.");
+		bclcookie[client] = false;
+		SetClientCookie(client, bclcookieh, "");
+	}
+	else if (numset == 1)
+	{
+		PrintToChat(client,"Disabled people from going to you.");
+		bclcookie[client] = true;
+		SetClientCookie(client, bclcookieh, "true");
+	}
+	return Plugin_Handled;
+}
+
+public Action reloadclcookies(Handle timer)
+{
+	for (int client = 1;client<MaxClients;client++)
+	{
+		if (IsClientConnected(client))
+		{
+			char sValue[32];
+			GetClientCookie(client, bclcookieh, sValue, sizeof(sValue));
+			if (strlen(sValue) < 1)
+			{
+				bclcookie[client] = false;
+				SetClientCookie(client, bclcookieh, "");
+			}
+			else
+				bclcookie[client] = true;
+		}
+	}
+}
+
+public OnClientCookiesCached(int client)
+{
+	char sValue[32];
+	GetClientCookie(client, bclcookieh, sValue, sizeof(sValue));
+	if (strlen(sValue) < 1)
+	{
+		bclcookie[client] = false;
+		SetClientCookie(client, bclcookieh, "");
+	}
+	else
+		bclcookie[client] = true;
+}
+
+public Action Command_Goto(int Client, int args)
+{
+    //Error:
+	if(args < 1)
+	{
+
+		//Print:
+		PrintToConsole(Client, "Usage: sm_goto <name>");
+		PrintToChat(Client, "Usage:\x04 sm_goto <name>");
+
+		//Return:
+		return Plugin_Handled;
+	}
+	
+	int vckcl = GetEntProp(Client, Prop_Send, "m_hVehicle");
+	if ((GetEntityRenderFx(Client) == RENDERFX_DISTORT) || (vckcl != -1))
+	{
+		PrintToChat(Client,"You cannot do that at this time...");
+		return Plugin_Handled;
+	}
+	
+	float Time = GetTickedTime();
+	
+	if (gotocd[Client] > Time)
+	{
+		PrintToChat(Client,"You cannot do that for another %i seconds...",RoundToCeil(gotocd[Client]-Time));
+		return Plugin_Handled;
+	}
+	
+	//Declare:
+	int MaxPlayers, Player;
+	char PlayerName[32];
+	float TeleportOrigin[3];
+	float PlayerOrigin[3];
+	char Name[32];
+	
+	//Initialize:
+	Player = -1;
+	GetCmdArg(1, PlayerName, sizeof(PlayerName));
+	
+	//Find:
+	MaxPlayers = GetMaxClients();
+	for(int X = 1; X <= MaxPlayers; X++)
+	{
+
+		//Connected:
+		if(!IsClientConnected(X)) continue;
+
+		//Initialize:
+		GetClientName(X, Name, sizeof(Name));
+
+		//Save:
+		if((StrContains(Name, PlayerName, false) != -1) && (X != Client) && (IsClientInGame(X))) Player = X;
+	}
+	
+	//Invalid Name:
+	if(Player == -1)
+	{
+
+		//Print:
+		PrintToConsole(Client, "Could not find client \x04%s", PlayerName);
+
+		//Return:
+		return Plugin_Handled;
+	}
+	//Syn checks
+	int a = GetEntProp(Client,Prop_Data,"m_iTeamNum");
+	int b = GetEntProp(Player,Prop_Data,"m_iTeamNum");
+	if (a != b)
+	{
+		PrintToChat(Client,"Must be on same team.");
+		return Plugin_Handled;
+	}
+	/* OC checks
+	int a = GetClientTeam(Client);
+	int b = GetClientTeam(Player);
+	if (a != b)
+	{
+		PrintToChat(Client,"Must be on same team.");
+		return Plugin_Handled;
+	}
+	*/
+	//Initialize
+	GetClientName(Player, Name, sizeof(Name));
+	GetClientAbsOrigin(Player, PlayerOrigin);
+	
+	if (bclcookie[Player])
+	{
+		PrintToChat(Client,"%s has goto disabled.",Name);
+		return Plugin_Handled;
+	}
+	
+	//Math
+	float tpang[3];
+	GetClientEyeAngles(Player,tpang);
+	tpang[2] = 0.0;
+	
+	TeleportOrigin[0] = PlayerOrigin[0];
+	TeleportOrigin[1] = PlayerOrigin[1];
+	
+	int vck = GetEntProp(Player, Prop_Send, "m_hVehicle");
+	int crouching = GetEntProp(Player, Prop_Send, "m_bDucked");
+	if (vck != -1)
+		TeleportOrigin[2] = (PlayerOrigin[2] + 47.0);
+	else if (crouching)
+	{
+		TeleportOrigin[2] = (PlayerOrigin[2] + 0.1);
+		SetEntProp(Client, Prop_Send, "m_bDucking", 1);
+	}
+	else
+		TeleportOrigin[2] = (PlayerOrigin[2] + 3);
+	/* OC collision check
+	if (GetConVarInt(colh) == 0)
+		TeleportOrigin[2] = (PlayerOrigin[2] + 3);
+	else
+		TeleportOrigin[2] = (PlayerOrigin[2] + 73);
+	*/
+	
+	//Teleport
+	TeleportEntity(Client, TeleportOrigin, tpang, NULL_VECTOR);
+	gotocd[Client] = Time + 20.0;
+	
+	return Plugin_Handled;
+}
+
+public Action:Command_Bring(Client,args)
+{
+    //Error:
+	if(args < 1)
+	{
+
+		//Print:
+		PrintToConsole(Client, "Usage: sm_bring <name>");
+		PrintToChat(Client, "Usage:\x04 sm_bring <name>");
+
+		//Return:
+		return Plugin_Handled;
+	}
+	
+	//Declare:
+	int MaxPlayers, Player;
+	char PlayerName[32];
+	float TeleportOrigin[3];
+	float PlayerOrigin[3];
+	char Name[32];
+	
+	//Initialize:
+	Player = -1;
+	GetCmdArg(1, PlayerName, sizeof(PlayerName));
+	
+	//Find:
+	MaxPlayers = GetMaxClients();
+	for(int X = 1; X <= MaxPlayers; X++)
+	{
+
+		//Connected:
+		if(!IsClientConnected(X)) continue;
+
+		//Initialize:
+		GetClientName(X, Name, sizeof(Name));
+
+		//Save:
+		if(StrContains(Name, PlayerName, false) != -1) Player = X;
+	}
+	
+	//Invalid Name:
+	if(Player == -1)
+	{
+
+		//Print:
+		PrintToConsole(Client, "Could not find client \x04%s", PlayerName);
+
+		//Return:
+		return Plugin_Handled;
+	}
+	
+	//Initialize
+	GetClientName(Player, Name, sizeof(Name));
+	GetCollisionPoint(Client, PlayerOrigin);
+	
+	//Math
+	TeleportOrigin[0] = PlayerOrigin[0];
+	TeleportOrigin[1] = PlayerOrigin[1];
+	TeleportOrigin[2] = (PlayerOrigin[2] + 4);
+	
+	//Teleport
+	TeleportEntity(Player, TeleportOrigin, NULL_VECTOR, NULL_VECTOR);
+	
+	return Plugin_Handled;
+}
+
+// Trace
+
+stock GetCollisionPoint(client, Float:pos[3])
+{
+	decl Float:vOrigin[3], Float:vAngles[3];
+	
+	GetClientEyePosition(client, vOrigin);
+	GetClientEyeAngles(client, vAngles);
+	
+	Handle trace = TR_TraceRayFilterEx(vOrigin, vAngles, MASK_SOLID, RayType_Infinite, TraceEntityFilterPlayer);
+	
+	if(TR_DidHit(trace))
+	{
+		TR_GetEndPosition(pos, trace);
+		CloseHandle(trace);
+		
+		return;
+	}
+	
+	CloseHandle(trace);
+}
+
+public bool TraceEntityFilterPlayer(entity, contentsMask)
+{
+	return entity > MaxClients;
+}  
+
+public void OnClientDisconnect(int client)
+{
+	gotocd[client] = 0.0;
+	bclcookie[client] = false;
+}
