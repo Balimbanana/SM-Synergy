@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.84"
-			"Previous"	"1.83"
+			"Latest"  	"1.85"
+			"Previous"	"1.84"
 		}
 		
-		"Notes"	"Fixed fall damage problem."
+		"Notes"	"Removed an entity type from out of world checks."
 	}
 	
 	"Files"
