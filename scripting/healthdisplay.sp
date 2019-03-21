@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.76"
+#define PLUGIN_VERSION "1.77"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -989,7 +989,11 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		{
 			int sf = GetEntProp(entchk,Prop_Data,"m_spawnflags");
 			if (sf & 512) return true;
-			else return false;
+		}
+		else if (HasEntProp(entchk,Prop_Data,"m_bHackedByAlyx"))
+		{
+			int hck = GetEntProp(entchk,Prop_Data,"m_bHackedByAlyx");
+			if (hck > 0) return true;
 		}
 		if (FindStringInArray(liarr,clsname) != -1) return true;
 		else if (FindStringInArray(htarr,clsname) != -1) return false;
