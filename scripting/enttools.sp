@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.05"
+#define PLUGIN_VERSION "1.06"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -31,6 +31,8 @@ public OnPluginStart()
 	RegConsoleCmd("gi",getinf);
 	RegAdminCmd("tn",sett,ADMFLAG_PASSWORD,"SetName");
 	RegAdminCmd("sm_sep",setprops,ADMFLAG_ROOT,".");
+	RegAdminCmd("listents",listents,ADMFLAG_KICK,".");
+	RegAdminCmd("findents",listents,ADMFLAG_KICK,".");
 }
 
 public OnLibraryAdded(const char[] name)
@@ -410,6 +412,69 @@ public Handle findentsarr(Handle arr, int ent, char[] clsname)
 	}
 	if (GetArraySize(arr) > 0) return arr;
 	return INVALID_HANDLE;
+}
+
+public Handle findentsarrtarg(Handle arr, char[] namechk)
+{
+	if (arr == INVALID_HANDLE) return INVALID_HANDLE;
+	for (int i = 1;i<2048;i++)
+	{
+		if (IsValidEntity(i) && IsEntNetworkable(i))
+		{
+			char clsname[32];
+			GetEntityClassname(i,clsname,sizeof(clsname));
+			if ((StrEqual(clsname,namechk,false)) && (FindValueInArray(arr,i) == -1))
+				PushArrayCell(arr, i);
+			if ((HasEntProp(i,Prop_Data,"m_iName")) && (FindValueInArray(arr,i) == -1))
+			{
+				char fname[32];
+				GetEntPropString(i,Prop_Data,"m_iName",fname,sizeof(fname));
+				if (StrEqual(fname,namechk,false))
+					PushArrayCell(arr, i);
+			}
+		}
+	}
+	if (GetArraySize(arr) > 0) return arr;
+	return INVALID_HANDLE;
+}
+
+public Action listents(int client, int args)
+{
+	if (args < 1)
+	{
+		if (client == 0) PrintToServer("Must specify targetname or classname");
+		else PrintToChat(client,"Must specify targetname or classname");
+		return Plugin_Handled;
+	}
+	char search[64];
+	GetCmdArg(1,search,sizeof(search));
+	if (strlen(search) > 0)
+	{
+		Handle arr = CreateArray(64);
+		findentsarrtarg(arr,search);
+		if (arr == INVALID_HANDLE)
+		{
+			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",search);
+			else PrintToChat(client,"No entities found with either classname or targetname of %s",search);
+			return Plugin_Handled;
+		}
+		else
+		{
+			for (int i = 0;i<GetArraySize(arr);i++)
+			{
+				int j = GetArrayCell(arr,i);
+				char clsname[32];
+				GetEntityClassname(j,clsname,sizeof(clsname));
+				char fname[32];
+				if (HasEntProp(j,Prop_Data,"m_iName"))
+					GetEntPropString(j,Prop_Data,"m_iName",fname,sizeof(fname));
+				if (client == 0) PrintToServer("%i %s %s",j,clsname,fname);
+				else PrintToChat(client,"%i %s %s",j,clsname,fname);
+			}
+		}
+		CloseHandle(arr);
+	}
+	return Plugin_Handled;
 }
 
 public Action getinf(int client, int args)
