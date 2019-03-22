@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.72"
-			"Previous"	"1.71"
+			"Latest"  	"1.73"
+			"Previous"	"1.72"
 		}
 		
-		"Notes"	"Revamped persistent saves to store active weapon, weapon array, current health, current armor, crouching, suit."
+		"Notes"	"Fixed previous map disable, removed init rm save."
 	}
 	
 	"Files"
