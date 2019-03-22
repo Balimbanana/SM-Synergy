@@ -45,7 +45,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.73"
+#define PLUGIN_VERSION "1.74"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1250,7 +1250,7 @@ public void OnMapStart()
 				else
 					Format(formt,sizeof(formt),"%s,TurnOff,,0,-1",itmp);
 				DispatchKeyValue(loginp, "OnMapSpawn", formt);
-				PrintToServer("Setting %s to %i",itmp,itmpval);
+				//PrintToServer("Setting %s to %i",itmp,itmpval);
 			}
 			if (loginp != 0)
 			{
@@ -1703,7 +1703,7 @@ findprevlvls(int ent)
 	{
 		char mapchbuf[64];
 		GetEntPropString(thisent,Prop_Data,"m_szMapName",mapchbuf,sizeof(mapchbuf));
-		if (StrEqual(mapchbuf,prevmap,false)) AcceptEntityInput(thisent,"Disable");
+		if ((StrEqual(mapchbuf,prevmap,false)) && (!StrEqual(mapchbuf,"d1_town_02",false))) AcceptEntityInput(thisent,"Disable");
 		findprevlvls(thisent++);
 	}
 }
@@ -1730,6 +1730,39 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 	char mdl[64];
 	float porigin[3];
 	float angs[3];
+	if (maxs[0] < mins[0])
+	{
+		float tmp = maxs[0];
+		maxs[0] = mins[0];
+		mins[0] = tmp;
+	}
+	if (maxs[1] < mins[1])
+	{
+		float tmp = maxs[1];
+		maxs[1] = mins[1];
+		mins[1] = tmp;
+	}
+	if (maxs[2] < mins[2])
+	{
+		float tmp = maxs[2];
+		maxs[2] = mins[2];
+		mins[2] = tmp;
+	}
+	if (maxs[0]-mins[0] < 11.0)
+	{
+		mins[0]-=15.0;
+		maxs[0]+=15.0;
+	}
+	if (maxs[1]-mins[1] < 11.0)
+	{
+		mins[1]-=15.0;
+		maxs[1]+=15.0;
+	}
+	if (maxs[2]-mins[2] < 11.0)
+	{
+		mins[2]-=5.0;
+		maxs[2]+=5.0;
+	}
 	for (int i = 1;i<2048;i++)
 	{
 		if (IsValidEntity(i) && IsEntNetworkable(i) && (FindValueInArray(ignoreent,i) == -1))
@@ -1738,6 +1771,14 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 			if (HasEntProp(i,Prop_Data,"m_bAlwaysTransition")) alwaystransition = GetEntProp(i,Prop_Data,"m_bAlwaysTransition");
 			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
 			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
+			if (i < MaxClients+1)
+			{
+				if (IsPlayerAlive(i))
+				{
+					GetClientAbsOrigin(i,porigin);
+					if (GetEntityRenderFx(i) == RENDERFX_DISTORT) alwaystransition = 1;
+				}
+			}
 			if ((alwaystransition) || ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2])))
 			{
 				char clsname[32];
@@ -1805,7 +1846,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 						{
 							int istate = GetEntProp(i,Prop_Data,"m_state");
 							Format(state,sizeof(state),"%i",istate);
-							PrintToServer("State %s",state);
+							//PrintToServer("State %s",state);
 						}
 						if (HasEntProp(i,Prop_Data,"m_target"))
 						{
@@ -2062,29 +2103,14 @@ public Action anotherdelay(Handle timer, int client)
 			float angs[3];
 			angs[0] = ReadPackFloat(dp);
 			angs[1] = ReadPackFloat(dp);
+			bool teleport = true;
 			plyorigin[0] = ReadPackFloat(dp);
 			plyorigin[1] = ReadPackFloat(dp);
 			plyorigin[2] = ReadPackFloat(dp);
+			if ((plyorigin[0] == 0.0) && (plyorigin[1] == 0.0) && (plyorigin[2] == 0.0)) teleport = false;
 			plyorigin[0]+=landmarkorigin[0];
 			plyorigin[1]+=landmarkorigin[1];
 			plyorigin[2]+=landmarkorigin[2];
-			if (StrEqual(mapbuf,"d1_trainstation_06",false)) plyorigin[1]+=400.0;
-			else if (StrEqual(mapbuf,"d3_c17_07",false))
-			{
-				plyorigin[0]+=320.0;
-				plyorigin[1]+=160.0;
-				plyorigin[2]+=180.0;
-			}
-			else if (StrEqual(mapbuf,"d3_c17_08",false))
-			{
-				plyorigin[1]+=250.0;
-				plyorigin[2]+=30.0;
-			}
-			else if (StrEqual(mapbuf,"cd3_2",false))
-			{
-				plyorigin[0]-=310.0;
-				plyorigin[1]+=116.0;
-			}
 			ReadPackString(dp,curweap,sizeof(curweap));
 			SetEntProp(client,Prop_Data,"m_iHealth",curh);
 			SetEntProp(client,Prop_Data,"m_ArmorValue",cura);
@@ -2121,7 +2147,7 @@ public Action anotherdelay(Handle timer, int client)
 			}
 			CloseHandle(dp);
 			RemoveFromArray(transitiondp,arrindx);
-			if (((plyorigin[0] != 0.0) && (plyorigin[1] != 0.0) && (plyorigin[2] != 0.0)) && (!StrEqual(mapbuf,"d1_town_02",false))) TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
+			if (teleport) TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
 			ClientCommand(client,"use %s",curweap);
 		}
 		else
@@ -2246,7 +2272,7 @@ public Action findglobals(int ent, char[] clsname)
 		GetEntPropString(thisent,Prop_Data,"m_iName",prevtmp,sizeof(prevtmp));
 		char ctst[32];
 		GetEntPropString(thisent,Prop_Data,"m_globalstate",ctst,sizeof(ctst));
-		PrintToServer(ctst);
+		//PrintToServer(ctst);
 		int loginp = CreateEntityByName("logic_auto");
 		DispatchKeyValue(loginp, "spawnflags","1");
 		DispatchKeyValue(loginp, "globalstate",ctst);
@@ -2271,7 +2297,7 @@ public Action loginpwait(Handle timer, any thisent)
 		int initstate = GetEntProp(thisent,Prop_Data,"m_initialstate");
 		int offs = FindDataMapInfo(thisent, "m_outCounter");
 		int curstate = GetEntData(thisent, offs);
-		PrintToServer("%s %i %i",prevtmp,initstate,curstate);
+		//PrintToServer("%s %i %i",prevtmp,initstate,curstate);
 		if((FindStringInArray(globalsarr, prevtmp) == -1) && (curstate != initstate))
 		{
 			PushArrayString(globalsarr, prevtmp);
