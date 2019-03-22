@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.05"
-			"Previous"	"1.04"
+			"Latest"  	"1.06"
+			"Previous"	"1.05"
 		}
 		
-		"Notes"	"Rewrote save/checkpoints hooks to parse cache once."
+		"Notes"	"Added more IsValidEntity and IsClientInGame checks to a couple functions."
 	}
 	
 	"Files"
