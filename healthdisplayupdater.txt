@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.77"
-			"Previous"	"1.76"
+			"Latest"  	"1.78"
+			"Previous"	"1.77"
 		}
 		
-		"Notes"	"Added m_bHackedByAlyx checks for friendlies."
+		"Notes"	"Added stalker HT, reconfigured array reset."
 	}
 	
 	"Files"
