@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.77"
+#define PLUGIN_VERSION "1.78"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -306,6 +306,102 @@ public Action cleararr(Handle timer)
 	ClearArray(htarr);
 	ClearArray(liarr);
 	ClearArray(airelarr);
+	findairel(MaxClients+1,"ai_relationship");
+	addht("npc_combine_s");
+	addht("npc_metropolice");
+	addht("prop_vehicle_apc");
+	addht("npc_breen");
+	addht("npc_barnacle");
+	addht("npc_combine_camera");
+	addht("npc_helicopter");
+	addht("npc_cscanner");
+	addht("npc_rollermine");
+	addht("npc_combinegunship");
+	addht("npc_combinedropship");
+	addht("npc_turret_ceiling");
+	addht("npc_manhack");
+	addht("npc_strider");
+	addht("npc_stalker");
+	addht("npc_sniper");
+	addht("npc_turret_floor");
+	addht("npc_zombie");
+	addht("npc_zombie_torso");
+	addht("npc_zombine");
+	addht("npc_fastzombie");
+	addht("npc_fastzombie_torso");
+	addht("npc_poisonzombie");
+	addht("npc_headcrab");
+	addht("npc_headcrab_poison");
+	addht("npc_headcrab_black");
+	addht("npc_headcrab_fast");
+	addht("npc_gargantua");
+	addht("npc_hunter");
+	addht("npc_advisor");
+	addht("npc_antlion");
+	addht("npc_antlionworker");
+	addht("npc_antlionguard");
+	addht("monster_alien_slave");
+	addht("monster_bullchicken");
+	addht("monster_headcrab");
+	addht("monster_ichthyosaur");
+	addht("monster_tentacle");
+	addht("monster_sentry");
+	addht("monster_houndeye");
+	addht("monster_barnacle");
+	addht("monster_apache");
+	addht("monster_zombie");
+	addht("monster_alien_grunt");
+	addht("monster_bigmomma");
+	addht("monster_babycrab");
+	addht("monster_gargantua");
+	addht("monster_human_assassin");
+	addht("monster_human_grunt");
+	addht("monster_miniturret");
+	addht("monster_nihilanth");
+	for (int i = 0;i<GetArraySize(airelarr);i++)
+	{
+		char itmp[32];
+		GetArrayString(airelarr, i, itmp, sizeof(itmp));
+		int rel = StringToInt(itmp);
+		if (IsValidEntity(rel))
+		{
+			char clsnamechk[16];
+			GetEntityClassname(rel, clsnamechk, sizeof(clsnamechk));
+			if (StrEqual(clsnamechk,"ai_relationship",false))
+			{
+				char subj[32];
+				GetEntPropString(rel,Prop_Data,"m_iszSubject",subj,sizeof(subj));
+				char targ[32];
+				GetEntPropString(rel,Prop_Data,"m_target",targ,sizeof(targ));
+				int disp = GetEntProp(rel,Prop_Data,"m_iDisposition");
+				int act = GetEntProp(rel,Prop_Data,"m_bIsActive");
+				//disp 1 = D_HT // 2 = D_NT // 3 = D_LI // 4 = D_FR
+				if ((StrContains(targ,"player",false) != -1) && (disp == 1) && (act != 0))
+				{
+					addht(subj);
+				}
+				else if ((StrContains(targ,"player",false) != -1) && (disp == 3) && (act != 0))
+				{
+					//PrintToServer("Rem %s %i",subj,disp);
+					int find = FindStringInArray(htarr,subj);
+					if (find != -1)
+					{
+						RemoveFromArray(htarr,find);
+					}
+					if (FindStringInArray(liarr,subj) == -1)
+						PushArrayString(liarr,subj);
+				}
+			}
+		}
+		else
+			findairel(MaxClients+1,"ai_relationship");
+	}
+	if (GetAntAlly())
+	{
+		int find = FindStringInArray(htarr,"npc_antlion");
+		if (find != -1)
+			RemoveFromArray(htarr,find);
+	}
 }
 
 bool IsInViewCtrl(int client)
@@ -1015,6 +1111,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_turret_ceiling");
 		addht("npc_manhack");
 		addht("npc_strider");
+		addht("npc_stalker");
 		addht("npc_sniper");
 		addht("npc_turret_floor");
 		addht("npc_zombie");
@@ -1098,6 +1195,16 @@ bool GetNPCAlly(char[] clsname, int entchk)
 	}
 	if (GetArraySize(htarr) > 0)
 	{
+		if (StrEqual(clsname,"npc_turret_floor",false))
+		{
+			int sf = GetEntProp(entchk,Prop_Data,"m_spawnflags");
+			if (sf & 512) return true;
+		}
+		else if (HasEntProp(entchk,Prop_Data,"m_bHackedByAlyx"))
+		{
+			int hck = GetEntProp(entchk,Prop_Data,"m_bHackedByAlyx");
+			if (hck > 0) return true;
+		}
 		if (FindStringInArray(liarr,clsname) != -1) return true;
 		else if (FindStringInArray(htarr,clsname) != -1) return false;
 		else return true;
