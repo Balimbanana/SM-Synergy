@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.73"
-			"Previous"	"1.72"
+			"Latest"  	"1.74"
+			"Previous"	"1.73"
 		}
 		
-		"Notes"	"Fixed previous map disable, removed init rm save."
+		"Notes"	"Fixed null player origin saved over transition. Recheck transition bounds and increase slightly if too small."
 	}
 	
 	"Files"
