@@ -2137,7 +2137,7 @@ findentlist(int ent, char[] clsname)
 			int maxnpc = GetEntProp(thisent,Prop_Data,"m_nMaxNumNPCs");
 			char rescls[32];
 			if (HasEntProp(thisent,Prop_Data,"m_iszNPCClassname")) GetEntPropString(thisent,Prop_Data,"m_iszNPCClassname",rescls,sizeof(rescls));
-			if ((StrEqual(rescls,"npc_vortigaunt",false)) || (StrEqual(rescls,"npc_helicopter",false)) || (StrEqual(rescls,"npc_combinegunship",false)))
+			if ((restrictact) && ((StrEqual(rescls,"npc_vortigaunt",false)) || (StrEqual(rescls,"npc_helicopter",false)) || (StrEqual(rescls,"npc_combinegunship",false))))
 			{
 				SetVariantInt(1);
 				AcceptEntityInput(thisent,"SetMaxChildren");
