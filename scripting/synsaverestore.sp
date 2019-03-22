@@ -1698,7 +1698,7 @@ findprevlvls(int ent)
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
 		int sf = GetEntProp(thisent,Prop_Data,"m_spawnflags");
-		if (sf & 4) AcceptEntityInput(thisent,"Disable");
+		if (sf == 4) AcceptEntityInput(thisent,"Disable");
 		findprevlvls(thisent++);
 	}
 }
