@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.05"
-			"Previous"	"1.04"
+			"Latest"  	"1.06"
+			"Previous"	"1.05"
 		}
 		
-		"Notes"	"Added model validity to vehicles. Enabled ability to create entities at specific origin if defined."
+		"Notes"	"Added listents/findents by targetname or classname, returns in an array."
 	}
 	
 	"Files"
