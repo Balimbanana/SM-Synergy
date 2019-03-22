@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.05"
+#define PLUGIN_VERSION "1.06"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -1026,6 +1026,8 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 public Action tpclspawnnew(Handle timer, any i)
 {
 	ClearArray(respawnids);
+	if (!IsValidEntity(i)) return Plugin_Handled;
+	if (!IsClientInGame(i)) return Plugin_Handled;
 	bool relocglo = false;
 	if (GetArraySize(globalsarr) < 1)
 	{
@@ -1089,7 +1091,7 @@ public Action tpclspawnnew(Handle timer, any i)
 	}
 	if ((isvehiclemap) || (clused == i))
 		clused = 0;
-	if ((clused > 0) && (IsValidEntity(clused)) && (IsValidEntity(i)))
+	if ((clused > 0) && (IsValidEntity(clused)))
 	{
 		DispatchSpawn(i);
 		int vck = GetEntPropEnt(clused,Prop_Data,"m_hVehicle");
@@ -1198,6 +1200,7 @@ public Action tpclspawnnew(Handle timer, any i)
 		}
 		ClearArray(equiparr);
 	}
+	return Plugin_Handled;
 }
 
 findent(int ent, char[] clsname)
@@ -1228,6 +1231,8 @@ public Action findglobals(int ent, char[] clsname)
 
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs)
 {
+	if (!IsValidEntity(client)) return Plugin_Continue;
+	if (!IsClientInGame(client)) return Plugin_Continue;
 	if (StrContains(sArgs, "*moan*", false) != -1)
 	{
 		float Time = GetTickedTime();
