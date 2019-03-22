@@ -41,10 +41,11 @@ Handle equiparr = INVALID_HANDLE;
 
 char landmarkname[64];
 char mapbuf[128];
+char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.72"
+#define PLUGIN_VERSION "1.73"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1268,6 +1269,7 @@ public void OnMapStart()
 	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:onchangelevel);
 	if (rmsaves)
 	{
+		/*
 		Handle savedirrmh = OpenDirectory(savedir, false);
 		char subfilen[64];
 		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
@@ -1291,6 +1293,7 @@ public void OnMapStart()
 			}
 		}
 		CloseHandle(savedirrmh);
+		*/
 		CreateTimer(0.1,redel);
 		if ((logsv != -1) && (IsValidEntity(logsv))) saveresetveh(false);
 		if (transitionply)
@@ -1452,6 +1455,7 @@ public void OnMapEnd()
 		ClearArray(transitiondp);
 		ClearArray(transitionplyorigin);
 		ClearArray(equiparr);
+		prevmap = "";
 	}
 }
 
@@ -1498,6 +1502,7 @@ public Action resettransition(int args)
 		ClearArray(transitiondp);
 		ClearArray(transitionplyorigin);
 		ClearArray(equiparr);
+		prevmap = "";
 	}
 	return Plugin_Continue;
 }
@@ -1511,18 +1516,17 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		ClearArray(transitiondp);
 		ClearArray(transitionplyorigin);
 		char maptochange[64];
-		char curmapbuf[64];
-		GetCurrentMap(curmapbuf,sizeof(curmapbuf));
+		GetCurrentMap(prevmap,sizeof(prevmap));
 		GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
-		if ((StrEqual(curmapbuf,"d1_town_03",false)) && (StrEqual(maptochange,"d1_town_02",false)))
+		if ((StrEqual(prevmap,"d1_town_03",false)) && (StrEqual(maptochange,"d1_town_02",false)))
 		{
 			enterfrom03pb = true;
 		}
-		else if ((StrEqual(curmapbuf,"d2_coast_08",false)) && (StrEqual(maptochange,"d2_coast_07",false)))
+		else if ((StrEqual(prevmap,"d2_coast_08",false)) && (StrEqual(maptochange,"d2_coast_07",false)))
 		{
 			enterfrom08pb = true;
 		}
-		else if ((StrEqual(curmapbuf,"ep2_outland_04",false)) && (StrEqual(maptochange,"ep2_outland_02",false)))
+		else if ((StrEqual(prevmap,"ep2_outland_04",false)) && (StrEqual(maptochange,"ep2_outland_02",false)))
 		{
 			enterfrom04pb = true;
 		}
@@ -1694,11 +1698,12 @@ findtransitionback(int ent)
 
 findprevlvls(int ent)
 {
-	int thisent = FindEntityByClassname(ent,"trigger_transition");
+	int thisent = FindEntityByClassname(ent,"trigger_changelevel");
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
-		int sf = GetEntProp(thisent,Prop_Data,"m_spawnflags");
-		if (sf == 4) AcceptEntityInput(thisent,"Disable");
+		char mapchbuf[64];
+		GetEntPropString(thisent,Prop_Data,"m_szMapName",mapchbuf,sizeof(mapchbuf));
+		if (StrEqual(mapchbuf,prevmap,false)) AcceptEntityInput(thisent,"Disable");
 		findprevlvls(thisent++);
 	}
 }
