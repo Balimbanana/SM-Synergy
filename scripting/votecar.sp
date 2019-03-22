@@ -276,6 +276,7 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 				g_hVoteMenu.AddItem(VOTE_NO, "No");
 				g_hVoteMenu.ExitButton = false;
 				g_hVoteMenu.DisplayVoteToAll(20);
+				voteinprogress = true;
 				votetime[param1] = Time + delaylimit;
 			}
 		}
