@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.75"
-			"Previous"	"1.74"
+			"Latest"  	"1.76"
+			"Previous"	"1.75"
 		}
 		
-		"Notes"	"Fixed Alyx in Jalopy transition, fixed vort and Alyx not transitioning when they should."
+		"Notes"	"Added rm delay on map start to prevent pSaveData errors."
 	}
 	
 	"Files"
