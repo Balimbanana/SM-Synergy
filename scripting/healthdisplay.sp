@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.79"
+#define PLUGIN_VERSION "1.80"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -1212,7 +1212,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		else if (FindStringInArray(htarr,clsname) != -1) return false;
 		else return true;
 	}
-	return false;
+	return true;
 }
 
 addht(char[] addht)
