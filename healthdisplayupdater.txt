@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.79"
-			"Previous"	"1.78"
+			"Latest"  	"1.80"
+			"Previous"	"1.79"
 		}
 		
 		"Notes"	"Reconfigured array reset, enabled friendfoe colors for sm_healthfriendlies 1."
