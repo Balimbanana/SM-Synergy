@@ -590,13 +590,12 @@ public Action ShowTimer(Handle timer)
 										maxh = 1;
 									}
 									antispamchk[client] = Time + 0.07;
-									PrintTheMsg(client,curh,maxh,clsname,false);
+									PrintTheMsg(client,curh,maxh,clsname);
 								}
 							}
 						}
 						else if (bclcookie3[client] == 1)
 						{
-							bool friend = GetNPCAlly(clsname,targ);
 							int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
 							if (StrContains(clsname,"monster_",false) != -1)
 							{
@@ -632,9 +631,6 @@ public Action ShowTimer(Handle timer)
 							float Time = GetTickedTime();
 							if ((antispamchk[client] <= Time) && (curh > 0))
 							{
-								char targn[64];
-								if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
-								if (strlen(targn) > 0) friend = GetNPCAllyTarg(targn);
 								if (StrEqual(clsname,"combine_s",false))
 								{
 									char cmodel[64];
@@ -650,8 +646,10 @@ public Action ShowTimer(Handle timer)
 								}
 								else if (StrEqual(clsname,"citizen",false))
 								{
+									char targn[64];
 									char cmodel[64];
 									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+									if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
 									if (StrEqual(cmodel,"models/odessa.mdl",false)) Format(clsname,sizeof(clsname),"Odessa Cubbage");
 									else if (StrContains(cmodel,"models/humans/group03m/",false) == 0) Format(clsname,sizeof(clsname),"Rebel Medic");
 									else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
@@ -692,7 +690,7 @@ public Action ShowTimer(Handle timer)
 									maxh = 1;
 								}
 								antispamchk[client] = Time + 0.07;
-								PrintTheMsg(client,curh,maxh,clsname,friend);
+								PrintTheMsg(client,curh,maxh,clsname);
 							}
 						}
 						else
@@ -750,7 +748,7 @@ public Action ShowTimer(Handle timer)
 	return Plugin_Handled;
 }
 
-public PrintTheMsg(int client, int curh, int maxh, char clsname[32], bool friend)
+public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 {
 	char hudbuf[40];
 	if (StrEqual(clsname,"monk",false)) Format(clsname,sizeof(clsname),"Father Grigori");
@@ -786,8 +784,7 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32], bool friend
 	}
 	if (bclcookie[client] == 0)
 	{
-		if (friend) SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4f[client][0], bclcookie4f[client][1], bclcookie4f[client][2], 255, 0, 0.1, 0.0, 0.1);
-		else SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4[client][0], bclcookie4[client][1], bclcookie4[client][2], 255, 0, 0.1, 0.0, 0.1);
+		SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4[client][0], bclcookie4[client][1], bclcookie4[client][2], 255, 0, 0.1, 0.0, 0.1);
 		ShowHudText(client,0,"%s",hudbuf);
 	}
 	else if (bclcookie[client] == 1)
