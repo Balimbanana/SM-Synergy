@@ -45,7 +45,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.74"
+#define PLUGIN_VERSION "1.75"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1310,6 +1310,10 @@ public void OnMapStart()
 			}
 			timouthndl = CreateTimer(121.0,transitiontimeout);
 		}
+		int alyxtransition = -1;
+		bool alyxenter = false;
+		float aljeepchk[3];
+		float aljeepchkj[3];
 		if (strlen(landmarkname) > 0)
 		{
 			findlandmark(-1,"info_landmark");
@@ -1356,10 +1360,31 @@ public void OnMapStart()
 					ReadPackString(dp,target,sizeof(target));
 					int doorstate = ReadPackCell(dp);
 					int sleepstate = ReadPackCell(dp);
+					char npctype[4];
+					ReadPackString(dp,npctype,sizeof(npctype));
 					int ent = CreateEntityByName(clsname);
+					if (TR_PointOutsideWorld(porigin))
+					{
+						AcceptEntityInput(ent,"kill");
+						ent = -1;
+					}
 					if (ent != -1)
 					{
-						if (strlen(targn) > 0) DispatchKeyValue(ent,"targetname",targn)
+						if (StrEqual(clsname,"npc_alyx",false))
+						{
+							alyxtransition = ent;
+							aljeepchk[0] = porigin[0];
+							aljeepchk[1] = porigin[1];
+							aljeepchk[2] = porigin[2];
+						}
+						if (StrEqual(clsname,"prop_vehicle_jeep_episodic",false))
+						{
+							alyxenter = true;
+							aljeepchkj[0] = porigin[0];
+							aljeepchkj[1] = porigin[1];
+							aljeepchkj[2] = porigin[2];
+						}
+						if (strlen(targn) > 0) DispatchKeyValue(ent,"targetname",targn);
 						DispatchKeyValue(ent,"model",mdl);
 						if (strlen(vehscript) > 0) DispatchKeyValue(ent,"VehicleScript",vehscript);
 						if (strlen(additionalequip) > 0) DispatchKeyValue(ent,"AdditionalEquipment",additionalequip);
@@ -1367,6 +1392,7 @@ public void OnMapStart()
 						if (strlen(parentname) > 0) DispatchKeyValue(ent,"ParentName",parentname);
 						if (strlen(state) > 0) DispatchKeyValue(ent,"State",state);
 						if (strlen(target) > 0) DispatchKeyValue(ent,"Target",target);
+						if (HasEntProp(ent,Prop_Data,"m_Type")) DispatchKeyValue(ent,"citizentype",npctype);
 						DispatchKeyValue(ent,"spawnflags",spawnflags);
 						DispatchKeyValue(ent,"skin",skin);
 						DispatchSpawn(ent);
@@ -1381,6 +1407,15 @@ public void OnMapStart()
 			}
 		}
 		ClearArray(transitionents);
+		if ((alyxenter) && (IsValidEntity(alyxtransition)) && (alyxtransition > MaxClients))
+		{
+			float chkdist = GetVectorDistance(aljeepchk,aljeepchkj,false);
+			if (RoundFloat(chkdist) < 200)
+			{
+				SetVariantString("jeep");
+				AcceptEntityInput(alyxtransition,"EnterVehicleImmediately");
+			}
+		}
 		resetareaportals(-1);
 		char curmapchk[32];
 		Format(curmapchk,sizeof(curmapchk),"%s/%s.hl1",savedir,mapbuf);
@@ -1767,6 +1802,8 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 	{
 		if (IsValidEntity(i) && IsEntNetworkable(i) && (FindValueInArray(ignoreent,i) == -1))
 		{
+			char clsname[32];
+			GetEntityClassname(i,clsname,sizeof(clsname));
 			int alwaystransition = 0;
 			if (HasEntProp(i,Prop_Data,"m_bAlwaysTransition")) alwaystransition = GetEntProp(i,Prop_Data,"m_bAlwaysTransition");
 			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
@@ -1779,10 +1816,25 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 					if (GetEntityRenderFx(i) == RENDERFX_DISTORT) alwaystransition = 1;
 				}
 			}
+			if (StrEqual(clsname,"prop_door_rotating",false))
+			{
+				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+				if (StrEqual(targn,"door.into.09.garage",false))
+				{
+					AcceptEntityInput(i,"kill");
+					porigin[0] = mins[0]-mins[0];
+					porigin[1] = mins[1]-mins[1];
+					porigin[2] = mins[2]-mins[2];
+				}
+			}
+			if ((StrEqual(clsname,"npc_alyx",false)) || (StrEqual(clsname,"npc_vortigaunt",false)) || (StrEqual(clsname,"prop_vehicle_jeep_episodic",false)))
+			{
+				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+				if ((StrEqual(targn,"alyx",false)) || (StrEqual(targn,"vort",false)) || (StrEqual(targn,"jeep",false)))
+					alwaystransition = 1;
+			}
 			if ((alwaystransition) || ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2])))
 			{
-				char clsname[32];
-				GetEntityClassname(i,clsname,sizeof(clsname));
 				//Add func_tracktrain check if exists on next map OnTransition might not fire
 				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)))
 				{
@@ -1806,6 +1858,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 						char parentname[32];
 						char state[4];
 						char target[32];
+						char npctype[4];
 						int doorstate, sleepstate;
 						if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 						if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
@@ -1854,6 +1907,11 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 						}
 						if (HasEntProp(i,Prop_Data,"m_eDoorState")) doorstate = GetEntProp(i,Prop_Data,"m_eDoorState");
 						if (HasEntProp(i,Prop_Data,"m_SleepState")) sleepstate = GetEntProp(i,Prop_Data,"m_SleepState");
+						if (HasEntProp(i,Prop_Data,"m_Type"))
+						{
+							int inpctype = GetEntProp(i,Prop_Data,"m_Type");
+							Format(npctype,sizeof(npctype),"%i",inpctype);
+						}
 						WritePackString(dp,clsname);
 						WritePackString(dp,targn);
 						WritePackString(dp,mdl);
@@ -1874,6 +1932,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 						WritePackString(dp,target);
 						WritePackCell(dp,doorstate);
 						WritePackCell(dp,sleepstate);
+						WritePackString(dp,npctype);
 						PushArrayCell(transitionents,dp);
 						PushArrayCell(ignoreent,i);
 					}
