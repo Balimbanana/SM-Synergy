@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.76"
-			"Previous"	"1.75"
+			"Latest"  	"1.77"
+			"Previous"	"1.76"
 		}
 		
-		"Notes"	"Added rm delay on map start to prevent pSaveData errors."
+		"Notes"	"Added transitions of scripted_sequences, added static transition origin for Alyx on ep2_outland_05 and 06."
 	}
 	
 	"Files"
