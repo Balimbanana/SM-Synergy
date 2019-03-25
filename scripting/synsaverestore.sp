@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.76"
+#define PLUGIN_VERSION "1.77"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1143,6 +1143,8 @@ public void OnMapStart()
 			DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,TouchTest,,0.1,-1");
 			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3rebuild,0,-1");
 			DispatchKeyValue(loginp, "OnMapSpawn","debug_choreo_start_in_elevator,Trigger,,0,-1");
+			DispatchKeyValue(loginp, "OnMapSpawn","pointTemplate_vortCalvary,ForceSpawn,,1,-1");
+			DispatchKeyValue(loginp, "OnMapSpawn","ss_heal_loop,BeginSequence,,1.2,-1");
 			DispatchSpawn(loginp);
 			ActivateEntity(loginp);
 		}
@@ -1364,6 +1366,26 @@ public void OnMapStart()
 					int sleepstate = ReadPackCell(dp);
 					char npctype[4];
 					ReadPackString(dp,npctype,sizeof(npctype));
+					char scriptinf[256];
+					ReadPackString(dp,scriptinf,sizeof(scriptinf));
+					if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_05",false)))
+					{
+						porigin[0] = -2952.0;
+						porigin[1] = 736.0;
+						porigin[2] = 190.0;
+					}
+					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_06",false)))
+					{
+						porigin[0] = -448.0;
+						porigin[1] = 112.0;
+						porigin[2] = 878.0;
+					}
+					else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_06",false)))
+					{
+						porigin[0] = -448.0;
+						porigin[1] = 40.0;
+						porigin[2] = 878.0;
+					}
 					int ent = CreateEntityByName(clsname);
 					if (TR_PointOutsideWorld(porigin))
 					{
@@ -1372,6 +1394,7 @@ public void OnMapStart()
 					}
 					if (ent != -1)
 					{
+						bool beginseq = false;
 						if (StrEqual(clsname,"npc_alyx",false))
 						{
 							alyxtransition = ent;
@@ -1395,6 +1418,22 @@ public void OnMapStart()
 						if (strlen(state) > 0) DispatchKeyValue(ent,"State",state);
 						if (strlen(target) > 0) DispatchKeyValue(ent,"Target",target);
 						if (HasEntProp(ent,Prop_Data,"m_Type")) DispatchKeyValue(ent,"citizentype",npctype);
+						if (!StrEqual(scriptinf,"endofpack",false))
+						{
+							char scriptexp[28][64];
+							ExplodeString(scriptinf," ",scriptexp,28,64);
+							for (int j = 0;j<28;j++)
+							{
+								int jadd = j+1;
+								if ((strlen(scriptexp[j]) > 0) && (strlen(scriptexp[jadd]) > 0))
+								{
+									//PrintToServer("Pushing %s %s",scriptexp[j],scriptexp[jadd]);
+									DispatchKeyValue(ent,scriptexp[j],scriptexp[jadd]);
+								}
+								j++;
+							}
+							beginseq = true;
+						}
 						DispatchKeyValue(ent,"spawnflags",spawnflags);
 						DispatchKeyValue(ent,"skin",skin);
 						DispatchSpawn(ent);
@@ -1403,6 +1442,7 @@ public void OnMapStart()
 						TeleportEntity(ent,porigin,angs,NULL_VECTOR);
 						if (HasEntProp(ent,Prop_Data,"m_eDoorState")) SetEntProp(ent,Prop_Data,"m_eDoorState",doorstate);
 						if (HasEntProp(ent,Prop_Data,"m_SleepState")) SetEntProp(ent,Prop_Data,"m_SleepState",sleepstate);
+						if (beginseq) CreateTimer(0.2,beginseqd,ent);
 					}
 					CloseHandle(dp);
 				}
@@ -1456,6 +1496,12 @@ public void OnMapStart()
 public Action redel(Handle timer)
 {
 	saveresetveh(true);
+}
+
+public Action beginseqd(Handle timer, int ent)
+{
+	if (IsValidEntity(ent))
+		AcceptEntityInput(ent,"BeginSequence");
 }
 
 public void OnMapEnd()
@@ -1838,7 +1884,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 			if ((alwaystransition) || ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2])))
 			{
 				//Add func_tracktrain check if exists on next map OnTransition might not fire
-				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)))
+				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1) || (StrEqual(clsname,"light_dynamic",false)) || (StrEqual(clsname,"info_particle_system",false))) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)))
 				{
 					if (remove)
 					{
@@ -1846,6 +1892,18 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 					}
 					else
 					{
+						if (HasEntProp(i,Prop_Data,"m_hTargetEnt"))
+						{
+							int targent = GetEntPropEnt(i,Prop_Data,"m_hTargetEnt");
+							if ((IsValidEntity(targent)) && (IsEntNetworkable(targent)))
+							{
+								char targentcls[24];
+								char targentname[64];
+								GetEntityClassname(targent,targentcls,sizeof(targentcls));
+								GetEntPropString(targent,Prop_Data,"m_iName",targentname,sizeof(targentname));
+								transitionthisent(targent);
+							}
+						}
 						Handle dp = CreateDataPack();
 						porigin[0]-=landmarkorigin[0];
 						porigin[1]-=landmarkorigin[1];
@@ -1935,6 +1993,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 						WritePackCell(dp,doorstate);
 						WritePackCell(dp,sleepstate);
 						WritePackString(dp,npctype);
+						WritePackString(dp,"endofpack");
 						PushArrayCell(transitionents,dp);
 						PushArrayCell(ignoreent,i);
 					}
@@ -1953,6 +2012,185 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 		int j = GetArrayCell(ignoreent,i);
 		if (IsValidEntity(j)) AcceptEntityInput(j,"kill");
 	}
+}
+
+void transitionthisent(int i)
+{
+	if (!IsValidEntity(i)) return;
+	char clsname[32];
+	GetEntityClassname(i,clsname,sizeof(clsname));
+	char targn[32];
+	char mdl[64];
+	float porigin[3];
+	float angs[3];
+	if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
+	else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
+	Handle dp = CreateDataPack();
+	porigin[0]-=landmarkorigin[0];
+	porigin[1]-=landmarkorigin[1];
+	porigin[2]-=landmarkorigin[2];
+	GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+	int curh = 0;
+	char vehscript[64];
+	char additionalequip[32];
+	char spawnflags[32];
+	char skin[4];
+	char hdwtype[4];
+	char parentname[32];
+	char state[4];
+	char target[32];
+	char npctype[4];
+	char scriptinf[256];
+	char scrtmp[64];
+	int doorstate, sleepstate;
+	if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
+	if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+	if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
+	if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
+	if (HasEntProp(i,Prop_Data,"m_spawnEquipment")) GetEntPropString(i,Prop_Data,"m_spawnEquipment",additionalequip,sizeof(additionalequip));
+	if (HasEntProp(i,Prop_Data,"m_spawnflags"))
+	{
+		int sf = GetEntProp(i,Prop_Data,"m_spawnflags");
+		Format(spawnflags,sizeof(spawnflags),"%i",sf);
+	}
+	if (HasEntProp(i,Prop_Data,"m_nSkin"))
+	{
+		int sk = GetEntProp(i,Prop_Data,"m_nSkin");
+		Format(skin,sizeof(skin),"%i",sk);
+	}
+	if (HasEntProp(i,Prop_Data,"m_nHardwareType"))
+	{
+		int hdw = GetEntProp(i,Prop_Data,"m_nHardwareType");
+		Format(hdwtype,sizeof(hdwtype),"%i",hdw);
+	}
+	if (HasEntProp(i,Prop_Data,"m_hParent"))
+	{
+		int par = GetEntPropEnt(i,Prop_Data,"m_hParent");
+		if (par != -1)
+		{
+			GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
+			char parentcls[32];
+			GetEntityClassname(par,parentcls,sizeof(parentcls));
+			if (StrEqual(parentcls,"func_door",false))
+			{
+				CloseHandle(dp);
+				AcceptEntityInput(i,"kill");
+			}
+		}
+	}
+	if (HasEntProp(i,Prop_Data,"m_state"))
+	{
+		int istate = GetEntProp(i,Prop_Data,"m_state");
+		Format(state,sizeof(state),"%i",istate);
+		//PrintToServer("State %s",state);
+	}
+	if (HasEntProp(i,Prop_Data,"m_target"))
+	{
+		if (StrEqual(clsname,"npc_combinedropship",false)) GetEntPropString(i,Prop_Data,"m_target",target,sizeof(target));
+	}
+	if (HasEntProp(i,Prop_Data,"m_eDoorState")) doorstate = GetEntProp(i,Prop_Data,"m_eDoorState");
+	if (HasEntProp(i,Prop_Data,"m_SleepState")) sleepstate = GetEntProp(i,Prop_Data,"m_SleepState");
+	if (HasEntProp(i,Prop_Data,"m_Type"))
+	{
+		int inpctype = GetEntProp(i,Prop_Data,"m_Type");
+		Format(npctype,sizeof(npctype),"%i",inpctype);
+	}
+	if (HasEntProp(i,Prop_Data,"m_iszEntry"))
+	{
+		GetEntPropString(i,Prop_Data,"m_iszEntry",scrtmp,sizeof(scrtmp));
+		if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"m_iszEntry %s ",scrtmp);
+	}
+	if (HasEntProp(i,Prop_Data,"m_iszPreIdle"))
+	{
+		GetEntPropString(i,Prop_Data,"m_iszPreIdle",scrtmp,sizeof(scrtmp));
+		if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszPreIdle %s ",scriptinf,scrtmp);
+	}
+	if (HasEntProp(i,Prop_Data,"m_iszPlay"))
+	{
+		GetEntPropString(i,Prop_Data,"m_iszPlay",scrtmp,sizeof(scrtmp));
+		if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszPlay %s ",scriptinf,scrtmp);
+	}
+	if (HasEntProp(i,Prop_Data,"m_iszPostIdle"))
+	{
+		GetEntPropString(i,Prop_Data,"m_iszPostIdle",scrtmp,sizeof(scrtmp));
+		if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszPostIdle %s ",scriptinf,scrtmp);
+	}
+	if (HasEntProp(i,Prop_Data,"m_iszCustomMove"))
+	{
+		GetEntPropString(i,Prop_Data,"m_iszCustomMove",scrtmp,sizeof(scrtmp));
+		if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszCustomMove %s ",scriptinf,scrtmp);
+	}
+	if (HasEntProp(i,Prop_Data,"m_iszNextScript"))
+	{
+		GetEntPropString(i,Prop_Data,"m_iszNextScript",scrtmp,sizeof(scrtmp));
+		if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszNextScript %s ",scriptinf,scrtmp);
+	}
+	if (HasEntProp(i,Prop_Data,"m_iszEntity"))
+	{
+		GetEntPropString(i,Prop_Data,"m_iszEntity",scrtmp,sizeof(scrtmp));
+		if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszEntity %s ",scriptinf,scrtmp);
+	}
+	if (HasEntProp(i,Prop_Data,"m_fMoveTo"))
+	{
+		int scrtmpi = GetEntProp(i,Prop_Data,"m_fMoveTo");
+		Format(scriptinf,sizeof(scriptinf),"%sm_fMoveTo %i ",scriptinf,scrtmpi);
+	}
+	if (HasEntProp(i,Prop_Data,"m_flRadius"))
+	{
+		float scrtmpi = GetEntPropFloat(i,Prop_Data,"m_flRadius");
+		Format(scriptinf,sizeof(scriptinf),"%sm_flRadius %1.f ",scriptinf,scrtmpi);
+	}
+	if (HasEntProp(i,Prop_Data,"m_flRepeat"))
+	{
+		float scrtmpi = GetEntPropFloat(i,Prop_Data,"m_flRepeat");
+		Format(scriptinf,sizeof(scriptinf),"%sm_flRepeat %1.f ",scriptinf,scrtmpi);
+	}
+	if (HasEntProp(i,Prop_Data,"m_bLoopActionSequence"))
+	{
+		int scrtmpi = GetEntProp(i,Prop_Data,"m_bLoopActionSequence");
+		Format(scriptinf,sizeof(scriptinf),"%sm_bLoopActionSequence %i ",scriptinf,scrtmpi);
+	}
+	if (HasEntProp(i,Prop_Data,"m_bIgnoreGravity"))
+	{
+		int scrtmpi = GetEntProp(i,Prop_Data,"m_bIgnoreGravity");
+		Format(scriptinf,sizeof(scriptinf),"%sm_bIgnoreGravity %i ",scriptinf,scrtmpi);
+	}
+	if (HasEntProp(i,Prop_Data,"m_bSynchPostIdles"))
+	{
+		int scrtmpi = GetEntProp(i,Prop_Data,"m_bSynchPostIdles");
+		Format(scriptinf,sizeof(scriptinf),"%sm_bSynchPostIdles %i ",scriptinf,scrtmpi);
+	}
+	if (HasEntProp(i,Prop_Data,"m_bDisableNPCCollisions"))
+	{
+		int scrtmpi = GetEntProp(i,Prop_Data,"m_bDisableNPCCollisions");
+		Format(scriptinf,sizeof(scriptinf),"%sm_bDisableNPCCollisions %i",scriptinf,scrtmpi);
+	}
+	TrimString(scriptinf);
+	WritePackString(dp,clsname);
+	WritePackString(dp,targn);
+	WritePackString(dp,mdl);
+	WritePackCell(dp,curh);
+	WritePackFloat(dp,porigin[0]);
+	WritePackFloat(dp,porigin[1]);
+	WritePackFloat(dp,porigin[2]);
+	WritePackFloat(dp,angs[0]);
+	WritePackFloat(dp,angs[1]);
+	WritePackFloat(dp,angs[2]);
+	WritePackString(dp,vehscript);
+	WritePackString(dp,spawnflags);
+	WritePackString(dp,additionalequip);
+	WritePackString(dp,skin);
+	WritePackString(dp,hdwtype);
+	WritePackString(dp,parentname);
+	WritePackString(dp,state);
+	WritePackString(dp,target);
+	WritePackCell(dp,doorstate);
+	WritePackCell(dp,sleepstate);
+	WritePackString(dp,npctype);
+	WritePackString(dp,scriptinf);
+	PushArrayCell(transitionents,dp);
+	PushArrayCell(ignoreent,i);
+	return;
 }
 
 public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
