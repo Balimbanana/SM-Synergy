@@ -711,7 +711,7 @@ public Action listents(int client, int args)
 						GetEntPropString(j,Prop_Data,"m_iName",fname,sizeof(fname));
 					if (HasEntProp(j,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(j,Prop_Data,"m_vecAbsOrigin",entorigin);
 					else if (HasEntProp(j,Prop_Send,"m_vecOrigin")) GetEntPropVector(j,Prop_Send,"m_vecOrigin",entorigin);
-					if (client == 0) PrintToServer("ID: %i %s %s",j,clsname,fname);
+					if (client == 0) PrintToServer("ID: %i %s %s Vec: %f %f %f",j,clsname,fname,entorigin[0],entorigin[1],entorigin[2]);
 					else PrintToChat(client,"ID: %i %s %s Vec: %f %f %f",j,clsname,fname,entorigin[0],entorigin[1],entorigin[2]);
 				}
 			}
