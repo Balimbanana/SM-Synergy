@@ -2495,14 +2495,29 @@ public Action anotherdelay(Handle timer, int client)
 					}
 				}
 			}
-			if (GetArraySize(equiparr) < 1) CreateTimer(0.1,delayequip);
+			if (GetArraySize(equiparr) < 1) CreateTimer(0.1,delayequip,client);
 		}
 	}
 }
 
-public Action delayequip(Handle timer)
+public Action delayequip(Handle timer, int client)
 {
-	findent(MaxClients+1,"info_player_equip");
+	findentwdis(MaxClients+1,"info_player_equip");
+	if ((IsClientConnected(client)) && (IsValidEntity(client)) && (IsClientInGame(client)) && (IsPlayerAlive(client)))
+	{
+		if (GetArraySize(equiparr) > 0)
+		{
+			for (int j; j<GetArraySize(equiparr); j++)
+			{
+				int jtmp = GetArrayCell(equiparr, j);
+				if (IsValidEntity(jtmp))
+				{
+					AcceptEntityInput(jtmp,"Disable");
+					AcceptEntityInput(jtmp,"EquipPlayer",client);
+				}
+			}
+		}
+	}
 	return Plugin_Handled;
 }
 
@@ -2514,6 +2529,16 @@ findent(int ent, char[] clsname)
 		int bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
 		if (bdisabled == 0)
 			PushArrayCell(equiparr,thisent);
+		findent(thisent++,clsname);
+	}
+}
+
+findentwdis(int ent, char[] clsname)
+{
+	int thisent = FindEntityByClassname(ent,clsname);
+	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	{
+		PushArrayCell(equiparr,thisent);
 		findent(thisent++,clsname);
 	}
 }
