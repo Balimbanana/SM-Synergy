@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.78"
+#define PLUGIN_VERSION "1.79"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1099,7 +1099,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 
 public void OnMapStart()
 {
-	mapstarttime = GetTickedTime()+10.0;
+	mapstarttime = GetTickedTime()+1.0;
 	logsv = CreateEntityByName("logic_autosave");
 	if ((logsv != -1) && (IsValidEntity(logsv)))
 	{
