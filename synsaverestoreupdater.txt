@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.77"
-			"Previous"	"1.76"
+			"Latest"  	"1.78"
+			"Previous"	"1.77"
 		}
 		
 		"Notes"	"Added transitions of scripted_sequences, added static transition origin for Alyx on ep2_outland_05 and 06."
