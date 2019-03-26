@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.77"
+#define PLUGIN_VERSION "1.78"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1898,10 +1898,9 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 							if ((IsValidEntity(targent)) && (IsEntNetworkable(targent)))
 							{
 								char targentcls[24];
-								char targentname[64];
 								GetEntityClassname(targent,targentcls,sizeof(targentcls));
-								GetEntPropString(targent,Prop_Data,"m_iName",targentname,sizeof(targentname));
-								transitionthisent(targent);
+								if (StrEqual(targentcls,"scripted_sequence",false))
+									transitionthisent(targent);
 							}
 						}
 						Handle dp = CreateDataPack();
