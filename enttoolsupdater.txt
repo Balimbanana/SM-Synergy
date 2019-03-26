@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.06"
-			"Previous"	"1.05"
+			"Latest"  	"1.07"
+			"Previous"	"1.06"
 		}
 		
-		"Notes"	"Added listents/findents by targetname or classname, returns in an array."
+		"Notes"	"Increased amount of information and entities you can retrieve through listents/findents added param full for more info."
 	}
 	
 	"Files"
