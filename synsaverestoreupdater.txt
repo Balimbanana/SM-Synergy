@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.78"
-			"Previous"	"1.77"
+			"Latest"  	"1.79"
+			"Previous"	"1.78"
 		}
 		
-		"Notes"	"Added transitions of scripted_sequences, added static transition origin for Alyx on ep2_outland_05 and 06."
+		"Notes"	"Reduced mapstarttime delay. Only certain target ents are transitioned. Added fallback equip."
 	}
 	
 	"Files"
