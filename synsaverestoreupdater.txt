@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.80"
-			"Previous"	"1.79"
+			"Latest"  	"1.81"
+			"Previous"	"1.80"
 		}
 		
-		"Notes"	"Fixed invalid_handle error check."
+		"Notes"	"Fixed invalid_handle error check. Added another check for double transition on certain entities such as Alyx."
 	}
 	
 	"Files"
