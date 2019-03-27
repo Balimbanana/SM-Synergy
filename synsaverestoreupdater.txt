@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.79"
-			"Previous"	"1.78"
+			"Latest"  	"1.80"
+			"Previous"	"1.79"
 		}
 		
-		"Notes"	"Reduced mapstarttime delay. Only certain target ents are transitioned. Added fallback equip."
+		"Notes"	"Fixed invalid_handle error check."
 	}
 	
 	"Files"
