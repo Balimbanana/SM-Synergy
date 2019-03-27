@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.79"
+#define PLUGIN_VERSION "1.80"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1971,30 +1971,33 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 							int inpctype = GetEntProp(i,Prop_Data,"m_Type");
 							Format(npctype,sizeof(npctype),"%i",inpctype);
 						}
-						WritePackString(dp,clsname);
-						WritePackString(dp,targn);
-						WritePackString(dp,mdl);
-						WritePackCell(dp,curh);
-						WritePackFloat(dp,porigin[0]);
-						WritePackFloat(dp,porigin[1]);
-						WritePackFloat(dp,porigin[2]);
-						WritePackFloat(dp,angs[0]);
-						WritePackFloat(dp,angs[1]);
-						WritePackFloat(dp,angs[2]);
-						WritePackString(dp,vehscript);
-						WritePackString(dp,spawnflags);
-						WritePackString(dp,additionalequip);
-						WritePackString(dp,skin);
-						WritePackString(dp,hdwtype);
-						WritePackString(dp,parentname);
-						WritePackString(dp,state);
-						WritePackString(dp,target);
-						WritePackCell(dp,doorstate);
-						WritePackCell(dp,sleepstate);
-						WritePackString(dp,npctype);
-						WritePackString(dp,"endofpack");
-						PushArrayCell(transitionents,dp);
-						PushArrayCell(ignoreent,i);
+						if (dp != INVALID_HANDLE)
+						{
+							WritePackString(dp,clsname);
+							WritePackString(dp,targn);
+							WritePackString(dp,mdl);
+							WritePackCell(dp,curh);
+							WritePackFloat(dp,porigin[0]);
+							WritePackFloat(dp,porigin[1]);
+							WritePackFloat(dp,porigin[2]);
+							WritePackFloat(dp,angs[0]);
+							WritePackFloat(dp,angs[1]);
+							WritePackFloat(dp,angs[2]);
+							WritePackString(dp,vehscript);
+							WritePackString(dp,spawnflags);
+							WritePackString(dp,additionalequip);
+							WritePackString(dp,skin);
+							WritePackString(dp,hdwtype);
+							WritePackString(dp,parentname);
+							WritePackString(dp,state);
+							WritePackString(dp,target);
+							WritePackCell(dp,doorstate);
+							WritePackCell(dp,sleepstate);
+							WritePackString(dp,npctype);
+							WritePackString(dp,"endofpack");
+							PushArrayCell(transitionents,dp);
+							PushArrayCell(ignoreent,i);
+						}
 					}
 				}
 				else if ((StrEqual(clsname,"player",false)) && (!remove))
