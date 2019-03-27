@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.80"
+#define PLUGIN_VERSION "1.81"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1451,6 +1451,13 @@ public void OnMapStart()
 		ClearArray(transitionents);
 		if ((alyxenter) && (IsValidEntity(alyxtransition)) && (alyxtransition > MaxClients))
 		{
+			int aldouble = FindEntityByClassname(-1,"npc_alyx");
+			if ((aldouble != -1) && (IsValidEntity(aldouble)) && (aldouble != alyxtransition))
+			{
+				char targn[16];
+				GetEntPropString(aldouble,Prop_Data,"m_iName",targn,sizeof(targn));
+				if (StrEqual(targn,"alyx",false)) AcceptEntityInput(aldouble,"kill");
+			}
 			float chkdist = GetVectorDistance(aljeepchk,aljeepchkj,false);
 			if (RoundFloat(chkdist) < 200)
 			{
