@@ -209,6 +209,7 @@ public Action CreateStuffThere(int client, int args)
 						if (!FileExists(tmp2,true,NULL_STRING))
 						{
 							PrintToChat(client,"The model %s was not found.",tmp2);
+							AcceptEntityInput(stuff,"kill");
 							return Plugin_Handled;
 						}
 					}
