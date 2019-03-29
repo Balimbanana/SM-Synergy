@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.06"
-			"Previous"	"1.05"
+			"Latest"  	"1.07"
+			"Previous"	"1.06"
 		}
 		
-		"Notes"	"Added more IsValidEntity and IsClientInGame checks to a couple functions."
+		"Notes"	"Added *enemy* pointing at strider saysound. Added fallback info_player_equip allow disabled."
 	}
 	
 	"Files"
