@@ -37,7 +37,7 @@ bool syn56act = false;
 bool vehiclemaphook = false;
 bool playerteleports = false;
 
-#define PLUGIN_VERSION "1.85"
+#define PLUGIN_VERSION "1.86"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -411,7 +411,7 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 				return 0;
 			}
 		}
-		if (voteinprogress)
+		if ((voteinprogress) || (IsVoteInProgress()))
 		{
 			PrintToChat(param1,"There is a vote already in progress.");
 			return 0;
@@ -1050,6 +1050,7 @@ public Action createelev(const char[] output, int caller, int activator, float d
 
 readoutputs(int scriptent, char[] targn)
 {
+	if (debuglvl == 3) PrintToServer("Read outputs for script ents");
 	Handle filehandle = OpenFile(mapbuf,"r");
 	if (filehandle != INVALID_HANDLE)
 	{
@@ -1370,6 +1371,7 @@ readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int ac
 
 readoutputsforinputs()
 {
+	if (debuglvl == 3) PrintToServer("Read outputs for save/teleport inputs");
 	Handle filehandle = OpenFile(mapbuf,"r");
 	if (filehandle != INVALID_HANDLE)
 	{
@@ -1651,7 +1653,7 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 		damage = 0.0;
 		return Plugin_Changed;
 	}
-	if ((attacker == 0) && (inflictor == 0) && (damagetype != 32))
+	if ((attacker == 0) && (inflictor == 0) && (damagetype != 32) && (StrEqual(clsnamechk,"npc_citizen",false)))
 	{
 		damage = 0.0;
 		return Plugin_Changed;
