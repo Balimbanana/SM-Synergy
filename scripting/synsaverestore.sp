@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.81"
+#define PLUGIN_VERSION "1.82"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1099,7 +1099,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 
 public void OnMapStart()
 {
-	mapstarttime = GetTickedTime()+1.0;
+	mapstarttime = GetTickedTime()+2.0;
 	logsv = CreateEntityByName("logic_autosave");
 	if ((logsv != -1) && (IsValidEntity(logsv)))
 	{
@@ -1910,6 +1910,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 									transitionthisent(targent);
 							}
 						}
+						bool transitionthis = true;
 						Handle dp = CreateDataPack();
 						porigin[0]-=landmarkorigin[0];
 						porigin[1]-=landmarkorigin[1];
@@ -1958,6 +1959,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 								{
 									CloseHandle(dp);
 									AcceptEntityInput(i,"kill");
+									transitionthis = false;
 								}
 							}
 						}
@@ -1978,7 +1980,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 							int inpctype = GetEntProp(i,Prop_Data,"m_Type");
 							Format(npctype,sizeof(npctype),"%i",inpctype);
 						}
-						if (dp != INVALID_HANDLE)
+						if (transitionthis)
 						{
 							WritePackString(dp,clsname);
 							WritePackString(dp,targn);
