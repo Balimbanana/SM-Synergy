@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.85"
-			"Previous"	"1.84"
+			"Latest"  	"1.86"
+			"Previous"	"1.85"
 		}
 		
-		"Notes"	"Removed an entity type from out of world checks."
+		"Notes"	"Added vote global check and more seqdbg 3 info."
 	}
 	
 	"Files"
