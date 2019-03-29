@@ -46,7 +46,7 @@ public Plugin:myinfo =
 	name = "CCreateVehicle",
 	author = "Balimbanana",
 	description = "Creates vehicles with error correction",
-	version = "1.1",
+	version = "1.11",
 	url = "https://github.com/Balimbanana/SM-Synergy/"
 }
 
@@ -289,7 +289,7 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 	{
 		delete menu;
 	}
-	else if (voteinprogress)
+	else if ((voteinprogress) || (IsVoteInProgress()))
 	{
 		PrintToChat(param1,"There is a vote already in progress.");
 	}
