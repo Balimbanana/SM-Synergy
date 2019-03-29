@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.06"
+#define PLUGIN_VERSION "1.07"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -1135,13 +1135,31 @@ public Action tpclspawnnew(Handle timer, any i)
 			}
 		}
 		DispatchSpawn(i);
-		for (int j; j<GetArraySize(equiparr); j++)
+		if (GetArraySize(equiparr) > 0)
 		{
-			int jtmp = GetArrayCell(equiparr, j);
-			char clsnam[32];
-			GetEntityClassname(jtmp,clsnam,sizeof(clsnam));
-			if (IsValidEntity(jtmp))
-				AcceptEntityInput(jtmp,"EquipPlayer",i);
+			for (int j; j<GetArraySize(equiparr); j++)
+			{
+				int jtmp = GetArrayCell(equiparr, j);
+				char clsnam[32];
+				GetEntityClassname(jtmp,clsnam,sizeof(clsnam));
+				if (IsValidEntity(jtmp))
+					AcceptEntityInput(jtmp,"EquipPlayer",i);
+			}
+		}
+		else
+		{
+			findentwdis(MaxClients+1,"info_player_equip");
+			if (GetArraySize(equiparr) > 0)
+			{
+				for (int j; j<GetArraySize(equiparr); j++)
+				{
+					int jtmp = GetArrayCell(equiparr, j);
+					char clsnam[32];
+					GetEntityClassname(jtmp,clsnam,sizeof(clsnam));
+					if (IsValidEntity(jtmp))
+						AcceptEntityInput(jtmp,"EquipPlayer",i);
+				}
+			}
 		}
 		if (isvehiclemap)
 		{
@@ -1211,6 +1229,16 @@ findent(int ent, char[] clsname)
 		int bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
 		if (bdisabled == 0)
 			PushArrayCell(equiparr,thisent);
+		findent(thisent++,clsname);
+	}
+}
+
+findentwdis(int ent, char[] clsname)
+{
+	int thisent = FindEntityByClassname(ent,clsname);
+	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	{
+		PushArrayCell(equiparr,thisent);
 		findent(thisent++,clsname);
 	}
 }
@@ -1504,6 +1532,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 					int randsound = GetRandomInt(1,2);
 					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\scanners0%i.wav",randsound);
 				}
+				else if (StrEqual(clsname,"npc_strider",false)) Format(randcat,sizeof(randcat),"vo\\npc\\female01\\strider.wav");
 				else if (StrContains(clsname,"zombie",false) != -1)
 				{
 					int randsound = GetRandomInt(1,2);
@@ -1612,6 +1641,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 					int randsound = GetRandomInt(1,2);
 					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\scanners0%i.wav",randsound);
 				}
+				else if (StrEqual(clsname,"npc_strider",false)) Format(randcat,sizeof(randcat),"vo\\npc\\male01\\strider.wav");
 				else if (StrContains(clsname,"zombie",false) != -1)
 				{
 					int randsound = GetRandomInt(1,2);
