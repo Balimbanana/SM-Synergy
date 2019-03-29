@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.82"
+#define PLUGIN_VERSION "1.83"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -864,7 +864,7 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			votereloadchk(param1,0);
 			return 0;
 		}
-		else if (voteinprogress)
+		else if ((voteinprogress) || (IsVoteInProgress()))
 		{
 			PrintToChat(param1,"There is a vote already in progress.");
 			return 0;
