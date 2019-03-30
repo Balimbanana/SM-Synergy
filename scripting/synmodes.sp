@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.07"
+#define PLUGIN_VERSION "1.08"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -30,6 +30,7 @@ bool dmact = false;
 bool dmset = false;
 bool hasstarted = false;
 bool survivalact = false;
+bool hasread = false;
 int scoreshow = -1;
 int scoreshowstat = -1;
 int dmkills[MAXPLAYERS+1];
@@ -2434,6 +2435,7 @@ public OnClientAuthorized(int client, const char[] szAuth)
 
 public OnMapStart()
 {
+	hasread = false;
 	GetCurrentMap(mapbuf,sizeof(mapbuf));
 	Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
 	char buff[64];
@@ -2606,6 +2608,8 @@ readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int ac
 
 readoutputsforinputs()
 {
+	if (hasread) return;
+	hasread = true;
 	Handle filehandle = OpenFile(mapbuf,"r");
 	if (filehandle != INVALID_HANDLE)
 	{
@@ -2667,6 +2671,7 @@ readoutputsforinputs()
 		}
 	}
 	CloseHandle(filehandle);
+	return;
 }
 
 void resetvehicles(float delay, int activator)
