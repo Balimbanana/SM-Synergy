@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.83"
-			"Previous"	"1.82"
+			"Latest"  	"1.84"
+			"Previous"	"1.83"
 		}
 		
-		"Notes"	"Added vote global check."
+		"Notes"	"Additional checks on transitioning elevators."
 	}
 	
 	"Files"
