@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.83"
+#define PLUGIN_VERSION "1.84"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1955,7 +1955,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 								GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
 								char parentcls[32];
 								GetEntityClassname(par,parentcls,sizeof(parentcls));
-								if (StrEqual(parentcls,"func_door",false))
+								if (((StrEqual(parentcls,"func_door",false)) || (StrEqual(parentcls,"func_tracktrain",false))) && (StrContains(clsname,"npc_",false) == -1))
 								{
 									CloseHandle(dp);
 									AcceptEntityInput(i,"kill");
