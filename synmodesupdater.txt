@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.07"
-			"Previous"	"1.06"
+			"Latest"  	"1.08"
+			"Previous"	"1.07"
 		}
 		
-		"Notes"	"Added *enemy* pointing at strider saysound. Added fallback info_player_equip allow disabled."
+		"Notes"	"Ensure entcache is only read once."
 	}
 	
 	"Files"
