@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.87"
-			"Previous"	"1.86"
+			"Latest"  	"1.88"
+			"Previous"	"1.87"
 		}
 		
-		"Notes"	"Added vote global check, more seqdbg 3 info, ensure entcache is only read once."
+		"Notes"	"Rebuilt the way script ents are checked in ent cache."
 	}
 	
 	"Files"
