@@ -32,13 +32,13 @@ bool seqenablecheck = true;
 bool instswitch = true;
 bool forcehdr = false;
 bool mapchoosercheck = false;
-bool linact = false;
+//bool linact = false;
 bool syn56act = false;
 bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.87"
+#define PLUGIN_VERSION "1.88"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -113,8 +113,8 @@ public void OnPluginStart()
 	HookConVarChange(resetspawnermodesh, spawneramtresch);
 	CloseHandle(resetspawnermodesh);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
-	if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
-	else linact = false;
+	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
+	//else linact = false;
 	equiparr = CreateArray(32);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	entlist = CreateArray(1024);
@@ -1057,34 +1057,19 @@ readoutputs(int scriptent, char[] targn)
 	if (filehandle != INVALID_HANDLE)
 	{
 		char line[128];
-		bool readnextlines = false;
 		char lineoriginfixup[128];
 		char kvs[128][64];
 		bool reverse = true;
-		bool returntostart = false;
+		bool createent = false;
 		bool passvars = false;
 		int ent = -1;
 		Handle passedarr = CreateArray(64);
-		int linepospass = 0;
-		int lastpos = 0;
 		float fileorigin[3];
 		char clsscript[32];
 		GetEntityClassname(scriptent,clsscript,sizeof(clsscript));
 		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
 		{
 			TrimString(line);
-			if (StrEqual(line,"{",false))
-			{
-				if (linact)
-				{
-					lastpos = FilePosition(filehandle)-2;
-				}
-				else if ((lastpos != linepospass) || (lastpos == 0))
-				{
-					lastpos = linepospass;
-				}
-				linepospass = FilePosition(filehandle)-2;
-			}
 			if (StrContains(line,"\"targetname\"",false) == 0)
 			{
 				char tmpchar[128];
@@ -1116,69 +1101,47 @@ readoutputs(int scriptent, char[] targn)
 			if ((StrEqual(targn,lineoriginfixup,false)) && (reverse))
 			{
 				int linepos = FilePosition(filehandle);
-				if (debuglvl == 3) PrintToServer("Found matching %s on line %i, reading from %i",targn,linepos,linepospass);
-				returntostart = true;
+				if (debuglvl == 3) PrintToServer("Found matching %s on line %i",targn,linepos);
 				reverse = false;
-				break;
+				createent = true;
 			}
-		}
-		FileSeek(filehandle,lastpos,SEEK_SET);
-		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
-		{
-			TrimString(line);
-			if (returntostart)
+			if ((!StrEqual(line,"}",false)) || (!StrEqual(line,"{",false)))
 			{
-				if (StrEqual(line,"{",false))
-				{
-					returntostart = false;
-					readnextlines = true;
-					ReadFileLine(filehandle,line,sizeof(line));
-				}
+				if (ent == -1) passvars = true;
 				else
 				{
-					int linepos = FilePosition(filehandle);
-					int linel = strlen(line);
-					FileSeek(filehandle,linepos-linel,SEEK_SET);
+					passvars = false;
+					for (int k;k<GetArraySize(passedarr);k++)
+					{
+						char ktmp[128];
+						char ktmp2[128];
+						GetArrayString(passedarr, k, ktmp, sizeof(ktmp));
+						k++;
+						GetArrayString(passedarr, k, ktmp2, sizeof(ktmp2));
+						if ((debuglvl > 1) && (createent)) PrintToServer("%s %s",ktmp,ktmp2);
+						DispatchKeyValue(ent,ktmp,ktmp2);
+					}
+				}
+				char tmpchar[128];
+				Format(tmpchar,sizeof(tmpchar),line);
+				ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
+				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
+				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
+				if (passvars)
+				{
+					PushArrayString(passedarr,kvs[1]);
+					PushArrayString(passedarr,kvs[3]);
 				}
 			}
-			if (readnextlines)
+			if ((StrEqual(line,"{",false)) || (StrEqual(line,"}",false)) && (ent == -1))
 			{
-				if ((!StrEqual(line,"}",false)) || (!StrEqual(line,"{",false)))
-				{
-					if (ent == -1) passvars = true;
-					else
-					{
-						passvars = false;
-						for (int k;k<GetArraySize(passedarr);k++)
-						{
-							char ktmp[128];
-							char ktmp2[128];
-							GetArrayString(passedarr, k, ktmp, sizeof(ktmp));
-							k++;
-							GetArrayString(passedarr, k, ktmp2, sizeof(ktmp2));
-							DispatchKeyValue(ent,ktmp,ktmp2);
-						}
-						ClearArray(passedarr);
-					}
-					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
-					ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
-					ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
-					ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
-					if (debuglvl > 1) PrintToServer("%s %s",kvs[1],kvs[3]);
-					if (passvars)
-					{
-						PushArrayString(passedarr,kvs[1]);
-						PushArrayString(passedarr,kvs[3]);
-					}
-					else
-					{
-						DispatchKeyValue(ent,kvs[1],kvs[3]);
-					}
-				}
+				ClearArray(passedarr);
+				passvars = true;
+			}
+			else if (createent)
+			{
 				if ((StrEqual(line,"}",false)) || (StrEqual(line,"{",false)))
 				{
-					readnextlines = false;
 					float origin[3];
 					if (!StrEqual(clsscript,"logic_choreographed_scene",false))
 						GetEntPropVector(scriptent,Prop_Data,"m_vecAbsOrigin",origin);
@@ -1219,40 +1182,48 @@ readoutputs(int scriptent, char[] targn)
 						AcceptEntityInput(scriptent,"Start");
 					break;
 				}
-			}
-			if (StrContains(line,"\"origin\"",false) == 0)
-			{
-				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-				char origch[16][16];
-				ExplodeString(tmpchar," ",origch,16,16);
-				fileorigin[0] = StringToFloat(origch[0]);
-				fileorigin[1] = StringToFloat(origch[1]);
-				fileorigin[2] = StringToFloat(origch[2]);
-			}
-			if (StrContains(line,"\"targetname\"",false) == 0)
-			{
-				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" ","",false);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-				TrimString(tmpchar);
-				Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
-			}
-			if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
-			{
-				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"actor\" ","",false);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-				TrimString(tmpchar);
-				Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
-			}
-			if ((StrContains(line,"\"classname\"",false) != -1) && (readnextlines))
-			{
-				if (StrContains(line,"point_template",false) != -1)
+				if (StrContains(line,"\"origin\"",false) == 0)
+				{
+					char tmpchar[128];
+					Format(tmpchar,sizeof(tmpchar),line);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+					char origch[16][16];
+					ExplodeString(tmpchar," ",origch,16,16);
+					fileorigin[0] = StringToFloat(origch[0]);
+					fileorigin[1] = StringToFloat(origch[1]);
+					fileorigin[2] = StringToFloat(origch[2]);
+				}
+				if (StrContains(line,"\"targetname\"",false) == 0)
+				{
+					char tmpchar[128];
+					Format(tmpchar,sizeof(tmpchar),line);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" ","",false);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+					TrimString(tmpchar);
+					Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
+				}
+				if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
+				{
+					char tmpchar[128];
+					Format(tmpchar,sizeof(tmpchar),line);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"actor\" ","",false);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+					TrimString(tmpchar);
+					Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
+				}
+				char cls[32];
+				int arrindx = FindStringInArray(passedarr,"classname");
+				if (arrindx != -1)
+				{
+					char tmpchar[128];
+					GetArrayString(passedarr,arrindx+1,tmpchar,sizeof(tmpchar));
+					ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
+					ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
+					ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
+					Format(cls,sizeof(cls),"%s",kvs[3]);
+				}
+				if (StrContains(cls,"point_template",false) != -1)
 				{
 					int loginp = CreateEntityByName("logic_auto");
 					DispatchKeyValue(loginp,"spawnflags","1");
@@ -1275,16 +1246,13 @@ readoutputs(int scriptent, char[] targn)
 					ActivateEntity(loginp);
 					if (debuglvl > 0) PrintToServer("Found point_template: %s that can spawn this npc",lineoriginfixup);
 				}
-				else if (ent == -1)
+				else if ((ent == -1) && (strlen(cls) > 0))
 				{
-					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
-					ReplaceString(tmpchar,sizeof(tmpchar),"\"classname\" ","",false);
-					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-					if (StrEqual(tmpchar,"worldspawn",false)) break;
-					ent = CreateEntityByName(tmpchar);
-					if (debuglvl == 3) PrintToServer("Created Ent as %s",tmpchar);
-					PushArrayCell(entlist,ent);
+					if (StrEqual(cls,"worldspawn",false)) break;
+					ent = CreateEntityByName(cls);
+					if (debuglvl == 3) PrintToServer("Created Ent as %s",cls);
+					if (FindValueInArray(entlist,ent) == -1)
+						PushArrayCell(entlist,ent);
 				}
 			}
 		}
@@ -2156,7 +2124,8 @@ findentlist(int ent, char[] clsname)
 				AcceptEntityInput(thisent,"SetMaxChildren");
 			}
 		}
-		PushArrayCell(entlist,thisent);
+		if (FindValueInArray(entlist,thisent) == -1)
+			PushArrayCell(entlist,thisent);
 		findentlist(thisent++,clsname);
 	}
 }
