@@ -36,8 +36,9 @@ bool linact = false;
 bool syn56act = false;
 bool vehiclemaphook = false;
 bool playerteleports = false;
+bool hasread = false;
 
-#define PLUGIN_VERSION "1.86"
+#define PLUGIN_VERSION "1.87"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -135,6 +136,7 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
+	hasread = false;
 	voteinprogress = false;
 	playerteleports = false;
 	entrefresh = 0.0;
@@ -1371,7 +1373,9 @@ readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int ac
 
 readoutputsforinputs()
 {
+	if (hasread) return;
 	if (debuglvl == 3) PrintToServer("Read outputs for save/teleport inputs");
+	hasread = true;
 	Handle filehandle = OpenFile(mapbuf,"r");
 	if (filehandle != INVALID_HANDLE)
 	{
@@ -1434,6 +1438,7 @@ readoutputsforinputs()
 		}
 	}
 	CloseHandle(filehandle);
+	return;
 }
 
 findpointtp(int ent, char[] targn, int cl, float delay)
