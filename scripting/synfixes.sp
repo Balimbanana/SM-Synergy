@@ -38,7 +38,7 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.88"
+#define PLUGIN_VERSION "1.89"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -762,15 +762,23 @@ public Action elevatorstartpost(Handle timer, int elev)
 
 public Action mapendchg(const char[] output, int caller, int activator, float delay)
 {
-	char maptochange[64];
-	char curmapbuf[64];
-	GetCurrentMap(curmapbuf,sizeof(curmapbuf));
-	GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
-	Handle data;
-	data = CreateDataPack();
-	WritePackString(data, maptochange);
-	WritePackString(data, curmapbuf);
-	CreateTimer(1.0,changeleveldelay,data);
+	if ((IsValidEntity(caller)) && (IsEntNetworkable(caller)))
+	{
+		char clschk[32];
+		GetEntityClassname(caller,clschk,sizeof(clschk));
+		if (StrEqual(clschk,"trigger_changelevel",false))
+		{
+			char maptochange[64];
+			char curmapbuf[64];
+			GetCurrentMap(curmapbuf,sizeof(curmapbuf));
+			GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
+			Handle data;
+			data = CreateDataPack();
+			WritePackString(data, maptochange);
+			WritePackString(data, curmapbuf);
+			CreateTimer(1.0,changeleveldelay,data);
+		}
+	}
 }
 
 public Action changeleveldelay(Handle timer, Handle data)
@@ -1030,7 +1038,11 @@ public Action createelev(const char[] output, int caller, int activator, float d
 			GetEntPropString(caller,Prop_Data,"m_ModelName",mdlname,sizeof(mdlname));
 			if (strlen(mdlname) > 0)
 			{
-				int brushent = CreateEntityByName("func_brush");
+				int brushent;
+				if (StrContains(mdlname,"*",false) == 0)
+					brushent = CreateEntityByName("func_tracktrain");
+				else
+					brushent = CreateEntityByName("func_brush");
 				DispatchKeyValue(brushent,"model",mdlname);
 				DispatchKeyValue(brushent,"rendermode","10");
 				DispatchKeyValue(brushent,"renderamt","255");
