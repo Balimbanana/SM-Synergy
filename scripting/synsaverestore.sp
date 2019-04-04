@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.84"
+#define PLUGIN_VERSION "1.85"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -140,7 +140,15 @@ public OnLibraryAdded(const char[] name)
 
 public Updater_OnPluginUpdated()
 {
-	reloadaftersetup = true;
+	if (timouthndl == INVALID_HANDLE)
+	{
+		Handle nullpl = INVALID_HANDLE;
+		ReloadPlugin(nullpl);
+	}
+	else
+	{
+		reloadaftersetup = true;
+	}
 }
 
 public votereloadcvar(Handle convar, const char[] oldValue, const char[] newValue)
@@ -1458,11 +1466,14 @@ public void OnMapStart()
 				GetEntPropString(aldouble,Prop_Data,"m_iName",targn,sizeof(targn));
 				if (StrEqual(targn,"alyx",false)) AcceptEntityInput(aldouble,"kill");
 			}
-			float chkdist = GetVectorDistance(aljeepchk,aljeepchkj,false);
-			if (RoundFloat(chkdist) < 200)
+			if (!StrEqual(mapbuf,"ep2_outland_12",false))
 			{
-				SetVariantString("jeep");
-				AcceptEntityInput(alyxtransition,"EnterVehicleImmediately");
+				float chkdist = GetVectorDistance(aljeepchk,aljeepchkj,false);
+				if (RoundFloat(chkdist) < 200)
+				{
+					SetVariantString("jeep");
+					AcceptEntityInput(alyxtransition,"EnterVehicleImmediately");
+				}
 			}
 		}
 		resetareaportals(-1);
@@ -1599,15 +1610,22 @@ public Action resettransition(int args)
 
 public Action onchangelevel(const char[] output, int caller, int activator, float delay)
 {
+	bool validchange = false;
 	if (rmsaves)
 	{
+		if ((IsValidEntity(caller)) && (IsEntNetworkable(caller)))
+		{
+			char clschk[32];
+			GetEntityClassname(caller,clschk,sizeof(clschk));
+			if (StrEqual(clschk,"trigger_changelevel",false)) validchange = true;
+		}
 		if (timouthndl != INVALID_HANDLE) KillTimer(timouthndl);
 		ClearArray(transitionid);
 		ClearArray(transitiondp);
 		ClearArray(transitionplyorigin);
 		char maptochange[64];
 		GetCurrentMap(prevmap,sizeof(prevmap));
-		GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
+		if (validchange) GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
 		if ((StrEqual(prevmap,"d1_town_03",false)) && (StrEqual(maptochange,"d1_town_02",false)))
 		{
 			enterfrom03pb = true;
@@ -1646,13 +1664,16 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		CloseHandle(savedirh);
 		if (transitionply)
 		{
-			GetEntPropString(caller,Prop_Data,"m_szLandmarkName",landmarkname,sizeof(landmarkname));
+			if (validchange) GetEntPropString(caller,Prop_Data,"m_szLandmarkName",landmarkname,sizeof(landmarkname));
 			findlandmark(-1,"info_landmark");
 			findlandmark(-1,"trigger_transition");
 			float mins[3];
 			float maxs[3];
-			GetEntPropVector(caller,Prop_Send,"m_vecMins",mins);
-			GetEntPropVector(caller,Prop_Send,"m_vecMaxs",maxs);
+			if (validchange)
+			{
+				GetEntPropVector(caller,Prop_Send,"m_vecMins",mins);
+				GetEntPropVector(caller,Prop_Send,"m_vecMaxs",maxs);
+			}
 			findtouchingents(mins,maxs,false);
 			float plyorigin[3];
 			float plyangs[3];
