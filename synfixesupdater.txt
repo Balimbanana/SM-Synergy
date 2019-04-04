@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.88"
-			"Previous"	"1.87"
+			"Latest"  	"1.89"
+			"Previous"	"1.88"
 		}
 		
-		"Notes"	"Rebuilt the way script ents are checked in ent cache."
+		"Notes"	"Added validation to functions that should not require validation but have failed before."
 	}
 	
 	"Files"
