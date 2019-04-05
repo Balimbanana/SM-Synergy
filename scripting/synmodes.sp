@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.08"
+#define PLUGIN_VERSION "1.09"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -61,6 +61,7 @@ int redteamkills;
 int blueteamkills;
 float changeteamcd[MAXPLAYERS+1];
 char mapbuf[64];
+char activecheckpoint[64];
 int resetmode = 0;
 bool resetvehpass = false;
 
@@ -1228,6 +1229,16 @@ findent(int ent, char[] clsname)
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
 		int bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
+		if (StrEqual(clsname,"info_player_coop",false))
+		{
+			if (strlen(activecheckpoint) > 0)
+			{
+				char targn[64];
+				GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
+				if (StrEqual(targn,activecheckpoint,false)) bdisabled = 0;
+				else bdisabled = 1;
+			}
+		}
 		if (bdisabled == 0)
 			PushArrayCell(equiparr,thisent);
 		findent(thisent++,clsname);
@@ -2436,6 +2447,7 @@ public OnClientAuthorized(int client, const char[] szAuth)
 public OnMapStart()
 {
 	hasread = false;
+	activecheckpoint = "";
 	GetCurrentMap(mapbuf,sizeof(mapbuf));
 	Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
 	char buff[64];
@@ -2538,6 +2550,20 @@ public Action trigsaves(const char[] output, int caller, int activator, float de
 			}
 		}
 	}
+	else
+	{
+		if ((IsValidEntity(caller)) && (IsEntNetworkable(caller)))
+		{
+			char targn[64];
+			if (HasEntProp(caller,Prop_Data,"m_iName")) GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
+			float origin[3];
+			if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
+			char tmpout[32];
+			Format(tmpout,sizeof(tmpout),output);
+			readoutputstp(targn,tmpout,"SetCheckPoint",origin,activator);
+		}
+	}
 }
 
 readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int activator)
@@ -2583,13 +2609,14 @@ readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int ac
 		if ((StrEqual(originchar,clsorfixup[1],false)) || (StrEqual(targn,clsorfixup[0],false)) || (StrContains(inputadded,clsorfixup[1],false)))
 		{
 			char lineorgrescom[16][64];
-			if ((StrContains(clsorfixup[5],",") != -1) && (StrContains(clsorfixup[5],"::") == -1))
+			if ((StrContains(clsorfixup[5],",") != -1) && (StrContains(clsorfixup[5],":") == -1))
 			{
 				if (StrContains(clsorfixup[3],output,false) == -1) return;
 				ExplodeString(clsorfixup[5],",",lineorgrescom,16,64);
-				ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
+				//ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
 				float delay = StringToFloat(lineorgrescom[3]);
-				resetvehicles(delay,activator);
+				if (survivalact) resetvehicles(delay,activator);
+				if (StrContains(lineorgrescom[1],"SetCheckPoint",false) != -1) Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
 			}
 			else
 			{
@@ -2597,9 +2624,10 @@ readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int ac
 				if (StrContains(clsorfixup[3],output,false) == -1) return;
 				char delaystr[64];
 				Format(delaystr,sizeof(delaystr),lineorgrescom[3]);
-				ReplaceString(lineorgrescom[1],64,lineorgrescom[1],"");
+				//ReplaceString(lineorgrescom[1],64,lineorgrescom[1],"");
 				float delay = StringToFloat(lineorgrescom[3]);
-				resetvehicles(delay,activator);
+				if (survivalact) resetvehicles(delay,activator);
+				if (StrContains(lineorgrescom[1],"SetCheckPoint",false) != -1) Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
 			}
 		}
 	}
