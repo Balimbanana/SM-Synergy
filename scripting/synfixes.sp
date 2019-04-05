@@ -2224,7 +2224,8 @@ public OnButtonPress(int client, int button)
 {
 	char curweap[24];
 	GetClientWeapon(client,curweap,sizeof(curweap));
-	if (StrEqual(curweap,"weapon_rpg",false))
+	int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
+	if ((StrEqual(curweap,"weapon_rpg",false)) && (vehicle == -1))
 	{
 		if (guiderocket[client])
 		{
