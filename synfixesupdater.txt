@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.91"
-			"Previous"	"1.90"
+			"Latest"  	"1.92"
+			"Previous"	"1.91"
 		}
 		
-		"Notes"	"Added headlights to jeeps, enabled by driver flashlight. Added no guide rpg with right click."
+		"Notes"	"Added more validation on vehicle headlights."
 	}
 	
 	"Files"
