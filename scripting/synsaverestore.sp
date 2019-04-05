@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.86"
+#define PLUGIN_VERSION "1.87"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1376,7 +1376,13 @@ public void OnMapStart()
 					ReadPackString(dp,npctype,sizeof(npctype));
 					char scriptinf[256];
 					ReadPackString(dp,scriptinf,sizeof(scriptinf));
-					if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_05",false)))
+					if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"d2_prison_08",false)))
+					{
+						porigin[0] = -2497.0;
+						porigin[1] = 2997.0;
+						porigin[2] = 999.0;
+					}
+					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_05",false)))
 					{
 						porigin[0] = -2952.0;
 						porigin[1] = 736.0;
