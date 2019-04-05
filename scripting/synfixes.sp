@@ -40,7 +40,7 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.91"
+#define PLUGIN_VERSION "1.92"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -2203,19 +2203,22 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	if (impulse == 100)
 	{
 		int vehicles = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
-		int driver = GetEntProp(client,Prop_Data,"m_iHideHUD");
-		int running = GetEntProp(vehicles,Prop_Data,"m_bIsOn");
-		if ((vehicles > MaxClients) && (driver == 3328) && (running))
+		if ((vehicles > MaxClients) && (IsValidEntity(vehicles)))
 		{
-			char clsname[32];
-			GetEntityClassname(vehicles,clsname,sizeof(clsname));
-			if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
+			int driver = GetEntProp(client,Prop_Data,"m_iHideHUD");
+			int running = GetEntProp(vehicles,Prop_Data,"m_bIsOn");
+			if ((driver == 3328) && (running))
 			{
-				if (HasEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn"))
+				char clsname[32];
+				GetEntityClassname(vehicles,clsname,sizeof(clsname));
+				if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
 				{
-					if (GetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn")) SetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn",0);
-					else SetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn",1);
-					EmitSoundToAll("items/flashlight1.wav", vehicles, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+					if (HasEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn"))
+					{
+						if (GetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn")) SetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn",0);
+						else SetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn",1);
+						EmitSoundToAll("items/flashlight1.wav", vehicles, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+					}
 				}
 			}
 		}
