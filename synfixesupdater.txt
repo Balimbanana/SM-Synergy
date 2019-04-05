@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.89"
-			"Previous"	"1.88"
+			"Latest"  	"1.90"
+			"Previous"	"1.89"
 		}
 		
-		"Notes"	"Added validation to functions that should not require validation but have failed before."
+		"Notes"	"Added headlights to jeeps, enabled by driver flashlight. Added no guide rpg with right click."
 	}
 	
 	"Files"
