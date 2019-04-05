@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.90"
-			"Previous"	"1.89"
+			"Latest"  	"1.91"
+			"Previous"	"1.90"
 		}
 		
 		"Notes"	"Added headlights to jeeps, enabled by driver flashlight. Added no guide rpg with right click."
