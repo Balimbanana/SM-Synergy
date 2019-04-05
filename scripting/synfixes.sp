@@ -26,6 +26,8 @@ float removertimer = 30.0;
 int WeapList = -1;
 int spawneramt = 20;
 int restrictmode = 0;
+int clrocket[64];
+bool guiderocket[64];
 bool restrictact = false;
 bool friendlyfire = false;
 bool seqenablecheck = true;
@@ -38,7 +40,7 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.89"
+#define PLUGIN_VERSION "1.90"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -136,6 +138,10 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		guiderocket[i] = true;
+	}
 	hasread = false;
 	voteinprogress = false;
 	playerteleports = false;
@@ -1848,7 +1854,9 @@ void resetvehicles(float delay)
 				if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
 				{
 					int vehicles = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
-					if (vehicles > MaxClients)
+					int driver = GetEntProp(i,Prop_Data,"m_iHideHUD");
+					int running = GetEntProp(vehicles,Prop_Data,"m_bIsOn");
+					if ((vehicles > MaxClients) && (driver == 3328) && (running))
 					{
 						char clsname[32];
 						GetEntityClassname(vehicles,clsname,sizeof(clsname));
@@ -1898,6 +1906,38 @@ public OnEntityCreated(int entity, const char[] classname)
 	if (StrEqual(classname,"phys_bone_follower",false))
 	{
 		if (GetEntityCount() > 2000) AcceptEntityInput(entity,"kill");
+	}
+	if (StrEqual(classname,"rpg_missile",false))
+	{
+		if (IsValidEntity(entity))
+		{
+			CreateTimer(0.3,resetown,entity);
+		}
+	}
+}
+
+public Action resetown(Handle timer, int entity)
+{
+	if (IsValidEntity(entity))
+	{
+		int own = GetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity");
+		if (own > 0)
+		{
+			if (!guiderocket[own])
+			{
+				clrocket[own] = entity;
+				SetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity",0);
+				int weap = GetEntPropEnt(own,Prop_Data,"m_hActiveWeapon");
+				char weapn[24];
+				GetClientWeapon(own,weapn,sizeof(weapn));
+				if (StrEqual(weapn,"weapon_rpg",false))
+				{
+					SetEntProp(weap,Prop_Send,"m_bGuiding",0);
+					SetEntProp(weap,Prop_Data,"m_bInReload",0);
+					SetEntProp(weap,Prop_Data,"m_nSequence",2);
+				}
+			}
+		}
 	}
 }
 
@@ -2141,13 +2181,28 @@ findentlist(int ent, char[] clsname)
 		findentlist(thisent++,clsname);
 	}
 }
-/*
+
+int g_LastButtons[MAXPLAYERS+1];
+
+public OnClientDisconnect_Post(int client)
+{
+	g_LastButtons[client] = 0;
+	clrocket[client] = 0;
+}
+
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
+	if (buttons & IN_ATTACK2) {
+		if (!(g_LastButtons[client] & IN_ATTACK2)) {
+			OnButtonPress(client,IN_ATTACK2);
+		}
+	}
 	if (impulse == 100)
 	{
 		int vehicles = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
-		if (vehicles > MaxClients)
+		int driver = GetEntProp(client,Prop_Data,"m_iHideHUD");
+		int running = GetEntProp(vehicles,Prop_Data,"m_bIsOn");
+		if ((vehicles > MaxClients) && (driver == 3328) && (running))
 		{
 			char clsname[32];
 			GetEntityClassname(vehicles,clsname,sizeof(clsname));
@@ -2162,8 +2217,52 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 		}
 	}
+	g_LastButtons[client] = buttons;
 }
-*/
+
+public OnButtonPress(int client, int button)
+{
+	char curweap[24];
+	GetClientWeapon(client,curweap,sizeof(curweap));
+	if (StrEqual(curweap,"weapon_rpg",false))
+	{
+		if (guiderocket[client])
+		{
+			guiderocket[client] = false;
+			PrintToChat(client,"Turned off rocket guide.");
+			int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+			SetEntProp(weap,Prop_Send,"m_bGuiding",0);
+			SetEntProp(weap,Prop_Data,"m_bInReload",0);
+			SetEntProp(weap,Prop_Data,"m_nSequence",2);
+		}
+		else
+		{
+			guiderocket[client] = true;
+			PrintToChat(client,"Turned on rocket guide.");
+		}
+		findrockets(-1,client);
+	}
+}
+
+void findrockets(int ent, int client)
+{
+	int thisent = FindEntityByClassname(ent,"rpg_missile");
+	if ((IsValidEntity(thisent)) && (thisent != -1))
+	{
+		int owner = GetEntPropEnt(thisent,Prop_Data,"m_hOwnerEntity");
+		if ((owner == client) || (thisent == clrocket[client]))
+		{
+			if (guiderocket[client])
+				SetEntPropEnt(thisent,Prop_Data,"m_hOwnerEntity",client);
+			else
+				SetEntPropEnt(thisent,Prop_Data,"m_hOwnerEntity",0);
+			clrocket[client] = thisent;
+		}
+		findrockets(thisent++,client);
+	}
+	return;
+}
+
 public pushch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1)
