@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.92"
-			"Previous"	"1.91"
+			"Latest"  	"1.93"
+			"Previous"	"1.92"
 		}
 		
-		"Notes"	"Added more validation on vehicle headlights."
+		"Notes"	"Added more validation to a couple functions."
 	}
 	
 	"Files"
