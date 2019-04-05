@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.08"
-			"Previous"	"1.07"
+			"Latest"  	"1.09"
+			"Previous"	"1.08"
 		}
 		
-		"Notes"	"Ensure entcache is only read once."
+		"Notes"	"Fixed spawn modes not getting the correct active checkpoint."
 	}
 	
 	"Files"
