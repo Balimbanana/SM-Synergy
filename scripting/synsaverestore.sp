@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.85"
+#define PLUGIN_VERSION "1.86"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1394,6 +1394,12 @@ public void OnMapStart()
 						porigin[1] = 40.0;
 						porigin[2] = 878.0;
 					}
+					else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_04",false)))
+					{
+						porigin[0] = 4244.0;
+						porigin[1] = -1708.0;
+						porigin[2] = 425.0;
+					}
 					int ent = CreateEntityByName(clsname);
 					if (TR_PointOutsideWorld(porigin))
 					{
@@ -2321,17 +2327,22 @@ void saveresetveh(bool rmsave)
 				vehicles[i] = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
 				if (vehicles[i] > MaxClients)
 				{
-					char clsname[32];
-					GetEntityClassname(vehicles[i],clsname,sizeof(clsname));
-					if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
+					int driver = GetEntProp(i,Prop_Data,"m_iHideHUD");
+					int running = GetEntProp(vehicles[i],Prop_Data,"m_bIsOn");
+					if ((driver == 3328) && (running))
 					{
-						if (HasEntProp(vehicles[i],Prop_Data,"m_controls.steering")) steerpos[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering");
-						if (HasEntProp(vehicles[i],Prop_Data,"m_controls.throttle")) throttle[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle");
-						if (HasEntProp(vehicles[i],Prop_Data,"m_bIsOn")) vehon[i] = GetEntProp(vehicles[i],Prop_Data,"m_bIsOn");
-						if (HasEntProp(vehicles[i],Prop_Data,"m_nSpeed")) speed[i] = GetEntProp(vehicles[i],Prop_Data,"m_nSpeed");
-						if (HasEntProp(vehicles[i],Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",restoreang);
-						ang1[i] = restoreang[1];
-						if (HasEntProp(vehicles[i],Prop_Data,"m_iSoundGear")) gearsound[i] = GetEntProp(vehicles[i],Prop_Data,"m_iSoundGear");
+						char clsname[32];
+						GetEntityClassname(vehicles[i],clsname,sizeof(clsname));
+						if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
+						{
+							if (HasEntProp(vehicles[i],Prop_Data,"m_controls.steering")) steerpos[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering");
+							if (HasEntProp(vehicles[i],Prop_Data,"m_controls.throttle")) throttle[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle");
+							if (HasEntProp(vehicles[i],Prop_Data,"m_bIsOn")) vehon[i] = GetEntProp(vehicles[i],Prop_Data,"m_bIsOn");
+							if (HasEntProp(vehicles[i],Prop_Data,"m_nSpeed")) speed[i] = GetEntProp(vehicles[i],Prop_Data,"m_nSpeed");
+							if (HasEntProp(vehicles[i],Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",restoreang);
+							ang1[i] = restoreang[1];
+							if (HasEntProp(vehicles[i],Prop_Data,"m_iSoundGear")) gearsound[i] = GetEntProp(vehicles[i],Prop_Data,"m_iSoundGear");
+						}
 					}
 				}
 			}
@@ -2341,21 +2352,26 @@ void saveresetveh(bool rmsave)
 		{
 			if ((vehicles[i] != 0) && (IsValidEntity(vehicles[i])))
 			{
-				if (HasEntProp(vehicles[i],Prop_Data,"m_controls.steering")) SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering",steerpos[i]);
-				if (HasEntProp(vehicles[i],Prop_Data,"m_controls.throttle")) SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle",throttle[i]);
-				if (HasEntProp(vehicles[i],Prop_Data,"m_bIsOn")) SetEntProp(vehicles[i],Prop_Data,"m_bIsOn",vehon[i]);
-				if (HasEntProp(vehicles[i],Prop_Data,"m_nSpeed")) SetEntProp(vehicles[i],Prop_Data,"m_nSpeed",speed[i]);
-				if (HasEntProp(vehicles[i],Prop_Data,"m_iSoundGear")) SetEntProp(vehicles[i],Prop_Data,"m_iSoundGear",gearsound[i]);
-				if (HasEntProp(vehicles[i],Prop_Data,"m_controls.handbrake")) SetEntProp(vehicles[i],Prop_Data,"m_controls.handbrake",1);
-				restoreang[0] = ang0[i];
-				restoreang[1] = ang1[i];
-				restoreang[2] = ang2[i];
-				/*
-				Handle dp = CreateDataPack();
-				WritePackCell(dp,i);
-				WritePackFloat(dp,ang1[i]);
-				CreateTimer(0.01,restoreaim,dp);
-				*/
+				char clsname[32];
+				GetEntityClassname(vehicles[i],clsname,sizeof(clsname));
+				if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
+				{
+					if (HasEntProp(vehicles[i],Prop_Data,"m_controls.steering")) SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering",steerpos[i]);
+					if (HasEntProp(vehicles[i],Prop_Data,"m_controls.throttle")) SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle",throttle[i]);
+					if (HasEntProp(vehicles[i],Prop_Data,"m_bIsOn")) SetEntProp(vehicles[i],Prop_Data,"m_bIsOn",vehon[i]);
+					if (HasEntProp(vehicles[i],Prop_Data,"m_nSpeed")) SetEntProp(vehicles[i],Prop_Data,"m_nSpeed",speed[i]);
+					if (HasEntProp(vehicles[i],Prop_Data,"m_iSoundGear")) SetEntProp(vehicles[i],Prop_Data,"m_iSoundGear",gearsound[i]);
+					if (HasEntProp(vehicles[i],Prop_Data,"m_controls.handbrake")) SetEntProp(vehicles[i],Prop_Data,"m_controls.handbrake",1);
+					restoreang[0] = ang0[i];
+					restoreang[1] = ang1[i];
+					restoreang[2] = ang2[i];
+					/*
+					Handle dp = CreateDataPack();
+					WritePackCell(dp,i);
+					WritePackFloat(dp,ang1[i]);
+					CreateTimer(0.01,
+					*/
+				}
 			}
 		}
 	}
