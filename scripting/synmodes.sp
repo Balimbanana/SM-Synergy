@@ -2208,6 +2208,8 @@ public Action roundstart(Handle event, const char[] name, bool dontBroadcast)
 			DispatchSpawn(cam);
 			ActivateEntity(cam);
 			AcceptEntityInput(cam,"Enable",i);
+			SetVariantString("!activator");
+			AcceptEntityInput(cam,"SetParent",i);
 			changeteamcd[i] = Time + roundstarttime + 2.0;
 			SetEntProp(i,Prop_Data,"m_iHealth",100);
 			SetEntProp(i,Prop_Data,"m_ArmorValue",0);
