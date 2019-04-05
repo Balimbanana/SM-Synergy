@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.86"
-			"Previous"	"1.85"
+			"Latest"  	"1.87"
+			"Previous"	"1.86"
 		}
 		
-		"Notes"	"Vort transition position for ep2_outland_04 and conditional vehicle reset."
+		"Notes"	"Vort transition position for ep2_outland_04 and Alyx for d2_prison_08."
 	}
 	
 	"Files"
