@@ -40,7 +40,7 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.92"
+#define PLUGIN_VERSION "1.93"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -907,6 +907,9 @@ public Action rmcolliding(Handle timer, int caller)
 {
 	//int landtarg = GetEntProp(i,Prop_Data,"m_bHasDroppedOff");
 	if ((caller == -1) || (!IsValidEntity(caller))) return Plugin_Handled;
+	char clschk[24];
+	GetEntityClassname(caller,clschk,sizeof(clschk));
+	if (!StrEqual(clschk,"npc_combinedropship",false)) return Plugin_Handled;
 	float origin[3];
 	GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
 	origin[2]-=100.0;
@@ -1924,20 +1927,23 @@ public Action resetown(Handle timer, int entity)
 	if (IsValidEntity(entity))
 	{
 		int own = GetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity");
-		if (own > 0)
+		if ((own > 0) && (own < MaxClients+1))
 		{
-			if (!guiderocket[own])
+			if (IsClientInGame(own))
 			{
-				clrocket[own] = entity;
-				SetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity",0);
-				int weap = GetEntPropEnt(own,Prop_Data,"m_hActiveWeapon");
-				char weapn[24];
-				GetClientWeapon(own,weapn,sizeof(weapn));
-				if (StrEqual(weapn,"weapon_rpg",false))
+				if (!guiderocket[own])
 				{
-					SetEntProp(weap,Prop_Send,"m_bGuiding",0);
-					SetEntProp(weap,Prop_Data,"m_bInReload",0);
-					SetEntProp(weap,Prop_Data,"m_nSequence",2);
+					clrocket[own] = entity;
+					SetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity",0);
+					int weap = GetEntPropEnt(own,Prop_Data,"m_hActiveWeapon");
+					char weapn[24];
+					GetClientWeapon(own,weapn,sizeof(weapn));
+					if (StrEqual(weapn,"weapon_rpg",false))
+					{
+						SetEntProp(weap,Prop_Send,"m_bGuiding",0);
+						SetEntProp(weap,Prop_Data,"m_bInReload",0);
+						SetEntProp(weap,Prop_Data,"m_nSequence",2);
+					}
 				}
 			}
 		}
