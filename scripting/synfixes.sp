@@ -40,7 +40,7 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.90"
+#define PLUGIN_VERSION "1.91"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1854,17 +1854,20 @@ void resetvehicles(float delay)
 				if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
 				{
 					int vehicles = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
-					int driver = GetEntProp(i,Prop_Data,"m_iHideHUD");
-					int running = GetEntProp(vehicles,Prop_Data,"m_bIsOn");
-					if ((vehicles > MaxClients) && (driver == 3328) && (running))
+					if (vehicles > MaxClients)
 					{
-						char clsname[32];
-						GetEntityClassname(vehicles,clsname,sizeof(clsname));
-						if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)) && (FindValueInArray(ignorelist,vehicles) == -1))
+						int driver = GetEntProp(i,Prop_Data,"m_iHideHUD");
+						int running = GetEntProp(vehicles,Prop_Data,"m_bIsOn");
+						if ((driver == 3328) && (running))
 						{
-							SetEntProp(vehicles,Prop_Data,"m_controls.handbrake",1);
-							PushArrayCell(ignorelist,vehicles);
-							if (debuglvl == 3) PrintToServer("Reset %i vehicle over save.",vehicles);
+							char clsname[32];
+							GetEntityClassname(vehicles,clsname,sizeof(clsname));
+							if (((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false))) && (FindValueInArray(ignorelist,vehicles) == -1))
+							{
+								SetEntProp(vehicles,Prop_Data,"m_controls.handbrake",1);
+								PushArrayCell(ignorelist,vehicles);
+								if (debuglvl == 3) PrintToServer("Reset %i vehicle over save.",vehicles);
+							}
 						}
 					}
 				}
