@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.85"
-			"Previous"	"1.84"
+			"Latest"  	"1.86"
+			"Previous"	"1.85"
 		}
 		
-		"Notes"	"Additional checks on transition including additional validation to class hooking function."
+		"Notes"	"Vort transition position for ep2_outland_04 and conditional vehicle reset."
 	}
 	
 	"Files"
