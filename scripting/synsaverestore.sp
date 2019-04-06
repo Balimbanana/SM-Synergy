@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.87"
+#define PLUGIN_VERSION "1.88"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 public Plugin:myinfo = 
@@ -1320,7 +1320,7 @@ public void OnMapStart()
 						AcceptEntityInput(jtmp,"Disable");
 				}
 			}
-			timouthndl = CreateTimer(121.0,transitiontimeout);
+			timouthndl = CreateTimer(121.0,transitiontimeout,_,TIMER_FLAG_NO_MAPCHANGE);
 		}
 		int alyxtransition = -1;
 		bool alyxenter = false;
@@ -1631,7 +1631,6 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			GetEntityClassname(caller,clschk,sizeof(clschk));
 			if (StrEqual(clschk,"trigger_changelevel",false)) validchange = true;
 		}
-		if (timouthndl != INVALID_HANDLE) KillTimer(timouthndl);
 		ClearArray(transitionid);
 		ClearArray(transitiondp);
 		ClearArray(transitionplyorigin);
@@ -2334,8 +2333,9 @@ void saveresetveh(bool rmsave)
 				if (vehicles[i] > MaxClients)
 				{
 					int driver = GetEntProp(i,Prop_Data,"m_iHideHUD");
-					int running = GetEntProp(vehicles[i],Prop_Data,"m_bIsOn");
-					if ((driver == 3328) && (running))
+					vehon[i] = 1;
+					if (HasEntProp(vehicles[i],Prop_Data,"m_bIsOn")) vehon[i] = GetEntProp(vehicles[i],Prop_Data,"m_bIsOn");
+					if ((driver == 3328) && (vehon[i]))
 					{
 						char clsname[32];
 						GetEntityClassname(vehicles[i],clsname,sizeof(clsname));
@@ -2343,7 +2343,6 @@ void saveresetveh(bool rmsave)
 						{
 							if (HasEntProp(vehicles[i],Prop_Data,"m_controls.steering")) steerpos[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering");
 							if (HasEntProp(vehicles[i],Prop_Data,"m_controls.throttle")) throttle[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle");
-							if (HasEntProp(vehicles[i],Prop_Data,"m_bIsOn")) vehon[i] = GetEntProp(vehicles[i],Prop_Data,"m_bIsOn");
 							if (HasEntProp(vehicles[i],Prop_Data,"m_nSpeed")) speed[i] = GetEntProp(vehicles[i],Prop_Data,"m_nSpeed");
 							if (HasEntProp(vehicles[i],Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",restoreang);
 							ang1[i] = restoreang[1];
