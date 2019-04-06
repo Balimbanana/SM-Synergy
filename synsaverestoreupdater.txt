@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.87"
-			"Previous"	"1.86"
+			"Latest"  	"1.88"
+			"Previous"	"1.87"
 		}
 		
-		"Notes"	"Vort transition position for ep2_outland_04 and Alyx for d2_prison_08."
+		"Notes"	"Changed way transition timeout is handled."
 	}
 	
 	"Files"
