@@ -40,7 +40,7 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.93"
+#define PLUGIN_VERSION "1.94"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -1860,7 +1860,8 @@ void resetvehicles(float delay)
 					if (vehicles > MaxClients)
 					{
 						int driver = GetEntProp(i,Prop_Data,"m_iHideHUD");
-						int running = GetEntProp(vehicles,Prop_Data,"m_bIsOn");
+						int running = 1;
+						if (HasEntProp(vehicles,Prop_Data,"m_bIsOn")) running = GetEntProp(vehicles,Prop_Data,"m_bIsOn");
 						if ((driver == 3328) && (running))
 						{
 							char clsname[32];
@@ -2212,7 +2213,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		if ((vehicles > MaxClients) && (IsValidEntity(vehicles)))
 		{
 			int driver = GetEntProp(client,Prop_Data,"m_iHideHUD");
-			int running = GetEntProp(vehicles,Prop_Data,"m_bIsOn");
+			int running = 1;
+			if (HasEntProp(vehicles,Prop_Data,"m_bIsOn")) running = GetEntProp(vehicles,Prop_Data,"m_bIsOn");
 			if ((driver == 3328) && (running))
 			{
 				char clsname[32];
