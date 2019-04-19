@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.80"
+#define PLUGIN_VERSION "1.81"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -340,6 +340,17 @@ public Action cleararr(Handle timer)
 	addht("npc_antlion");
 	addht("npc_antlionworker");
 	addht("npc_antlionguard");
+	addht("npc_zombie_scientist");
+	addht("npc_zombie_scientist_torso");
+	addht("npc_zombie_security");
+	addht("npc_alien_slave");
+	addht("npc_houndeye");
+	addht("npc_tentacle");
+	addht("npc_bullsquid");
+	addht("npc_sentry_ceiling");
+	addht("npc_human_grunt");
+	addht("npc_human_commander");
+	addht("npc_human_medic");
 	addht("monster_alien_slave");
 	addht("monster_bullchicken");
 	addht("monster_headcrab");
@@ -481,7 +492,7 @@ public Action ShowTimer(Handle timer)
 									Format(clsname,sizeof(clsname),"npc_lamarr");
 							}
 						}
-						if (HasEntProp(targ,Prop_Data,"m_nRenderMode"))
+						if ((HasEntProp(targ,Prop_Data,"m_nRenderMode")) && (!StrEqual(clsname,"npc_houndeye",false)) && (!StrEqual(clsname,"npc_bullsquid",false)))
 							if (GetEntProp(targ,Prop_Data,"m_nRenderMode") == 10) targ = 0;
 						if (HasEntProp(targ,Prop_Data,"m_NPCState"))
 							if (GetEntProp(targ,Prop_Data,"m_NPCState") == 7) targ = 0;
@@ -490,9 +501,14 @@ public Action ShowTimer(Handle timer)
 					if ((targ != -1) && ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"monster_",false) != -1)) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
 					{
 						bool ismonster = false;
+						bool friendly = true;
+						if (!GetNPCAlly(clsname,targ))
+						{
+							friendly = false;
+						}
 						if (!bclcookie3[client])
 						{
-							if (!GetNPCAlly(clsname,targ))
+							if (!friendly)
 							{
 								int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
 								if (StrContains(clsname,"monster_",false) != -1)
@@ -553,10 +569,13 @@ public Action ShowTimer(Handle timer)
 										else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
 										else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
 										else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Larry");
+										else if (StrContains(targn,"anne",false) != -1) Format(clsname,sizeof(clsname),"Anne");
 										else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Arthur");
 										else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Sarah");
+										else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Mina");
 										else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"John");
 										else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Mitch");
+										else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
 									}
@@ -590,7 +609,7 @@ public Action ShowTimer(Handle timer)
 										maxh = 1;
 									}
 									antispamchk[client] = Time + 0.07;
-									PrintTheMsg(client,curh,maxh,clsname);
+									PrintTheMsg(client,curh,maxh,clsname,friendly);
 								}
 							}
 						}
@@ -655,8 +674,11 @@ public Action ShowTimer(Handle timer)
 									else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
 									else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
 									else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Larry");
+									else if (StrContains(targn,"anne",false) != -1) Format(clsname,sizeof(clsname),"Anne");
 									else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Arthur");
 									else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Sarah");
+									else if (StrContains(targn,"mina",false) != -1) Format(clsname,sizeof(clsname),"Mina");
+									else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
 								}
@@ -690,7 +712,7 @@ public Action ShowTimer(Handle timer)
 									maxh = 1;
 								}
 								antispamchk[client] = Time + 0.07;
-								PrintTheMsg(client,curh,maxh,clsname);
+								PrintTheMsg(client,curh,maxh,clsname,friendly);
 							}
 						}
 						else
@@ -748,7 +770,7 @@ public Action ShowTimer(Handle timer)
 	return Plugin_Handled;
 }
 
-public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
+public PrintTheMsg(int client, int curh, int maxh, char clsname[32], bool friendly)
 {
 	char hudbuf[40];
 	if (StrEqual(clsname,"monk",false)) Format(clsname,sizeof(clsname),"Father Grigori");
@@ -769,9 +791,22 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 	else if (StrEqual(clsname,"npc_poisonzombie",false)) Format(clsname,sizeof(clsname),"Poison Zombie");
 	else if (StrContains(clsname,"_",false) != -1)
 	{
-		int upper = ReplaceStringEx(clsname,sizeof(clsname),"_"," ");
-		if (upper != -1)
-			clsname[upper] &= ~(1 << 5);
+		clsname[0] &= ~(1 << 5);
+		char rebuildupper[32][32];
+		ExplodeString(clsname,"_",rebuildupper,32,32);
+		clsname = "";
+		for (int i = 0;i<32;i++)
+		{
+			if (strlen(rebuildupper[i]) > 0)
+			{
+				rebuildupper[i][0] &= ~(1 << 5);
+				if (strlen(clsname) > 0)
+					Format(clsname,sizeof(clsname),"%s %s",clsname,rebuildupper[i]);
+				else
+					Format(clsname,sizeof(clsname),"%s",rebuildupper[i]);
+			}
+			else break;
+		}
 	}
 	if (bclcookie2[client])
 		Format(hudbuf,sizeof(hudbuf),"%s (%i HP)",clsname,curh);
@@ -784,7 +819,8 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32])
 	}
 	if (bclcookie[client] == 0)
 	{
-		SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4[client][0], bclcookie4[client][1], bclcookie4[client][2], 255, 0, 0.1, 0.0, 0.1);
+		if (friendly) SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4f[client][0], bclcookie4f[client][1], bclcookie4f[client][2], 255, 0, 0.1, 0.0, 0.1);
+		else SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4[client][0], bclcookie4[client][1], bclcookie4[client][2], 255, 0, 0.1, 0.0, 0.1);
 		ShowHudText(client,0,"%s",hudbuf);
 	}
 	else if (bclcookie[client] == 1)
@@ -831,10 +867,13 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Friend: Griggs");
 		else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Friend: Sheckley");
 		else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Friend: Larry");
+		else if (StrEqual(targn,"anne",false)) Format(clsname,sizeof(clsname),"Friend: Anne");
 		else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Friend: Arthur");
 		else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Friend: Sarah");
+		else if (StrContains(targn,"mina",false) != -1) Format(clsname,sizeof(clsname),"Friend: Mina");
 		else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"Friend: John");
 		else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Friend: Mitch");
+		else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Friend: Argento");
 		else if (StrEqual(clsname,"npc_citizen",false))
 		{
 			char cmodel[64];
@@ -887,11 +926,24 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		else if (StrEqual(clsname,"npc_headcrab_fast",false)) Format(clsname,sizeof(clsname),"Friend: Fast Headcrab");
 		else if (StrEqual(clsname,"npc_headcrab_poison",false)) Format(clsname,sizeof(clsname),"Friend: Poison Headcrab");
 		else if (StrEqual(clsname,"npc_headcrab_black",false)) Format(clsname,sizeof(clsname),"Friend: Black Headcrab");
-		if (StrContains(clsname,"monster_",false) != -1) ReplaceString(clsname,sizeof(clsname),"monster","Friend: ");
-		else ReplaceString(clsname,sizeof(clsname),"npc","Friend: ");
-		int upper = ReplaceStringEx(clsname,sizeof(clsname),"_"," ");
-		if (upper != -1)
-			clsname[upper] &= ~(1 << 5);
+		if (StrContains(clsname,"monster_",false) != -1) ReplaceString(clsname,sizeof(clsname),"monster","Friend:");
+		else ReplaceString(clsname,sizeof(clsname),"npc","Friend:");
+		clsname[0] &= ~(1 << 5);
+		char rebuildupper[32][32];
+		ExplodeString(clsname,"_",rebuildupper,32,32);
+		clsname = "";
+		for (int i = 0;i<32;i++)
+		{
+			if (strlen(rebuildupper[i]) > 0)
+			{
+				rebuildupper[i][0] &= ~(1 << 5);
+				if (strlen(clsname) > 0)
+					Format(clsname,sizeof(clsname),"%s %s",clsname,rebuildupper[i]);
+				else
+					Format(clsname,sizeof(clsname),"%s",rebuildupper[i]);
+			}
+			else break;
+		}
 	}
 	else
 	{
@@ -961,10 +1013,23 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		else if (StrEqual(clsname,"npc_headcrab_poison",false)) Format(clsname,sizeof(clsname),"Enemy: Poison Headcrab");
 		else if (StrEqual(clsname,"npc_headcrab_black",false)) Format(clsname,sizeof(clsname),"Enemy: Black Headcrab");
 		if (StrContains(clsname,"monster_",false) != -1) ReplaceString(clsname,sizeof(clsname),"monster","Enemy: ");
-		else ReplaceString(clsname,sizeof(clsname),"npc","Enemy: ");
-		int upper = ReplaceStringEx(clsname,sizeof(clsname),"_"," ");
-		if (upper != -1)
-			clsname[upper] &= ~(1 << 5);
+		else ReplaceString(clsname,sizeof(clsname),"npc","Enemy:");
+		clsname[0] &= ~(1 << 5);
+		char rebuildupper[32][32];
+		ExplodeString(clsname,"_",rebuildupper,32,32);
+		clsname = "";
+		for (int i = 0;i<32;i++)
+		{
+			if (strlen(rebuildupper[i]) > 0)
+			{
+				rebuildupper[i][0] &= ~(1 << 5);
+				if (strlen(clsname) > 0)
+					Format(clsname,sizeof(clsname),"%s %s",clsname,rebuildupper[i]);
+				else
+					Format(clsname,sizeof(clsname),"%s",rebuildupper[i]);
+			}
+			else break;
+		}
 	}
 	char hudbuf[40];
 	if (StrContains(clsname,"_",false) != -1)
@@ -1130,6 +1195,17 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_antlion");
 		addht("npc_antlionworker");
 		addht("npc_antlionguard");
+		addht("npc_zombie_scientist");
+		addht("npc_zombie_scientist_torso");
+		addht("npc_zombie_security");
+		addht("npc_alien_slave");
+		addht("npc_houndeye");
+		addht("npc_tentacle");
+		addht("npc_bullsquid");
+		addht("npc_sentry_ceiling");
+		addht("npc_human_grunt");
+		addht("npc_human_commander");
+		addht("npc_human_medic");
 		addht("monster_alien_slave");
 		addht("monster_bullchicken");
 		addht("monster_headcrab");
@@ -1267,7 +1343,8 @@ public Action findairel(int ent, char[] clsname)
 			char subj[32];
 			GetEntPropString(thisent,Prop_Data,"m_iszSubject",subj,sizeof(subj));
 			int act = GetEntProp(thisent,Prop_Data,"m_bIsActive");
-			if ((StrContains(subj,"player",false) == -1) && (act != 0))
+			int recip = GetEntProp(thisent,Prop_Data,"m_bReciprocal");
+			if ((StrContains(subj,"player",false) == -1) && (act != 0) && (recip == 1))
 			{
 				PushArrayString(airelarr, prevtmp);
 			}
