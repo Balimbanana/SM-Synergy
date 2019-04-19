@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.80"
-			"Previous"	"1.79"
+			"Latest"  	"1.81"
+			"Previous"	"1.80"
 		}
 		
-		"Notes"	"Reconfigured array reset, enabled friendfoe colors for sm_healthfriendlies 1."
+		"Notes"	"Added many entities, reconfigured HT detect, rebuilt uppercase detect."
 	}
 	
 	"Files"
