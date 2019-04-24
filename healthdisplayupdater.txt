@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.81"
-			"Previous"	"1.80"
+			"Latest"  	"1.82"
+			"Previous"	"1.81"
 		}
 		
 		"Notes"	"Added many entities, reconfigured HT detect, rebuilt uppercase detect."
