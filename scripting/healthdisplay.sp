@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.81"
+#define PLUGIN_VERSION "1.82"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -351,6 +351,7 @@ public Action cleararr(Handle timer)
 	addht("npc_human_grunt");
 	addht("npc_human_commander");
 	addht("npc_human_medic");
+	addht("npc_human_grenadier");
 	addht("monster_alien_slave");
 	addht("monster_bullchicken");
 	addht("monster_headcrab");
@@ -677,7 +678,7 @@ public Action ShowTimer(Handle timer)
 									else if (StrContains(targn,"anne",false) != -1) Format(clsname,sizeof(clsname),"Anne");
 									else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Arthur");
 									else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Sarah");
-									else if (StrContains(targn,"mina",false) != -1) Format(clsname,sizeof(clsname),"Mina");
+									else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Mina");
 									else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
@@ -870,7 +871,7 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		else if (StrEqual(targn,"anne",false)) Format(clsname,sizeof(clsname),"Friend: Anne");
 		else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Friend: Arthur");
 		else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Friend: Sarah");
-		else if (StrContains(targn,"mina",false) != -1) Format(clsname,sizeof(clsname),"Friend: Mina");
+		else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Friend: Mina");
 		else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"Friend: John");
 		else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Friend: Mitch");
 		else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Friend: Argento");
@@ -1206,6 +1207,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_human_grunt");
 		addht("npc_human_commander");
 		addht("npc_human_medic");
+		addht("npc_human_grenadier");
 		addht("monster_alien_slave");
 		addht("monster_bullchicken");
 		addht("monster_headcrab");
