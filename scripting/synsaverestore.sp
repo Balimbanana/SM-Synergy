@@ -5,7 +5,6 @@
 #undef REQUIRE_EXTENSIONS
 #tryinclude <SteamWorks>
 #tryinclude <updater>
-#tryinclude <voteglobalset>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
@@ -19,7 +18,8 @@ bool reloadingmap = false;
 bool allowvotereloadsaves = false; //Set by cvar sm_reloadsaves
 bool allowvotecreatesaves = false; //Set by cvar sm_createsaves
 bool rmsaves = false; //Set by cvar sm_disabletransition
-bool transitionply = false;
+bool transitionply = false; //Set by cvar sm_disabletransition 2
+bool fallbackequip = false; //Set by cvar sm_equipfallback_disable
 bool reloadaftersetup = false;
 int WeapList = -1;
 int reloadtype = 0;
@@ -46,8 +46,19 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.88"
+#define PLUGIN_VERSION "1.89"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
+
+Menu g_hVoteMenu = null;
+#define VOTE_NO "###no###"
+#define VOTE_YES "###yes###"
+
+enum voteType
+{
+	question
+}
+
+new voteType:g_voteType = voteType:question;
 
 public Plugin:myinfo = 
 {
@@ -67,8 +78,8 @@ public void OnPluginStart()
 	transitionid = CreateArray(MAXPLAYERS);
 	transitiondp = CreateArray(MAXPLAYERS);
 	transitionplyorigin = CreateArray(MAXPLAYERS);
-	transitionents = CreateArray(128);
-	ignoreent = CreateArray(128);
+	transitionents = CreateArray(256);
+	ignoreent = CreateArray(256);
 	equiparr = CreateArray(32);
 	RegAdminCmd("savegame",savecurgame,ADMFLAG_RESERVATION,".");
 	RegAdminCmd("loadgame",loadgame,ADMFLAG_PASSWORD,".");
@@ -125,6 +136,11 @@ public void OnPluginStart()
 	}
 	HookConVarChange(disabletransitionh, disabletransitionch);
 	CloseHandle(disabletransitionh);
+	Handle equipfallbh = CreateConVar("sm_equipfallback_disable", "0", "Disables fallback equips when player spawns after transition.", _, true, 0.0, true, 1.0);
+	if (GetConVarBool(equipfallbh) == true) fallbackequip = false;
+	else fallbackequip = true;
+	HookConVarChange(equipfallbh, equipfallbch);
+	CloseHandle(equipfallbh);
 	RegServerCmd("changelevel",resettransition);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	AutoExecConfig(true, "synsaverestore");
@@ -200,6 +216,12 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 		rmsaves = false;
 		transitionply = false;
 	}
+}
+
+public equipfallbch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) fallbackequip = false;
+	else fallbackequip = true;
 }
 
 public Action votereloadchk(int client, int args)
@@ -872,7 +894,7 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			votereloadchk(param1,0);
 			return 0;
 		}
-		else if ((voteinprogress) || (IsVoteInProgress()))
+		else if (IsVoteInProgress())
 		{
 			PrintToChat(param1,"There is a vote already in progress.");
 			return 0;
@@ -890,7 +912,6 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			g_hVoteMenu.DisplayVoteToAll(20);
 			votetime = Time + 60;
 			reloadtype = 2;
-			voteinprogress = true;
 		}
 		else if ((StrEqual(info,"createsave",false)) && (votetime <= Time))
 		{
@@ -905,7 +926,6 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			g_hVoteMenu.DisplayVoteToAll(20);
 			votetime = Time + 60;
 			reloadtype = 4;
-			voteinprogress = true;
 		}
 		else if ((StrEqual(info,"checkpoint",false)) && (votetime <= Time))
 		{
@@ -920,7 +940,6 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			g_hVoteMenu.DisplayVoteToAll(20);
 			votetime = Time + 60;
 			reloadtype = 1;
-			voteinprogress = true;
 		}
 		else if ((strlen(info) > 1) && (strlen(reloadthissave) < 1) && (votetime <= Time))
 		{
@@ -936,7 +955,6 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			votetime = Time + 60;
 			reloadtype = 3;
 			Format(reloadthissave,sizeof(reloadthissave),info);
-			voteinprogress = true;
 		}
 		else if (votetime > Time)
 			PrintToChat(param1,"You must wait %i seconds.",RoundFloat(votetime)-RoundFloat(Time));
@@ -1114,7 +1132,6 @@ public void OnMapStart()
 		DispatchSpawn(logsv);
 		ActivateEntity(logsv);
 	}
-	voteinprogress = false;
 	Handle savedirh = FindConVar("sv_savedir");
 	if (savedirh != INVALID_HANDLE)
 	{
@@ -1374,6 +1391,13 @@ public void OnMapStart()
 					int sleepstate = ReadPackCell(dp);
 					char npctype[4];
 					ReadPackString(dp,npctype,sizeof(npctype));
+					char solidity[4];
+					ReadPackString(dp,solidity,sizeof(solidity));
+					int gunenable = ReadPackCell(dp);
+					char gunenablech[4];
+					Format(gunenablech,sizeof(gunenablech),"%i",gunenable);
+					char defanim[32];
+					ReadPackString(dp,defanim,sizeof(defanim));
 					char scriptinf[256];
 					ReadPackString(dp,scriptinf,sizeof(scriptinf));
 					if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"d2_prison_08",false)))
@@ -1438,6 +1462,9 @@ public void OnMapStart()
 						if (strlen(state) > 0) DispatchKeyValue(ent,"State",state);
 						if (strlen(target) > 0) DispatchKeyValue(ent,"Target",target);
 						if (HasEntProp(ent,Prop_Data,"m_Type")) DispatchKeyValue(ent,"citizentype",npctype);
+						if (HasEntProp(ent,Prop_Data,"m_nSolidType")) DispatchKeyValue(ent,"solid",solidity);
+						if (HasEntProp(ent,Prop_Data,"m_bHasGun")) DispatchKeyValue(ent,"EnableGun",gunenablech);
+						if ((strlen(defanim) > 0) && (HasEntProp(ent,Prop_Data,"m_iszDefaultAnim"))) DispatchKeyValue(ent,"DefaultAnim",defanim);
 						if (!StrEqual(scriptinf,"endofpack",false))
 						{
 							char scriptexp[28][64];
@@ -1567,6 +1594,7 @@ public void OnMapEnd()
 		ClearArray(transitionid);
 		ClearArray(transitiondp);
 		ClearArray(transitionplyorigin);
+		ClearArray(transitionents);
 		ClearArray(equiparr);
 		prevmap = "";
 	}
@@ -1634,6 +1662,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		ClearArray(transitionid);
 		ClearArray(transitiondp);
 		ClearArray(transitionplyorigin);
+		ClearArray(ignoreent);
 		char maptochange[64];
 		GetCurrentMap(prevmap,sizeof(prevmap));
 		if (validchange) GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
@@ -1958,7 +1987,9 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 						char state[4];
 						char target[32];
 						char npctype[4];
-						int doorstate, sleepstate;
+						char solidity[4];
+						char defanim[32];
+						int doorstate, sleepstate, gunenable;
 						if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 						if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 						if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
@@ -1985,13 +2016,16 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 							if (par != -1)
 							{
 								GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
-								char parentcls[32];
-								GetEntityClassname(par,parentcls,sizeof(parentcls));
-								if (((StrEqual(parentcls,"func_door",false)) || (StrEqual(parentcls,"func_tracktrain",false))) && (StrContains(clsname,"npc_",false) == -1))
+								if (!StrEqual(parentname,"train_model",false))
 								{
-									CloseHandle(dp);
-									AcceptEntityInput(i,"kill");
-									transitionthis = false;
+									char parentcls[32];
+									GetEntityClassname(par,parentcls,sizeof(parentcls));
+									if (((StrEqual(parentcls,"func_door",false)) || (StrEqual(parentcls,"func_tracktrain",false))) && (StrContains(clsname,"npc_",false) == -1))
+									{
+										CloseHandle(dp);
+										transitionthis = false;
+										PushArrayCell(ignoreent,i);
+									}
 								}
 							}
 						}
@@ -2012,6 +2046,13 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 							int inpctype = GetEntProp(i,Prop_Data,"m_Type");
 							Format(npctype,sizeof(npctype),"%i",inpctype);
 						}
+						if (HasEntProp(i,Prop_Data,"m_nSolidType"))
+						{
+							int solidtype = GetEntProp(i,Prop_Data,"m_nSolidType");
+							Format(solidity,sizeof(solidity),"%i",solidtype);
+						}
+						if (HasEntProp(i,Prop_Data,"m_bHasGun")) gunenable = GetEntProp(i,Prop_Data,"m_bHasGun");
+						if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
 						if (transitionthis)
 						{
 							WritePackString(dp,clsname);
@@ -2035,6 +2076,9 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 							WritePackCell(dp,doorstate);
 							WritePackCell(dp,sleepstate);
 							WritePackString(dp,npctype);
+							WritePackString(dp,solidity);
+							WritePackCell(dp,gunenable);
+							WritePackString(dp,defanim);
 							WritePackString(dp,"endofpack");
 							PushArrayCell(transitionents,dp);
 							PushArrayCell(ignoreent,i);
@@ -2083,9 +2127,11 @@ void transitionthisent(int i)
 	char state[4];
 	char target[32];
 	char npctype[4];
+	char solidity[4];
 	char scriptinf[256];
 	char scrtmp[64];
-	int doorstate, sleepstate;
+	char defanim[32];
+	int doorstate, sleepstate, gunenable;
 	if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 	if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 	if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
@@ -2208,6 +2254,13 @@ void transitionthisent(int i)
 		int scrtmpi = GetEntProp(i,Prop_Data,"m_bDisableNPCCollisions");
 		Format(scriptinf,sizeof(scriptinf),"%sm_bDisableNPCCollisions %i",scriptinf,scrtmpi);
 	}
+	if (HasEntProp(i,Prop_Data,"m_nSolidType"))
+	{
+		int solidtype = GetEntProp(i,Prop_Data,"m_nSolidType");
+		Format(solidity,sizeof(solidity),"%i",solidtype);
+	}
+	if (HasEntProp(i,Prop_Data,"m_bHasGun")) gunenable = GetEntProp(i,Prop_Data,"m_bHasGun");
+	if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
 	TrimString(scriptinf);
 	WritePackString(dp,clsname);
 	WritePackString(dp,targn);
@@ -2230,6 +2283,9 @@ void transitionthisent(int i)
 	WritePackCell(dp,doorstate);
 	WritePackCell(dp,sleepstate);
 	WritePackString(dp,npctype);
+	WritePackString(dp,solidity);
+	WritePackCell(dp,gunenable);
+	WritePackString(dp,defanim);
 	WritePackString(dp,scriptinf);
 	PushArrayCell(transitionents,dp);
 	PushArrayCell(ignoreent,i);
@@ -2549,14 +2605,14 @@ public Action anotherdelay(Handle timer, int client)
 					}
 				}
 			}
-			if (GetArraySize(equiparr) < 1) CreateTimer(0.1,delayequip,client);
+			if ((GetArraySize(equiparr) < 1) && (!StrEqual(mapbuf,"bm_c0a0c",false)) && (!StrEqual(mapbuf,"sp_intro",false)) && (!StrEqual(mapbuf,"d1_trainstation_05",false))) CreateTimer(0.1,delayequip,client);
 		}
 	}
 }
 
 public Action delayequip(Handle timer, int client)
 {
-	findentwdis(MaxClients+1,"info_player_equip");
+	if (fallbackequip) findentwdis(MaxClients+1,"info_player_equip");
 	if ((IsClientConnected(client)) && (IsValidEntity(client)) && (IsClientInGame(client)) && (IsPlayerAlive(client)))
 	{
 		if (GetArraySize(equiparr) > 0)
@@ -2593,7 +2649,7 @@ findentwdis(int ent, char[] clsname)
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
 		PushArrayCell(equiparr,thisent);
-		findent(thisent++,clsname);
+		findentwdis(thisent++,clsname);
 	}
 }
 
