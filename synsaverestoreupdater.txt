@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.89"
-			"Previous"	"1.88"
+			"Latest"  	"1.90"
+			"Previous"	"1.89"
 		}
 		
-		"Notes"	"Added cvar to disable equip fallbacks. Added more keys to transition table."
+		"Notes"	"Added static Alyx transition to ep1_citadel_01, 02, 02b. Adjusted transition origin canals_09."
 	}
 	
 	"Files"
