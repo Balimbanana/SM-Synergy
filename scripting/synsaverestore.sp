@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.89"
+#define PLUGIN_VERSION "1.90"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1418,6 +1418,24 @@ public void OnMapStart()
 						porigin[1] = 112.0;
 						porigin[2] = 878.0;
 					}
+					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_01",false)))
+					{
+						porigin[0] = -6208.0;
+						porigin[1] = 6424.0;
+						porigin[2] = 2685.0;
+					}
+					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_02",false)))
+					{
+						porigin[0] = -8602.0;
+						porigin[1] = 924.0;
+						porigin[2] = 837.0;
+					}
+					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_02b",false)))
+					{
+						porigin[0] = 1951.0;
+						porigin[1] = 4367.0;
+						porigin[2] = 2532.0;
+					}
 					else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_06",false)))
 					{
 						porigin[0] = -448.0;
@@ -1730,7 +1748,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 				{
 					GetClientAbsAngles(i,plyangs);
 					GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
-					if (FindStringInArray(transitionplyorigin,SteamID) != -1)
+					if ((FindStringInArray(transitionplyorigin,SteamID) != -1) && (!StrEqual(maptochange,"d1_canals_09",false)))
 					{
 						GetClientAbsOrigin(i,plyorigin);
 						plyorigin[0]-=landmarkorigin[0];
