@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.90"
+#define PLUGIN_VERSION "1.91"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1447,6 +1447,12 @@ public void OnMapStart()
 						porigin[0] = 4244.0;
 						porigin[1] = -1708.0;
 						porigin[2] = 425.0;
+					}
+					else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_03",false)))
+					{
+						porigin[0] = -1300.0;
+						porigin[1] = -3885.0;
+						porigin[2] = -855.0;
 					}
 					int ent = CreateEntityByName(clsname);
 					if (TR_PointOutsideWorld(porigin))
