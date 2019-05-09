@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.90"
-			"Previous"	"1.89"
+			"Latest"  	"1.91"
+			"Previous"	"1.90"
 		}
 		
-		"Notes"	"Added static Alyx transition to ep1_citadel_01, 02, 02b. Adjusted transition origin canals_09."
+		"Notes"	"Added static Vort transition to ep2_outland_03."
 	}
 	
 	"Files"
