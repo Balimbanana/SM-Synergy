@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.94"
-			"Previous"	"1.93"
+			"Latest"  	"1.95"
+			"Previous"	"1.94"
 		}
 		
-		"Notes"	"Added more validation to a couple functions."
+		"Notes"	"Disabled !alyx on certain maps."
 	}
 	
 	"Files"
