@@ -46,7 +46,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.91"
+#define PLUGIN_VERSION "1.92"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2410,6 +2410,8 @@ void saveresetveh(bool rmsave)
 			if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
 			{
 				vehicles[i] = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+				char vehiclecls[32];
+				if (vehicles[i] != -1) GetEntityClassname(vehicles[i],vehiclecls,sizeof(vehiclecls));
 				if (vehicles[i] > MaxClients)
 				{
 					int driver = GetEntProp(i,Prop_Data,"m_iHideHUD");
@@ -2456,6 +2458,11 @@ void saveresetveh(bool rmsave)
 					WritePackFloat(dp,ang1[i]);
 					CreateTimer(0.01,
 					*/
+				}
+				else if ((StrEqual(clsname,"prop_vehicle_prisoner_pod",false)) || (StrContains(clsname,"prop_vehicle_choreo",false) == 0))
+				{
+					SetVariantString("!activator");
+					AcceptEntityInput(vehicles[i],"EnterVehicleImmediate",i);
 				}
 			}
 		}
