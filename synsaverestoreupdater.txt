@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.91"
-			"Previous"	"1.90"
+			"Latest"  	"1.92"
+			"Previous"	"1.91"
 		}
 		
-		"Notes"	"Added static Vort transition to ep2_outland_03."
+		"Notes"	"Fixed clients being kicked out of choreo vehicles on savereset."
 	}
 	
 	"Files"
