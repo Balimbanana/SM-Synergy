@@ -14,6 +14,7 @@ bool enterfrom03 = false;
 bool enterfrom03pb = false;
 bool enterfrom08 = false;
 bool enterfrom08pb = false;
+bool enterfromep1 = false;
 bool reloadingmap = false;
 bool allowvotereloadsaves = false; //Set by cvar sm_reloadsaves
 bool allowvotecreatesaves = false; //Set by cvar sm_createsaves
@@ -46,7 +47,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.92"
+#define PLUGIN_VERSION "1.93"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1146,6 +1147,16 @@ public void OnMapStart()
 	GetCurrentMap(mapbuf,sizeof(mapbuf));
 	if (StrContains(mapbuf,"_spymap_ep3",false) != -1)
 		findtrigs(-1,"trigger_once");
+	if ((StrEqual(mapbuf,"remount",false)) && (enterfromep1))
+	{
+		int loginp = CreateEntityByName("logic_auto");
+		DispatchKeyValue(loginp, "spawnflags","1");
+		DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep1,kill,,0,-1");
+		DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep2,Enable,,0,-1");
+		DispatchSpawn(loginp);
+		ActivateEntity(loginp);
+		enterfromep1 = false;
+	}
 	if (reloadingmap)
 	{
 		if ((enterfrom04pb) && (StrEqual(mapbuf,"ep2_outland_02",false)))
@@ -1669,12 +1680,19 @@ public Action resettransition(int args)
 		ClearArray(equiparr);
 		prevmap = "";
 	}
+	char getmap[64];
+	GetCmdArg(1,getmap,sizeof(getmap));
+	char curmap[64];
+	GetCurrentMap(curmap,sizeof(curmap));
+	if ((StrEqual(getmap,"remount",false)) && (StrEqual(curmap,"ep1_c17_06",false))) enterfromep1 = true;
+	else enterfromep1 = false;
 	return Plugin_Continue;
 }
 
 public Action onchangelevel(const char[] output, int caller, int activator, float delay)
 {
 	bool validchange = false;
+	enterfromep1 = false;
 	if (rmsaves)
 	{
 		if ((IsValidEntity(caller)) && (IsEntNetworkable(caller)))
