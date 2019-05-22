@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.92"
-			"Previous"	"1.91"
+			"Latest"  	"1.93"
+			"Previous"	"1.92"
 		}
 		
-		"Notes"	"Fixed clients being kicked out of choreo vehicles on savereset."
+		"Notes"	"Added remount configuration."
 	}
 	
 	"Files"
