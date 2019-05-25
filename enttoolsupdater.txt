@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.08"
-			"Previous"	"1.07"
+			"Latest"  	"1.09"
+			"Previous"	"1.08"
 		}
 		
-		"Notes"	"Added much more robust cinp and sm_sep configurations. Added setmdl with detection and precaching."
+		"Notes"	"Added much more robust cinp and sm_sep configurations. Added setmdl with detection and precaching. Added SetMass fix and chkdist on listents."
 	}
 	
 	"Files"
