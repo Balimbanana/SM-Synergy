@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.93"
-			"Previous"	"1.92"
+			"Latest"  	"1.94"
+			"Previous"	"1.93"
 		}
 		
-		"Notes"	"Added remount configuration."
+		"Notes"	"Changed equip fallback system a bit."
 	}
 	
 	"Files"
