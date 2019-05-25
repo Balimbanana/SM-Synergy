@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.07"
-			"Previous"	"1.06"
+			"Latest"  	"1.08"
+			"Previous"	"1.07"
 		}
 		
-		"Notes"	"Increased amount of information and entities you can retrieve through listents/findents added param full for more info."
+		"Notes"	"Added much more robust cinp and sm_sep configurations. Added setmdl with detection and precaching."
 	}
 	
 	"Files"
