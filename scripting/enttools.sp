@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.08"
+#define PLUGIN_VERSION "1.09"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -358,6 +358,33 @@ public Action cinp(int client, int args)
 		}
 		SetVariantString(input);
 		AcceptEntityInput(targ,second);
+		if (StrEqual(second,"SetMass",false))
+		{
+			char targn[64];
+			if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+			SetEntityMoveType(targ,MOVETYPE_NOCLIP);
+			int convert = CreateEntityByName("phys_convert");
+			if (convert != -1)
+			{
+				if (strlen(targn) < 1)
+				{
+					if (HasEntProp(targ,Prop_Data,"m_iName")) SetEntPropString(targ,Prop_Data,"m_iName","syntmpmasstarg");
+					Format(targn,sizeof(targn),"syntmpmasstarg");
+				}
+				DispatchKeyValue(convert,"target",targn);
+				DispatchKeyValue(convert,"swapmodel",targn);
+				DispatchKeyValue(convert,"massoverride",input);
+				DispatchSpawn(convert);
+				ActivateEntity(convert);
+				AcceptEntityInput(convert,"ConvertTarget");
+				AcceptEntityInput(convert,"kill");
+				if ((HasEntProp(targ,Prop_Data,"m_iName")) && (StrEqual(targn,"syntmpmasstarg",false)))
+				{
+					SetEntPropString(targ,Prop_Data,"m_iName","");
+					CreateTimer(0.2,ResetTargn,targ,TIMER_FLAG_NO_MAPCHANGE);
+				}
+			}
+		}
 		return Plugin_Handled;
 	}
 	PrintToConsole(client,"%s",fullinp);
@@ -503,6 +530,14 @@ public Action cinp(int client, int args)
 		}
 	}
 	return Plugin_Handled;
+}
+
+public Action ResetTargn(Handle timer, int targ)
+{
+	if (IsValidEntity(targ))
+	{
+		if (HasEntProp(targ,Prop_Data,"m_iName")) SetEntPropString(targ,Prop_Data,"m_iName","");
+	}
 }
 
 public Action SetTargMdl(int client, int args)
@@ -715,8 +750,8 @@ public Action listents(int client, int args)
 					GetEntPropString(targ,Prop_Data,"m_iName",targname,sizeof(targname));
 					if (HasEntProp(targ,Prop_Data,"m_iGlobalname"))
 						GetEntPropString(targ,Prop_Data,"m_iGlobalname",globname,sizeof(globname));
-					if (HasEntProp(targ,Prop_Send,"m_vecOrigin"))
-						GetEntPropVector(targ,Prop_Send,"m_vecOrigin",vec);
+					if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",vec);
+					else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",vec);
 					if (HasEntProp(targ,Prop_Send,"m_angRotation"))
 						GetEntPropVector(targ,Prop_Send,"m_angRotation",angs);
 					if (HasEntProp(targ,Prop_Data,"m_hParent"))
@@ -919,6 +954,16 @@ public Action listents(int client, int args)
 							else PrintToChat(client,"Health: %i Max Health: %i",targh,targmh);
 						}
 					}
+					if (client != 0)
+					{
+						float clorigin[3];
+						GetClientAbsOrigin(client,clorigin);
+						float chkdist = GetVectorDistance(clorigin,vec,false);
+						if (chkdist < 500.0)
+						{
+							PrintToChat(client,"%i %s is %1.f away from you.",targ,targname,chkdist);
+						}
+					}
 				}
 				else
 				{
@@ -933,6 +978,16 @@ public Action listents(int client, int args)
 					else if (HasEntProp(j,Prop_Send,"m_vecOrigin")) GetEntPropVector(j,Prop_Send,"m_vecOrigin",entorigin);
 					if (client == 0) PrintToServer("ID: %i %s %s Origin %f %f %f",j,clsname,fname,entorigin[0],entorigin[1],entorigin[2]);
 					else PrintToChat(client,"ID: %i %s %s Origin %f %f %f",j,clsname,fname,entorigin[0],entorigin[1],entorigin[2]);
+					if (client != 0)
+					{
+						float clorigin[3];
+						GetClientAbsOrigin(client,clorigin);
+						float chkdist = GetVectorDistance(clorigin,entorigin,false);
+						if (chkdist < 500.0)
+						{
+							PrintToChat(client,"%i %s is %1.f away from you.",j,fname,chkdist);
+						}
+					}
 				}
 			}
 		}
