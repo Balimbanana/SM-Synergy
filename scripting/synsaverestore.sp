@@ -47,7 +47,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.93"
+#define PLUGIN_VERSION "1.94"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2613,7 +2613,7 @@ public Action anotherdelay(Handle timer, int client)
 		}
 		else
 		{
-			if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_equip");
+			findent(MaxClients+1,"info_player_equip");
 			bool recheck = false;
 			if (GetArraySize(equiparr) > 0)
 			{
@@ -2686,7 +2686,7 @@ findent(int ent, char[] clsname)
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
 		int bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
-		if (bdisabled == 0)
+		if ((bdisabled == 0) && (FindValueInArray(equiparr,thisent) == -1))
 			PushArrayCell(equiparr,thisent);
 		findent(thisent++,clsname);
 	}
@@ -2697,8 +2697,13 @@ findentwdis(int ent, char[] clsname)
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
-		PushArrayCell(equiparr,thisent);
-		findentwdis(thisent++,clsname);
+		char targneq[64];
+		GetEntPropString(thisent,Prop_Data,"m_iName",targneq,sizeof(targneq));
+		if (((StrEqual(targneq,"syn_equip_start",false)) || (StrEqual(targneq,"syn_equipment_base",false))) && (FindValueInArray(equiparr,thisent) == -1))
+		{
+			PushArrayCell(equiparr,thisent);
+			findentwdis(thisent++,clsname);
+		}
 	}
 }
 
