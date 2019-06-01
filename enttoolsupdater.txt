@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.09"
-			"Previous"	"1.08"
+			"Latest"  	"1.10"
+			"Previous"	"1.09"
 		}
 		
-		"Notes"	"Added much more robust cinp and sm_sep configurations. Added setmdl with detection and precaching. Added SetMass fix and chkdist on listents."
+		"Notes"	"Added airboat to cc and cct. Added much more info in listents full. Added more targeting info for math_ and logic_ ents."
 	}
 	
 	"Files"
