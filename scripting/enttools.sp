@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.11"
+#define PLUGIN_VERSION "1.12"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -128,6 +128,15 @@ public Action CreateStuff(int client, int args)
 			Format(ent,sizeof(ent),"prop_vehicle_jeep");
 			stuff = CreateEntityByName(ent);
 			DispatchKeyValue(stuff,"model","models/buggy.mdl");
+			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
+		}
+		else if ((StrEqual(ent,"jeepmp",false)) || (StrEqual(ent,"buggymp",false)) || (StrEqual(ent,"jeep2seat",false)) || (StrEqual(ent,"buggy2seat",false)))
+		{
+			vehiclemodeldefined = true;
+			vehiclescriptdefined = true;
+			Format(ent,sizeof(ent),"prop_vehicle_jeep");
+			stuff = CreateEntityByName(ent);
+			DispatchKeyValue(stuff,"model","models/vehicles/buggy_p2.mdl");
 			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
 		}
 		else if (StrEqual(ent,"airboat",false))
@@ -264,6 +273,15 @@ public Action CreateStuffThere(int client, int args)
 			Format(ent,sizeof(ent),"prop_vehicle_jeep");
 			stuff = CreateEntityByName(ent);
 			DispatchKeyValue(stuff,"model","models/buggy.mdl");
+			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
+		}
+		else if ((StrEqual(ent,"jeepmp",false)) || (StrEqual(ent,"buggymp",false)) || (StrEqual(ent,"jeep2seat",false)) || (StrEqual(ent,"buggy2seat",false)))
+		{
+			vehiclemodeldefined = true;
+			vehiclescriptdefined = true;
+			Format(ent,sizeof(ent),"prop_vehicle_jeep");
+			stuff = CreateEntityByName(ent);
+			DispatchKeyValue(stuff,"model","models/vehicles/buggy_p2.mdl");
 			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
 		}
 		else if (StrEqual(ent,"airboat",false))
