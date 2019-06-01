@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.10"
-			"Previous"	"1.09"
+			"Latest"  	"1.11"
+			"Previous"	"1.10"
 		}
 		
 		"Notes"	"Added airboat to cc and cct. Added much more info in listents full. Added more targeting info for math_ and logic_ ents."
