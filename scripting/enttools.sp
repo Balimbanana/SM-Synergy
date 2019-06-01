@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.09"
+#define PLUGIN_VERSION "1.10"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -71,16 +71,16 @@ public Action CreateStuff(int client, int args)
 		{
 			if (v > 1)
 			{
-				char tmp[64];
-				char tmp2[64];
+				char tmp[128];
+				char tmp2[128];
 				GetCmdArg(v,tmp,sizeof(tmp));
 				int v1 = v+1;
 				GetCmdArg(v1,tmp2,sizeof(tmp2));
 				DispatchKeyValue(stuff,tmp,tmp2);
 				if (StrEqual(tmp,"origin",false))
 				{
-					char originch[3][16];
-					ExplodeString(tmp2," ",originch,3,16);
+					char originch[4][16];
+					ExplodeString(tmp2," ",originch,4,16);
 					Original[0] = StringToFloat(originch[0]);
 					Original[1] = StringToFloat(originch[1]);
 					Original[2] = StringToFloat(originch[2]);
@@ -129,6 +129,15 @@ public Action CreateStuff(int client, int args)
 			stuff = CreateEntityByName(ent);
 			DispatchKeyValue(stuff,"model","models/buggy.mdl");
 			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
+		}
+		else if (StrEqual(ent,"airboat",false))
+		{
+			vehiclemodeldefined = true;
+			vehiclescriptdefined = true;
+			Format(ent,sizeof(ent),"prop_vehicle_airboat");
+			stuff = CreateEntityByName(ent);
+			DispatchKeyValue(stuff,"model","models/airboat.mdl");
+			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/airboat.txt");
 		}
 		if (stuff == 0) stuff = CreateEntityByName(ent);
 		if (stuff == -1)
@@ -689,7 +698,12 @@ public Handle findentsarrtarg(Handle arr, char[] namechk)
 			}
 		}
 	}
-	if (GetArraySize(arr) < 1) findentsarrtargsub(arr,-1,namechk,"logic_relay");
+	if (GetArraySize(arr) < 1)
+	{
+		findentsarrtargsub(arr,-1,namechk,"logic_relay");
+		findentsarrtargsub(arr,-1,namechk,"logic_timer");
+		findentsarrtargsub(arr,-1,namechk,"math_counter");
+	}
 	if (arr != INVALID_HANDLE)
 		if (GetArraySize(arr) > 0) return arr;
 	return INVALID_HANDLE;
@@ -771,8 +785,8 @@ public Action listents(int client, int args)
 					char cmodel[64];
 					GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 					int spawnflagsi = GetEntityFlags(targ);
-					if (client == 0) PrintToServer("%i %s %s",targ,ent,cmodel);
-					else PrintToChat(client,"%i %s %s",targ,ent,cmodel);
+					char inf[256];
+					Format(inf,sizeof(inf),"\nID: %i %s %s ",targ,ent,cmodel);
 					if (parent > 0)
 					{
 						char parentname[32];
@@ -780,8 +794,12 @@ public Action listents(int client, int args)
 							GetEntPropString(parent,Prop_Data,"m_iName",parentname,sizeof(parentname));
 						char parentcls[32];
 						GetEntityClassname(parent,parentcls,sizeof(parentcls));
-						if (client == 0) PrintToServer("Parented to %i %s %s",parent,parentname,parentcls);
-						else PrintToChat(client,"Parented to %i %s %s",parent,parentname,parentcls);
+						Format(stateinf,sizeof(stateinf),"%sParented to %i %s %s",stateinf,parent,parentname,parentcls);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_flRefireTime"))
+					{
+						float firetime = GetEntPropFloat(targ,Prop_Data,"m_flRefireTime");
+						Format(stateinf,sizeof(stateinf),"%sRefireTime %f ",stateinf,firetime);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_vehicleScript"))
 					{
@@ -822,6 +840,43 @@ public Action listents(int client, int args)
 					{
 						int inpctype = GetEntProp(targ,Prop_Data,"m_Type");
 						Format(stateinf,sizeof(stateinf),"%sNPCType %i ",stateinf,inpctype);
+					}
+					if (StrEqual(ent,"math_counter",false))
+					{
+						int offset = FindDataMapInfo(targ, "m_OutValue");
+						Format(stateinf,sizeof(stateinf),"%sCurrentValue %i ",stateinf,RoundFloat(GetEntDataFloat(targ, offset)));
+					}
+					if (HasEntProp(targ,Prop_Data,"m_spawnflags"))
+					{
+						int sf = GetEntProp(targ,Prop_Data,"m_spawnflags");
+						Format(stateinf,sizeof(stateinf),"%sSpawnflags %i ",stateinf,sf);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_iszSubject"))
+					{
+						char subj[32];
+						GetEntPropString(targ,Prop_Data,"m_iszSubject",subj,sizeof(subj));
+						Format(stateinf,sizeof(stateinf),"%sSubject %s ",stateinf,subj);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_bReciprocal"))
+					{
+						int recip = GetEntProp(targ,Prop_Data,"m_bReciprocal");
+						Format(stateinf,sizeof(stateinf),"%sReciprocal %i ",stateinf,recip);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_target"))
+					{
+						char targetstr[64];
+						PropFieldType type;
+						FindDataMapInfo(targ,"m_target",type);
+						if (type == PropField_String)
+						{
+							GetEntPropString(targ,Prop_Data,"m_target",targetstr,sizeof(targetstr));
+							Format(stateinf,sizeof(stateinf),"%sTarget %s ",stateinf,targetstr);
+						}
+						else if (type == PropField_Entity)
+						{
+							int targent = GetEntPropEnt(targ,Prop_Data,"m_target");
+							if (targent != -1) Format(stateinf,sizeof(stateinf),"%sTarget %i ",stateinf,targent);
+						}
 					}
 					if (HasEntProp(targ,Prop_Data,"m_iszEntry"))
 					{
@@ -908,33 +963,13 @@ public Action listents(int client, int args)
 							}
 						}
 					}
-					TrimString(scriptinf);
-					char inf[172];
-					if (strlen(targname) > 0)
-						Format(inf,sizeof(inf),"Name: %s ",targname);
-					if (strlen(globname) > 0)
-						Format(inf,sizeof(inf),"%sGlobalName: %s ",inf,globname);
-					if (ammotype != -1)
-						Format(inf,sizeof(inf),"%sAmmoType: %i",inf,ammotype);
-					if (spawnflagsi != 0)
-						Format(inf,sizeof(inf),"%sSpawnflags: %i",inf,spawnflagsi);
-					if (vec[0] != -1.1)
-						Format(inf,sizeof(inf),"%s\nOrigin %f %f %f",inf,vec[0],vec[1],vec[2]);
-					if (angs[0] != -1.1)
-						Format(inf,sizeof(inf),"%s Ang: %i %i %i",inf,RoundFloat(angs[0]),RoundFloat(angs[1]),RoundFloat(angs[2]));
-					if (strlen(exprsc) > 0)
-						Format(inf,sizeof(inf),"%s\nTarget: %s %i %s",inf,exprsc,exprsci,exprtargname);
-					if (client == 0) PrintToServer("%s",inf);
-					else PrintToChat(client,"%s",inf);
-					if (strlen(scriptinf) > 1) PrintToConsole(client,"%s",scriptinf);
 					if (HasEntProp(targ,Prop_Data,"m_bCarriedByPlayer"))
 					{
 						int ownert = GetEntProp(targ,Prop_Data,"m_bCarriedByPlayer");
 						int ownerphy = GetEntProp(targ,Prop_Data,"m_bHackedByAlyx");
 						//This property seems to exist on a few ents and changes colors/speed/relations
 						//SetEntProp(targ,Prop_Data,"m_bHackedByAlyx",1);
-						if (client == 0) PrintToServer("Owner: %i %i",ownert,ownerphy);
-						else PrintToChat(client,"Owner: %i %i",ownert,ownerphy);
+						Format(stateinf,sizeof(stateinf),"%sOwner: %i %i",stateinf,ownert,ownerphy);
 					}
 					if ((HasEntProp(targ,Prop_Data,"m_iHealth")) && (HasEntProp(targ,Prop_Data,"m_iMaxHealth")))
 					{
@@ -945,15 +980,33 @@ public Action listents(int client, int args)
 							held = GetEntProp(targ,Prop_Data,"m_bHeld");
 						if (held != -1)
 						{
-							if (client == 0) PrintToServer("Health: %i Max Health: %i Held: %i",targh,targmh,held);
-							else PrintToChat(client,"Health: %i Max Health: %i Held: %i",targh,targmh,held);
+							Format(stateinf,sizeof(stateinf),"%sHealth: %i Max Health: %i Held: %i",stateinf,targh,targmh,held);
 						}
 						else
 						{
-							if (client == 0) PrintToServer("Health: %i Max Health: %i",targh,targmh);
-							else PrintToChat(client,"Health: %i Max Health: %i",targh,targmh);
+							Format(stateinf,sizeof(stateinf),"%sHealth: %i Max Health: %i",stateinf,targh,targmh);
 						}
 					}
+					TrimString(stateinf);
+					TrimString(scriptinf);
+					if (strlen(targname) > 0)
+						Format(inf,sizeof(inf),"%sName: %s ",inf,targname);
+					if (strlen(globname) > 0)
+						Format(inf,sizeof(inf),"%sGlobalName: %s ",inf,globname);
+					if (ammotype != -1)
+						Format(inf,sizeof(inf),"%sAmmoType: %i",inf,ammotype);
+					if (spawnflagsi != 0)
+						Format(inf,sizeof(inf),"%sEntSpawnflags: %i",inf,spawnflagsi);
+					if (vec[0] != -1.1)
+						Format(inf,sizeof(inf),"%s\nOrigin %f %f %f",inf,vec[0],vec[1],vec[2]);
+					if (angs[0] != -1.1)
+						Format(inf,sizeof(inf),"%s Ang: %i %i %i",inf,RoundFloat(angs[0]),RoundFloat(angs[1]),RoundFloat(angs[2]));
+					if (strlen(exprsc) > 0)
+						Format(inf,sizeof(inf),"%s\nTarget: %s %i %s",inf,exprsc,exprsci,exprtargname);
+					if ((strlen(scriptinf) > 1) && (strlen(stateinf) < 1)) PrintToConsole(client,"%s\n%s",inf,scriptinf);
+					if ((strlen(stateinf) > 1) && (strlen(scriptinf) < 1)) PrintToConsole(client,"%s\n%s",inf,stateinf);
+					if ((strlen(stateinf) > 1) && (strlen(scriptinf) > 1)) PrintToConsole(client,"%s\n%s\n%s",inf,stateinf,scriptinf);
+					if ((strlen(stateinf) < 1) && (strlen(scriptinf) < 1)) PrintToConsole(client,"%s",inf);
 					if (client != 0)
 					{
 						float clorigin[3];
