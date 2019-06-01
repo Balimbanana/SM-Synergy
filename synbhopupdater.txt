@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.22"
-			"Previous"	"0.21"
+			"Latest"  	"0.23"
+			"Previous"	"0.22"
 		}
 		
 		"Notes"	"Added additional check for press"
