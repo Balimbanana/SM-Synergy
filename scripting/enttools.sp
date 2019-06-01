@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.10"
+#define PLUGIN_VERSION "1.11"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -265,6 +265,15 @@ public Action CreateStuffThere(int client, int args)
 			stuff = CreateEntityByName(ent);
 			DispatchKeyValue(stuff,"model","models/buggy.mdl");
 			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
+		}
+		else if (StrEqual(ent,"airboat",false))
+		{
+			vehiclemodeldefined = true;
+			vehiclescriptdefined = true;
+			Format(ent,sizeof(ent),"prop_vehicle_airboat");
+			stuff = CreateEntityByName(ent);
+			DispatchKeyValue(stuff,"model","models/airboat.mdl");
+			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/airboat.txt");
 		}
 		if (stuff == 0) stuff = CreateEntityByName(ent);
 		if (stuff == -1)
