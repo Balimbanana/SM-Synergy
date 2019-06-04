@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.13"
+#define PLUGIN_VERSION "1.14"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -730,6 +730,7 @@ public Handle findentsarrtarg(Handle arr, char[] namechk)
 	{
 		findentsarrtargsub(arr,-1,namechk,"logic_relay");
 		findentsarrtargsub(arr,-1,namechk,"logic_timer");
+		findentsarrtargsub(arr,-1,namechk,"info_vehicle_spawn");
 		findentsarrtargsub(arr,-1,namechk,"math_counter");
 	}
 	if (arr != INVALID_HANDLE)
@@ -1151,7 +1152,7 @@ public Action moveentity(int client, int args)
 					ReplaceString(xch,sizeof(xch),"+","");
 					tporgs[0]+=StringToFloat(xch);
 				}
-				else if (StrContains(xch,"-",false) == 0)
+				else if (StrContains(xch,"--",false) == 0)
 				{
 					ReplaceString(xch,sizeof(xch),"-","");
 					tporgs[0]-=StringToFloat(xch);
@@ -1163,7 +1164,7 @@ public Action moveentity(int client, int args)
 					ReplaceString(ych,sizeof(ych),"+","");
 					tporgs[1]+=StringToFloat(ych);
 				}
-				else if (StrContains(ych,"-",false) == 0)
+				else if (StrContains(ych,"--",false) == 0)
 				{
 					ReplaceString(ych,sizeof(ych),"-","");
 					tporgs[1]-=StringToFloat(ych);
@@ -1175,7 +1176,7 @@ public Action moveentity(int client, int args)
 					ReplaceString(zch,sizeof(zch),"+","");
 					tporgs[2]+=StringToFloat(zch);
 				}
-				else if (StrContains(zch,"-",false) == 0)
+				else if (StrContains(zch,"--",false) == 0)
 				{
 					ReplaceString(zch,sizeof(zch),"-","");
 					tporgs[2]-=StringToFloat(zch);
@@ -1192,7 +1193,7 @@ public Action moveentity(int client, int args)
 						ReplaceString(pich,sizeof(pich),"+","");
 						tpangs[0]+=StringToFloat(pich);
 					}
-					else if (StrContains(pich,"-",false) == 0)
+					else if (StrContains(pich,"--",false) == 0)
 					{
 						ReplaceString(pich,sizeof(pich),"-","");
 						tpangs[0]-=StringToFloat(pich);
@@ -1204,7 +1205,7 @@ public Action moveentity(int client, int args)
 						ReplaceString(yawch,sizeof(yawch),"+","");
 						tpangs[1]+=StringToFloat(yawch);
 					}
-					else if (StrContains(yawch,"-",false) == 0)
+					else if (StrContains(yawch,"--",false) == 0)
 					{
 						ReplaceString(yawch,sizeof(yawch),"-","");
 						tpangs[1]-=StringToFloat(yawch);
@@ -1216,7 +1217,7 @@ public Action moveentity(int client, int args)
 						ReplaceString(rolch,sizeof(rolch),"+","");
 						tpangs[2]+=StringToFloat(rolch);
 					}
-					else if (StrContains(rolch,"-",false) == 0)
+					else if (StrContains(rolch,"--",false) == 0)
 					{
 						ReplaceString(rolch,sizeof(rolch),"-","");
 						tpangs[2]-=StringToFloat(rolch);
@@ -1732,6 +1733,11 @@ public Action setprops(int client, int args)
 		{
 			if (client == 0) PrintToServer("%s %f %i",secondintchk,secondfl,secondint);
 			else PrintToChat(client,"%s %f %i",secondintchk,secondfl,secondint);
+		}
+		if (args == 3)
+		{
+			if (HasEntProp(targ,Prop_Send,propname)) pdata = false;
+			else if (HasEntProp(targ,Prop_Data,propname)) pdata = true;
 		}
 		if (usevec)
 		{
