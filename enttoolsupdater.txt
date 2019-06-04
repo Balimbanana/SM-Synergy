@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.12"
-			"Previous"	"1.11"
+			"Latest"  	"1.13"
+			"Previous"	"1.12"
 		}
 		
-		"Notes"	"Added 2seat jeep to cc and cct. Added much more info in listents full. Added more targeting info for math_ and logic_ ents."
+		"Notes"	"Added moveent x y z p y r optional angles and can use + or - or same for no change to each."
 	}
 	
 	"Files"
