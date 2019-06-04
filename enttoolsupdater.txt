@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.13"
-			"Previous"	"1.12"
+			"Latest"  	"1.14"
+			"Previous"	"1.13"
 		}
 		
-		"Notes"	"Added moveent x y z p y r optional angles and can use + or - or same for no change to each."
+		"Notes"	"Added moveent x y z p y r optional angles and can use + or -- or same for no change to each."
 	}
 	
 	"Files"
