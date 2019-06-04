@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.12"
+#define PLUGIN_VERSION "1.13"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -34,6 +34,7 @@ public OnPluginStart()
 	RegAdminCmd("sm_sep",setprops,ADMFLAG_ROOT,".");
 	RegAdminCmd("listents",listents,ADMFLAG_KICK,".");
 	RegAdminCmd("findents",listents,ADMFLAG_KICK,".");
+	RegAdminCmd("moveent",moveentity,ADMFLAG_KICK,".");
 }
 
 public OnLibraryAdded(const char[] name)
@@ -1072,6 +1073,162 @@ public Action listents(int client, int args)
 			}
 		}
 		CloseHandle(arr);
+	}
+	return Plugin_Handled;
+}
+
+public Action moveentity(int client, int args)
+{
+	if (args < 1)
+	{
+		if (client == 0) PrintToServer("Must specify targetname or classname");
+		else PrintToChat(client,"Must specify targetname or classname");
+		return Plugin_Handled;
+	}
+	else if (args < 4)
+	{
+		if (client == 0) PrintToServer("Must specify origin");
+		else PrintToChat(client,"Must specify origin");
+		return Plugin_Handled;
+	}
+	else if ((args > 4) && (args < 7))
+	{
+		if (client == 0) PrintToServer("Must specify all angles to set or just origin");
+		else PrintToChat(client,"Must specify all angles to set or just origin");
+		return Plugin_Handled;
+	}
+	char search[64];
+	GetCmdArg(1,search,sizeof(search));
+	if (strlen(search) > 0)
+	{
+		Handle arr = CreateArray(64);
+		if (StrEqual(search,"!picker",false))
+		{
+			int targ = GetClientAimTarget(client, false);
+			if (targ != -1)
+			{
+				PushArrayCell(arr,targ);
+			}
+		}
+		else
+			findentsarrtarg(arr,search);
+		//Checks must be separate
+		if (arr == INVALID_HANDLE)
+		{
+			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",search);
+			else PrintToChat(client,"No entities found with either classname or targetname of %s",search);
+			return Plugin_Handled;
+		}
+		else if (GetArraySize(arr) < 1)
+		{
+			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",search);
+			else PrintToChat(client,"No entities found with either classname or targetname of %s",search);
+			return Plugin_Handled;
+		}
+		else
+		{
+			for (int i = 0;i<GetArraySize(arr);i++)
+			{
+				int targ = GetArrayCell(arr,i);
+				char xch[16];
+				GetCmdArg(2,xch,sizeof(xch));
+				char ych[16];
+				GetCmdArg(3,ych,sizeof(ych));
+				char zch[16];
+				GetCmdArg(4,zch,sizeof(zch));
+				char pich[16];
+				char yawch[16];
+				char rolch[16];
+				float tporgs[3];
+				float tpangs[3];
+				if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",tporgs);
+				else if (HasEntProp(targ,Prop_Send,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecAbsOrigin",tporgs);
+				if (HasEntProp(targ,Prop_Send,"m_vecAngles")) GetEntPropVector(targ,Prop_Send,"m_vecAngles",tpangs);
+				else if (HasEntProp(targ,Prop_Data,"m_angAbsRotation")) GetEntPropVector(targ,Prop_Data,"m_angAbsRotation",tpangs);
+				else if (HasEntProp(targ,Prop_Send,"m_angAbsRotation")) GetEntPropVector(targ,Prop_Send,"m_angAbsRotation",tpangs);
+				if (StrContains(xch,"+",false) == 0)
+				{
+					ReplaceString(xch,sizeof(xch),"+","");
+					tporgs[0]+=StringToFloat(xch);
+				}
+				else if (StrContains(xch,"-",false) == 0)
+				{
+					ReplaceString(xch,sizeof(xch),"-","");
+					tporgs[0]-=StringToFloat(xch);
+				}
+				else if (!StrEqual(xch,"same",false))
+					tporgs[0] = StringToFloat(xch);
+				if (StrContains(ych,"+",false) == 0)
+				{
+					ReplaceString(ych,sizeof(ych),"+","");
+					tporgs[1]+=StringToFloat(ych);
+				}
+				else if (StrContains(ych,"-",false) == 0)
+				{
+					ReplaceString(ych,sizeof(ych),"-","");
+					tporgs[1]-=StringToFloat(ych);
+				}
+				else if (!StrEqual(ych,"same",false))
+					tporgs[1] = StringToFloat(ych);
+				if (StrContains(zch,"+",false) == 0)
+				{
+					ReplaceString(zch,sizeof(zch),"+","");
+					tporgs[2]+=StringToFloat(zch);
+				}
+				else if (StrContains(zch,"-",false) == 0)
+				{
+					ReplaceString(zch,sizeof(zch),"-","");
+					tporgs[2]-=StringToFloat(zch);
+				}
+				else if (!StrEqual(zch,"same",false))
+					tporgs[2] = StringToFloat(zch);
+				if (args > 6)
+				{
+					GetCmdArg(5,pich,sizeof(pich));
+					GetCmdArg(6,yawch,sizeof(yawch));
+					GetCmdArg(7,rolch,sizeof(rolch));
+					if (StrContains(pich,"+",false) == 0)
+					{
+						ReplaceString(pich,sizeof(pich),"+","");
+						tpangs[0]+=StringToFloat(pich);
+					}
+					else if (StrContains(pich,"-",false) == 0)
+					{
+						ReplaceString(pich,sizeof(pich),"-","");
+						tpangs[0]-=StringToFloat(pich);
+					}
+					else if (!StrEqual(pich,"same",false))
+						tpangs[0] = StringToFloat(pich);
+					if (StrContains(yawch,"+",false) == 0)
+					{
+						ReplaceString(yawch,sizeof(yawch),"+","");
+						tpangs[1]+=StringToFloat(yawch);
+					}
+					else if (StrContains(yawch,"-",false) == 0)
+					{
+						ReplaceString(yawch,sizeof(yawch),"-","");
+						tpangs[1]-=StringToFloat(yawch);
+					}
+					else if (!StrEqual(yawch,"same",false))
+						tpangs[1] = StringToFloat(yawch);
+					if (StrContains(rolch,"+",false) == 0)
+					{
+						ReplaceString(rolch,sizeof(rolch),"+","");
+						tpangs[2]+=StringToFloat(rolch);
+					}
+					else if (StrContains(rolch,"-",false) == 0)
+					{
+						ReplaceString(rolch,sizeof(rolch),"-","");
+						tpangs[2]-=StringToFloat(rolch);
+					}
+					else if (!StrEqual(rolch,"same",false))
+						tpangs[2] = StringToFloat(rolch);
+				}
+				TeleportEntity(targ,tporgs,tpangs,NULL_VECTOR);
+				if (client == 0) PrintToServer("Moved %i to origin %f %f %f angles %f %f %f",targ,tporgs[0],tporgs[1],tporgs[2],tpangs[0],tpangs[1],tpangs[2]);
+				else PrintToChat(client,"Moved %i to origin %f %f %f angles %f %f %f",targ,tporgs[0],tporgs[1],tporgs[2],tpangs[0],tpangs[1],tpangs[2]);
+			}
+		}
 	}
 	return Plugin_Handled;
 }
