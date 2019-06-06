@@ -5,6 +5,7 @@
 #undef REQUIRE_EXTENSIONS
 #tryinclude <SteamWorks>
 #tryinclude <updater>
+#tryinclude <synfixes>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
@@ -47,7 +48,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.94"
+#define PLUGIN_VERSION "1.95"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -149,10 +150,19 @@ public void OnPluginStart()
 
 public OnLibraryAdded(const char[] name)
 {
-    if (StrEqual(name,"updater",false))
-    {
-        Updater_AddPlugin(UPDATE_URL);
-    }
+	if (StrEqual(name,"updater",false))
+	{
+		Updater_AddPlugin(UPDATE_URL);
+	}
+	if (StrEqual(name,"SynFixes",false))
+	{
+		SynFixesRunning = true;
+	}
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
+{
+	MarkNativeAsOptional("GetCustomEntList");
 }
 
 public Updater_OnPluginUpdated()
@@ -444,7 +454,7 @@ public Action savecurgamedp(Handle timer, any dp)
 			int crouching = GetEntProp(i,Prop_Send,"m_bDucked");
 			int suitset = GetEntProp(i,Prop_Send,"m_bWearingSuit");
 			char push[564];
-			Format(push,sizeof(push),"%sb%1.f %1.f %1.fb%1.f %1.f %1.fb%sb%i %i %i %i %ib%s",SteamID,plyangs[0],plyangs[1],plyangs[2],plyorigin[0],plyorigin[1],plyorigin[2],curweap,curh,cura,medkitamm,crouching,suitset,ammbufchk);
+			Format(push,sizeof(push),"%s,%1.f %1.f %1.f,%1.f %1.f %1.f,%s,%i %i %i %i %i,%s",SteamID,plyangs[0],plyangs[1],plyangs[2],plyorigin[0],plyorigin[1],plyorigin[2],curweap,curh,cura,medkitamm,crouching,suitset,ammbufchk);
 			WriteFileLine(plyinf,push);
 		}
 	}
@@ -485,12 +495,261 @@ public Action savecurgamedp(Handle timer, any dp)
 		}
 	}
 	CloseHandle(savedirh);
+	char custentinffile[256];
+	Format(custentinffile,sizeof(custentinffile),"%s\\%s\\customentinf.txt",savepath,ctimestamp);
+	ReplaceString(custentinffile,sizeof(custentinffile),"/","\\");
+	if (SynFixesRunning)
+	{
+		Handle custentlist = GetCustomEntList();
+		Handle custentinf = OpenFile(custentinffile,"w");
+		for (int i = MaxClients+1;i<GetMaxEntities();i++)
+		{
+			if (IsValidEntity(i))
+			{
+				char cls[64];
+				GetEntityClassname(i,cls,sizeof(cls));
+				if (FindStringInArray(custentlist,cls) != -1)
+				{
+					WriteFileLine(custentinf,"{");
+					char targn[32];
+					char mdl[64];
+					float porigin[3];
+					float angs[3];
+					if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
+					else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
+					GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+					char vehscript[64];
+					char additionalequip[32];
+					char spawnercls[64];
+					char spawnertargn[64];
+					char parentname[32];
+					char npctarg[4];
+					char npctargpath[32];
+					char defanim[32];
+					int doorstate, sleepstate, sequence, parentattach, body, maxh, curh, sf, hdw, skin, state, npctype;
+					if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
+					if (HasEntProp(i,Prop_Data,"m_iMaxHealth")) maxh = GetEntProp(i,Prop_Data,"m_iMaxHealth");
+					if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+					if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
+					if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
+					if (HasEntProp(i,Prop_Data,"m_spawnEquipment")) GetEntPropString(i,Prop_Data,"m_spawnEquipment",additionalequip,sizeof(additionalequip));
+					if (HasEntProp(i,Prop_Data,"m_spawnflags"))
+					{
+						sf = GetEntProp(i,Prop_Data,"m_spawnflags");
+					}
+					if (HasEntProp(i,Prop_Data,"m_nSkin"))
+					{
+						skin = GetEntProp(i,Prop_Data,"m_nSkin");
+					}
+					if (HasEntProp(i,Prop_Data,"m_nHardwareType"))
+					{
+						hdw = GetEntProp(i,Prop_Data,"m_nHardwareType");
+					}
+					if (HasEntProp(i,Prop_Data,"m_state"))
+					{
+						state = GetEntProp(i,Prop_Data,"m_state");
+					}
+					if (HasEntProp(i,Prop_Data,"m_hParent"))
+					{
+						int parchk = GetEntPropEnt(i,Prop_Data,"m_hParent");
+						if (IsValidEntity(parchk))
+						{
+							if (HasEntProp(parchk,Prop_Data,"m_iName")) GetEntPropString(parchk,Prop_Data,"m_iName",parentname,sizeof(parentname));
+						}
+					}
+					if (HasEntProp(i,Prop_Data,"m_eDoorState")) doorstate = GetEntProp(i,Prop_Data,"m_eDoorState");
+					if (HasEntProp(i,Prop_Data,"m_SleepState")) sleepstate = GetEntProp(i,Prop_Data,"m_SleepState");
+					else sleepstate = -10;
+					if (HasEntProp(i,Prop_Data,"m_Type"))
+					{
+						npctype = GetEntProp(i,Prop_Data,"m_Type");
+					}
+					if (HasEntProp(i,Prop_Data,"m_hTargetEnt"))
+					{
+						int targent = GetEntPropEnt(i,Prop_Data,"m_hTargetEnt");
+						if ((IsValidEntity(targent)) && (IsEntNetworkable(targent)))
+						{
+							if (HasEntProp(targent,Prop_Data,"m_iName")) GetEntPropString(targent,Prop_Data,"m_iName",npctarg,sizeof(npctarg));
+							if (strlen(npctarg) < 1) Format(npctarg,sizeof(npctarg),"%i",targent);
+						}
+					}
+					if (HasEntProp(i,Prop_Data,"m_target"))
+					{
+						PropFieldType type;
+						FindDataMapInfo(i,"m_target",type);
+						if (type == PropField_String)
+						{
+							GetEntPropString(i,Prop_Data,"m_target",npctargpath,sizeof(npctargpath));
+						}
+						else if ((type == PropField_Entity) && (strlen(npctarg) < 1))
+						{
+							int targent = GetEntPropEnt(i,Prop_Data,"m_target");
+							if (targent != -1) Format(npctarg,sizeof(npctarg),"%i",targent);
+						}
+						if ((strlen(npctargpath) < 1) && (HasEntProp(i,Prop_Data,"m_vecDesiredPosition")))
+						{
+							float findtargetpos[3];
+							GetEntPropVector(i,Prop_Data,"m_vecDesiredPosition",findtargetpos);
+							char findpath[128];
+							findpathtrack(-1,findtargetpos,findpath);
+							if (strlen(findpath) > 0) Format(npctargpath,sizeof(npctargpath),"%s",findpath);
+						}
+					}
+					if (HasEntProp(i,Prop_Data,"m_iszNPCClassname")) GetEntPropString(i,Prop_Data,"m_iszNPCClassname",spawnercls,sizeof(spawnercls));
+					if (HasEntProp(i,Prop_Data,"m_ChildTargetName")) GetEntPropString(i,Prop_Data,"m_ChildTargetName",spawnertargn,sizeof(spawnertargn));
+					if (HasEntProp(i,Prop_Data,"m_nSequence")) sequence = GetEntProp(i,Prop_Data,"m_nSequence");
+					if (HasEntProp(i,Prop_Data,"m_iParentAttachment")) parentattach = GetEntProp(i,Prop_Data,"m_iParentAttachment");
+					if (HasEntProp(i,Prop_Data,"m_nBody")) body = GetEntProp(i,Prop_Data,"m_nBody");
+					if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
+					char pushch[256];
+					Format(pushch,sizeof(pushch),"\"origin\" \"%f %f %f\"",porigin[0],porigin[1],porigin[2]);
+					WriteFileLine(custentinf,pushch);
+					Format(pushch,sizeof(pushch),"\"angles\" \"%f %f %f\"",angs[0],angs[1],angs[2]);
+					WriteFileLine(custentinf,pushch);
+					if (strlen(vehscript) > 0)
+					{
+						Format(pushch,sizeof(pushch),"\"vehiclescript\" \"%s\"",vehscript);
+						WriteFileLine(custentinf,pushch);
+					}
+					Format(pushch,sizeof(pushch),"\"spawnflags\" \"%i\"",sf);
+					WriteFileLine(custentinf,pushch);
+					if (strlen(targn) > 0)
+					{
+						Format(pushch,sizeof(pushch),"\"targetname\" \"%s\"",targn);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (strlen(mdl) > 0)
+					{
+						Format(pushch,sizeof(pushch),"\"model\" \"%s\"",mdl);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (sleepstate != -10)
+					{
+						Format(pushch,sizeof(pushch),"\"sleepstate\" \"%i\"",sleepstate);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (strlen(additionalequip) > 0)
+					{
+						Format(pushch,sizeof(pushch),"\"additionalequipment\" \"%s\"",additionalequip);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (strlen(parentname) > 0)
+					{
+						Format(pushch,sizeof(pushch),"\"parentname\" \"%s\"",parentname);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (strlen(npctarg) > 0)
+					{
+						Format(pushch,sizeof(pushch),"\"targetentity\" \"%s\"",npctarg);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (strlen(npctargpath) > 0)
+					{
+						Format(pushch,sizeof(pushch),"\"target\" \"%s\"",npctargpath);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (strlen(defanim) > 0)
+					{
+						Format(pushch,sizeof(pushch),"\"DefaultAnim\" \"%s\"",defanim);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (strlen(spawnercls) > 0)
+					{
+						Format(pushch,sizeof(pushch),"\"NPCType\" \"%s\"",spawnercls);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (strlen(spawnertargn) > 0)
+					{
+						Format(pushch,sizeof(pushch),"\"NPCTargetname\" \"%s\"",spawnertargn);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (curh != 0)
+					{
+						Format(pushch,sizeof(pushch),"\"health\" \"%i\"",curh);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (maxh != 0)
+					{
+						Format(pushch,sizeof(pushch),"\"max_health\" \"%i\"",maxh);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (skin != 0)
+					{
+						Format(pushch,sizeof(pushch),"\"skin\" \"%i\"",skin);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (hdw != 0)
+					{
+						Format(pushch,sizeof(pushch),"\"hardware\" \"%i\"",hdw);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (state != 0)
+					{
+						Format(pushch,sizeof(pushch),"\"npcstate\" \"%i\"",state);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (npctype != 0)
+					{
+						Format(pushch,sizeof(pushch),"\"citizentype\" \"%i\"",npctype);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (doorstate != 0)
+					{
+						Format(pushch,sizeof(pushch),"\"doorstate\" \"%i\"",doorstate);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (sequence != 0)
+					{
+						Format(pushch,sizeof(pushch),"\"sequence\" \"%i\"",sequence);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (parentattach != 0)
+					{
+						Format(pushch,sizeof(pushch),"\"parentattachment\" \"%i\"",parentattach);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (body != 0)
+					{
+						Format(pushch,sizeof(pushch),"\"body\" \"%i\"",body);
+						WriteFileLine(custentinf,pushch);
+					}
+					Format(pushch,sizeof(pushch),"\"classname\" \"%s\"",cls);
+					WriteFileLine(custentinf,pushch);
+					WriteFileLine(custentinf,"}");
+				}
+			}
+		}
+		CloseHandle(custentinf);
+		CloseHandle(custentlist);
+	}
 	if (DirExists(fchk))
 	{
 		if (client == 0) PrintToServer("Save created with name: %s",ctimestamp);
 		else PrintToChat(client,"Save created with name: %s",ctimestamp);
 	}
 	return Plugin_Handled;
+}
+
+void findpathtrack(int ent, float pathorigin[3], char[] findpathname)
+{
+	int thisent = FindEntityByClassname(ent,"path_track");
+	if ((IsValidEntity(thisent)) && (thisent != 0))
+	{
+		float orgs[3];
+		if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",orgs);
+		else if (HasEntProp(thisent,Prop_Send,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Send,"m_vecOrigin",orgs);
+		char orgsch[32];
+		char pathorgs[32];
+		Format(orgsch,sizeof(orgsch),"%1.f %1.f %1.f",orgs[0],orgs[1],orgs[2]);
+		Format(pathorgs,sizeof(pathorgs),"%1.f %1.f %1.f",pathorigin[0],pathorigin[1],pathorigin[2]);
+		if (StrEqual(orgsch,pathorgs))
+		{
+			char targn[128];
+			GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
+			Format(findpathname,128,"%s",targn);
+		}
+		else findpathtrack(thisent++,pathorigin,findpathname);
+	}
 }
 
 public Action loadgame(int client, int args)
@@ -630,7 +889,7 @@ loadthissave(char[] info)
 			while(!IsEndOfFile(plyinf)&&ReadFileLine(plyinf,line,sizeof(line)))
 			{
 				TrimString(line);
-				ExplodeString(line,"b",sets,6,64);
+				ExplodeString(line,",",sets,6,64);
 				PushArrayString(reloadids,sets[0]);
 				PushArrayString(reloadangs,sets[1]);
 				PushArrayString(reloadorgs,sets[2]);
@@ -641,7 +900,7 @@ loadthissave(char[] info)
 				ReplaceString(line,sizeof(line),sets[2],"");
 				ReplaceString(line,sizeof(line),sets[3],"");
 				ReplaceString(line,sizeof(line),sets[4],"");
-				ReplaceString(line,sizeof(line),"bbbbb","");
+				ReplaceString(line,sizeof(line),",,,,,","");
 				if (strlen(line) > 1) PushArrayString(reloadammset,line);
 			}
 			CloseHandle(plyinf);
@@ -653,7 +912,9 @@ loadthissave(char[] info)
 			WritePackCell(dp,reloadcurweaps);
 			WritePackString(dp,sets[3]);
 		}
-		CreateTimer(1.0,reloadtimer);
+		Handle savepathdp = CreateDataPack();
+		WritePackString(savepathdp,savepath);
+		CreateTimer(1.0,reloadtimer,savepathdp);
 		CreateTimer(1.1,reloadtimersetupcl,dp);
 	}
 }
@@ -698,7 +959,7 @@ delthissave(char[] info, int client)
 	return;
 }
 
-public Action reloadtimer(Handle timer)
+public Action reloadtimer(Handle timer, Handle savepathdp)
 {
 	new thereload = CreateEntityByName("player_loadsaved");
 	DispatchSpawn(thereload);
@@ -712,6 +973,29 @@ public Action reloadtimer(Handle timer)
 			if (IsValidEntity(jtmp))
 				AcceptEntityInput(jtmp,"Enable");
 		}
+	}
+	if (SynFixesRunning)
+	{
+		CreateTimer(0.1,reloadentcache,savepathdp);
+	}
+}
+
+public Action reloadentcache(Handle timer, Handle savepathdp)
+{
+	char savepath[256];
+	if (savepathdp != INVALID_HANDLE)
+	{
+		ResetPack(savepathdp);
+		ReadPackString(savepathdp,savepath,sizeof(savepath));
+		CloseHandle(savepathdp);
+	}
+	char entinffile[256];
+	Format(entinffile,sizeof(entinffile),"%s/customentinf.txt",savepath);
+	ReplaceString(entinffile,sizeof(entinffile),"\\","/");
+	PrintToServer("loadcache %s",entinffile);
+	if (FileExists(entinffile,false))
+	{
+		SynFixesReadCache(0,entinffile);
 	}
 }
 
@@ -778,7 +1062,9 @@ public Action reloadtimersetupcl(Handle timer, Handle dp)
 								{
 									int ammindx = StringToInt(ammosets[j]);
 									int ammset = StringToInt(ammosets[arrplus]);
-									SetEntProp(i,Prop_Send,"m_iAmmo",ammset,_,ammindx);
+									int maxindexes = GetEntPropArraySize(i,Prop_Send,"m_iAmmo");
+									if (ammindx <= maxindexes)
+										SetEntProp(i,Prop_Send,"m_iAmmo",ammset,_,ammindx);
 								}
 								j++;
 							}
@@ -1057,7 +1343,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 		else
 		{
 			PrintToChatAll("%t","Vote Successful", RoundToNearest(100.0*percent), totalVotes);
-			if (reloadtype == 1) CreateTimer(0.1,reloadtimer);
+			if (reloadtype == 1) CreateTimer(0.1,reloadtimer,INVALID_HANDLE);
 			else if (reloadtype == 2)
 			{
 				if (StrEqual(mapbuf,"ep2_outland_02",false))
@@ -1189,10 +1475,46 @@ public void OnMapStart()
 		if (StrEqual(mapbuf,"ep1_c17_00",false))
 		{
 			int loginp = CreateEntityByName("logic_auto");
-			DispatchKeyValue(loginp, "spawnflags","1");
-			DispatchKeyValue(loginp, "OnMapSpawn","ss_alyx_duckunder,BeginSequence,,5,-1");
-			DispatchSpawn(loginp);
-			ActivateEntity(loginp);
+			if (loginp != -1)
+			{
+				DispatchKeyValue(loginp, "spawnflags","1");
+				DispatchKeyValue(loginp, "OnMapSpawn","ss_alyx_duckunder,BeginSequence,,5,-1");
+				DispatchSpawn(loginp);
+				ActivateEntity(loginp);
+			}
+		}
+		if (StrEqual(mapbuf,"d1_canals_09",false))
+		{
+			int trigtp = CreateEntityByName("trigger_teleport");
+			if (trigtp != -1)
+			{
+				int starttp = CreateEntityByName("info_teleport_destination");
+				if (starttp != -1)
+				{
+					DispatchKeyValue(starttp,"targetname","syn_startspawntp");
+					float orgs[3];
+					orgs[0] = 7737.0;
+					orgs[1] = 9744.0;
+					orgs[2] = -444.0;
+					float angs[3];
+					angs[1] = 90.0;
+					TeleportEntity(starttp,orgs,angs,NULL_VECTOR);
+					DispatchSpawn(starttp);
+					ActivateEntity(starttp);
+				}
+				DispatchKeyValue(trigtp,"model","*13");
+				DispatchKeyValue(trigtp,"spawnflags","1");
+				DispatchKeyValue(trigtp,"target","syn_startspawntp");
+				float orgs[3];
+				orgs[0] = 7735.0;
+				orgs[1] = 8150.0;
+				orgs[2] = -395.0;
+				float angs[3];
+				angs[1] = 90.0;
+				TeleportEntity(trigtp,orgs,angs,NULL_VECTOR);
+				DispatchSpawn(trigtp);
+				ActivateEntity(trigtp);
+			}
 		}
 		if ((enterfrom03pb) && (StrEqual(mapbuf,"d1_town_02",false)))
 		{
@@ -1772,7 +2094,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 				{
 					GetClientAbsAngles(i,plyangs);
 					GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
-					if ((FindStringInArray(transitionplyorigin,SteamID) != -1) && (!StrEqual(maptochange,"d1_canals_09",false)))
+					if (FindStringInArray(transitionplyorigin,SteamID) != -1)
 					{
 						GetClientAbsOrigin(i,plyorigin);
 						plyorigin[0]-=landmarkorigin[0];
@@ -2070,6 +2392,12 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 									}
 								}
 							}
+						}
+						if (StrEqual(mdl,"models/alyx_emptool_prop.mdl"))
+						{
+							CloseHandle(dp);
+							transitionthis = false;
+							PushArrayCell(ignoreent,i);
 						}
 						if (HasEntProp(i,Prop_Data,"m_state"))
 						{
