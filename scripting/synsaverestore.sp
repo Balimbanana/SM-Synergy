@@ -163,6 +163,7 @@ public OnLibraryAdded(const char[] name)
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
 {
 	MarkNativeAsOptional("GetCustomEntList");
+	MarkNativeAsOptional("SynFixesReadCache");
 }
 
 public Updater_OnPluginUpdated()
