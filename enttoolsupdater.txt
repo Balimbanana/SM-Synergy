@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.14"
-			"Previous"	"1.13"
+			"Latest"  	"1.15"
+			"Previous"	"1.14"
 		}
 		
-		"Notes"	"Added moveent x y z p y r optional angles and can use + or -- or same for no change to each."
+		"Notes"	"Added a couple entity creation types. Added more info from gi. Added more info from sm_sep."
 	}
 	
 	"Files"
