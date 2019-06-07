@@ -1,0 +1,19 @@
+"Updater"
+{
+	"Information"
+	{
+		"Version"
+		{
+			"Latest"  	"1.0"
+			"Previous"	"0.9"
+		}
+		
+		"Notes"	"Init."
+	}
+	
+	"Files"
+	{
+		"Plugin"	"Path_SM/plugins/synspawninvehicle.smx"
+		"Source"	"Path_SM/scripting/synspawninvehicle.sp"
+	}
+}
