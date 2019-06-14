@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.95"
-			"Previous"	"1.94"
+			"Latest"  	"1.96"
+			"Previous"	"1.95"
 		}
 		
-		"Notes"	"Added base for custom ent save list. Added more validation to persistent saves. Added tp on d1_canals_09."
+		"Notes"	"Added backwards compatibility with older saves. Added enterfromep2 remount configuration."
 	}
 	
 	"Files"
