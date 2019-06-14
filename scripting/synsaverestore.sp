@@ -16,6 +16,7 @@ bool enterfrom03pb = false;
 bool enterfrom08 = false;
 bool enterfrom08pb = false;
 bool enterfromep1 = false;
+bool enterfromep2 = false;
 bool reloadingmap = false;
 bool allowvotereloadsaves = false; //Set by cvar sm_reloadsaves
 bool allowvotecreatesaves = false; //Set by cvar sm_createsaves
@@ -48,7 +49,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.95"
+#define PLUGIN_VERSION "1.96"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -890,19 +891,33 @@ loadthissave(char[] info)
 			while(!IsEndOfFile(plyinf)&&ReadFileLine(plyinf,line,sizeof(line)))
 			{
 				TrimString(line);
-				ExplodeString(line,",",sets,6,64);
-				PushArrayString(reloadids,sets[0]);
-				PushArrayString(reloadangs,sets[1]);
-				PushArrayString(reloadorgs,sets[2]);
-				PushArrayString(reloadcurweaps,sets[3]);
-				PushArrayString(reloadstatsset,sets[4]);
-				ReplaceString(line,sizeof(line),sets[0],"");
-				ReplaceString(line,sizeof(line),sets[1],"");
-				ReplaceString(line,sizeof(line),sets[2],"");
-				ReplaceString(line,sizeof(line),sets[3],"");
-				ReplaceString(line,sizeof(line),sets[4],"");
-				ReplaceString(line,sizeof(line),",,,,,","");
-				if (strlen(line) > 1) PushArrayString(reloadammset,line);
+				if (strlen(line) > 0)
+				{
+					int adjustarr = 0;
+					if (StrContains(line,",",false) != -1)
+						ExplodeString(line,",",sets,6,64);
+					else
+						ExplodeString(line,"b",sets,6,64);
+					if (StrEqual(sets[3],"weapon_crow",false))
+					{
+						adjustarr = 1;
+						Format(sets[3],sizeof(sets[]),"%sb%s",sets[3],sets[4]);
+					}
+					PushArrayString(reloadids,sets[0]);
+					PushArrayString(reloadangs,sets[1]);
+					PushArrayString(reloadorgs,sets[2]);
+					PushArrayString(reloadcurweaps,sets[3]);
+					PushArrayString(reloadstatsset,sets[4+adjustarr]);
+					ReplaceString(line,sizeof(line),sets[0],"");
+					ReplaceString(line,sizeof(line),sets[1],"");
+					ReplaceString(line,sizeof(line),sets[2],"");
+					ReplaceString(line,sizeof(line),sets[3],"");
+					ReplaceString(line,sizeof(line),sets[4],"");
+					if ((strlen(sets[5]) > 0) && (adjustarr)) ReplaceString(line,sizeof(line),sets[5],"");
+					ReplaceString(line,sizeof(line),",,,,,","");
+					ReplaceString(line,sizeof(line),"bbb","");
+					if (strlen(line) > 1) PushArrayString(reloadammset,line);
+				}
 			}
 			CloseHandle(plyinf);
 			WritePackCell(dp,reloadids);
@@ -1443,6 +1458,22 @@ public void OnMapStart()
 		DispatchSpawn(loginp);
 		ActivateEntity(loginp);
 		enterfromep1 = false;
+	}
+	else if ((StrEqual(mapbuf,"remount",false)) && (enterfromep2))
+	{
+		int loginp = CreateEntityByName("logic_auto");
+		DispatchKeyValue(loginp, "spawnflags","1");
+		DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep1,kill,,0,-1");
+		DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep2,kill,,0,-1");
+		DispatchKeyValue(loginp, "OnMapSpawn","syn_hudtimer,AddOutput,OnTimer syn_reltohl2:Trigger::0:-1,0,-1");
+		DispatchSpawn(loginp);
+		ActivateEntity(loginp);
+		int syn_reltohl2 = CreateEntityByName("logic_relay");
+		DispatchKeyValue(syn_reltohl2, "targetname","syn_reltohl2");
+		DispatchKeyValue(syn_reltohl2, "OnTrigger","syn_ps,Command,changelevel hl2 d1_trainstation_01,0,1");
+		DispatchSpawn(syn_reltohl2);
+		ActivateEntity(syn_reltohl2);
+		enterfromep2 = false;
 	}
 	if (reloadingmap)
 	{
@@ -2009,6 +2040,8 @@ public Action resettransition(int args)
 	GetCurrentMap(curmap,sizeof(curmap));
 	if ((StrEqual(getmap,"remount",false)) && (StrEqual(curmap,"ep1_c17_06",false))) enterfromep1 = true;
 	else enterfromep1 = false;
+	if ((StrEqual(getmap,"remount",false)) && (StrEqual(curmap,"ep2_outland_12a",false))) enterfromep2 = true;
+	else enterfromep2 = false;
 	return Plugin_Continue;
 }
 
