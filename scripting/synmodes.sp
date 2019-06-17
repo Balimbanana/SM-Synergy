@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.10"
+#define PLUGIN_VERSION "1.11"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -39,6 +39,7 @@ float scoreshowcd[MAXPLAYERS+1];
 bool instspawnb = false;
 bool instspawnuse = false;
 bool isvehiclemap = false;
+bool clspawnforce = false;
 Handle globalsarr = INVALID_HANDLE;
 Handle changelevels = INVALID_HANDLE;
 Handle respawnids = INVALID_HANDLE;
@@ -112,6 +113,11 @@ public OnPluginStart()
 	HookConVarChange(instspawntime, instspawntimech);
 	CloseHandle(instspawntime);
 	CloseHandle(instspawn);
+	Handle instspawnforce = INVALID_HANDLE;
+	instspawnforce = CreateConVar("sm_instspawnforce", "0", "Force player spawn after instspawntime.", _, true, 0.0, true, 1.0);
+	clspawnforce = GetConVarBool(instspawnforce);
+	HookConVarChange(instspawnforce, instspawnforcech);
+	CloseHandle(instspawnforce);
 	Handle mpcvar = INVALID_HANDLE;
 	mpcvar = CreateConVar("mp_autoteambalance", "1", "Enable auto team balance.", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 0.0, true, 1.0);
 	HookConVarChange(mpcvar,teambalancech);
@@ -235,6 +241,12 @@ public instspawnch(Handle convar, const char[] oldValue, const char[] newValue)
 public instspawntimech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	clspawntimemax = StringToInt(newValue);
+}
+
+public instspawnforcech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) clspawnforce = true;
+	else clspawnforce = false;
 }
 
 public teambalancech(Handle convar, const char[] oldValue, const char[] newValue)
@@ -503,7 +515,7 @@ public Action respawntime(Handle timer, int client)
 			ShowHudText(client, 3, "%s",resspawn);
 			CreateTimer(1.0,respawntime,client);
 		}
-		else if (!IsPlayerAlive(client))
+		else if ((!IsPlayerAlive(client)) && (!clspawnforce))
 		{
 			char resspawn[32];
 			Format(resspawn,sizeof(resspawn),"Click to respawn");
@@ -511,6 +523,18 @@ public Action respawntime(Handle timer, int client)
 			ShowHudText(client, 3, "%s",resspawn);
 			clspawntimeallow[client] = true;
 			CreateTimer(1.0,respawntime,client);
+		}
+		else if ((!IsPlayerAlive(client)) && (clspawnforce))
+		{
+			clspawntimeallow[client] = false;
+			clused = GetEntPropEnt(client,Prop_Send,"m_hObserverTarget");
+			if ((clused != -1) && (IsPlayerAlive(clused)) && (!cltouchend(clused)))
+				CreateTimer(0.1,tpclspawnnew,client);
+			else
+			{
+				clused = 0;
+				CreateTimer(0.1,tpclspawnnew,client);
+			}
 		}
 	}
 }
