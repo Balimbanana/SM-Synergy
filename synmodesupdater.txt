@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.10"
-			"Previous"	"1.09"
+			"Latest"  	"1.11"
+			"Previous"	"1.10"
 		}
 		
-		"Notes"	"Adjust save vehicle reset."
+		"Notes"	"Added sm_instspawnforce which will force spawn players when sm_instspawntime runs out."
 	}
 	
 	"Files"
