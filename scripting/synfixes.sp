@@ -27,6 +27,7 @@ int WeapList = -1;
 int spawneramt = 20;
 int restrictmode = 0;
 int clrocket[64];
+bool allownoguide = true;
 bool guiderocket[64];
 bool restrictact = false;
 bool friendlyfire = false;
@@ -40,7 +41,7 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.95"
+#define PLUGIN_VERSION "1.96"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -114,6 +115,10 @@ public void OnPluginStart()
 	restrictact = GetConVarBool(resetspawnermodesh);
 	HookConVarChange(resetspawnermodesh, spawneramtresch);
 	CloseHandle(resetspawnermodesh);
+	Handle noguidecv = CreateConVar("sm_allownoguide","1","Sets whether or not to allow setting no guide on rpg rockets.",_,true,0.0,true,1.0);
+	allownoguide = GetConVarBool(noguidecv);
+	HookConVarChange(noguidecv,noguidech);
+	CloseHandle(noguidecv);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -170,13 +175,14 @@ public void OnMapStart()
 		int skycam = FindEntityByClassname(-1,"sky_camera");
 		if (skycam != -1) AcceptEntityInput(skycam,"kill");
 	}
-	if ((StrContains(mapbuf,"d1_",false) == -1) && (StrContains(mapbuf,"d2_",false) == -1) && (!StrEqual(mapbuf,"d3_breen_01",false)) && (StrContains(mapbuf,"ep1_",false) == -1) && (StrContains(mapbuf,"ep2_outland_",false) == -1))
+	if ((StrContains(mapbuf,"d1_",false) == -1) && (StrContains(mapbuf,"d2_",false) == -1) && (!StrEqual(mapbuf,"d3_breen_01",false)) && (StrContains(mapbuf,"ep1_",false) == -1))
 	{
 		HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigout);
 		HookEntityOutput("scripted_scene","OnStart",EntityOutput:trigout);
 		HookEntityOutput("logic_choreographed_scene","OnStart",EntityOutput:trigout);
 		HookEntityOutput("instanced_scripted_scene","OnStart",EntityOutput:trigout);
-		HookEntityOutput("func_tracktrain","OnStart",EntityOutput:elevatorstart);
+		if (StrContains(mapbuf,"bm_c",false) == -1)
+			HookEntityOutput("func_tracktrain","OnStart",EntityOutput:elevatorstart);
 		HookEntityOutput("func_door","OnOpen",EntityOutput:createelev);
 		HookEntityOutput("func_door","OnClose",EntityOutput:createelev);
 	}
@@ -578,10 +584,13 @@ public Action clspawnpost(Handle timer, int client)
 		{
 			PrintToServer("%N spawned in at %1.f %1.f %1.f\nWorldMins: %1.f %1.f %1.f\nWorldMaxs %1.f %1.f %1.f",client,clorigin[0],clorigin[1],clorigin[2],vMins[0],vMins[1],vMins[2],vMaxs[0],vMaxs[1],vMaxs[2]);
 		}
-		if ((clorigin[0] < vMins[0]) || (clorigin[1] < vMins[1]) || (clorigin[2] < vMins[2]) || (clorigin[0] > vMaxs[0]) || (clorigin[1] > vMaxs[1]) || (clorigin[2] > vMaxs[2]) || (TR_PointOutsideWorld(clorigin)))
+		if (StrContains(mapbuf,"bm_c2a5c",false) == -1)
 		{
-			if (debugoowlvl) PrintToServer("%N spawned out of map, moving to active checkpoint.",client);
-			findspawnpos(client);
+			if ((clorigin[0] < vMins[0]) || (clorigin[1] < vMins[1]) || (clorigin[2] < vMins[2]) || (clorigin[0] > vMaxs[0]) || (clorigin[1] > vMaxs[1]) || (clorigin[2] > vMaxs[2]) || (TR_PointOutsideWorld(clorigin)))
+			{
+				if (debugoowlvl) PrintToServer("%N spawned out of map, moving to active checkpoint.",client);
+				findspawnpos(client);
+			}
 		}
 		if (GetArraySize(equiparr) < 1)
 			findent(MaxClients+1,"info_player_equip");
@@ -613,6 +622,11 @@ public Action clspawnpost(Handle timer, int client)
 		}
 		CloseHandle(weaparr);
 		ClearArray(equiparr);
+		if (HasEntProp(client,Prop_Data,"m_bPlayerUnderwater"))
+		{
+			SetEntProp(client,Prop_Data,"m_bPlayerUnderwater",1);
+			SetEntProp(client,Prop_Data,"m_bPlayerUnderwater",0);
+		}
 		int ViewEnt = GetEntPropEnt(client, Prop_Data, "m_hViewEntity");
 		if (ViewEnt > MaxClients)
 		{
@@ -1047,25 +1061,29 @@ public Action createelev(const char[] output, int caller, int activator, float d
 			GetEntPropString(caller,Prop_Data,"m_ModelName",mdlname,sizeof(mdlname));
 			if (strlen(mdlname) > 0)
 			{
-				int brushent;
-				if (StrContains(mdlname,"*",false) == 0)
-					brushent = CreateEntityByName("func_tracktrain");
-				else
-					brushent = CreateEntityByName("func_brush");
-				DispatchKeyValue(brushent,"model",mdlname);
-				DispatchKeyValue(brushent,"rendermode","10");
-				DispatchKeyValue(brushent,"renderamt","255");
-				DispatchKeyValue(brushent,"rendercolor","0 0 0");
-				DispatchKeyValue(brushent,"disablereceiveshadows","1");
-				DispatchKeyValue(brushent,"DisableShadows","1");
-				DispatchKeyValue(brushent,"solid","6");
-				elevorg[2] = elevorg[2]-1.0;
-				TeleportEntity(brushent,elevorg,angs,NULL_VECTOR);
-				DispatchSpawn(brushent);
-				ActivateEntity(brushent);
-				SetVariantString("!activator");
-				AcceptEntityInput(brushent,"SetParent",caller);
-				if (debuglvl == 3) PrintToServer("Created brush at %1.f %1.f %1.f with model of:\n%s parented to %s",elevorg[0],elevorg[1],elevorg[2],mdlname,targn);
+				int sf = GetEntProp(caller,Prop_Data,"m_spawnflags");
+				if ((!(sf & 4)) && (GetEntityCount() < 2000))
+				{
+					int brushent;
+					if (StrContains(mdlname,"*",false) == 0)
+						brushent = CreateEntityByName("func_tracktrain");
+					else
+						brushent = CreateEntityByName("func_brush");
+					DispatchKeyValue(brushent,"model",mdlname);
+					DispatchKeyValue(brushent,"rendermode","10");
+					DispatchKeyValue(brushent,"renderamt","255");
+					DispatchKeyValue(brushent,"rendercolor","0 0 0");
+					DispatchKeyValue(brushent,"disablereceiveshadows","1");
+					DispatchKeyValue(brushent,"DisableShadows","1");
+					DispatchKeyValue(brushent,"solid","6");
+					elevorg[2] = elevorg[2]-1.0;
+					TeleportEntity(brushent,elevorg,angs,NULL_VECTOR);
+					DispatchSpawn(brushent);
+					ActivateEntity(brushent);
+					SetVariantString("!activator");
+					AcceptEntityInput(brushent,"SetParent",caller);
+					if (debuglvl == 3) PrintToServer("Created brush at %1.f %1.f %1.f with model of:\n%s parented to %s",elevorg[0],elevorg[1],elevorg[2],mdlname,targn);
+				}
 			}
 		}
 	}
@@ -2236,26 +2254,29 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 public OnButtonPress(int client, int button)
 {
-	char curweap[24];
-	GetClientWeapon(client,curweap,sizeof(curweap));
-	int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
-	if ((StrEqual(curweap,"weapon_rpg",false)) && (vehicle == -1))
+	if (allownoguide)
 	{
-		if (guiderocket[client])
+		char curweap[24];
+		GetClientWeapon(client,curweap,sizeof(curweap));
+		int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
+		if ((StrEqual(curweap,"weapon_rpg",false)) && (vehicle == -1))
 		{
-			guiderocket[client] = false;
-			PrintToChat(client,"Turned off rocket guide.");
-			int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
-			SetEntProp(weap,Prop_Send,"m_bGuiding",0);
-			SetEntProp(weap,Prop_Data,"m_bInReload",0);
-			SetEntProp(weap,Prop_Data,"m_nSequence",2);
+			if (guiderocket[client])
+			{
+				guiderocket[client] = false;
+				PrintToChat(client,"Turned off rocket guide.");
+				int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+				SetEntProp(weap,Prop_Send,"m_bGuiding",0);
+				SetEntProp(weap,Prop_Data,"m_bInReload",0);
+				SetEntProp(weap,Prop_Data,"m_nSequence",2);
+			}
+			else
+			{
+				guiderocket[client] = true;
+				PrintToChat(client,"Turned on rocket guide.");
+			}
+			findrockets(-1,client);
 		}
-		else
-		{
-			guiderocket[client] = true;
-			PrintToChat(client,"Turned on rocket guide.");
-		}
-		findrockets(-1,client);
 	}
 }
 
@@ -2379,6 +2400,19 @@ public spawneramtresch(Handle convar, const char[] oldValue, const char[] newVal
 					}
 				}
 			}
+		}
+	}
+}
+
+public noguidech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) allownoguide = true;
+	else
+	{
+		allownoguide = false;
+		for (int i = 1;i<MaxClients+1;i++)
+		{
+			guiderocket[i] = true;
 		}
 	}
 }
