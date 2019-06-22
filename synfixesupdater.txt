@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.95"
-			"Previous"	"1.94"
+			"Latest"  	"1.96"
+			"Previous"	"1.95"
 		}
 		
-		"Notes"	"Disabled !alyx on certain maps."
+		"Notes"	"Added sm_allownoguide for rpg rocket noguide allow. Added m_bPlayerUnderwater check on spawn. Added spawnflag check to brush creation."
 	}
 	
 	"Files"
