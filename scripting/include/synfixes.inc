@@ -15,5 +15,6 @@ native Handle GetCustomEntList();
  *
  * @param client			client index to print debug info to
  * @param cache				path to the cache to read
+ * @param offsetpos			position to offset spawned ents
  */
-native void SynFixesReadCache(int client, char[] cache);
+native void SynFixesReadCache(int client, char[] cache, float offsetpos[3]);
