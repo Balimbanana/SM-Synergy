@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.63"
+#define PLUGIN_VERSION "1.64"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
 public Plugin:myinfo = 
@@ -48,7 +48,9 @@ Handle scarray;
 Handle modelarray2;
 
 Handle bclcookieh = INVALID_HANDLE;
+Handle bclcookie2h = INVALID_HANDLE;
 int bclcookie[MAXPLAYERS];
+int bclcookie2[MAXPLAYERS];
 
 public void OnPluginStart()
 {
@@ -96,9 +98,11 @@ public void OnPluginStart()
 	CreateTimer(1.0, sortarray);
 	CreateTimer(10.0, recheckmodel, _, TIMER_REPEAT);
 	RegConsoleCmd("modelskin",setmodelskin);
+	RegConsoleCmd("modelbody",setmodelbody);
 	RegConsoleCmd("modelpack",showmodelpacks);
 	RegConsoleCmd("modelpacks",showmodelpacks);
 	bclcookieh = RegClientCookie("PlayerModelSkinNum", "Model skin number Settings", CookieAccess_Private);
+	bclcookie2h = RegClientCookie("PlayerModelBodyNum", "Model body number Settings", CookieAccess_Private);
 }
 
 public OnLibraryAdded(const char[] name)
@@ -236,6 +240,29 @@ public Action setmodelskin(int client, int args)
 	return Plugin_Handled;
 }
 
+public Action setmodelbody(int client, int args)
+{
+	if (client == 0) return Plugin_Handled;
+	if (args < 1)
+	{
+		PrintToChat(client,"Usage: !modelbody #");
+		PrintToChat(client,"Sets the body setting that your player model will use.");
+		return Plugin_Handled;
+	}
+	else if (args == 1)
+	{
+		char h[4];
+		GetCmdArg(1,h,sizeof(h));
+		int numset = StringToInt(h);
+		PrintToChat(client,"Set your model body number to %i",numset);
+		bclcookie2[client] = numset;
+		SetClientCookie(client, bclcookie2h, h);
+		SetVariantInt(bclcookie2[client]);
+		AcceptEntityInput(client,"SetBodyGroup");
+	}
+	return Plugin_Handled;
+}
+
 public OnClientCookiesCached(int client)
 {
 	char sValue[32];
@@ -248,6 +275,16 @@ public OnClientCookiesCached(int client)
 	else
 	{
 		bclcookie[client] = StringToInt(sValue);
+	}
+	GetClientCookie(client, bclcookie2h, sValue, sizeof(sValue));
+	if (strlen(sValue) < 1)
+	{
+		bclcookie2[client] = 0;
+		SetClientCookie(client, bclcookie2h, "0");
+	}
+	else
+	{
+		bclcookie2[client] = StringToInt(sValue);
 	}
 }
 
@@ -395,6 +432,8 @@ public Action setmodel(int client, const char[] model)
 		}
 		SetVariantInt(bclcookie[client]);
 		AcceptEntityInput(client,"Skin");
+		SetVariantInt(bclcookie2[client]);
+		AcceptEntityInput(client,"SetBodyGroup");
 	}
 }
 
