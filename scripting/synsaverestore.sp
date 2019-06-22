@@ -49,7 +49,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.96"
+#define PLUGIN_VERSION "1.97"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1008,10 +1008,11 @@ public Action reloadentcache(Handle timer, Handle savepathdp)
 	char entinffile[256];
 	Format(entinffile,sizeof(entinffile),"%s/customentinf.txt",savepath);
 	ReplaceString(entinffile,sizeof(entinffile),"\\","/");
-	PrintToServer("loadcache %s",entinffile);
+	//PrintToServer("loadcache %s",entinffile);
 	if (FileExists(entinffile,false))
 	{
-		SynFixesReadCache(0,entinffile);
+		float offs[3];
+		SynFixesReadCache(0,entinffile,offs);
 	}
 }
 
@@ -1673,7 +1674,7 @@ public void OnMapStart()
 				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 				{
 					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-					if (StrContains(subfilen,"autosave.hl1",false) == -1)
+					if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
 					{
 						DeleteFile(subfilen,false);
 						Handle subfiletarg = OpenFile(subfilen,"wb");
@@ -1711,6 +1712,17 @@ public void OnMapStart()
 		if (strlen(landmarkname) > 0)
 		{
 			findlandmark(-1,"info_landmark");
+			if (SynFixesRunning)
+			{
+				char custentinffile[256];
+				Format(custentinffile,sizeof(custentinffile),"%s\\customenttransitioninf.txt",savedir);
+				if (FileExists(custentinffile,false))
+				{
+					ReplaceString(custentinffile,sizeof(custentinffile),"/","\\");
+					SynFixesReadCache(0,custentinffile,landmarkorigin);
+					DeleteFile(custentinffile,false);
+				}
+			}
 			if (GetArraySize(transitionents) > 0)
 			{
 				for (int i = 0;i<GetArraySize(transitionents);i++)
@@ -1963,7 +1975,7 @@ public void OnMapEnd()
 				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 				{
 					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-					if (StrContains(subfilen,"autosave.hl1",false) == -1)
+					if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
 					{
 						DeleteFile(subfilen,false);
 						Handle subfiletarg = OpenFile(subfilen,"wb");
@@ -2086,7 +2098,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 				{
 					Format(subfilen,sizeof(subfilen),"%s/%s",savedir,subfilen);
-					if (StrContains(subfilen,"autosave.hl1",false) == -1)
+					if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
 					{
 						DeleteFile(subfilen,false);
 						Handle subfiletarg = OpenFile(subfilen,"wb");
@@ -2312,6 +2324,19 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 		mins[2]-=5.0;
 		maxs[2]+=5.0;
 	}
+	char custentinffile[256];
+	char writemode[8];
+	Format(writemode,sizeof(writemode),"a");
+	Format(custentinffile,sizeof(custentinffile),"%s\\customenttransitioninf.txt",savedir);
+	if (!FileExists(custentinffile,false)) Format(writemode,sizeof(writemode),"w");
+	ReplaceString(custentinffile,sizeof(custentinffile),"/","\\");
+	Handle custentlist = INVALID_HANDLE;
+	Handle custentinf = INVALID_HANDLE;
+	if (SynFixesRunning)
+	{
+		custentlist = GetCustomEntList();
+		custentinf = OpenFile(custentinffile,writemode);
+	}
 	for (int i = 1;i<2048;i++)
 	{
 		if (IsValidEntity(i) && IsEntNetworkable(i) && (FindValueInArray(ignoreent,i) == -1))
@@ -2385,6 +2410,8 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 						char state[4];
 						char target[32];
 						char npctype[4];
+						char npctargpath[64];
+						char npctarg[64];
 						char solidity[4];
 						char defanim[32];
 						int doorstate, sleepstate, gunenable;
@@ -2439,9 +2466,36 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 							Format(state,sizeof(state),"%i",istate);
 							//PrintToServer("State %s",state);
 						}
+						if (HasEntProp(i,Prop_Data,"m_hTargetEnt"))
+						{
+							int targent = GetEntPropEnt(i,Prop_Data,"m_hTargetEnt");
+							if ((IsValidEntity(targent)) && (IsEntNetworkable(targent)))
+							{
+								if (HasEntProp(targent,Prop_Data,"m_iName")) GetEntPropString(targent,Prop_Data,"m_iName",npctarg,sizeof(npctarg));
+								if (strlen(npctarg) < 1) Format(npctarg,sizeof(npctarg),"%i",targent);
+							}
+						}
 						if (HasEntProp(i,Prop_Data,"m_target"))
 						{
-							if (StrEqual(clsname,"npc_combinedropship",false)) GetEntPropString(i,Prop_Data,"m_target",target,sizeof(target));
+							PropFieldType type;
+							FindDataMapInfo(i,"m_target",type);
+							if (type == PropField_String)
+							{
+								GetEntPropString(i,Prop_Data,"m_target",target,sizeof(target));
+							}
+							else if ((type == PropField_Entity) && (strlen(npctarg) < 1))
+							{
+								int targent = GetEntPropEnt(i,Prop_Data,"m_target");
+								if (targent != -1) Format(npctarg,sizeof(npctarg),"%i",targent);
+							}
+							if ((strlen(npctargpath) < 1) && (HasEntProp(i,Prop_Data,"m_vecDesiredPosition")))
+							{
+								float findtargetpos[3];
+								GetEntPropVector(i,Prop_Data,"m_vecDesiredPosition",findtargetpos);
+								char findpath[128];
+								findpathtrack(-1,findtargetpos,findpath);
+								if (strlen(findpath) > 0) Format(npctargpath,sizeof(npctargpath),"%s",findpath);
+							}
 						}
 						if (HasEntProp(i,Prop_Data,"m_eDoorState")) doorstate = GetEntProp(i,Prop_Data,"m_eDoorState");
 						if (HasEntProp(i,Prop_Data,"m_SleepState")) sleepstate = GetEntProp(i,Prop_Data,"m_SleepState");
@@ -2459,33 +2513,165 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 						if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
 						if (transitionthis)
 						{
-							WritePackString(dp,clsname);
-							WritePackString(dp,targn);
-							WritePackString(dp,mdl);
-							WritePackCell(dp,curh);
-							WritePackFloat(dp,porigin[0]);
-							WritePackFloat(dp,porigin[1]);
-							WritePackFloat(dp,porigin[2]);
-							WritePackFloat(dp,angs[0]);
-							WritePackFloat(dp,angs[1]);
-							WritePackFloat(dp,angs[2]);
-							WritePackString(dp,vehscript);
-							WritePackString(dp,spawnflags);
-							WritePackString(dp,additionalequip);
-							WritePackString(dp,skin);
-							WritePackString(dp,hdwtype);
-							WritePackString(dp,parentname);
-							WritePackString(dp,state);
-							WritePackString(dp,target);
-							WritePackCell(dp,doorstate);
-							WritePackCell(dp,sleepstate);
-							WritePackString(dp,npctype);
-							WritePackString(dp,solidity);
-							WritePackCell(dp,gunenable);
-							WritePackString(dp,defanim);
-							WritePackString(dp,"endofpack");
-							PushArrayCell(transitionents,dp);
-							PushArrayCell(ignoreent,i);
+							if ((FindStringInArray(custentlist,clsname) != -1) && (SynFixesRunning))
+							{
+								int sequence, body, parentattach, maxh;
+								char spawnercls[64];
+								char spawnertargn[64];
+								if (HasEntProp(i,Prop_Data,"m_iMaxHealth")) maxh = GetEntProp(i,Prop_Data,"m_iMaxHealth");
+								if (HasEntProp(i,Prop_Data,"m_iszNPCClassname")) GetEntPropString(i,Prop_Data,"m_iszNPCClassname",spawnercls,sizeof(spawnercls));
+								if (HasEntProp(i,Prop_Data,"m_ChildTargetName")) GetEntPropString(i,Prop_Data,"m_ChildTargetName",spawnertargn,sizeof(spawnertargn));
+								if (HasEntProp(i,Prop_Data,"m_nSequence")) sequence = GetEntProp(i,Prop_Data,"m_nSequence");
+								if (HasEntProp(i,Prop_Data,"m_iParentAttachment")) parentattach = GetEntProp(i,Prop_Data,"m_iParentAttachment");
+								if (HasEntProp(i,Prop_Data,"m_nBody")) body = GetEntProp(i,Prop_Data,"m_nBody");
+								WriteFileLine(custentinf,"{");
+								char pushch[256];
+								Format(pushch,sizeof(pushch),"\"origin\" \"%f %f %f\"",porigin[0],porigin[1],porigin[2]);
+								WriteFileLine(custentinf,pushch);
+								Format(pushch,sizeof(pushch),"\"angles\" \"%f %f %f\"",angs[0],angs[1],angs[2]);
+								WriteFileLine(custentinf,pushch);
+								if (strlen(vehscript) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"vehiclescript\" \"%s\"",vehscript);
+									WriteFileLine(custentinf,pushch);
+								}
+								Format(pushch,sizeof(pushch),"\"spawnflags\" \"%s\"",spawnflags);
+								WriteFileLine(custentinf,pushch);
+								if (strlen(targn) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"targetname\" \"%s\"",targn);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (strlen(mdl) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"model\" \"%s\"",mdl);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (sleepstate != -10)
+								{
+									Format(pushch,sizeof(pushch),"\"sleepstate\" \"%i\"",sleepstate);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (strlen(additionalequip) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"additionalequipment\" \"%s\"",additionalequip);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (strlen(parentname) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"parentname\" \"%s\"",parentname);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (strlen(npctarg) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"targetentity\" \"%s\"",npctarg);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (strlen(npctargpath) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"target\" \"%s\"",npctargpath);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (strlen(defanim) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"DefaultAnim\" \"%s\"",defanim);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (strlen(spawnercls) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"NPCType\" \"%s\"",spawnercls);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (strlen(spawnertargn) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"NPCTargetname\" \"%s\"",spawnertargn);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (curh != 0)
+								{
+									Format(pushch,sizeof(pushch),"\"health\" \"%i\"",curh);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (maxh != 0)
+								{
+									Format(pushch,sizeof(pushch),"\"max_health\" \"%i\"",maxh);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (strlen(skin) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"skin\" \"%s\"",skin);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (strlen(hdwtype) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"hardware\" \"%s\"",hdwtype);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (strlen(state) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"npcstate\" \"%s\"",state);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (strlen(npctype) > 0)
+								{
+									Format(pushch,sizeof(pushch),"\"citizentype\" \"%s\"",npctype);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (doorstate != 0)
+								{
+									Format(pushch,sizeof(pushch),"\"doorstate\" \"%i\"",doorstate);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (sequence != 0)
+								{
+									Format(pushch,sizeof(pushch),"\"sequence\" \"%i\"",sequence);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (parentattach != 0)
+								{
+									Format(pushch,sizeof(pushch),"\"parentattachment\" \"%i\"",parentattach);
+									WriteFileLine(custentinf,pushch);
+								}
+								if (body != 0)
+								{
+									Format(pushch,sizeof(pushch),"\"body\" \"%i\"",body);
+									WriteFileLine(custentinf,pushch);
+								}
+								Format(pushch,sizeof(pushch),"\"classname\" \"%s\"",clsname);
+								WriteFileLine(custentinf,pushch);
+								WriteFileLine(custentinf,"}");
+							}
+							else
+							{
+								WritePackString(dp,clsname);
+								WritePackString(dp,targn);
+								WritePackString(dp,mdl);
+								WritePackCell(dp,curh);
+								WritePackFloat(dp,porigin[0]);
+								WritePackFloat(dp,porigin[1]);
+								WritePackFloat(dp,porigin[2]);
+								WritePackFloat(dp,angs[0]);
+								WritePackFloat(dp,angs[1]);
+								WritePackFloat(dp,angs[2]);
+								WritePackString(dp,vehscript);
+								WritePackString(dp,spawnflags);
+								WritePackString(dp,additionalequip);
+								WritePackString(dp,skin);
+								WritePackString(dp,hdwtype);
+								WritePackString(dp,parentname);
+								WritePackString(dp,state);
+								WritePackString(dp,npctargpath);
+								WritePackCell(dp,doorstate);
+								WritePackCell(dp,sleepstate);
+								WritePackString(dp,npctype);
+								WritePackString(dp,solidity);
+								WritePackCell(dp,gunenable);
+								WritePackString(dp,defanim);
+								WritePackString(dp,"endofpack");
+								PushArrayCell(transitionents,dp);
+								PushArrayCell(ignoreent,i);
+							}
+							//PrintToServer("Transition %s %s %s",clsname,targn,mdl);
 						}
 					}
 				}
@@ -2498,6 +2684,8 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 			}
 		}
 	}
+	CloseHandle(custentlist);
+	CloseHandle(custentinf);
 	for (int i = 0;i<GetArraySize(ignoreent);i++)
 	{
 		int j = GetArrayCell(ignoreent,i);
@@ -2760,7 +2948,7 @@ void saveresetveh(bool rmsave)
 					if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 					{
 						Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-						if (StrContains(subfilen,"autosave.hl1",false) == -1)
+						if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
 						{
 							DeleteFile(subfilen,false);
 							Handle subfiletarg = OpenFile(subfilen,"wb");
@@ -2865,6 +3053,8 @@ public Action anotherdelay(Handle timer, int client)
 {
 	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && IsValidEntity(client) && !IsFakeClient(client))
 	{
+		//Issue with no suit power, this will reset it
+		SetEntProp(client,Prop_Data,"m_bPlayerUnderwater",1);
 		char SteamID[32];
 		GetClientAuthId(client,AuthId_Steam2,SteamID,sizeof(SteamID));
 		int arrindx = FindStringInArray(transitionid,SteamID);
