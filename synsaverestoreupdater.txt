@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.96"
-			"Previous"	"1.95"
+			"Latest"  	"1.97"
+			"Previous"	"1.96"
 		}
 		
-		"Notes"	"Added backwards compatibility with older saves. Added enterfromep2 remount configuration."
+		"Notes"	"Added transiton of custom ents over default map changes if found. Added more target information to transition ents."
 	}
 	
 	"Files"
