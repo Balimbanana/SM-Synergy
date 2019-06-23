@@ -49,7 +49,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.97"
+#define PLUGIN_VERSION "1.98"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2375,7 +2375,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 			if ((alwaystransition) || ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2])))
 			{
 				//Add func_tracktrain check if exists on next map OnTransition might not fire
-				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1) || (StrEqual(clsname,"light_dynamic",false)) || (StrEqual(clsname,"info_particle_system",false))) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)))
+				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1) || (StrEqual(clsname,"light_dynamic",false)) || (StrEqual(clsname,"info_particle_system",false))) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (!StrEqual(clsname,"env_sprite",false)))
 				{
 					if (remove)
 					{
@@ -2513,7 +2513,12 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 						if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
 						if (transitionthis)
 						{
-							if ((FindStringInArray(custentlist,clsname) != -1) && (SynFixesRunning))
+							bool custenttransition = false;
+							if ((custentlist != INVALID_HANDLE) && (SynFixesRunning))
+							{
+								if (FindStringInArray(custentlist,clsname) != -1) custenttransition = true;
+							}
+							if (custenttransition)
 							{
 								int sequence, body, parentattach, maxh;
 								char spawnercls[64];
