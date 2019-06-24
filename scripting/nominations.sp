@@ -55,7 +55,7 @@ Handle g_MapList = null;
 char currentMap[32];
 int passedcl = 0;
 int modsact = 0;
-bool syn,hl2,hl1,r24m,lcm,ep1m,ep2m,metam,calm,citm,ci7m,upm,ram,dwm,prem,c2am,ep3m,offm,radm,cdm,ntm,opm,mim,smm,s2em,rhm,snm,mprm,cem,mpm,el87m,alm,esm,dfm,stm,btm,llm,dhm,lum,thm,ddm,amm,ptsd,yla,ktm,t7;
+bool syn,hl2,hl1,r24m,lcm,ep1m,ep2m,metam,calm,citm,ci7m,upm,ram,dwm,prem,c2am,ep3m,offm,radm,cdm,ntm,opm,mim,smm,s2em,rhm,snm,mprm,cem,mpm,el87m,alm,esm,dfm,stm,btm,llm,dhm,lum,thm,ddm,amm,ptsd,yla,ktm,t7,bm;
 
 #define MAPSTATUS_ENABLED (1<<0)
 #define MAPSTATUS_DISABLED (1<<1)
@@ -318,6 +318,7 @@ public Action AttemptNominate(int client, int args)
 	if (citm) menu.AddItem("the citizen returns", "The Citizen Returns");
 	if (ci7m) menu.AddItem("city 7: toronto conflict", "City 7: Toronto Conflict");
 	if (upm) menu.AddItem("uncertainty principle", "Uncertainty Principle");
+	if (bm) menu.AddItem("black mesa", "Black Mesa");
 	if (ram) menu.AddItem("riot act", "Riot Act");
 	if (dwm) menu.AddItem("dangerous world", "Dangerous World");
 	if (prem) menu.AddItem("precursor", "Precursor");
@@ -496,9 +497,18 @@ public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 		char map[128];
 		Format(map,sizeof(map),"%s",mapname);
 		GetMapTag(map);
-		char translate[128];
-		Format(translate,sizeof(translate),"[SM] %t","Map Nominated", name, map);
-		PrintToChatAll("%s (%s)", translate, maptag);
+		for (int i = 1;i<MaxClients+1;i++)
+		{
+			if (IsClientConnected(i))
+			{
+				if ((IsValidEntity(i)) && (IsClientInGame(i)))
+				{
+					char translate[128];
+					Format(translate,sizeof(translate),"[SM] %T","Map Nominated", i, name, map);
+					PrintToChat(i,"%s (%s)", translate, maptag);
+				}
+			}
+		}
 	}
 	else if (action == MenuAction_DisplayItem)
 	{
@@ -981,6 +991,12 @@ public Action GetMapTag(const char[] map)
 		if (!t7) modsact++;
 		t7 = true;
 		Format(maptag, sizeof(maptag), "Terminal 7");
+	}
+	else if (StrContains(map, "bm_c", false) == 0)
+	{
+		if (!bm) modsact++;
+		bm = true;
+		Format(maptag, sizeof(maptag), "Black Mesa");
 	}
 	else if ((StrContains(map,"ptsd_",false) == 0) || (StrEqual(map,"boneless_ptsd",false)))
 	{
