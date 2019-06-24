@@ -1512,6 +1512,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Terminal 7");
 	}
+	else if (StrContains(map, "bm_c", false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Black Mesa");
+	}
 	else if ((StrContains(map, "ptsd_", false) == 0) || (StrEqual(map,"boneless_ptsd",false)))
 	{
 		Format(maptag, sizeof(maptag), "PTSD");
