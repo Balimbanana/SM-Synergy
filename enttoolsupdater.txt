@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.16"
-			"Previous"	"1.15"
+			"Latest"  	"1.17"
+			"Previous"	"1.16"
 		}
 		
 		"Notes"	"Added a couple entity creation types. Added more info from gi. Added more info from sm_sep."
