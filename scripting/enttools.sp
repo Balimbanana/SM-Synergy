@@ -1583,6 +1583,9 @@ public Action setprops(int client, int args)
 			char propname[64];
 			if (args == 2)
 			{
+				bool datatypeunsupported = false;
+				PropFieldType datamaptype;
+				int datamapoffs = FindDataMapInfo(targ,propname,datamaptype);
 				char cls[64];
 				GetEntityClassname(targ,cls,sizeof(cls));
 				GetCmdArg(2, propname, sizeof(propname));
@@ -1594,6 +1597,7 @@ public Action setprops(int client, int args)
 					char srvcls[64];
 					GetEntityNetClass(targ,srvcls,sizeof(srvcls));
 					FindSendPropInfo(srvcls,propname,type);
+					if (type == PropField_Unsupported) datatypeunsupported = true;
 					if (type == PropField_String)
 					{
 						int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
@@ -1698,6 +1702,7 @@ public Action setprops(int client, int args)
 				{
 					PropFieldType type;
 					FindDataMapInfo(targ,propname,type);
+					if (type == PropField_Unsupported) datatypeunsupported = true;
 					if ((type == PropField_String) || (type == PropField_String_T))
 					{
 						int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
@@ -1798,10 +1803,46 @@ public Action setprops(int client, int args)
 						}
 					}
 				}
-				else if ((!HasEntProp(targ,Prop_Data,propname)) && (!HasEntProp(targ,Prop_Send,propname)))
+				if (datamapoffs != -1)
 				{
-					if (client == 0) PrintToServer("%i %s doesn't have the %s property.",targ,cls,propname);
-					else PrintToChat(client,"%i %s doesn't have the %s property.",targ,cls,propname);
+					if ((datamaptype == PropField_String) || (datamaptype == PropField_String_T))
+					{
+						char propinf[64];
+						GetEntDataString(targ,datamapoffs,propinf,sizeof(propinf));
+						if (client == 0) PrintToServer("%i %s %s is %s",targ,cls,propname,propinf);
+						else PrintToChat(client,"%i %s %s is %s",targ,cls,propname,propinf);
+					}
+					else if (datamaptype == PropField_Entity)
+					{
+						int enth = GetEntDataEnt2(targ,datamapoffs);
+						if (client == 0) PrintToServer("%i %s is %i",targ,propname,enth);
+						else PrintToChat(client,"%i %s is %i",targ,propname,enth);
+					}
+					else if (datamaptype == PropField_Integer)
+					{
+						int enti = GetEntData(targ,datamapoffs,4);
+						if (client == 0) PrintToServer("%i %s is %i",targ,propname,enti);
+						else PrintToChat(client,"%i %s is %i",targ,propname,enti);
+					}
+					else if (datamaptype == PropField_Float)
+					{
+						float entf = GetEntDataFloat(targ,datamapoffs);
+						if (client == 0) PrintToServer("%i %s is %f",targ,propname,entf);
+						else PrintToChat(client,"%i %s is %f",targ,propname,entf);
+					}
+					else if (datamaptype == PropField_Vector)
+					{
+						float entvec[3];
+						GetEntDataVector(targ,datamapoffs,entvec);
+						if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
+						else PrintToChat(client,"%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
+					}
+					else datamapoffs = -1;
+				}
+				if (((!HasEntProp(targ,Prop_Data,propname)) && (!HasEntProp(targ,Prop_Send,propname)) || (datatypeunsupported)) && (datamapoffs == -1))
+				{
+					if (client == 0) PrintToServer("%i %s doesn't have the %s property, or the type is unsupported.",targ,cls,propname);
+					else PrintToChat(client,"%i %s doesn't have the %s property, or the type is unsupported.",targ,cls,propname);
 				}
 			}
 			else
