@@ -1583,12 +1583,12 @@ public Action setprops(int client, int args)
 			char propname[64];
 			if (args == 2)
 			{
+				GetCmdArg(2, propname, sizeof(propname));
 				bool datatypeunsupported = false;
-				PropFieldType datamaptype;
-				int datamapoffs = FindDataMapInfo(targ,propname,datamaptype);
 				char cls[64];
 				GetEntityClassname(targ,cls,sizeof(cls));
-				GetCmdArg(2, propname, sizeof(propname));
+				PropFieldType datamaptype;
+				int datamapoffs = FindDataMapInfo(targ,propname,datamaptype);
 				if (StrEqual(propname,"classname",false))
 					Format(propname,sizeof(propname),"m_iClassname");
 				if (HasEntProp(targ,Prop_Send,propname))
