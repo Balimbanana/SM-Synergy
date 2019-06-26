@@ -1803,7 +1803,7 @@ public Action setprops(int client, int args)
 						}
 					}
 				}
-				if (datamapoffs != -1)
+				if ((datamapoffs != -1) && (!HasEntProp(targ,Prop_Data,propname)) && (!HasEntProp(targ,Prop_Send,propname)))
 				{
 					if ((datamaptype == PropField_String) || (datamaptype == PropField_String_T))
 					{
