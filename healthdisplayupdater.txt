@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.82"
-			"Previous"	"1.81"
+			"Latest"  	"1.83"
+			"Previous"	"1.82"
 		}
 		
-		"Notes"	"Added many entities, reconfigured HT detect, rebuilt uppercase detect."
+		"Notes"	"Added a couple more HT entities. Added sm_healthpos."
 	}
 	
 	"Files"
