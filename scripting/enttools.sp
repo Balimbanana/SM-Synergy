@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.15"
+#define PLUGIN_VERSION "1.16"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -18,6 +18,8 @@ public Plugin:myinfo =
 	version = PLUGIN_VERSION,
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
+
+bool showallcreated = false;
 
 public OnPluginStart()
 {
@@ -35,6 +37,10 @@ public OnPluginStart()
 	RegAdminCmd("listents",listents,ADMFLAG_KICK,".");
 	RegAdminCmd("findents",listents,ADMFLAG_KICK,".");
 	RegAdminCmd("moveent",moveentity,ADMFLAG_KICK,".");
+	Handle dbgcreate = CreateConVar("sm_showallcreated", "0", "Shows all entities created in server console.", _, true, 0.0, true, 1.0);
+	HookConVarChange(dbgcreate, dbghch);
+	showallcreated = GetConVarBool(dbgcreate);
+	CloseHandle(dbgcreate);
 }
 
 public OnLibraryAdded(const char[] name)
@@ -102,6 +108,7 @@ public Action CreateStuff(int client, int args)
 		float Location[3];
 		bool vehiclemodeldefined = false;
 		bool vehiclescriptdefined = false;
+		bool targnamedefined = false;
 		GetClientAbsOrigin(client, Location);
 		GetClientEyeAngles(client, Angles);
 		PlayerOrigin[0] = (Location[0] + (100 * Cosine(DegToRad(Angles[1]))));
@@ -153,6 +160,7 @@ public Action CreateStuff(int client, int args)
 		{
 			Format(ent,sizeof(ent),"npc_antlion");
 			stuff = CreateEntityByName(ent);
+			Format(ent,sizeof(ent),"npc_bullsquid");
 			DispatchKeyValue(stuff,"classname","npc_bullsquid");
 			DispatchKeyValue(stuff,"model","models/xenians/bullsquid.mdl");
 			DispatchKeyValue(stuff,"RenderMode","10");
@@ -161,9 +169,28 @@ public Action CreateStuff(int client, int args)
 		{
 			Format(ent,sizeof(ent),"npc_antlion");
 			stuff = CreateEntityByName(ent);
+			Format(ent,sizeof(ent),"npc_houndeye");
 			DispatchKeyValue(stuff,"classname","npc_houndeye");
 			DispatchKeyValue(stuff,"model","models/xenians/houndeye.mdl");
 			DispatchKeyValue(stuff,"RenderMode","10");
+		}
+		else if (StrEqual(ent,"npc_alien_controller",false))
+		{
+			Format(ent,sizeof(ent),"generic_actor");
+			stuff = CreateEntityByName(ent);
+			Format(ent,sizeof(ent),"npc_alien_controller");
+			DispatchKeyValue(stuff,"classname","npc_alien_controller");
+			DispatchKeyValue(stuff,"model","models/xenians/controller.mdl");
+		}
+		else if (StrEqual(ent,"npc_alien_grunt",false))
+		{
+			Format(ent,sizeof(ent),"npc_combine_s");
+			stuff = CreateEntityByName(ent);
+			Format(ent,sizeof(ent),"npc_alien_grunt");
+			DispatchKeyValue(stuff,"classname","npc_alien_grunt");
+			DispatchKeyValue(stuff,"model","models/xenians/agrunt.mdl");
+			DispatchKeyValue(stuff,"targetname","npc_alien_grunt");
+			targnamedefined = true;
 		}
 		if (stuff == 0) stuff = CreateEntityByName(ent);
 		if (stuff == -1)
@@ -187,11 +214,33 @@ public Action CreateStuff(int client, int args)
 					if (StrEqual(tmp,"model",false))
 					{
 						vehiclemodeldefined = true;
-						if ((!FileExists(tmp2,true,NULL_STRING)) && (!IsModelPrecached(tmp2)))
+						if (StrContains(tmp2,".vmt",false) != -1)
 						{
-							PrintToChat(client,"The model %s was not found.",tmp2);
-							AcceptEntityInput(stuff,"kill");
-							return Plugin_Handled;
+							char matchk[128];
+							Format(matchk,sizeof(matchk),"materials/%s",tmp2);
+							if ((!FileExists(matchk,true,NULL_STRING)) && (!IsModelPrecached(matchk)))
+							{
+								PrintToChat(client,"The material %s was not found.",matchk);
+								AcceptEntityInput(stuff,"kill");
+								return Plugin_Handled;
+							}
+							else if (!IsModelPrecached(matchk))
+							{
+								PrecacheModel(matchk,true);
+							}
+						}
+						else
+						{
+							if ((!FileExists(tmp2,true,NULL_STRING)) && (!IsModelPrecached(tmp2)))
+							{
+								PrintToChat(client,"The model %s was not found.",tmp2);
+								AcceptEntityInput(stuff,"kill");
+								return Plugin_Handled;
+							}
+							else if (!IsModelPrecached(tmp2))
+							{
+								PrecacheModel(tmp2,true);
+							}
 						}
 					}
 					if (StrEqual(tmp,"vehiclescript",false))
@@ -204,6 +253,9 @@ public Action CreateStuff(int client, int args)
 							Format(tmp2,sizeof(tmp2),"scripts/vehicles/jeep_test.txt");
 						}
 					}
+					if (StrEqual(tmp,"targetname",false))
+						if (targnamedefined)
+							Format(tmp2,sizeof(tmp2),"%s%s",ent,tmp2);
 					DispatchKeyValue(stuff,tmp,tmp2);
 					if (StrEqual(tmp,"origin",false))
 					{
@@ -255,6 +307,7 @@ public Action CreateStuffThere(int client, int args)
 		float clangles[3];
 		bool vehiclemodeldefined = false;
 		bool vehiclescriptdefined = false;
+		bool targnamedefined = false;
 		GetClientEyeAngles(client, clangles);
 		GetClientEyePosition(client, Location);
 		Location[0] = (Location[0] + (10 * Cosine(DegToRad(clangles[1]))));
@@ -314,6 +367,7 @@ public Action CreateStuffThere(int client, int args)
 		{
 			Format(ent,sizeof(ent),"npc_antlion");
 			stuff = CreateEntityByName(ent);
+			Format(ent,sizeof(ent),"npc_bullsquid");
 			DispatchKeyValue(stuff,"classname","npc_bullsquid");
 			DispatchKeyValue(stuff,"model","models/xenians/bullsquid.mdl");
 			DispatchKeyValue(stuff,"RenderMode","10");
@@ -322,9 +376,28 @@ public Action CreateStuffThere(int client, int args)
 		{
 			Format(ent,sizeof(ent),"npc_antlion");
 			stuff = CreateEntityByName(ent);
+			Format(ent,sizeof(ent),"npc_houndeye");
 			DispatchKeyValue(stuff,"classname","npc_houndeye");
 			DispatchKeyValue(stuff,"model","models/xenians/houndeye.mdl");
 			DispatchKeyValue(stuff,"RenderMode","10");
+		}
+		else if (StrEqual(ent,"npc_alien_controller",false))
+		{
+			Format(ent,sizeof(ent),"generic_actor");
+			stuff = CreateEntityByName(ent);
+			Format(ent,sizeof(ent),"npc_alien_controller");
+			DispatchKeyValue(stuff,"classname","npc_alien_controller");
+			DispatchKeyValue(stuff,"model","models/xenians/controller.mdl");
+		}
+		else if (StrEqual(ent,"npc_alien_grunt",false))
+		{
+			Format(ent,sizeof(ent),"npc_combine_s");
+			stuff = CreateEntityByName(ent);
+			Format(ent,sizeof(ent),"npc_alien_grunt");
+			DispatchKeyValue(stuff,"classname","npc_alien_grunt");
+			DispatchKeyValue(stuff,"model","models/xenians/agrunt.mdl");
+			DispatchKeyValue(stuff,"targetname","npc_alien_grunt");
+			targnamedefined = true;
 		}
 		if (stuff == 0) stuff = CreateEntityByName(ent);
 		if (stuff == -1)
@@ -348,11 +421,33 @@ public Action CreateStuffThere(int client, int args)
 					if (StrEqual(tmp,"model",false))
 					{
 						vehiclemodeldefined = true;
-						if ((!FileExists(tmp2,true,NULL_STRING)) && (!IsModelPrecached(tmp2)))
+						if (StrContains(tmp2,".vmt",false) != -1)
 						{
-							PrintToChat(client,"The model %s was not found.",tmp2);
-							AcceptEntityInput(stuff,"kill");
-							return Plugin_Handled;
+							char matchk[128];
+							Format(matchk,sizeof(matchk),"materials/%s",tmp2);
+							if ((!FileExists(matchk,true,NULL_STRING)) && (!IsModelPrecached(matchk)))
+							{
+								PrintToChat(client,"The material %s was not found.",matchk);
+								AcceptEntityInput(stuff,"kill");
+								return Plugin_Handled;
+							}
+							else if (!IsModelPrecached(matchk))
+							{
+								PrecacheModel(matchk,true);
+							}
+						}
+						else
+						{
+							if ((!FileExists(tmp2,true,NULL_STRING)) && (!IsModelPrecached(tmp2)))
+							{
+								PrintToChat(client,"The model %s was not found.",tmp2);
+								AcceptEntityInput(stuff,"kill");
+								return Plugin_Handled;
+							}
+							else if (!IsModelPrecached(tmp2))
+							{
+								PrecacheModel(tmp2,true);
+							}
 						}
 					}
 					if (StrEqual(tmp,"vehiclescript",false))
@@ -365,6 +460,9 @@ public Action CreateStuffThere(int client, int args)
 							Format(tmp2,sizeof(tmp2),"scripts/vehicles/jeep_test.txt");
 						}
 					}
+					if (StrEqual(tmp,"targetname",false))
+						if (targnamedefined)
+							Format(tmp2,sizeof(tmp2),"%s%s",ent,tmp2);
 					DispatchKeyValue(stuff,tmp,tmp2);
 					if (StrEqual(tmp,"origin",false))
 					{
@@ -401,10 +499,10 @@ public Action CreateStuffThere(int client, int args)
 public Action cinp(int client, int args)
 {
 	char fullinp[128];
-	char firstarg[64];
+	char firstarg[128];
 	GetCmdArgString(fullinp, sizeof(fullinp));
 	GetCmdArg(1,firstarg, sizeof(firstarg));
-	if ((StrEqual(firstarg,"!picker",false)) && (args > 2))
+	if ((StrEqual(firstarg,"!picker",false)) && (args > 1))
 	{
 		int targ = GetClientAimTarget(client, false);
 		if (targ == -1)
@@ -413,7 +511,7 @@ public Action cinp(int client, int args)
 			else PrintToChat(client,"Invalid target.");
 			return Plugin_Handled;
 		}
-		char second[64];
+		char second[128];
 		GetCmdArg(2,second,sizeof(second));
 		char input[256];
 		for (int i = 3;i<args+1;i++)
@@ -429,7 +527,7 @@ public Action cinp(int client, int args)
 		AcceptEntityInput(targ,second);
 		if (StrEqual(second,"SetMass",false))
 		{
-			char targn[64];
+			char targn[128];
 			if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
 			SetEntityMoveType(targ,MOVETYPE_NOCLIP);
 			int convert = CreateEntityByName("phys_convert");
@@ -457,6 +555,11 @@ public Action cinp(int client, int args)
 		return Plugin_Handled;
 	}
 	PrintToConsole(client,"%s",fullinp);
+	Handle arr = CreateArray(64);
+	if (StrEqual(firstarg,"!self",false))
+		PushArrayCell(arr,client);
+	else if (StrEqual(firstarg,"!picker",false))
+		PushArrayCell(arr,GetClientAimTarget(client, false));
 	if (StrContains(fullinp,",",false) != -1)
 	{
 		int loginp = CreateEntityByName("logic_auto");
@@ -464,28 +567,30 @@ public Action cinp(int client, int args)
 		DispatchKeyValue(loginp, "OnMapSpawn",fullinp);
 		DispatchSpawn(loginp);
 		ActivateEntity(loginp);
+		CloseHandle(arr);
 		return Plugin_Handled;
 	}
 	else if ((strlen(firstarg) > 0) && (args > 1) && (StringToInt(firstarg) == 0))
 	{
-		Handle arr = CreateArray(64);
 		findentsarrtarg(arr,firstarg);
 		//Checks must be separate
 		if (arr == INVALID_HANDLE)
 		{
 			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",firstarg);
 			else PrintToChat(client,"No entities found with either classname or targetname of %s",firstarg);
+			CloseHandle(arr);
 			return Plugin_Handled;
 		}
 		else if (GetArraySize(arr) < 1)
 		{
 			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",firstarg);
 			else PrintToChat(client,"No entities found with either classname or targetname of %s",firstarg);
+			CloseHandle(arr);
 			return Plugin_Handled;
 		}
 		else
 		{
-			char input[64];
+			char input[128];
 			GetCmdArg(2,input,sizeof(input));
 			ReplaceStringEx(fullinp,sizeof(fullinp),firstarg,"");
 			ReplaceStringEx(fullinp,sizeof(fullinp),input,"");
@@ -498,6 +603,7 @@ public Action cinp(int client, int args)
 			}
 			if (client == 0) PrintToServer("%s %s %s",firstarg,input,fullinp);
 			else PrintToChat(client,"%s %s %s",firstarg,input,fullinp);
+			CloseHandle(arr);
 			return Plugin_Handled;
 		}
 	}
@@ -598,6 +704,7 @@ public Action cinp(int client, int args)
 			AcceptEntityInput(targ,first);
 		}
 	}
+	CloseHandle(arr);
 	return Plugin_Handled;
 }
 
@@ -611,7 +718,7 @@ public Action ResetTargn(Handle timer, int targ)
 
 public Action SetTargMdl(int client, int args)
 {
-	if ((args < 1) || (client == 0))
+	if ((args < 2) || (client == 0))
 	{
 		if (client == 0) PrintToServer("Must specify model to set");
 		else PrintToChat(client,"Must specify model to set");
@@ -619,7 +726,15 @@ public Action SetTargMdl(int client, int args)
 	}
 	else
 	{
+		char first[64];
+		GetCmdArg(1,first,sizeof(first));
 		int targ = GetClientAimTarget(client,false);
+		if (StrEqual(first,"!self",false))
+			targ = client;
+		else if (StrEqual(first,"!picker",false))
+			targ = GetClientAimTarget(client, false);
+		else if ((StringToInt(first) != 0) && (strlen(first) > 0))
+			targ = StringToInt(first);
 		if (targ == -1)
 		{
 			PrintToChat(client,"Invalid target");
@@ -628,7 +743,7 @@ public Action SetTargMdl(int client, int args)
 		else
 		{
 			char mdltoset[128];
-			GetCmdArg(1,mdltoset, sizeof(mdltoset));
+			GetCmdArg(2,mdltoset, sizeof(mdltoset));
 			if ((!FileExists(mdltoset,true,NULL_STRING)) && (!IsModelPrecached(mdltoset)))
 			{
 				PrintToChat(client,"The model %s was not found.",mdltoset);
@@ -725,7 +840,7 @@ public Handle findentsarrtargsub(Handle arr, int ent, char[] namechk, char[] cls
 			PushArrayCell(arr, thisent);
 		if ((HasEntProp(thisent,Prop_Data,"m_iName")) && (FindValueInArray(arr,thisent) == -1))
 		{
-			char fname[32];
+			char fname[128];
 			GetEntPropString(thisent,Prop_Data,"m_iName",fname,sizeof(fname));
 			if (StrEqual(fname,namechk,false))
 				PushArrayCell(arr, thisent);
@@ -745,13 +860,13 @@ public Handle findentsarrtarg(Handle arr, char[] namechk)
 	{
 		if (IsValidEntity(i) && IsEntNetworkable(i))
 		{
-			char clsname[32];
+			char clsname[64];
 			GetEntityClassname(i,clsname,sizeof(clsname));
 			if ((StrEqual(clsname,namechk,false)) && (FindValueInArray(arr,i) == -1))
 				PushArrayCell(arr, i);
 			if ((HasEntProp(i,Prop_Data,"m_iName")) && (FindValueInArray(arr,i) == -1))
 			{
-				char fname[32];
+				char fname[128];
 				GetEntPropString(i,Prop_Data,"m_iName",fname,sizeof(fname));
 				if (StrEqual(fname,namechk,false))
 					PushArrayCell(arr, i);
@@ -760,8 +875,9 @@ public Handle findentsarrtarg(Handle arr, char[] namechk)
 	}
 	if (GetArraySize(arr) < 1)
 	{
-		findentsarrtargsub(arr,-1,namechk,"logic_relay");
-		findentsarrtargsub(arr,-1,namechk,"logic_timer");
+		findentsarrtargsub(arr,-1,namechk,"logic_*");
+		findentsarrtargsub(arr,-1,namechk,"env_*");
+		findentsarrtargsub(arr,-1,namechk,"filter_*");
 		findentsarrtargsub(arr,-1,namechk,"info_vehicle_spawn");
 		findentsarrtargsub(arr,-1,namechk,"math_counter");
 	}
@@ -778,8 +894,8 @@ public Action listents(int client, int args)
 		else PrintToChat(client,"Must specify targetname or classname");
 		return Plugin_Handled;
 	}
-	char search[64];
-	char fullinf[16];
+	char search[128];
+	char fullinf[128];
 	GetCmdArg(1,search,sizeof(search));
 	if (args > 1) GetCmdArg(2,fullinf,sizeof(fullinf));
 	if (strlen(search) > 0)
@@ -806,9 +922,9 @@ public Action listents(int client, int args)
 				if (StrEqual(fullinf,"full",false))
 				{
 					int targ = GetArrayCell(arr,i);
-					char ent[32];
-					char targname[64];
-					char globname[64];
+					char ent[128];
+					char targname[128];
+					char globname[128];
 					float vec[3];
 					float angs[3];
 					int parent = 0;
@@ -905,6 +1021,11 @@ public Action listents(int client, int args)
 					if (StrEqual(ent,"math_counter",false))
 					{
 						int offset = FindDataMapInfo(targ, "m_OutValue");
+						Format(stateinf,sizeof(stateinf),"%sCurrentValue %i ",stateinf,RoundFloat(GetEntDataFloat(targ, offset)));
+					}
+					if (StrEqual(ent,"env_global",false))
+					{
+						int offset = FindDataMapInfo(targ, "m_outCounter");
 						Format(stateinf,sizeof(stateinf),"%sCurrentValue %i ",stateinf,RoundFloat(GetEntDataFloat(targ, offset)));
 					}
 					if (HasEntProp(targ,Prop_Data,"m_spawnflags"))
@@ -1308,6 +1429,7 @@ public Action getinf(int client, int args)
 		char cmodel[64];
 		GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 		int spawnflagsi = GetEntityFlags(targ);
+		int spawnflagse = GetEntProp(targ,Prop_Data,"m_spawnflags");
 		PrintToChat(client,"%i %s %s",targ,ent,cmodel);
 		if (parent > 0)
 		{
@@ -1325,8 +1447,8 @@ public Action getinf(int client, int args)
 			Format(inf,sizeof(inf),"%sGlobalName: %s ",inf,globname);
 		if (ammotype != -1)
 			Format(inf,sizeof(inf),"%sAmmoType: %i",inf,ammotype);
-		if (spawnflagsi != 0)
-			Format(inf,sizeof(inf),"%sSpawnflags: %i",inf,spawnflagsi);
+		if ((spawnflagsi != 0) || (spawnflagse != 0))
+			Format(inf,sizeof(inf),"%sSpawnflags: %i EntSpawnFlags: %i",inf,spawnflagsi,spawnflagse);
 		if (vec[0] != -1.1)
 			Format(inf,sizeof(inf),"%s\nOrigin %i %i %i",inf,RoundFloat(vec[0]),RoundFloat(vec[1]),RoundFloat(vec[2]));
 		if (angs[0] != -1.1)
@@ -1391,14 +1513,13 @@ public Action sett(int client, int args)
 
 public Action setprops(int client, int args)
 {
-	int targ = -1;
 	char first[64];
 	char typechk[64];
 	GetCmdArg(1, first, sizeof(first));
 	bool pdata = false;
+	char pdatachk[64];
 	if (args >= 4)
 	{
-		char pdatachk[64];
 		GetCmdArg(4,pdatachk,sizeof(pdatachk));
 		if ((StrEqual(pdatachk,"prop_data",false)) || (StrEqual(pdatachk,"1",false)))
 			pdata = true;
@@ -1407,813 +1528,825 @@ public Action setprops(int client, int args)
 			GetCmdArg(5,typechk,sizeof(typechk));
 		}
 	}
+	Handle arr = CreateArray(64);
 	if (StrEqual(first,"!self",false))
-		targ = client;
+		PushArrayCell(arr,client);
 	else if (StrEqual(first,"!picker",false))
-		targ = GetClientAimTarget(client, false);
+		PushArrayCell(arr,GetClientAimTarget(client, false));
 	else if ((StringToInt(first) != 0) && (strlen(first) > 0))
-		targ = StringToInt(first);
+		PushArrayCell(arr,StringToInt(first));
 	else
 	{
-		Handle arr = CreateArray(64);
 		findentsarrtarg(arr,first);
-		//Checks must be separate
-		if (arr == INVALID_HANDLE)
+	}
+	if (arr == INVALID_HANDLE)
+	{
+		if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",first);
+		else PrintToChat(client,"No entities found with either classname or targetname of %s",first);
+		return Plugin_Handled;
+	}
+	else if (GetArraySize(arr) < 1)
+	{
+		if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",first);
+		else PrintToChat(client,"No entities found with either classname or targetname of %s",first);
+		return Plugin_Handled;
+	}
+	for (int i = 0;i<GetArraySize(arr);i++)
+	{
+		int targ = GetArrayCell(arr,i);
+		if ((targ != -1) && (IsValidEntity(targ)))
 		{
-			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",first);
-			else PrintToChat(client,"No entities found with either classname or targetname of %s",first);
-			return Plugin_Handled;
-		}
-		else if (GetArraySize(arr) < 1)
-		{
-			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",first);
-			else PrintToChat(client,"No entities found with either classname or targetname of %s",first);
-			return Plugin_Handled;
-		}
-		else
-		{
-			if (args > 1)
+			char propname[64];
+			if (args == 2)
 			{
-				char propname[64];
 				char cls[64];
+				GetEntityClassname(targ,cls,sizeof(cls));
 				GetCmdArg(2, propname, sizeof(propname));
-				for (int i = 0;i<GetArraySize(arr);i++)
+				if (StrEqual(propname,"classname",false))
+					Format(propname,sizeof(propname),"m_iClassname");
+				if (HasEntProp(targ,Prop_Send,propname))
 				{
-					targ = GetArrayCell(arr,i);
-					GetEntityClassname(targ,cls,sizeof(cls));
-					if (HasEntProp(targ,Prop_Send,propname))
+					PropFieldType type;
+					char srvcls[64];
+					GetEntityNetClass(targ,srvcls,sizeof(srvcls));
+					FindSendPropInfo(srvcls,propname,type);
+					if (type == PropField_String)
 					{
-						PropFieldType type;
-						char srvcls[64];
-						GetEntityNetClass(targ,srvcls,sizeof(srvcls));
-						FindSendPropInfo(srvcls,propname,type);
-						if (type == PropField_String)
+						int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
+						if ((arrsize != 1) && (arrsize != 0))
 						{
-							int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
-							if (arrsize != 1)
-							{
-								for (int j = 0;j<arrsize;j++)
-								{
-									char propinf[64];
-									GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf),j);
-									if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
-									else PrintToChat(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
-								}
-								return Plugin_Handled;
-							}
-							else
+							for (int j = 0;j<arrsize;j++)
 							{
 								char propinf[64];
-								GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf));
-								if (client == 0) PrintToServer("%i %s %s is %s",targ,cls,propname,propinf);
-								else PrintToChat(client,"%i %s %s is %s",targ,cls,propname,propinf);
-								return Plugin_Handled;
+								GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf),j);
+								if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+								else PrintToChat(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
 							}
 						}
-						else if (type == PropField_Entity)
+						else
 						{
-							int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
-							if (arrsize != 1)
+							char propinf[64];
+							GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf));
+							if (client == 0) PrintToServer("%i %s %s is %s",targ,cls,propname,propinf);
+							else PrintToChat(client,"%i %s %s is %s",targ,cls,propname,propinf);
+						}
+					}
+					else if (type == PropField_Entity)
+					{
+						int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
+						if ((arrsize != 1) && (arrsize != 0))
+						{
+							for (int j = 0;j<arrsize;j++)
 							{
-								for (int j = 0;j<arrsize;j++)
-								{
-									int enth = GetEntPropEnt(targ,Prop_Send,propname,j);
-									if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
-									else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
-								}
-								return Plugin_Handled;
-							}
-							else
-							{
-								int enth = GetEntPropEnt(targ,Prop_Send,propname);
-								if (client == 0) PrintToServer("%i %s %s is %i",targ,cls,propname,enth);
-								else PrintToChat(client,"%i %s %s is %i",targ,cls,propname,enth);
-								return Plugin_Handled;
+								int enth = GetEntPropEnt(targ,Prop_Send,propname,j);
+								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+								else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
 							}
 						}
-						else if (type == PropField_Integer)
+						else
 						{
-							int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
-							if (arrsize != 1)
+							int enth = GetEntPropEnt(targ,Prop_Send,propname);
+							if (client == 0) PrintToServer("%i %s %s is %i",targ,cls,propname,enth);
+							else PrintToChat(client,"%i %s %s is %i",targ,cls,propname,enth);
+						}
+					}
+					else if (type == PropField_Integer)
+					{
+						int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
+						if ((arrsize != 1) && (arrsize != 0))
+						{
+							for (int j = 0;j<arrsize;j++)
 							{
-								for (int j = 0;j<arrsize;j++)
-								{
-									int enti = GetEntProp(targ,Prop_Send,propname,j);
-									if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
-									else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
-								}
-								return Plugin_Handled;
-							}
-							else
-							{
-								int enti = GetEntProp(targ,Prop_Send,propname);
-								if (client == 0) PrintToServer("%i %s %s is %i",targ,cls,propname,enti);
-								else PrintToChat(client,"%i %s %s is %i",targ,cls,propname,enti);
-								return Plugin_Handled;
+								int enti = GetEntProp(targ,Prop_Send,propname,j);
+								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+								else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
 							}
 						}
-						else if (type == PropField_Float)
+						else
 						{
-							int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
-							if (arrsize != 1)
+							int enti = GetEntProp(targ,Prop_Send,propname);
+							if (client == 0) PrintToServer("%i %s %s is %i",targ,cls,propname,enti);
+							else PrintToChat(client,"%i %s %s is %i",targ,cls,propname,enti);
+						}
+					}
+					else if (type == PropField_Float)
+					{
+						int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
+						if ((arrsize != 1) && (arrsize != 0))
+						{
+							for (int j = 0;j<arrsize;j++)
 							{
-								for (int j = 0;j<arrsize;j++)
-								{
-									float entf = GetEntPropFloat(targ,Prop_Send,propname,j);
-									if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
-									else PrintToChat(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
-								}
-								return Plugin_Handled;
-							}
-							else
-							{
-								float entf = GetEntPropFloat(targ,Prop_Send,propname);
-								if (client == 0) PrintToServer("%i %s %s is %f",targ,cls,propname,entf);
-								else PrintToChat(client,"%i %s %s is %f",targ,cls,propname,entf);
-								return Plugin_Handled;
+								float entf = GetEntPropFloat(targ,Prop_Send,propname,j);
+								if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+								else PrintToChat(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
 							}
 						}
-						else if (type == PropField_Vector)
+						else
 						{
-							int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
-							if (arrsize != 1)
-							{
-								for (int j = 0;j<arrsize;j++)
-								{
-									float entvec[3];
-									GetEntPropVector(targ,Prop_Send,propname,entvec,j);
-									if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
-									else PrintToChat(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
-								}
-								return Plugin_Handled;
-							}
-							else
+							float entf = GetEntPropFloat(targ,Prop_Send,propname);
+							if (client == 0) PrintToServer("%i %s %s is %f",targ,cls,propname,entf);
+							else PrintToChat(client,"%i %s %s is %f",targ,cls,propname,entf);
+						}
+					}
+					else if (type == PropField_Vector)
+					{
+						int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
+						if ((arrsize != 1) && (arrsize != 0))
+						{
+							for (int j = 0;j<arrsize;j++)
 							{
 								float entvec[3];
-								GetEntPropVector(targ,Prop_Send,propname,entvec);
-								if (client == 0) PrintToServer("%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
-								else PrintToChat(client,"%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
-								return Plugin_Handled;
+								GetEntPropVector(targ,Prop_Send,propname,entvec,j);
+								if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+								else PrintToChat(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
 							}
+						}
+						else
+						{
+							float entvec[3];
+							GetEntPropVector(targ,Prop_Send,propname,entvec);
+							if (client == 0) PrintToServer("%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
+							else PrintToChat(client,"%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
+						}
+					}
+				}
+				if (HasEntProp(targ,Prop_Data,propname))
+				{
+					PropFieldType type;
+					FindDataMapInfo(targ,propname,type);
+					if ((type == PropField_String) || (type == PropField_String_T))
+					{
+						int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
+						if ((arrsize != 1) && (arrsize != 0))
+						{
+							for (int j = 0;j<arrsize;j++)
+							{
+								char propinf[64];
+								GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf),j);
+								if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+								else PrintToChat(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+							}
+						}
+						else
+						{
+							char propinf[64];
+							GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf));
+							if (client == 0) PrintToServer("%i %s is %s",targ,propname,propinf);
+							else PrintToChat(client,"%i %s is %s",targ,propname,propinf);
+						}
+					}
+					else if (type == PropField_Entity)
+					{
+						int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
+						if ((arrsize != 1) && (arrsize != 0))
+						{
+							for (int j = 0;j<arrsize;j++)
+							{
+								int enth = GetEntPropEnt(targ,Prop_Data,propname,j);
+								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+								else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+							}
+						}
+						else
+						{
+							int enth = GetEntPropEnt(targ,Prop_Data,propname);
+							if (client == 0) PrintToServer("%i %s is %i",targ,propname,enth);
+							else PrintToChat(client,"%i %s is %i",targ,propname,enth);
+						}
+					}
+					else if (type == PropField_Integer)
+					{
+						int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
+						if ((arrsize != 1) && (arrsize != 0))
+						{
+							for (int j = 0;j<arrsize;j++)
+							{
+								int enti = GetEntProp(targ,Prop_Data,propname,j);
+								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+								else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+							}
+						}
+						else
+						{
+							int enti = GetEntProp(targ,Prop_Data,propname);
+							if (client == 0) PrintToServer("%i %s is %i",targ,propname,enti);
+							else PrintToChat(client,"%i %s is %i",targ,propname,enti);
+						}
+					}
+					else if (type == PropField_Float)
+					{
+						int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
+						if ((arrsize != 1) && (arrsize != 0))
+						{
+							for (int j = 0;j<arrsize;j++)
+							{
+								float entf = GetEntPropFloat(targ,Prop_Data,propname,j);
+								if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+								else PrintToChat(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+							}
+						}
+						else
+						{
+							float entf = GetEntPropFloat(targ,Prop_Data,propname);
+							if (client == 0) PrintToServer("%i %s is %f",targ,propname,entf);
+							else PrintToChat(client,"%i %s is %f",targ,propname,entf);
+						}
+					}
+					else if (type == PropField_Vector)
+					{
+						int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
+						if ((arrsize != 1) && (arrsize != 0))
+						{
+							for (int j = 0;j<arrsize;j++)
+							{
+								float entvec[3];
+								GetEntPropVector(targ,Prop_Data,propname,entvec,j);
+								if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+								else PrintToChat(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+							}
+						}
+						else
+						{
+							float entvec[3];
+							GetEntPropVector(targ,Prop_Data,propname,entvec);
+							if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
+							else PrintToChat(client,"%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
+						}
+					}
+				}
+				else if ((!HasEntProp(targ,Prop_Data,propname)) && (!HasEntProp(targ,Prop_Send,propname)))
+				{
+					if (client == 0) PrintToServer("%i %s doesn't have the %s property.",targ,cls,propname);
+					else PrintToChat(client,"%i %s doesn't have the %s property.",targ,cls,propname);
+				}
+			}
+			else
+			{
+				bool usefloat = false;
+				bool usestring = false;
+				bool getpropinf = false;
+				bool getent = false;
+				bool usevec = false;
+				int usearr = -1;
+				char secondintchk[64];
+				GetCmdArg(2, propname, sizeof(propname));
+				if (StrEqual(propname,"maxhealth",false))
+				{
+					pdata = true;
+					Format(propname,sizeof(propname),"m_iMaxHealth");
+				}
+				else if (StrEqual(propname,"health",false))
+				{
+					pdata = true;
+					Format(propname,sizeof(propname),"m_iHealth");
+				}
+				else if (StrEqual(propname,"armor",false))
+				{
+					pdata = true;
+					Format(propname,sizeof(propname),"m_ArmorValue");
+				}
+				else if (StrEqual(propname,"gravity",false))
+				{
+					pdata = true;
+					Format(propname,sizeof(propname),"m_flGravity");
+				}
+				else if (StrEqual(propname,"friction",false))
+				{
+					pdata = true;
+					Format(propname,sizeof(propname),"m_flFriction");
+				}
+				else if (StrEqual(propname,"speed",false))
+				{
+					pdata = true;
+					Format(propname,sizeof(propname),"m_flSpeed");
+				}
+				else if (StrEqual(propname,"donstat",false))
+				{
+					pdata = false;
+					Format(propname,sizeof(propname),"m_iSynergyDonorStat");
+				}
+				else if (StrEqual(propname,"hud",false) || StrEqual(propname,"suit",false))
+				{
+					pdata = false;
+					Format(propname,sizeof(propname),"m_bWearingSuit");
+				}
+				else if (StrEqual(propname,"team",false))
+				{
+					pdata = true;
+					Format(propname,sizeof(propname),"m_iTeamNum");
+				}
+				else if (StrEqual(propname,"mega",false))
+				{
+					pdata = false;
+					Format(propname,sizeof(propname),"m_bMegaState");
+					if (StrEqual(first,"!self",false)) targ = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+				}
+				else if (StrEqual(propname,"rendermode",false))
+				{
+					pdata = true;
+					Format(propname,sizeof(propname),"m_nRenderMode");
+				}
+				else if (StrEqual(propname,"classname",false))
+				{
+					pdata = true;
+					Format(propname,sizeof(propname),"m_iClassname");
+				}
+				GetCmdArg(3, secondintchk, sizeof(secondintchk));
+				float secondfl = StringToFloat(secondintchk);
+				int secondint = StringToInt(secondintchk);
+				float secondvec[3];
+				char vecchk[8][32];
+				ExplodeString(secondintchk," ",vecchk,8,32);
+				if (strlen(vecchk[2]) > 0)
+				{
+					usevec = true;
+					secondvec[0] = StringToFloat(vecchk[0]);
+					secondvec[1] = StringToFloat(vecchk[1]);
+					secondvec[2] = StringToFloat(vecchk[2]);
+				}
+				if (HasEntProp(targ,Prop_Send,propname))
+				{
+					PropFieldType type;
+					char srvcls[64];
+					GetEntityNetClass(targ,srvcls,sizeof(srvcls));
+					FindSendPropInfo(srvcls,propname,type);
+					if ((type == PropField_String) || (type == PropField_String_T))
+					{
+						usestring = true;
+					}
+					else if (type == PropField_Entity)
+					{
+						getent = true;
+					}
+					else if (type == PropField_Integer)
+					{
+						usefloat = false;
+						usestring = false;
+					}
+					else if (type == PropField_Float)
+					{
+						usefloat = true;
+					}
+					else if (type == PropField_Vector)
+					{
+						usevec = true;
+					}
+				}
+				if (HasEntProp(targ,Prop_Data,propname))
+				{
+					PropFieldType type;
+					FindDataMapInfo(targ,propname,type);
+					if ((type == PropField_String) || (type == PropField_String_T))
+					{
+						usestring = true;
+					}
+					else if (type == PropField_Entity)
+					{
+						getent = true;
+					}
+					else if (type == PropField_Integer)
+					{
+						usefloat = false;
+						usestring = false;
+					}
+					else if (type == PropField_Float)
+					{
+						usefloat = true;
+					}
+					else if (type == PropField_Vector)
+					{
+						usevec = true;
+					}
+				}
+				if ((StrEqual(secondintchk,"fl",false)) || (StrEqual(secondintchk,"float",false)))
+				{
+					usefloat = true;
+					usestring = false;
+					getpropinf = true;
+				}
+				else if (StrEqual(secondintchk,"int",false))
+				{
+					usefloat = false;
+					usestring = false;
+					getpropinf = true;
+				}
+				else if (StrEqual(secondintchk,"ent",false))
+				{
+					usefloat = false;
+					usestring = false;
+					getent = true;
+					getpropinf = true;
+				}
+				else if ((StrEqual(secondintchk,"str",false)) || (StrEqual(secondintchk,"char",false)))
+				{
+					usefloat = false;
+					usestring = true;
+					getpropinf = true;
+				}
+				else if ((StrEqual(secondintchk,"vec",false)) || (StrEqual(secondintchk,"vector",false)))
+				{
+					usefloat = false;
+					usestring = false;
+					usevec = true;
+					getpropinf = true;
+				}
+				else if ((StrEqual(typechk,"fl",false)) || (StrEqual(typechk,"float",false)))
+				{
+					usefloat = true;
+					usestring = false;
+					getpropinf = false;
+				}
+				else if (StrEqual(typechk,"int",false))
+				{
+					usefloat = false;
+					usestring = false;
+					getpropinf = false;
+				}
+				else if (StrEqual(typechk,"ent",false))
+				{
+					usefloat = false;
+					usestring = false;
+					getent = true;
+					getpropinf = false;
+				}
+				else if ((StrEqual(typechk,"str",false)) || (StrEqual(typechk,"char",false)))
+				{
+					usefloat = false;
+					usestring = true;
+					getpropinf = false;
+				}
+				else if ((StrEqual(typechk,"vec",false)) || (StrEqual(typechk,"vector",false)))
+				{
+					usefloat = false;
+					usestring = false;
+					usevec = true;
+					getpropinf = false;
+				}
+				else if (strlen(pdatachk) > 0)
+				{
+					if (HasEntProp(targ,Prop_Send,propname))
+					{
+						pdata = false;
+						int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
+						if (StringToInt(pdatachk) >= arrsize)
+						{
+							if (client == 0) PrintToServer("Array index out of bounds.");
+							else PrintToChat(client,"Array index out of bounds.");
+							return Plugin_Handled;
+						}
+						else
+						{
+							usearr = StringToInt(pdatachk);
 						}
 					}
 					else if (HasEntProp(targ,Prop_Data,propname))
 					{
-						PropFieldType type;
-						FindDataMapInfo(targ,propname,type);
-						if ((type == PropField_String) || (type == PropField_String_T))
+						pdata = true;
+						int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
+						if (StringToInt(pdatachk) >= arrsize)
 						{
-							int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
-							if (arrsize != 1)
+							if (client == 0) PrintToServer("Array index out of bounds.");
+							else PrintToChat(client,"Array index out of bounds.");
+							return Plugin_Handled;
+						}
+						else
+						{
+							usearr = StringToInt(pdatachk);
+						}
+					}
+				}
+				else
+				{
+					
+				}
+				if (args == 3)
+				{
+					if (HasEntProp(targ,Prop_Send,propname)) pdata = false;
+					else if (HasEntProp(targ,Prop_Data,propname)) pdata = true;
+				}
+				if (usevec)
+				{
+					if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
+					{
+						if (getpropinf)
+						{
+							GetEntPropVector(targ,Prop_Send,propname,secondvec);
+							if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
+							else PrintToChat(client,"Set %i's %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
+						}
+						else
+						{
+							if (usearr == -1)
 							{
-								for (int j = 0;j<arrsize;j++)
-								{
-									char propinf[64];
-									GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf),j);
-									if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
-									else PrintToChat(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
-								}
-								return Plugin_Handled;
+								SetEntPropVector(targ,Prop_Send,propname,secondvec);
+								if (client == 0) PrintToServer("Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
+								else PrintToChat(client,"Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
+								ChangeEdictState(targ);
 							}
 							else
 							{
-								char propinf[64];
-								GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf));
-								if (client == 0) PrintToServer("%i %s %s is %s",targ,cls,propname,propinf);
-								else PrintToChat(client,"%i %s %s is %s",targ,cls,propname,propinf);
+								SetEntPropVector(targ,Prop_Send,propname,secondvec,usearr);
+								if (client == 0) PrintToServer("Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
+								else PrintToChat(client,"Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
+								ChangeEdictState(targ);
 							}
 						}
-						else if (type == PropField_Entity)
+					}
+					else if ((pdata) && (HasEntProp(targ,Prop_Data,propname)))
+					{
+						if (getpropinf)
 						{
-							int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
-							if (arrsize != 1)
+							GetEntPropVector(targ,Prop_Data,propname,secondvec);
+							if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
+							else PrintToChat(client,"%i %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
+						}
+						else
+						{
+							if (usearr == -1)
 							{
-								for (int j = 0;j<arrsize;j++)
-								{
-									int enth = GetEntPropEnt(targ,Prop_Data,propname,j);
-									if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
-									else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
-								}
-								return Plugin_Handled;
+								SetEntPropVector(targ,Prop_Data,propname,secondvec);
+								if (client == 0) PrintToServer("Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
+								else PrintToChat(client,"Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
+								ChangeEdictState(targ);
 							}
 							else
 							{
-								int enth = GetEntPropEnt(targ,Prop_Data,propname);
-								if (client == 0) PrintToServer("%i %s %s is %i",targ,cls,propname,enth);
-								else PrintToChat(client,"%i %s %s is %i",targ,cls,propname,enth);
+								SetEntPropVector(targ,Prop_Data,propname,secondvec,usearr);
+								if (client == 0) PrintToServer("Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
+								else PrintToChat(client,"Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
+								ChangeEdictState(targ);
 							}
 						}
-						else if (type == PropField_Integer)
+					}
+					else
+					{
+						if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
+						else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
+					}
+				}
+				else if (usefloat)
+				{
+					if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
+					{
+						if (getpropinf)
 						{
-							int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
-							if (arrsize != 1)
+							float flchk = GetEntPropFloat(targ,Prop_Send,propname);
+							if (client == 0) PrintToServer("%i %s is %f",targ,propname,flchk);
+							else PrintToChat(client,"Set %i's %s is %f",targ,propname,flchk);
+						}
+						else
+						{
+							if (usearr == -1)
 							{
-								for (int j = 0;j<arrsize;j++)
-								{
-									int enti = GetEntProp(targ,Prop_Data,propname,j);
-									if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
-									else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
-								}
-								return Plugin_Handled;
+								SetEntPropFloat(targ,Prop_Send,propname,secondfl);
+								if (client == 0) PrintToServer("Set %i's %s to %f",targ,propname,secondfl);
+								else PrintToChat(client,"Set %i's %s to %f",targ,propname,secondfl);
+								ChangeEdictState(targ);
 							}
 							else
 							{
-								int enti = GetEntProp(targ,Prop_Data,propname);
-								if (client == 0) PrintToServer("%i %s %s is %i",targ,cls,propname,enti);
-								else PrintToChat(client,"%i %s %s is %i",targ,cls,propname,enti);
+								SetEntPropFloat(targ,Prop_Send,propname,secondfl,usearr);
+								if (client == 0) PrintToServer("Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
+								else PrintToChat(client,"Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
+								ChangeEdictState(targ);
 							}
 						}
-						else if (type == PropField_Float)
+					}
+					else if ((pdata) && (HasEntProp(targ,Prop_Data,propname)))
+					{
+						if (getpropinf)
 						{
-							int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
-							if (arrsize != 1)
+							float flchk = GetEntPropFloat(targ,Prop_Data,propname);
+							if (client == 0) PrintToServer("%i %s is %f",targ,propname,flchk);
+							else PrintToChat(client,"%i %s is %f",targ,propname,flchk);
+						}
+						else
+						{
+							if (usearr == -1)
 							{
-								for (int j = 0;j<arrsize;j++)
-								{
-									float entf = GetEntPropFloat(targ,Prop_Data,propname,j);
-									if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
-									else PrintToChat(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
-								}
-								return Plugin_Handled;
+								SetEntPropFloat(targ,Prop_Data,propname,secondfl);
+								if (client == 0) PrintToServer("Set %i's %s to %f",targ,propname,secondfl);
+								else PrintToChat(client,"Set %i's %s to %f",targ,propname,secondfl);
+								ChangeEdictState(targ);
 							}
 							else
 							{
-								float entf = GetEntPropFloat(targ,Prop_Data,propname);
-								if (client == 0) PrintToServer("%i %s %s is %f",targ,cls,propname,entf);
-								else PrintToChat(client,"%i %s %s is %f",targ,cls,propname,entf);
+								SetEntPropFloat(targ,Prop_Data,propname,secondfl,usearr);
+								if (client == 0) PrintToServer("Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
+								else PrintToChat(client,"Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
+								ChangeEdictState(targ);
 							}
 						}
-						else if (type == PropField_Vector)
+					}
+					else
+					{
+						if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
+						else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
+					}
+				}
+				else if (usestring)
+				{
+					if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
+					{
+						if (getpropinf)
 						{
-							int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
-							if (arrsize != 1)
+							char chchk[64];
+							GetEntPropString(targ,Prop_Send,propname,chchk,sizeof(chchk));
+							if (client == 0) PrintToServer("%i %s is %s",targ,propname,chchk);
+							else PrintToChat(client,"%i %s is %s",targ,propname,chchk);
+						}
+						else
+						{
+							if (usearr == -1)
 							{
-								for (int j = 0;j<arrsize;j++)
-								{
-									float entvec[3];
-									GetEntPropVector(targ,Prop_Data,propname,entvec,j);
-									if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
-									else PrintToChat(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
-								}
-								return Plugin_Handled;
+								SetEntPropString(targ,Prop_Send,propname,secondintchk);
+								if (client == 0) PrintToServer("Set %i's %s to %s",targ,propname,secondintchk);
+								else PrintToChat(client,"Set %i's %s to %s",targ,propname,secondintchk);
+								ChangeEdictState(targ);
 							}
 							else
 							{
-								float entvec[3];
-								GetEntPropVector(targ,Prop_Data,propname,entvec);
-								if (client == 0) PrintToServer("%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
-								else PrintToChat(client,"%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
+								SetEntPropString(targ,Prop_Send,propname,secondintchk,usearr);
+								if (client == 0) PrintToServer("Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
+								else PrintToChat(client,"Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
+								ChangeEdictState(targ);
+							}
+						}
+					}
+					else if ((pdata) && (HasEntProp(targ,Prop_Data,propname)))
+					{
+						if (getpropinf)
+						{
+							char chchk[64];
+							GetEntPropString(targ,Prop_Data,propname,chchk,sizeof(chchk));
+							if (client == 0) PrintToServer("%i %s is %s",targ,propname,chchk);
+							else PrintToChat(client,"%i %s is %s",targ,propname,chchk);
+						}
+						else
+						{
+							if (usearr == -1)
+							{
+								SetEntPropString(targ,Prop_Data,propname,secondintchk);
+								if (client == 0) PrintToServer("Set %i's %s to %s",targ,propname,secondintchk);
+								else PrintToChat(client,"Set %i's %s to %s",targ,propname,secondintchk);
+								ChangeEdictState(targ);
+							}
+							else
+							{
+								SetEntPropString(targ,Prop_Data,propname,secondintchk,usearr);
+								if (client == 0) PrintToServer("Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
+								else PrintToChat(client,"Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
+								ChangeEdictState(targ);
 							}
 						}
 					}
 					else
 					{
-						if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,cls,propname);
-						else PrintToChat(client,"%i doesn't have the %s property.",targ,cls,propname);
+						if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
+						else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
 					}
 				}
-			}
-			return Plugin_Handled;
-		}
-	}
-	if ((targ != -1) && (IsValidEntity(targ)))
-	{
-		char propname[64];
-		if (args == 2)
-		{
-			char cls[64];
-			GetEntityClassname(targ,cls,sizeof(cls));
-			GetCmdArg(2, propname, sizeof(propname));
-			if (StrEqual(propname,"classname",false))
-				Format(propname,sizeof(propname),"m_iClassname");
-			if (HasEntProp(targ,Prop_Send,propname))
-			{
-				PropFieldType type;
-				char srvcls[64];
-				GetEntityNetClass(targ,srvcls,sizeof(srvcls));
-				FindSendPropInfo(srvcls,propname,type);
-				if (type == PropField_String)
+				else if (getent)
 				{
-					int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
-					if (arrsize != 1)
+					if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
 					{
-						arrsize++;
-						for (int j = 0;j<arrsize;j++)
+						if (getpropinf)
 						{
-							char propinf[64];
-							GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf),j);
-							if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
-							else PrintToChat(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+							int intchk = GetEntPropEnt(targ,Prop_Send,propname);
+							if (client == 0) PrintToServer("%i %s is %i",targ,propname,intchk);
+							else PrintToChat(client,"%i %s is %i",targ,propname,intchk);
 						}
-						return Plugin_Handled;
+						else
+						{
+							if (usearr == -1)
+							{
+								SetEntPropEnt(targ,Prop_Send,propname,secondint);
+								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
+								else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
+								ChangeEdictState(targ);
+							}
+							else
+							{
+								SetEntPropEnt(targ,Prop_Send,propname,secondint,usearr);
+								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
+								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
+								ChangeEdictState(targ);
+							}
+						}
+					}
+					else if ((pdata) && (HasEntProp(targ,Prop_Data,propname)))
+					{
+						if (getpropinf)
+						{
+							int intchk = GetEntPropEnt(targ,Prop_Data,propname);
+							if (client == 0) PrintToServer("%i %s is %i",targ,propname,intchk);
+							else PrintToChat(client,"%i %s is %i",targ,propname,intchk);
+						}
+						else
+						{
+							if (usearr == -1)
+							{
+								SetEntPropEnt(targ,Prop_Data,propname,secondint);
+								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
+								else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
+								ChangeEdictState(targ);
+							}
+							else
+							{
+								SetEntPropEnt(targ,Prop_Data,propname,secondint,usearr);
+								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
+								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
+								ChangeEdictState(targ);
+							}
+						}
 					}
 					else
 					{
-						char propinf[64];
-						GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf));
-						if (client == 0) PrintToServer("%i %s %s is %s",targ,cls,propname,propinf);
-						else PrintToChat(client,"%i %s %s is %s",targ,cls,propname,propinf);
-						return Plugin_Handled;
+						if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
+						else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
 					}
 				}
-				else if (type == PropField_Entity)
+				else
 				{
-					int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
-					if (arrsize != 1)
+					if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
 					{
-						arrsize++;
-						for (int j = 0;j<arrsize;j++)
+						if (getpropinf)
 						{
-							int enth = GetEntPropEnt(targ,Prop_Send,propname,j);
-							if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
-							else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+							int intchk = GetEntProp(targ,Prop_Send,propname);
+							if (client == 0) PrintToServer("%i %s is %i",targ,propname,intchk);
+							else PrintToChat(client,"%i %s is %i",targ,propname,intchk);
 						}
-						return Plugin_Handled;
+						else
+						{
+							if (usearr == -1)
+							{
+								SetEntProp(targ,Prop_Send,propname,secondint);
+								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
+								else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
+								ChangeEdictState(targ);
+							}
+							else
+							{
+								SetEntProp(targ,Prop_Send,propname,secondint,usearr);
+								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
+								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
+								ChangeEdictState(targ);
+							}
+						}
+					}
+					else if ((pdata) && (HasEntProp(targ,Prop_Data,propname)))
+					{
+						if (getpropinf)
+						{
+							int intchk = GetEntProp(targ,Prop_Data,propname);
+							if (client == 0) PrintToServer("%i %s is %i",targ,propname,intchk);
+							else PrintToChat(client,"%i %s is %i",targ,propname,intchk);
+						}
+						else
+						{
+							if (usearr == -1)
+							{
+								SetEntProp(targ,Prop_Data,propname,secondint);
+								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
+								else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
+								ChangeEdictState(targ);
+							}
+							else
+							{
+								SetEntProp(targ,Prop_Data,propname,secondint,usearr);
+								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
+								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
+								ChangeEdictState(targ);
+							}
+						}
 					}
 					else
 					{
-						int enth = GetEntPropEnt(targ,Prop_Send,propname);
-						if (client == 0) PrintToServer("%i %s %s is %i",targ,cls,propname,enth);
-						else PrintToChat(client,"%i %s %s is %i",targ,cls,propname,enth);
-						return Plugin_Handled;
+						if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
+						else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
 					}
 				}
-				else if (type == PropField_Integer)
-				{
-					int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
-					if (arrsize != 1)
-					{
-						arrsize++;
-						for (int j = 0;j<arrsize;j++)
-						{
-							int enti = GetEntProp(targ,Prop_Send,propname,j);
-							if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
-							else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
-						}
-						return Plugin_Handled;
-					}
-					else
-					{
-						int enti = GetEntProp(targ,Prop_Send,propname);
-						if (client == 0) PrintToServer("%i %s %s is %i",targ,cls,propname,enti);
-						else PrintToChat(client,"%i %s %s is %i",targ,cls,propname,enti);
-						return Plugin_Handled;
-					}
-				}
-				else if (type == PropField_Float)
-				{
-					int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
-					if (arrsize != 1)
-					{
-						arrsize++;
-						for (int j = 0;j<arrsize;j++)
-						{
-							float entf = GetEntPropFloat(targ,Prop_Send,propname,j);
-							if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
-							else PrintToChat(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
-						}
-						return Plugin_Handled;
-					}
-					else
-					{
-						float entf = GetEntPropFloat(targ,Prop_Send,propname);
-						if (client == 0) PrintToServer("%i %s %s is %f",targ,cls,propname,entf);
-						else PrintToChat(client,"%i %s %s is %f",targ,cls,propname,entf);
-						return Plugin_Handled;
-					}
-				}
-				else if (type == PropField_Vector)
-				{
-					int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
-					if (arrsize != 1)
-					{
-						arrsize++;
-						for (int j = 0;j<arrsize;j++)
-						{
-							float entvec[3];
-							GetEntPropVector(targ,Prop_Send,propname,entvec,j);
-							if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
-							else PrintToChat(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
-						}
-						return Plugin_Handled;
-					}
-					else
-					{
-						float entvec[3];
-						GetEntPropVector(targ,Prop_Send,propname,entvec);
-						if (client == 0) PrintToServer("%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
-						else PrintToChat(client,"%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
-						return Plugin_Handled;
-					}
-				}
-			}
-			if (HasEntProp(targ,Prop_Data,propname))
-			{
-				PropFieldType type;
-				FindDataMapInfo(targ,propname,type);
-				if ((type == PropField_String) || (type == PropField_String_T))
-				{
-					char propinf[64];
-					GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf));
-					if (client == 0) PrintToServer("%i %s is %s",targ,propname,propinf);
-					else PrintToChat(client,"%i %s is %s",targ,propname,propinf);
-					return Plugin_Handled;
-				}
-				else if (type == PropField_Entity)
-				{
-					int enth = GetEntPropEnt(targ,Prop_Data,propname);
-					if (client == 0) PrintToServer("%i %s is %i",targ,propname,enth);
-					else PrintToChat(client,"%i %s is %i",targ,propname,enth);
-					return Plugin_Handled;
-				}
-				else if (type == PropField_Integer)
-				{
-					int enti = GetEntProp(targ,Prop_Data,propname);
-					if (client == 0) PrintToServer("%i %s is %i",targ,propname,enti);
-					else PrintToChat(client,"%i %s is %i",targ,propname,enti);
-					return Plugin_Handled;
-				}
-				else if (type == PropField_Float)
-				{
-					float entf = GetEntPropFloat(targ,Prop_Data,propname);
-					if (client == 0) PrintToServer("%i %s is %f",targ,propname,entf);
-					else PrintToChat(client,"%i %s is %f",targ,propname,entf);
-					return Plugin_Handled;
-				}
-				else if (type == PropField_Vector)
-				{
-					float entvec[3];
-					GetEntPropVector(targ,Prop_Data,propname,entvec);
-					if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
-					else PrintToChat(client,"%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
-					return Plugin_Handled;
-				}
-			}
-			if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
-			else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
-			return Plugin_Handled;
-		}
-		bool usefloat = false;
-		bool usestring = false;
-		bool getpropinf = false;
-		bool getent = false;
-		bool usevec = false;
-		char secondintchk[64];
-		GetCmdArg(2, propname, sizeof(propname));
-		if (StrEqual(propname,"maxhealth",false))
-		{
-			pdata = true;
-			Format(propname,sizeof(propname),"m_iMaxHealth");
-		}
-		else if (StrEqual(propname,"health",false))
-		{
-			pdata = true;
-			Format(propname,sizeof(propname),"m_iHealth");
-		}
-		else if (StrEqual(propname,"armor",false))
-		{
-			pdata = true;
-			Format(propname,sizeof(propname),"m_ArmorValue");
-		}
-		else if (StrEqual(propname,"gravity",false))
-		{
-			pdata = true;
-			Format(propname,sizeof(propname),"m_flGravity");
-		}
-		else if (StrEqual(propname,"friction",false))
-		{
-			pdata = true;
-			Format(propname,sizeof(propname),"m_flFriction");
-		}
-		else if (StrEqual(propname,"speed",false))
-		{
-			pdata = true;
-			Format(propname,sizeof(propname),"m_flSpeed");
-		}
-		else if (StrEqual(propname,"donstat",false))
-		{
-			pdata = false;
-			Format(propname,sizeof(propname),"m_iSynergyDonorStat");
-		}
-		else if (StrEqual(propname,"hud",false) || StrEqual(propname,"suit",false))
-		{
-			pdata = false;
-			Format(propname,sizeof(propname),"m_bWearingSuit");
-		}
-		else if (StrEqual(propname,"team",false))
-		{
-			pdata = true;
-			Format(propname,sizeof(propname),"m_iTeamNum");
-		}
-		else if (StrEqual(propname,"mega",false))
-		{
-			pdata = false;
-			Format(propname,sizeof(propname),"m_bMegaState");
-			if (StrEqual(first,"!self",false)) targ = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
-		}
-		else if (StrEqual(propname,"rendermode",false))
-		{
-			pdata = true;
-			Format(propname,sizeof(propname),"m_nRenderMode");
-		}
-		else if (StrEqual(propname,"classname",false))
-		{
-			pdata = true;
-			Format(propname,sizeof(propname),"m_iClassname");
-		}
-		GetCmdArg(3, secondintchk, sizeof(secondintchk));
-		float secondfl = StringToFloat(secondintchk);
-		int secondint = StringToInt(secondintchk);
-		float secondvec[3];
-		char vecchk[8][32];
-		ExplodeString(secondintchk," ",vecchk,8,32);
-		if (strlen(vecchk[2]) > 0)
-		{
-			usevec = true;
-			secondvec[0] = StringToFloat(vecchk[0]);
-			secondvec[1] = StringToFloat(vecchk[1]);
-			secondvec[2] = StringToFloat(vecchk[2]);
-		}
-		if ((((secondint > 0) || (secondint < 0)) || (StrEqual(secondintchk,"0",false))) && (StrContains(secondintchk,".",false) == -1))
-		{
-			usefloat = false;
-			usestring = false;
-		}
-		else if (secondfl != 0.0)
-			usefloat = true;
-		else
-			usestring = true;
-		if ((StrEqual(secondintchk,"fl",false)) || (StrEqual(secondintchk,"float",false)))
-		{
-			usefloat = true;
-			usestring = false;
-			getpropinf = true;
-		}
-		else if (StrEqual(secondintchk,"int",false))
-		{
-			usefloat = false;
-			usestring = false;
-			getpropinf = true;
-		}
-		else if (StrEqual(secondintchk,"ent",false))
-		{
-			usefloat = false;
-			usestring = false;
-			getent = true;
-			getpropinf = true;
-		}
-		else if ((StrEqual(secondintchk,"str",false)) || (StrEqual(secondintchk,"char",false)))
-		{
-			usefloat = false;
-			usestring = true;
-			getpropinf = true;
-		}
-		else if ((StrEqual(secondintchk,"vec",false)) || (StrEqual(secondintchk,"vector",false)))
-		{
-			usefloat = false;
-			usestring = false;
-			usevec = true;
-			getpropinf = true;
-		}
-		else if ((StrEqual(typechk,"fl",false)) || (StrEqual(typechk,"float",false)))
-		{
-			usefloat = true;
-			usestring = false;
-			getpropinf = false;
-		}
-		else if (StrEqual(typechk,"int",false))
-		{
-			usefloat = false;
-			usestring = false;
-			getpropinf = false;
-		}
-		else if (StrEqual(typechk,"ent",false))
-		{
-			usefloat = false;
-			usestring = false;
-			getent = true;
-			getpropinf = false;
-		}
-		else if ((StrEqual(typechk,"str",false)) || (StrEqual(typechk,"char",false)))
-		{
-			usefloat = false;
-			usestring = true;
-			getpropinf = false;
-		}
-		else if ((StrEqual(typechk,"vec",false)) || (StrEqual(typechk,"vector",false)))
-		{
-			usefloat = false;
-			usestring = false;
-			usevec = true;
-			getpropinf = false;
-		}
-		else
-		{
-			if (client == 0) PrintToServer("%s %f %i",secondintchk,secondfl,secondint);
-			else PrintToChat(client,"%s %f %i",secondintchk,secondfl,secondint);
-		}
-		if (args == 3)
-		{
-			if (HasEntProp(targ,Prop_Send,propname)) pdata = false;
-			else if (HasEntProp(targ,Prop_Data,propname)) pdata = true;
-		}
-		if (usevec)
-		{
-			if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
-			{
-				if (getpropinf)
-				{
-					GetEntPropVector(targ,Prop_Send,propname,secondvec);
-					if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-					else PrintToChat(client,"Set %i's %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-				}
-				else
-				{
-					SetEntPropVector(targ,Prop_Send,propname,secondvec);
-					if (client == 0) PrintToServer("Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-					else PrintToChat(client,"Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-				}
-			}
-			else if ((pdata) && (HasEntProp(targ,Prop_Data,propname)))
-			{
-				if (getpropinf)
-				{
-					GetEntPropVector(targ,Prop_Data,propname,secondvec);
-					if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-					else PrintToChat(client,"%i %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-				}
-				else
-				{
-					SetEntPropVector(targ,Prop_Data,propname,secondvec);
-					if (client == 0) PrintToServer("Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-					else PrintToChat(client,"Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-				}
-			}
-			else
-			{
-				if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
-				else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
-			}
-		}
-		else if (usefloat)
-		{
-			if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
-			{
-				if (getpropinf)
-				{
-					float flchk = GetEntPropFloat(targ,Prop_Send,propname);
-					if (client == 0) PrintToServer("%i %s is %f",targ,propname,flchk);
-					else PrintToChat(client,"Set %i's %s is %f",targ,propname,flchk);
-				}
-				else
-				{
-					SetEntPropFloat(targ,Prop_Send,propname,secondfl);
-					if (client == 0) PrintToServer("Set %i's %s to %f",targ,propname,secondfl);
-					else PrintToChat(client,"Set %i's %s to %f",targ,propname,secondfl);
-				}
-			}
-			else if ((pdata) && (HasEntProp(targ,Prop_Data,propname)))
-			{
-				if (getpropinf)
-				{
-					float flchk = GetEntPropFloat(targ,Prop_Data,propname);
-					if (client == 0) PrintToServer("%i %s is %f",targ,propname,flchk);
-					else PrintToChat(client,"%i %s is %f",targ,propname,flchk);
-				}
-				else
-				{
-					SetEntPropFloat(targ,Prop_Data,propname,secondfl);
-					if (client == 0) PrintToServer("Set %i's %s to %f",targ,propname,secondfl);
-					else PrintToChat(client,"Set %i's %s to %f",targ,propname,secondfl);
-				}
-			}
-			else
-			{
-				if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
-				else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
-			}
-		}
-		else if (usestring)
-		{
-			if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
-			{
-				if (getpropinf)
-				{
-					char chchk[64];
-					GetEntPropString(targ,Prop_Send,propname,chchk,sizeof(chchk));
-					if (client == 0) PrintToServer("%i %s is %s",targ,propname,chchk);
-					else PrintToChat(client,"%i %s is %s",targ,propname,chchk);
-				}
-				else
-				{
-					SetEntPropString(targ,Prop_Send,propname,secondintchk);
-					if (client == 0) PrintToServer("Set %i's %s to %s",targ,propname,secondintchk);
-					else PrintToChat(client,"Set %i's %s to %s",targ,propname,secondintchk);
-				}
-			}
-			else if ((pdata) && (HasEntProp(targ,Prop_Data,propname)))
-			{
-				if (getpropinf)
-				{
-					char chchk[64];
-					GetEntPropString(targ,Prop_Data,propname,chchk,sizeof(chchk));
-					if (client == 0) PrintToServer("%i %s is %s",targ,propname,chchk);
-					else PrintToChat(client,"%i %s is %s",targ,propname,chchk);
-				}
-				else
-				{
-					SetEntPropString(targ,Prop_Data,propname,secondintchk);
-					if (client == 0) PrintToServer("Set %i's %s to %s",targ,propname,secondintchk);
-					else PrintToChat(client,"Set %i's %s to %s",targ,propname,secondintchk);
-				}
-			}
-			else
-			{
-				if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
-				else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
-			}
-		}
-		else if (getent)
-		{
-			if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
-			{
-				if (getpropinf)
-				{
-					int intchk = GetEntPropEnt(targ,Prop_Send,propname);
-					if (client == 0) PrintToServer("%i %s is %i",targ,propname,intchk);
-					else PrintToChat(client,"%i %s is %i",targ,propname,intchk);
-				}
-				else
-				{
-					SetEntPropEnt(targ,Prop_Send,propname,secondint);
-					if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
-					else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
-				}
-			}
-			else if ((pdata) && (HasEntProp(targ,Prop_Data,propname)))
-			{
-				if (getpropinf)
-				{
-					int intchk = GetEntPropEnt(targ,Prop_Data,propname);
-					if (client == 0) PrintToServer("%i %s is %i",targ,propname,intchk);
-					else PrintToChat(client,"%i %s is %i",targ,propname,intchk);
-				}
-				else
-				{
-					SetEntPropEnt(targ,Prop_Data,propname,secondint);
-					if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
-					else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
-				}
-			}
-			else
-			{
-				if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
-				else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
 			}
 		}
 		else
 		{
-			if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
-			{
-				if (getpropinf)
-				{
-					int intchk = GetEntProp(targ,Prop_Send,propname);
-					if (client == 0) PrintToServer("%i %s is %i",targ,propname,intchk);
-					else PrintToChat(client,"%i %s is %i",targ,propname,intchk);
-				}
-				else
-				{
-					SetEntProp(targ,Prop_Send,propname,secondint);
-					if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
-					else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
-				}
-			}
-			else if ((pdata) && (HasEntProp(targ,Prop_Data,propname)))
-			{
-				if (getpropinf)
-				{
-					int intchk = GetEntProp(targ,Prop_Data,propname);
-					if (client == 0) PrintToServer("%i %s is %i",targ,propname,intchk);
-					else PrintToChat(client,"%i %s is %i",targ,propname,intchk);
-				}
-				else
-				{
-					SetEntProp(targ,Prop_Data,propname,secondint);
-					if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
-					else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
-				}
-			}
-			else
-			{
-				if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
-				else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
-			}
+			if (client == 0) PrintToServer("Invalid target");
+			else if (IsClientInGame(client)) PrintToChat(client,"Invalid target");
 		}
-	}
-	else
-	{
-		if (client == 0) PrintToServer("Invalid target");
-		else PrintToChat(client,"Invalid target");
 	}
 	return Plugin_Handled;
+}
+
+public void OnEntityCreated(int entity, char[] classname)
+{
+	if (showallcreated)
+	{
+		PrintToServer("Create %i %s",entity,classname);
+	}
+}
+
+public dbghch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) showallcreated = true;
+	else showallcreated = false;
 }
