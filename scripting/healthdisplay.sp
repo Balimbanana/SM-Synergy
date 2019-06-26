@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.82"
+#define PLUGIN_VERSION "1.83"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -34,6 +34,8 @@ int bclcookie2[MAXPLAYERS+1];
 int bclcookie3[MAXPLAYERS+1];
 int bclcookie4[MAXPLAYERS+1][3];
 int bclcookie4f[MAXPLAYERS+1][3];
+float bclcookie5x[MAXPLAYERS+1];
+float bclcookie5y[MAXPLAYERS+1];
 int hChanged[MAXPLAYERS+1];
 
 public void OnPluginStart()
@@ -48,11 +50,25 @@ public void OnPluginStart()
 	Handle_Database = SQLite_UseDatabase("sourcemod-local",Err,100-1);
 	if (Handle_Database == INVALID_HANDLE)
 		LogError("SQLite error: %s",Err);
-	if (!SQL_FastQuery(Handle_Database,"CREATE TABLE IF NOT EXISTS healthdisplay(SteamID VARCHAR(32) NOT NULL PRIMARY KEY,H1 INT NOT NULL,H2 INT NOT NULL,H3 INT NOT NULL,H4 INT NOT NULL,H5 INT NOT NULL,H6 INT NOT NULL,H7 INT NOT NULL,H8 INT NOT NULL,H9 INT NOT NULL);"))
+	if (!SQL_FastQuery(Handle_Database,"CREATE TABLE IF NOT EXISTS healthdisplay(SteamID VARCHAR(32) NOT NULL PRIMARY KEY,H1 INT NOT NULL,H2 INT NOT NULL,H3 INT NOT NULL,H4 INT NOT NULL,H5 INT NOT NULL,H6 INT NOT NULL,H7 INT NOT NULL,H8 INT NOT NULL,H9 INT NOT NULL,H10 FLOAT NOT NULL,H11 FLOAT NOT NULL);"))
 	{
 		char Err2[100];
 		SQL_GetError(Handle_Database,Err2,100);
 		LogError("SQLite error: %s",Err2);
+	}
+	//Update legacy databases
+	char tmpquer[100];
+	Format(tmpquer,sizeof(tmpquer),"SELECT H10, H11 FROM healthdisplay;");
+	if (!SQL_FastQuery(Handle_Database,tmpquer))
+	{
+		//Update legacy database
+		//Can't put these all on one query for some reason,
+		//but it is for the local database so it shouldn't be too much of a spam.
+		Format(tmpquer,sizeof(tmpquer),"ALTER TABLE healthdisplay ADD H10 FLOAT NOT NULL DEFAULT (-1.0);");
+		SQL_FastQuery(Handle_Database,tmpquer);
+		Format(tmpquer,sizeof(tmpquer),"ALTER TABLE healthdisplay ADD H11 FLOAT NOT NULL DEFAULT (0.55);");
+		SQL_FastQuery(Handle_Database,tmpquer);
+		return;
 	}
 	//This is on a timer to call a function because when the function is called at this point,
 	//it can sometimes fail, so I found it was best to wait 1 second.
@@ -66,6 +82,7 @@ public void OnPluginStart()
 	RegConsoleCmd("sm_healthcolor",Display_HudSelect);
 	RegConsoleCmd("sm_healthfriendcol",Display_HudFriendSelect);
 	RegConsoleCmd("sm_healthenemycol",Display_HudEnemySelect);
+	RegConsoleCmd("sm_healthpos",sethealthhudpos);
 	CreateTimer(10.0,cleararr,_,TIMER_REPEAT);
 	CreateTimer(0.1,ShowTimer,_,TIMER_REPEAT);
 }
@@ -150,6 +167,7 @@ public Action showinf(int client, int args)
 		PrintToChat(client,"!healthnum <1-2>");
 		PrintToChat(client,"%T","HealthNum",client);
 		PrintToChat(client,"%T","HealthColMenu",client);
+		PrintToChat(client,"!healthpos <0.1> <0.1>");
 	}
 	return Plugin_Handled;
 }
@@ -344,14 +362,21 @@ public Action cleararr(Handle timer)
 	addht("npc_zombie_scientist_torso");
 	addht("npc_zombie_security");
 	addht("npc_alien_slave");
+	addht("npc_alien_grunt");
 	addht("npc_houndeye");
 	addht("npc_tentacle");
+	addht("npc_snark");
 	addht("npc_bullsquid");
+	addht("npc_sentry_ground");
 	addht("npc_sentry_ceiling");
 	addht("npc_human_grunt");
 	addht("npc_human_commander");
 	addht("npc_human_medic");
 	addht("npc_human_grenadier");
+	addht("npc_human_assassin");
+	addht("npc_abrams");
+	addht("npc_apache");
+	addht("npc_ichthyosaur");
 	addht("monster_alien_slave");
 	addht("monster_bullchicken");
 	addht("monster_headcrab");
@@ -491,6 +516,15 @@ public Action ShowTimer(Handle timer)
 								GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
 								if (StrContains(targn,"lamar",false) != -1)
 									Format(clsname,sizeof(clsname),"npc_lamarr");
+								else if (HasEntProp(targ,Prop_Data,"m_hParent"))
+								{
+									int parchk = GetEntPropEnt(targ,Prop_Data,"m_hParent");
+									if ((parchk != 0) && (IsValidEntity(parchk)))
+									{
+										targ = parchk;
+										GetEntityClassname(targ,clsname,sizeof(clsname));
+									}
+								}
 							}
 						}
 						if ((HasEntProp(targ,Prop_Data,"m_nRenderMode")) && (!StrEqual(clsname,"npc_houndeye",false)) && (!StrEqual(clsname,"npc_bullsquid",false)))
@@ -820,8 +854,8 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32], bool friend
 	}
 	if (bclcookie[client] == 0)
 	{
-		if (friendly) SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4f[client][0], bclcookie4f[client][1], bclcookie4f[client][2], 255, 0, 0.1, 0.0, 0.1);
-		else SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4[client][0], bclcookie4[client][1], bclcookie4[client][2], 255, 0, 0.1, 0.0, 0.1);
+		if (friendly) SetHudTextParams(bclcookie5x[client], bclcookie5y[client], 0.1, bclcookie4f[client][0], bclcookie4f[client][1], bclcookie4f[client][2], 255, 0, 0.1, 0.0, 0.1);
+		else SetHudTextParams(bclcookie5x[client], bclcookie5y[client], 0.1, bclcookie4[client][0], bclcookie4[client][1], bclcookie4[client][2], 255, 0, 0.1, 0.0, 0.1);
 		ShowHudText(client,0,"%s",hudbuf);
 	}
 	else if (bclcookie[client] == 1)
@@ -1051,9 +1085,9 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 	if (bclcookie[client] == 0)
 	{
 		if (StrContains(clsname,"enemy",false) != -1)
-			SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4[client][0], bclcookie4[client][1], bclcookie4[client][2], 255, 0, 0.1, 0.0, 0.1);
+			SetHudTextParams(bclcookie5x[client], bclcookie5y[client], 0.1, bclcookie4[client][0], bclcookie4[client][1], bclcookie4[client][2], 255, 0, 0.1, 0.0, 0.1);
 		else
-			SetHudTextParams(-1.0, 0.55, 0.1, bclcookie4f[client][0], bclcookie4f[client][1], bclcookie4f[client][2], 255, 0, 0.1, 0.0, 0.1);
+			SetHudTextParams(bclcookie5x[client], bclcookie5y[client], 0.1, bclcookie4f[client][0], bclcookie4f[client][1], bclcookie4f[client][2], 255, 0, 0.1, 0.0, 0.1);
 		ShowHudText(client,0,"%s",hudbuf);
 	}
 	else if (bclcookie[client] == 1)
@@ -1090,6 +1124,8 @@ initcl(int client)
 	bclcookie4f[client][0] = 255;
 	bclcookie4f[client][1] = 255;
 	bclcookie4f[client][2] = 0;
+	bclcookie5x[client] = -1.0;
+	bclcookie5y[client] = 0.55;
 }
 
 bool GetCopAlly()
@@ -1200,14 +1236,21 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_zombie_scientist_torso");
 		addht("npc_zombie_security");
 		addht("npc_alien_slave");
+		addht("npc_alien_grunt");
 		addht("npc_houndeye");
 		addht("npc_tentacle");
+		addht("npc_snark");
 		addht("npc_bullsquid");
+		addht("npc_sentry_ground");
 		addht("npc_sentry_ceiling");
 		addht("npc_human_grunt");
 		addht("npc_human_commander");
 		addht("npc_human_medic");
 		addht("npc_human_grenadier");
+		addht("npc_human_assassin");
+		addht("npc_abrams");
+		addht("npc_apache");
+		addht("npc_ichthyosaur");
 		addht("monster_alien_slave");
 		addht("monster_bullchicken");
 		addht("monster_headcrab");
@@ -1531,6 +1574,36 @@ public Action Display_HudEnemySelect(int client, int args)
 	return Plugin_Handled;
 }
 
+public Action sethealthhudpos(int client, int args)
+{
+	if ((client == 0) || (!IsValidEntity(client))) return Plugin_Handled;
+	if (args < 2)
+	{
+		PrintToChat(client,"%T","InvalidNum",client);
+		return Plugin_Handled;
+	}
+	char xpos[8];
+	char ypos[8];
+	GetCmdArg(1,xpos,sizeof(xpos));
+	GetCmdArg(2,ypos,sizeof(ypos));
+	if (StrContains(xpos,".",false) == -1) StrCat(xpos,sizeof(xpos),".");
+	if (StrContains(ypos,".",false) == -1) StrCat(ypos,sizeof(ypos),".");
+	if (strlen(xpos) < 3) StrCat(xpos,sizeof(xpos),"00");
+	if (strlen(ypos) < 3) StrCat(ypos,sizeof(ypos),"00");
+	float xposf = StringToFloat(xpos);
+	float yposf = StringToFloat(ypos);
+	if ((((xposf < 0.0) && (xposf != -1.0)) || ((yposf < 0.0) && (yposf != -1.0)) || (xposf > 1.0) || (yposf > 1.0)))
+	{
+		PrintToChat(client,"%T","InvalidNum",client);
+		return Plugin_Handled;
+	}
+	PrintToChat(client,"Set %f %f",xposf,yposf);
+	bclcookie5x[client] = xposf;
+	bclcookie5y[client] = yposf;
+	hChanged[client] = 1;
+	return Plugin_Handled;
+}
+
 public PanelHandlerDisplayFull(Menu menu, MenuAction action, int param1, int param2)
 {
 	char info[128];
@@ -1827,6 +1900,18 @@ public LoadClient(int client)
 		bclcookie4f[client][0] = SQL_FetchInt(hQuery,7);
 		bclcookie4f[client][1] = SQL_FetchInt(hQuery,8);
 		bclcookie4f[client][2] = SQL_FetchInt(hQuery,9);
+		bclcookie5x[client] = SQL_FetchFloat(hQuery,10);
+		bclcookie5y[client] = SQL_FetchFloat(hQuery,11);
+		if (bclcookie5x[client] == 0.00)
+		{
+			bclcookie5x[client] = -1.0;
+			hChanged[client] = 1;
+		}
+		if (bclcookie5y[client] == 0.00)
+		{
+			bclcookie5y[client] = 0.55;
+			hChanged[client] = 1;
+		}
 	}
 	return;
 }
@@ -1868,6 +1953,16 @@ public CLStoreInTable(int client)
 {
 	char Query[500];
 	char Temp[100];
+	if (bclcookie5x[client] == 0.00)
+	{
+		bclcookie5x[client] = -1.0;
+		hChanged[client] = 1;
+	}
+	if (bclcookie5y[client] == 0.00)
+	{
+		bclcookie5y[client] = 0.55;
+		hChanged[client] = 1;
+	}
 	if (IsCLStored(client) && (hChanged[client]))
 	{
 		StrCat(Query,500,"UPDATE healthdisplay SET ");
@@ -1888,6 +1983,10 @@ public CLStoreInTable(int client)
 		Format(Temp,100,"H8 = %i, ",bclcookie4f[client][1]);
 		StrCat(Query,500,Temp);
 		Format(Temp,100,"H9 = %i, ",bclcookie4f[client][2]);
+		StrCat(Query,500,Temp);
+		Format(Temp,100,"H10 = %f, ",bclcookie5x[client]);
+		StrCat(Query,500,Temp);
+		Format(Temp,100,"H11 = %f, ",bclcookie5y[client]);
 		StrCat(Query,500,Temp);
 		Query[strlen(Query)-2] = '\0';
 		Format(Temp,100," WHERE SteamID = '%s';",SteamID[client]);
@@ -1925,6 +2024,12 @@ public CLStoreInTable(int client)
 		StrCat(Query,500,Temp);
 		StrCat(Query,500,", ");
 		IntToString(0,Temp,100);
+		StrCat(Query,500,Temp);
+		StrCat(Query,500,", ");
+		FloatToString(-1.000,Temp,100);
+		StrCat(Query,500,Temp);
+		StrCat(Query,500,", ");
+		FloatToString(0.550,Temp,100);
 		StrCat(Query,500,Temp);
 		StrCat(Query,500,");");
 	}
