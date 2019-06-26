@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.16"
+#define PLUGIN_VERSION "1.17"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -1153,6 +1153,18 @@ public Action listents(int client, int args)
 						//SetEntProp(targ,Prop_Data,"m_bHackedByAlyx",1);
 						Format(stateinf,sizeof(stateinf),"%sOwner: %i %i",stateinf,ownert,ownerphy);
 					}
+					if (HasEntProp(targ,Prop_Data,"m_szMapName"))
+					{
+						char maptochange[128];
+						GetEntPropString(targ,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
+						if (HasEntProp(targ,Prop_Data,"m_szLandmarkName"))
+						{
+							char landmark[64];
+							GetEntPropString(targ,Prop_Data,"m_szLandmarkName",landmark,sizeof(landmark));
+							Format(scriptinf,sizeof(scriptinf),"%sMap %s Landmark %s ",scriptinf,maptochange,landmark);
+						}
+						else Format(scriptinf,sizeof(scriptinf),"%sMap %s ",scriptinf,maptochange);
+					}
 					if ((HasEntProp(targ,Prop_Data,"m_iHealth")) && (HasEntProp(targ,Prop_Data,"m_iMaxHealth")))
 					{
 						int targh = GetEntProp(targ,Prop_Data,"m_iHealth");
@@ -1463,6 +1475,18 @@ public Action getinf(int client, int args)
 				Format(inf,sizeof(inf),"%s\nVehicleScript: %s",inf,vehscript);
 		}
 		PrintToChat(client,"%s",inf);
+		if (HasEntProp(targ,Prop_Data,"m_szMapName"))
+		{
+			char maptochange[128];
+			GetEntPropString(targ,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
+			if (HasEntProp(targ,Prop_Data,"m_szLandmarkName"))
+			{
+				char landmark[64];
+				GetEntPropString(targ,Prop_Data,"m_szLandmarkName",landmark,sizeof(landmark));
+				PrintToChat(client,"Map %s Landmark %s",maptochange,landmark);
+			}
+			else PrintToChat(client,"Map %s",maptochange);
+		}
 		if (HasEntProp(targ,Prop_Data,"m_bCarriedByPlayer"))
 		{
 			int ownert = GetEntProp(targ,Prop_Data,"m_bCarriedByPlayer");
