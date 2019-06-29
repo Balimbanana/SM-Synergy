@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.0"
-			"Previous"	"0.9"
+			"Latest"  	"1.1"
+			"Previous"	"1.0"
 		}
 		
-		"Notes"	"Init."
+		"Notes"	"Disabled spawning in MP model while not using MP class for the moment."
 	}
 	
 	"Files"
