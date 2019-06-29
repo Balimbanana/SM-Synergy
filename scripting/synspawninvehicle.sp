@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION "1.1"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -145,8 +145,8 @@ setupvehicle(int vehicle, int client, bool enterexit)
 	}
 	else if ((enterexit) && (IsValidEntity(vehicle)) && (IsValidEntity(client)))
 	{
-		SetEntData(vehicle,collisiongroup,5,4,true);
 		if (HasEntProp(vehicle,Prop_Data,"m_CollisionGroup")) SetEntProp(vehicle,Prop_Data,"m_CollisionGroup",5);
+		SetEntData(vehicle,collisiongroup,5,4,true);
 		if (HasEntProp(vehicle,Prop_Data,"m_hPlayer")) SetEntPropEnt(vehicle,Prop_Data,"m_hPlayer",client);
 		if (HasEntProp(vehicle,Prop_Data,"m_hMoveChild")) SetEntPropEnt(vehicle,Prop_Data,"m_hMoveChild",client);
 		if (HasEntProp(vehicle,Prop_Data,"m_bIsOn")) SetEntProp(vehicle,Prop_Data,"m_bIsOn",1);
@@ -208,6 +208,14 @@ public Action spawninvehicle(Handle timer, int i)
 					case 4:
 						Format(vehicletype,sizeof(vehicletype),"prop_vehicle_mp");
 				}
+			}
+			if ((StrEqual(vehmdl,"models\\vehicles\\buggy_p2.mdl",false)) && (StrEqual(vehicletype,"prop_vehicle_jeep",false)))
+			{
+				//Need to set up specifics on spawning in jeep class instead of mp class while using mp models
+				int find = FindValueInArray(spawnplayers,i);
+				if (find != -1)
+					RemoveFromArray(spawnplayers,find);
+				return Plugin_Handled;
 			}
 			float vehicleorg[3];
 			float vehicleangs[3];
