@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.1"
+#define PLUGIN_VERSION "1.11"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -110,6 +110,12 @@ public OnLibraryAdded(const char[] name)
 	{
 		Updater_AddPlugin(UPDATE_URL);
 	}
+}
+
+public Updater_OnPluginUpdated()
+{
+	Handle nullpl = INVALID_HANDLE;
+	ReloadPlugin(nullpl);
 }
 
 setupvehicle(int vehicle, int client, bool enterexit)
@@ -453,7 +459,11 @@ public Action vehiclespawn(const char[] output, int caller, int activator, float
 									else if (IsPlayerAlive(i))
 									{
 										int curvchk = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
-										if (curvchk == -1)
+										float plyorg[3];
+										if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",plyorg);
+										else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",plyorg);
+										float chkdist = GetVectorDistance(plyorg,vehicleorg,false);
+										if ((curvchk == -1) && (chkdist < 302.0))
 										{
 											int vehiclenext = CreateEntityByName(vehicletype);
 											if (vehiclenext != -1)
