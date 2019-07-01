@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.17"
+#define PLUGIN_VERSION "1.18"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -251,6 +251,13 @@ public Action CreateStuff(int client, int args)
 							PrintToChat(client,"The vehiclescript %s was not found.",tmp2);
 							PrintToChat(client,"Defaulting to \"scripts/vehicles/jeep_test.txt\"");
 							Format(tmp2,sizeof(tmp2),"scripts/vehicles/jeep_test.txt");
+						}
+					}
+					else if (StrEqual(tmp,"angles",false))
+					{
+						if ((StrEqual(tmp2,"myangles",false)) || (StrEqual(tmp2,"myangs",false)))
+						{
+							Format(tmp2,sizeof(tmp2),"%1.f %1.f %1.f",Angles[0],Angles[1],Angles[2]);
 						}
 					}
 					if (StrEqual(tmp,"targetname",false))
@@ -878,6 +885,7 @@ public Handle findentsarrtarg(Handle arr, char[] namechk)
 		findentsarrtargsub(arr,-1,namechk,"logic_*");
 		findentsarrtargsub(arr,-1,namechk,"env_*");
 		findentsarrtargsub(arr,-1,namechk,"filter_*");
+		findentsarrtargsub(arr,-1,namechk,"point_template");
 		findentsarrtargsub(arr,-1,namechk,"info_vehicle_spawn");
 		findentsarrtargsub(arr,-1,namechk,"math_counter");
 	}
