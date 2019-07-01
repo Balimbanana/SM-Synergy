@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.11"
-			"Previous"	"1.1"
+			"Latest"  	"1.12"
+			"Previous"	"1.11"
 		}
 		
 		"Notes"	"Disabled spawning in MP model while not using MP class for the moment."
