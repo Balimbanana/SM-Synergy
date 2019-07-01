@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.11"
+#define PLUGIN_VERSION "1.12"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -391,6 +391,14 @@ public Action vehiclespawn(const char[] output, int caller, int activator, float
 							Format(vehicletype,sizeof(vehicletype),"prop_vehicle_mp");
 					}
 				}
+				if ((StrEqual(vehmdl,"models\\vehicles\\buggy_p2.mdl",false)) && (StrEqual(vehicletype,"prop_vehicle_jeep",false)))
+				{
+					//Need to set up specifics on spawning in jeep class instead of mp class while using mp models
+					int find = FindValueInArray(spawnplayers,activator);
+					if (find != -1)
+						RemoveFromArray(spawnplayers,find);
+					return Plugin_Continue;
+				}
 				float vehicleorg[3];
 				float vehicleangs[3];
 				if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",vehicleorg);
@@ -518,6 +526,7 @@ public Action vehiclespawn(const char[] output, int caller, int activator, float
 			}
 		}
 	}
+	return Plugin_Continue;
 }
 
 public Action exitspawnvehicle(const char[] output, int caller, int activator, float delay)
@@ -564,7 +573,7 @@ public Action seatadjtimer(Handle timer, Handle dp)
 		{
 			char mdl[128];
 			GetEntPropString(vehicle,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-			PrintToServer("Enter %i %i %s",vehicle,client,mdl);
+			//PrintToServer("Enter %i %i %s",vehicle,client,mdl);
 			if (StrEqual(mdl,"models/vehicles/combine_apcdrivable.mdl",false))
 			{
 				float seatadj[3];
