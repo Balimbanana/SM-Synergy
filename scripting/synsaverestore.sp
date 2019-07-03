@@ -49,7 +49,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.991"
+#define PLUGIN_VERSION "1.992"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1812,6 +1812,12 @@ public void OnMapStart()
 						porigin[0] = 1951.0;
 						porigin[1] = 4367.0;
 						porigin[2] = 2532.0;
+					}
+					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_00a",false)))
+					{
+						porigin[0] = 800.0;
+						porigin[1] = 2600.0;
+						porigin[2] = 353.0;
 					}
 					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_01",false)))
 					{
