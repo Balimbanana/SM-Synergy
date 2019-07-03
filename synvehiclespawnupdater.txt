@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.12"
-			"Previous"	"1.11"
+			"Latest"  	"1.13"
+			"Previous"	"1.12"
 		}
 		
-		"Notes"	"Disabled spawning in MP model while not using MP class for the moment."
+		"Notes"	"Ensure clients are fully spawned in and equipped before spawning in vehicles."
 	}
 	
 	"Files"
