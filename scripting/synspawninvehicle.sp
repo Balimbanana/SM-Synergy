@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.12"
+#define PLUGIN_VERSION "1.13"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -68,10 +68,22 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 		int client = GetClientOfUserId(GetEventInt(event,"userid"));
 		if (FindValueInArray(spawnplayers,client) == -1)
 			PushArrayCell(spawnplayers,client);
-		if (IsValidEntity(spawninthisvehicle)) CreateTimer(1.5,spawninvehicle,client,TIMER_FLAG_NO_MAPCHANGE);
+		if (IsValidEntity(spawninthisvehicle)) CreateTimer(0.1,waitforlive,client,TIMER_FLAG_NO_MAPCHANGE);
 		CreateTimer(5.0,removesparr,client,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	return Plugin_Continue;
+}
+
+public Action waitforlive(Handle timer, int client)
+{
+	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && IsValidEntity(client) && !IsFakeClient(client))
+	{
+		CreateTimer(0.5,spawninvehicle,client,TIMER_FLAG_NO_MAPCHANGE);
+	}
+	else if ((IsClientConnected(client)) && (!IsFakeClient(client)))
+	{
+		CreateTimer(1.0,waitforlive,client,TIMER_FLAG_NO_MAPCHANGE);
+	}
 }
 
 public Action stuckblck(int client, int args)
