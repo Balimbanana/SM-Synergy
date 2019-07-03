@@ -49,7 +49,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.99"
+#define PLUGIN_VERSION "1.991"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1846,6 +1846,7 @@ public void OnMapStart()
 					if (ent != -1)
 					{
 						bool beginseq = false;
+						bool applypropafter = false;
 						if (StrEqual(clsname,"npc_alyx",false))
 						{
 							alyxtransition = ent;
@@ -1872,18 +1873,30 @@ public void OnMapStart()
 						if (HasEntProp(ent,Prop_Data,"m_nSolidType")) DispatchKeyValue(ent,"solid",solidity);
 						if (HasEntProp(ent,Prop_Data,"m_bHasGun")) DispatchKeyValue(ent,"EnableGun",gunenablech);
 						if ((strlen(defanim) > 0) && (HasEntProp(ent,Prop_Data,"m_iszDefaultAnim"))) DispatchKeyValue(ent,"DefaultAnim",defanim);
+						char scriptexp[64][128];
 						if (!StrEqual(scriptinf,"endofpack",false))
 						{
-							char scriptexp[28][64];
-							ExplodeString(scriptinf," ",scriptexp,28,64);
-							for (int j = 0;j<28;j++)
+							ExplodeString(scriptinf," ",scriptexp,64,128);
+							for (int j = 0;j<64;j++)
 							{
+								bool skip2 = false;
 								int jadd = j+1;
 								if ((strlen(scriptexp[j]) > 0) && (strlen(scriptexp[jadd]) > 0))
 								{
+									if (StrContains(scriptexp[jadd],"\"",false) != -1)
+									{
+										Format(scriptexp[jadd],sizeof(scriptexp[]),"%s %s %s",scriptexp[jadd],scriptexp[jadd+1],scriptexp[jadd+2]);
+										ReplaceString(scriptexp[jadd],sizeof(scriptexp[]),"\"","");
+										skip2 = true;
+									}
 									//PrintToServer("Pushing %s %s",scriptexp[j],scriptexp[jadd]);
 									DispatchKeyValue(ent,scriptexp[j],scriptexp[jadd]);
+									if (StrContains(scriptexp[j],"m_angRotation",false) == 0)
+									{
+										applypropafter = true;
+									}
 								}
+								if (skip2) j+=2;
 								j++;
 							}
 							beginseq = true;
@@ -1894,9 +1907,59 @@ public void OnMapStart()
 						ActivateEntity(ent);
 						if (curh != 0) SetEntProp(ent,Prop_Data,"m_iHealth",curh);
 						TeleportEntity(ent,porigin,angs,NULL_VECTOR);
-						if (HasEntProp(ent,Prop_Data,"m_eDoorState")) SetEntProp(ent,Prop_Data,"m_eDoorState",doorstate);
+						if ((HasEntProp(ent,Prop_Data,"m_eDoorState")) && (doorstate != 1)) SetEntProp(ent,Prop_Data,"m_eDoorState",doorstate);
 						if (HasEntProp(ent,Prop_Data,"m_SleepState")) SetEntProp(ent,Prop_Data,"m_SleepState",sleepstate);
 						if (beginseq) CreateTimer(0.2,beginseqd,ent);
+						if (applypropafter)
+						{
+							for (int j = 0;j<64;j++)
+							{
+								int jadd = j+1;
+								if ((strlen(scriptexp[j]) > 0) && (strlen(scriptexp[jadd]) > 0))
+								{
+									if (HasEntProp(ent,Prop_Data,scriptexp[j]))
+									{
+										PropFieldType type;
+										FindDataMapInfo(ent,scriptexp[j],type);
+										if ((type == PropField_String) || (type == PropField_String_T))
+										{
+											SetEntPropString(ent,Prop_Data,scriptexp[j],scriptexp[jadd]);
+										}
+										else if (type == PropField_Entity)
+										{
+											SetEntPropEnt(ent,Prop_Data,scriptexp[j],StringToInt(scriptexp[jadd]));
+										}
+										else if (type == PropField_Integer)
+										{
+											SetEntProp(ent,Prop_Data,scriptexp[j],StringToInt(scriptexp[jadd]));
+										}
+										else if (type == PropField_Float)
+										{
+											SetEntPropFloat(ent,Prop_Data,scriptexp[j],StringToFloat(scriptexp[jadd]));
+										}
+										else if (type == PropField_Vector)
+										{
+											//PrintToServer("Apply vec %s",scriptexp[j]);
+											float entvec[3];
+											char vecchk[8][32];
+											ExplodeString(scriptexp[jadd]," ",vecchk,8,32);
+											if (strlen(vecchk[2]) > 0)
+											{
+												entvec[0] = StringToFloat(vecchk[0]);
+												entvec[1] = StringToFloat(vecchk[1]);
+												entvec[2] = StringToFloat(vecchk[2]);
+												SetEntPropVector(ent,Prop_Data,scriptexp[j],entvec);
+												if ((doorstate == 1) && (StrEqual(scriptexp[j],"m_angGoal",false)))
+												{
+													TeleportEntity(ent,NULL_VECTOR,entvec,NULL_VECTOR);
+												}
+											}
+										}
+									}
+								}
+								j++;
+							}
+						}
 					}
 					CloseHandle(dp);
 				}
@@ -2420,6 +2483,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 						char npctarg[64];
 						char solidity[4];
 						char defanim[32];
+						char scriptinf[512];
 						int doorstate, sleepstate, gunenable;
 						if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 						if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
@@ -2517,6 +2581,47 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 						}
 						if (HasEntProp(i,Prop_Data,"m_bHasGun")) gunenable = GetEntProp(i,Prop_Data,"m_bHasGun");
 						if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
+						if (HasEntProp(i,Prop_Data,"m_vecAxis"))
+						{
+							float angax[3];
+							GetEntPropVector(i,Prop_Data,"m_vecAxis",angax);
+							Format(scriptinf,sizeof(scriptinf),"%saxis \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+						}
+						if (HasEntProp(i,Prop_Data,"m_flDistance"))
+						{
+							float dist = GetEntPropFloat(i,Prop_Data,"m_flDistance");
+							Format(scriptinf,sizeof(scriptinf),"%sdistance %1.f ",scriptinf,dist);
+						}
+						if (HasEntProp(i,Prop_Data,"m_flSpeed"))
+						{
+							float speed = GetEntPropFloat(i,Prop_Data,"m_flSpeed");
+							if (speed > 0.0) Format(scriptinf,sizeof(scriptinf),"%sspeed %1.f ",scriptinf,speed);
+						}
+						if (HasEntProp(i,Prop_Data,"m_angRotationClosed"))
+						{
+							float angax[3];
+							GetEntPropVector(i,Prop_Data,"m_angRotationClosed",angax);
+							Format(scriptinf,sizeof(scriptinf),"%sm_angRotationClosed \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+						}
+						if (HasEntProp(i,Prop_Data,"m_angRotationOpenForward"))
+						{
+							float angax[3];
+							GetEntPropVector(i,Prop_Data,"m_angRotationOpenForward",angax);
+							Format(scriptinf,sizeof(scriptinf),"%sm_angRotationOpenForward \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+						}
+						if (HasEntProp(i,Prop_Data,"m_angRotationOpenBack"))
+						{
+							float angax[3];
+							GetEntPropVector(i,Prop_Data,"m_angRotationOpenBack",angax);
+							Format(scriptinf,sizeof(scriptinf),"%sm_angRotationOpenBack \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+						}
+						if (HasEntProp(i,Prop_Data,"m_angGoal"))
+						{
+							float angax[3];
+							GetEntPropVector(i,Prop_Data,"m_angGoal",angax);
+							Format(scriptinf,sizeof(scriptinf),"%sm_angGoal \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+						}
+						TrimString(scriptinf);
 						if (transitionthis)
 						{
 							bool custenttransition = false;
@@ -2678,6 +2783,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 								WritePackString(dp,solidity);
 								WritePackCell(dp,gunenable);
 								WritePackString(dp,defanim);
+								if (strlen(scriptinf) > 0) WritePackString(dp,scriptinf);
 								WritePackString(dp,"endofpack");
 								PushArrayCell(transitionents,dp);
 								PushArrayCell(ignoreent,i);
@@ -2731,7 +2837,7 @@ void transitionthisent(int i)
 	char target[32];
 	char npctype[4];
 	char solidity[4];
-	char scriptinf[256];
+	char scriptinf[512];
 	char scrtmp[64];
 	char defanim[32];
 	int doorstate, sleepstate, gunenable;
@@ -2855,7 +2961,47 @@ void transitionthisent(int i)
 	if (HasEntProp(i,Prop_Data,"m_bDisableNPCCollisions"))
 	{
 		int scrtmpi = GetEntProp(i,Prop_Data,"m_bDisableNPCCollisions");
-		Format(scriptinf,sizeof(scriptinf),"%sm_bDisableNPCCollisions %i",scriptinf,scrtmpi);
+		Format(scriptinf,sizeof(scriptinf),"%sm_bDisableNPCCollisions %i ",scriptinf,scrtmpi);
+	}
+	if (HasEntProp(i,Prop_Data,"m_vecAxis"))
+	{
+		float angax[3];
+		GetEntPropVector(i,Prop_Data,"m_vecAxis",angax);
+		Format(scriptinf,sizeof(scriptinf),"%saxis \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+	}
+	if (HasEntProp(i,Prop_Data,"m_flDistance"))
+	{
+		float dist = GetEntPropFloat(i,Prop_Data,"m_flDistance");
+		Format(scriptinf,sizeof(scriptinf),"%sdistance %1.f ",scriptinf,dist);
+	}
+	if (HasEntProp(i,Prop_Data,"m_flSpeed"))
+	{
+		float speed = GetEntPropFloat(i,Prop_Data,"m_flSpeed");
+		if (speed > 0.0) Format(scriptinf,sizeof(scriptinf),"%sspeed %1.f ",scriptinf,speed);
+	}
+	if (HasEntProp(i,Prop_Data,"m_angRotationClosed"))
+	{
+		float angax[3];
+		GetEntPropVector(i,Prop_Data,"m_angRotationClosed",angax);
+		Format(scriptinf,sizeof(scriptinf),"%sm_angRotationClosed \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+	}
+	if (HasEntProp(i,Prop_Data,"m_angRotationOpenForward"))
+	{
+		float angax[3];
+		GetEntPropVector(i,Prop_Data,"m_angRotationOpenForward",angax);
+		Format(scriptinf,sizeof(scriptinf),"%sm_angRotationOpenForward \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+	}
+	if (HasEntProp(i,Prop_Data,"m_angRotationOpenBack"))
+	{
+		float angax[3];
+		GetEntPropVector(i,Prop_Data,"m_angRotationOpenBack",angax);
+		Format(scriptinf,sizeof(scriptinf),"%sm_angRotationOpenBack \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+	}
+	if (HasEntProp(i,Prop_Data,"m_angGoal"))
+	{
+		float angax[3];
+		GetEntPropVector(i,Prop_Data,"m_angGoal",angax);
+		Format(scriptinf,sizeof(scriptinf),"%sm_angGoal \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
 	}
 	if (HasEntProp(i,Prop_Data,"m_nSolidType"))
 	{
