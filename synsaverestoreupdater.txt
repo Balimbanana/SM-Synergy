@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99"
-			"Previous"	"1.98"
+			"Latest"  	"1.991"
+			"Previous"	"1.99"
 		}
 		
-		"Notes"	"Added static transition posistion for Alyx on ep1_c17_00a to 01."
+		"Notes"	"Added much more transitioning door info."
 	}
 	
 	"Files"
