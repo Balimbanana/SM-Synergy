@@ -55,7 +55,7 @@ Handle g_MapList = null;
 char currentMap[32];
 int passedcl = 0;
 int modsact = 0;
-bool syn,hl2,hl1,r24m,lcm,ep1m,ep2m,metam,calm,citm,ci7m,upm,ram,dwm,prem,c2am,ep3m,offm,radm,cdm,ntm,opm,mim,smm,s2em,rhm,snm,mprm,cem,mpm,el87m,alm,esm,dfm,stm,btm,llm,dhm,lum,thm,ddm,amm,ptsd,yla,ktm,t7,bm;
+bool syn,hl2,hl1,r24m,lcm,ep1m,ep2m,metam,calm,citm,ci7m,upm,ram,dwm,prem,c2am,ep3m,offm,radm,cdm,ntm,opm,mim,smm,s2em,rhm,snm,mprm,cem,mpm,el87m,alm,esm,dfm,stm,btm,llm,dhm,lum,thm,ddm,amm,ptsd,yla,ktm,t7,bm,bmxen,bmdamo;
 
 #define MAPSTATUS_ENABLED (1<<0)
 #define MAPSTATUS_DISABLED (1<<1)
@@ -82,6 +82,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_nominate_addmap", Command_Addmap, ADMFLAG_CHANGEMAP, "sm_nominate_addmap <mapname> - Forces a map to be on the next mapvote.");
 	
 	g_mapTrie = new StringMap();
+	RegConsoleCmd("maplist", fullmapslist);
 }
 
 public void OnConfigsExecuted()
@@ -293,6 +294,105 @@ public Action Command_Nominate(int client, int args)
 	return Plugin_Continue;
 }
 
+public Action fullmapslist(int client, int args)
+{
+	if (GetArraySize(g_MapList) < 1)
+	{
+		char mapcyclefind[64];
+		if (FileExists("cfg/mapcyclecfg.txt",false))
+			Format(mapcyclefind,sizeof(mapcyclefind),"cfg/mapcyclecfg.txt");
+		else if (FileExists("cfg/mapcycle.txt",false))
+			Format(mapcyclefind,sizeof(mapcyclefind),"cfg/mapcycle.txt");
+		if (strlen(mapcyclefind) > 0)
+		{
+			Handle filehandle = OpenFile(mapcyclefind,"r");
+			if (filehandle != INVALID_HANDLE)
+			{
+				char line[64];
+				while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
+				{
+					TrimString(line);
+					if (strlen(line) > 0) PushArrayString(g_MapList,line);
+				}
+			}
+			CloseHandle(filehandle);
+		}
+		else return Plugin_Handled;
+	}
+	Handle dp = CreateDataPack();
+	WritePackCell(dp,client);
+	WritePackCell(dp,0);
+	if (client != 0)
+	{
+		PrintToChat(client,"%i maps on server",GetArraySize(g_MapList));
+		ClientCommand(client,"con_enable 1");
+		ClientCommand(client,"toggleconsole");
+	}
+	else PrintToConsole(client,"%i maps on server",GetArraySize(g_MapList));
+	CreateTimer(0.1,fullmapslistdelay,dp,TIMER_FLAG_NO_MAPCHANGE);
+	return Plugin_Handled;
+}
+
+public Action fullmapslistdelay(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int client = ReadPackCell(dp);
+		int arrstart = ReadPackCell(dp);
+		CloseHandle(dp);
+		if ((IsValidEntity(client)) && (IsClientInGame(client)))
+		{
+			int threeperline = 0;
+			char showline[172];
+			for (int i = arrstart;i<GetArraySize(g_MapList);i++)
+			{
+				if (i >= arrstart+20) break;
+				else
+				{
+					char map[64];
+					GetArrayString(g_MapList,i,map,sizeof(map));
+					GetMapTag(map);
+					Format(showline,sizeof(showline),"%s%s From Mod (%s) ",showline,map,maptag);
+					if ((strlen(showline) < 50) && (threeperline == 0))
+					{
+						int tmplen = strlen(showline);
+						for (int j = tmplen;j<51;j++)
+						{
+							StrCat(showline,sizeof(showline)," ");
+						}
+					}
+					else if ((strlen(showline) < 100) && (threeperline == 1))
+					{
+						int tmplen = strlen(showline);
+						for (int j = tmplen;j<101;j++)
+						{
+							StrCat(showline,sizeof(showline)," ");
+						}
+					}
+					threeperline++;
+					if (threeperline >= 3)
+					{
+						PrintToConsole(client,"%s",showline);
+						threeperline = 0;
+						showline = "";
+					}
+					//PrintToConsole(client,"%s From Mod (%s)",map,maptag);
+				}
+			}
+			arrstart+=20;
+			if (arrstart < GetArraySize(g_MapList)+19)
+			{
+				Handle dpnext = CreateDataPack();
+				WritePackCell(dpnext,client);
+				WritePackCell(dpnext,arrstart);
+				CreateTimer(0.2,fullmapslistdelay,dpnext,TIMER_FLAG_NO_MAPCHANGE);
+			}
+		}
+	}
+	return Plugin_Handled;
+}
+
 public Action AttemptNominate(int client, int args)
 {
 	if (client == 0)
@@ -319,6 +419,8 @@ public Action AttemptNominate(int client, int args)
 	if (ci7m) menu.AddItem("city 7: toronto conflict", "City 7: Toronto Conflict");
 	if (upm) menu.AddItem("uncertainty principle", "Uncertainty Principle");
 	if (bm) menu.AddItem("black mesa", "Black Mesa");
+	if (bmxen) menu.AddItem("black mesa: improved xen", "Black Mesa: Improved Xen");
+	if (bmdamo) menu.AddItem("black mesa: damocles", "Black Mesa: Damocles");
 	if (ram) menu.AddItem("riot act", "Riot Act");
 	if (dwm) menu.AddItem("dangerous world", "Dangerous World");
 	if (prem) menu.AddItem("precursor", "Precursor");
@@ -377,7 +479,7 @@ public int MenuHandlersub(Menu menu, MenuAction action, int param1, int param2)
 			char tmp[128];
 			GetArrayString(g_MapList,i,tmp,sizeof(tmp));
 			GetMapTag(tmp);
-			if (StrContains(info,maptag,false) != -1)
+			if (StrEqual(info,maptag,false))
 				PushArrayString(tmparr,tmp);
 		}
 		tmpmenu(param1,tmparr,info);
@@ -399,8 +501,23 @@ public int MenuHandlersub(Menu menu, MenuAction action, int param1, int param2)
 void tmpmenu(int client, Handle tmparr, char[] menutitle)
 {
 	menutitle[0] &= ~(1 << 5);
+	char menutitletmp[128];
+	char rebuildupper[32][32];
+	ExplodeString(menutitle," ",rebuildupper,32,32);
+	for (int i = 0;i<32;i++)
+	{
+		if (strlen(rebuildupper[i]) > 0)
+		{
+			if (StringToInt(rebuildupper[i]) == 0) rebuildupper[i][0] &= ~(1 << 5);
+			if (strlen(menutitletmp) > 0)
+				Format(menutitletmp,sizeof(menutitletmp),"%s %s",menutitletmp,rebuildupper[i]);
+			else
+				Format(menutitletmp,sizeof(menutitletmp),"%s",rebuildupper[i]);
+		}
+		else break;
+	}
 	Menu menu = new Menu(MenuHandler);
-	menu.SetTitle(menutitle);
+	menu.SetTitle(menutitletmp);
 	for (int k;k<GetArraySize(tmparr);k++)
 	{
 		char ktmp[128];
@@ -1009,6 +1126,18 @@ public Action GetMapTag(const char[] map)
 		if (!amm) modsact++;
 		amm = true;
 		Format(maptag, sizeof(maptag), "Aftermath");
+	}
+	else if (StrContains(map,"bm_damo0",false) == 0)
+	{
+		if (!bmdamo) modsact++;
+		bmdamo = true;
+		Format(maptag, sizeof(maptag), "Black Mesa: Damocles");
+	}
+	else if ((StrContains(map,"xen_c4a",false) == 0) || (StrEqual(map,"xen_c5a1",false)))
+	{
+		if (!bmxen) modsact++;
+		bmxen = true;
+		Format(maptag, sizeof(maptag), "Black Mesa: Improved Xen");
 	}
 	else
 	{
