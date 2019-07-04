@@ -49,7 +49,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.992"
+#define PLUGIN_VERSION "1.993"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -461,42 +461,45 @@ public Action savecurgamedp(Handle timer, any dp)
 		}
 	}
 	CloseHandle(plyinf);
-	Handle savedirh = OpenDirectory(savedir, false);
-	char subfilen[64];
-	while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
+	if (DirExists(savedir,false))
 	{
-		if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+		Handle savedirh = OpenDirectory(savedir, false);
+		char subfilen[64];
+		while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
 		{
-			if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+			if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
 			{
-				Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-				Handle subfile = OpenFile(subfilen,"rb");
-				if (subfile != INVALID_HANDLE)
+				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 				{
-					char savepathsf[256];
-					Format(savepathsf,sizeof(savepathsf),subfilen);
-					ReplaceString(savepathsf,sizeof(savepathsf),savedir,"");
-					ReplaceString(savepathsf,sizeof(savepathsf),"\\","");
-					BuildPath(Path_SM,nullb,sizeof(nullb),"data/SynSaves/%s/%s/%s",mapbuf,ctimestamp,savepathsf);
-					Format(savepathsf,sizeof(savepathsf),"%s/%s/%s",savepath,ctimestamp,savepathsf);
-					ReplaceString(savepathsf,sizeof(savepathsf),"/","\\");
-					Handle subfiletarg = OpenFile(savepathsf,"wb");
-					if (subfiletarg != INVALID_HANDLE)
+					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+					Handle subfile = OpenFile(subfilen,"rb");
+					if (subfile != INVALID_HANDLE)
 					{
-						int itemarr[32];
-						while (!IsEndOfFile(subfile))
+						char savepathsf[256];
+						Format(savepathsf,sizeof(savepathsf),subfilen);
+						ReplaceString(savepathsf,sizeof(savepathsf),savedir,"");
+						ReplaceString(savepathsf,sizeof(savepathsf),"\\","");
+						BuildPath(Path_SM,nullb,sizeof(nullb),"data/SynSaves/%s/%s/%s",mapbuf,ctimestamp,savepathsf);
+						Format(savepathsf,sizeof(savepathsf),"%s/%s/%s",savepath,ctimestamp,savepathsf);
+						ReplaceString(savepathsf,sizeof(savepathsf),"/","\\");
+						Handle subfiletarg = OpenFile(savepathsf,"wb");
+						if (subfiletarg != INVALID_HANDLE)
 						{
-							ReadFile(subfile,itemarr,32,1);
-							WriteFile(subfiletarg,itemarr,32,1);
+							int itemarr[32];
+							while (!IsEndOfFile(subfile))
+							{
+								ReadFile(subfile,itemarr,32,1);
+								WriteFile(subfiletarg,itemarr,32,1);
+							}
 						}
+						CloseHandle(subfiletarg);
 					}
-					CloseHandle(subfiletarg);
+					CloseHandle(subfile);
 				}
-				CloseHandle(subfile);
 			}
 		}
+		CloseHandle(savedirh);
 	}
-	CloseHandle(savedirh);
 	char custentinffile[256];
 	Format(custentinffile,sizeof(custentinffile),"%s\\%s\\customentinf.txt",savepath,ctimestamp);
 	ReplaceString(custentinffile,sizeof(custentinffile),"/","\\");
@@ -2041,29 +2044,32 @@ public void OnMapEnd()
 {
 	if ((rmsaves) && (reloadingmap))
 	{
-		Handle savedirrmh = OpenDirectory(savedir, false);
-		char subfilen[64];
-		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
+		if (DirExists(savedir,false))
 		{
-			if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+			Handle savedirrmh = OpenDirectory(savedir, false);
+			char subfilen[64];
+			while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
 			{
-				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+				if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
 				{
-					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-					if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
+					if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 					{
-						DeleteFile(subfilen,false);
-						Handle subfiletarg = OpenFile(subfilen,"wb");
-						if (subfiletarg != INVALID_HANDLE)
+						Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+						if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
 						{
-							WriteFileLine(subfiletarg,"");
+							DeleteFile(subfilen,false);
+							Handle subfiletarg = OpenFile(subfilen,"wb");
+							if (subfiletarg != INVALID_HANDLE)
+							{
+								WriteFileLine(subfiletarg,"");
+							}
+							CloseHandle(subfiletarg);
 						}
-						CloseHandle(subfiletarg);
 					}
 				}
 			}
+			CloseHandle(savedirrmh);
 		}
-		CloseHandle(savedirrmh);
 	}
 	else if (!reloadingmap)
 	{
@@ -2164,29 +2170,32 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			enterfrom04pb = true;
 		}
 		reloadingmap = true;
-		Handle savedirh = OpenDirectory(savedir, false);
-		char subfilen[64];
-		while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
+		if (DirExists(savedir,false))
 		{
-			if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+			Handle savedirh = OpenDirectory(savedir, false);
+			char subfilen[64];
+			while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
 			{
-				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+				if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
 				{
-					Format(subfilen,sizeof(subfilen),"%s/%s",savedir,subfilen);
-					if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
+					if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 					{
-						DeleteFile(subfilen,false);
-						Handle subfiletarg = OpenFile(subfilen,"wb");
-						if (subfiletarg != INVALID_HANDLE)
+						Format(subfilen,sizeof(subfilen),"%s/%s",savedir,subfilen);
+						if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
 						{
-							WriteFileLine(subfiletarg,"");
+							DeleteFile(subfilen,false);
+							Handle subfiletarg = OpenFile(subfilen,"wb");
+							if (subfiletarg != INVALID_HANDLE)
+							{
+								WriteFileLine(subfiletarg,"");
+							}
+							CloseHandle(subfiletarg);
 						}
-						CloseHandle(subfiletarg);
 					}
 				}
 			}
+			CloseHandle(savedirh);
 		}
-		CloseHandle(savedirh);
 		if (transitionply)
 		{
 			if (validchange) GetEntPropString(caller,Prop_Data,"m_szLandmarkName",landmarkname,sizeof(landmarkname));
@@ -3102,29 +3111,32 @@ void saveresetveh(bool rmsave)
 	{
 		if (rmsave)
 		{
-			Handle savedirrmh = OpenDirectory(savedir, false);
-			char subfilen[64];
-			while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
+			if (DirExists(savedir,false))
 			{
-				if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+				Handle savedirrmh = OpenDirectory(savedir, false);
+				char subfilen[64];
+				while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
 				{
-					if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+					if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
 					{
-						Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-						if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
+						if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 						{
-							DeleteFile(subfilen,false);
-							Handle subfiletarg = OpenFile(subfilen,"wb");
-							if (subfiletarg != INVALID_HANDLE)
+							Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+							if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
 							{
-								WriteFileLine(subfiletarg,"");
+								DeleteFile(subfilen,false);
+								Handle subfiletarg = OpenFile(subfilen,"wb");
+								if (subfiletarg != INVALID_HANDLE)
+								{
+									WriteFileLine(subfiletarg,"");
+								}
+								CloseHandle(subfiletarg);
 							}
-							CloseHandle(subfiletarg);
 						}
 					}
 				}
+				CloseHandle(savedirrmh);
 			}
-			CloseHandle(savedirrmh);
 		}
 		int vehicles[MAXPLAYERS];
 		float steerpos[MAXPLAYERS];
