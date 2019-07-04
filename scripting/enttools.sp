@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.18"
+#define PLUGIN_VERSION "1.19"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -994,7 +994,7 @@ public Action listents(int client, int args)
 					if (HasEntProp(targ,Prop_Data,"m_spawnEquipment"))
 					{
 						GetEntPropString(targ,Prop_Data,"m_spawnEquipment",scrtmp,sizeof(scrtmp));
-						Format(stateinf,sizeof(stateinf),"%sAdditionalEquipment %s ",stateinf,scrtmp);
+						if (strlen(scrtmp) > 0) Format(stateinf,sizeof(stateinf),"%sAdditionalEquipment %s ",stateinf,scrtmp);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_nSkin"))
 					{
@@ -1159,7 +1159,25 @@ public Action listents(int client, int args)
 						int ownerphy = GetEntProp(targ,Prop_Data,"m_bHackedByAlyx");
 						//This property seems to exist on a few ents and changes colors/speed/relations
 						//SetEntProp(targ,Prop_Data,"m_bHackedByAlyx",1);
-						Format(stateinf,sizeof(stateinf),"%sOwner: %i %i",stateinf,ownert,ownerphy);
+						Format(stateinf,sizeof(stateinf),"%sOwner: %i %i ",stateinf,ownert,ownerphy);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_iDamageType"))
+					{
+						Format(stateinf,sizeof(stateinf),"%sDamageType: %i ",stateinf,GetEntProp(targ,Prop_Data,"m_iDamageType"));
+					}
+					if (HasEntProp(targ,Prop_Data,"m_bNegated"))
+					{
+						Format(stateinf,sizeof(stateinf),"%sNegated: %i ",stateinf,GetEntProp(targ,Prop_Data,"m_bNegated"));
+					}
+					if (HasEntProp(targ,Prop_Data,"m_iszDamageFilterName"))
+					{
+						GetEntPropString(targ,Prop_Data,"m_iszDamageFilterName",scrtmp,sizeof(scrtmp));
+						if (strlen(scrtmp) > 0) Format(stateinf,sizeof(stateinf),"%sDamageFilter: %s ",stateinf,scrtmp);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_iFilterClass"))
+					{
+						GetEntPropString(targ,Prop_Data,"m_iFilterClass",scrtmp,sizeof(scrtmp));
+						if (strlen(scrtmp) > 0) Format(stateinf,sizeof(stateinf),"%sFilterClass: %s ",stateinf,scrtmp);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_szMapName"))
 					{
@@ -1172,6 +1190,23 @@ public Action listents(int client, int args)
 							Format(scriptinf,sizeof(scriptinf),"%sMap %s Landmark %s ",scriptinf,maptochange,landmark);
 						}
 						else Format(scriptinf,sizeof(scriptinf),"%sMap %s ",scriptinf,maptochange);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_iDisabled"))
+					{
+						Format(stateinf,sizeof(stateinf),"%sStartDisabled %i ",stateinf,GetEntProp(targ,Prop_Data,"m_iDisabled"));
+					}
+					if (HasEntProp(targ,Prop_Data,"m_toggle_state"))
+					{
+						int togglestate = GetEntProp(targ,Prop_Data,"m_toggle_state");
+						if (togglestate == 1) Format(stateinf,sizeof(stateinf),"%sToggleState %i (Closed) ",stateinf,togglestate);
+						else if (togglestate == 0) Format(stateinf,sizeof(stateinf),"%sToggleState %i (Open) ",stateinf,togglestate);
+						else Format(stateinf,sizeof(stateinf),"%sToggleState %i ",stateinf,togglestate);
+					}
+					if ((StrEqual(ent,"func_brush",false)) && (HasEntProp(targ,Prop_Data,"m_fEffects")))
+					{
+						int enablestate = GetEntProp(targ,Prop_Data,"m_fEffects");
+						if (enablestate == 32) Format(stateinf,sizeof(stateinf),"%sToggleState: Disabled ",stateinf);
+						else Format(stateinf,sizeof(stateinf),"%sToggleState: Enabled ",stateinf);
 					}
 					if ((HasEntProp(targ,Prop_Data,"m_iHealth")) && (HasEntProp(targ,Prop_Data,"m_iMaxHealth")))
 					{
@@ -1231,8 +1266,16 @@ public Action listents(int client, int args)
 						GetEntPropString(j,Prop_Data,"m_iName",fname,sizeof(fname));
 					if (HasEntProp(j,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(j,Prop_Data,"m_vecAbsOrigin",entorigin);
 					else if (HasEntProp(j,Prop_Send,"m_vecOrigin")) GetEntPropVector(j,Prop_Send,"m_vecOrigin",entorigin);
-					if (client == 0) PrintToServer("ID: %i %s %s Origin %f %f %f",j,clsname,fname,entorigin[0],entorigin[1],entorigin[2]);
-					else PrintToChat(client,"ID: %i %s %s Origin %f %f %f",j,clsname,fname,entorigin[0],entorigin[1],entorigin[2]);
+					char displaymsg[256];
+					Format(displaymsg,sizeof(displaymsg),"ID: %i %s %s Origin %f %f %f",j,clsname,fname,entorigin[0],entorigin[1],entorigin[2]);
+					if ((StrEqual(clsname,"func_brush",false)) && (HasEntProp(j,Prop_Data,"m_fEffects")))
+					{
+						int enablestate = GetEntProp(j,Prop_Data,"m_fEffects");
+						if (enablestate == 32) Format(displaymsg,sizeof(displaymsg),"%s ToggleState: Disabled",displaymsg);
+						else Format(displaymsg,sizeof(displaymsg),"%s ToggleState: Enabled",displaymsg);
+					}
+					if (client == 0) PrintToServer("%s",displaymsg);
+					else PrintToChat(client,"%s",displaymsg);
 					if (client != 0)
 					{
 						float clorigin[3];
@@ -2114,14 +2157,14 @@ public Action setprops(int client, int args)
 								SetEntPropVector(targ,Prop_Send,propname,secondvec);
 								if (client == 0) PrintToServer("Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
 								else PrintToChat(client,"Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropVector(targ,Prop_Send,propname,secondvec,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
 								else PrintToChat(client,"Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
 					}
@@ -2140,14 +2183,14 @@ public Action setprops(int client, int args)
 								SetEntPropVector(targ,Prop_Data,propname,secondvec);
 								if (client == 0) PrintToServer("Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
 								else PrintToChat(client,"Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropVector(targ,Prop_Data,propname,secondvec,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
 								else PrintToChat(client,"Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
 					}
@@ -2174,14 +2217,14 @@ public Action setprops(int client, int args)
 								SetEntPropFloat(targ,Prop_Send,propname,secondfl);
 								if (client == 0) PrintToServer("Set %i's %s to %f",targ,propname,secondfl);
 								else PrintToChat(client,"Set %i's %s to %f",targ,propname,secondfl);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropFloat(targ,Prop_Send,propname,secondfl,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
 								else PrintToChat(client,"Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
 					}
@@ -2200,14 +2243,14 @@ public Action setprops(int client, int args)
 								SetEntPropFloat(targ,Prop_Data,propname,secondfl);
 								if (client == 0) PrintToServer("Set %i's %s to %f",targ,propname,secondfl);
 								else PrintToChat(client,"Set %i's %s to %f",targ,propname,secondfl);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropFloat(targ,Prop_Data,propname,secondfl,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
 								else PrintToChat(client,"Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
 					}
@@ -2235,14 +2278,14 @@ public Action setprops(int client, int args)
 								SetEntPropString(targ,Prop_Send,propname,secondintchk);
 								if (client == 0) PrintToServer("Set %i's %s to %s",targ,propname,secondintchk);
 								else PrintToChat(client,"Set %i's %s to %s",targ,propname,secondintchk);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropString(targ,Prop_Send,propname,secondintchk,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
 								else PrintToChat(client,"Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
 					}
@@ -2262,14 +2305,14 @@ public Action setprops(int client, int args)
 								SetEntPropString(targ,Prop_Data,propname,secondintchk);
 								if (client == 0) PrintToServer("Set %i's %s to %s",targ,propname,secondintchk);
 								else PrintToChat(client,"Set %i's %s to %s",targ,propname,secondintchk);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropString(targ,Prop_Data,propname,secondintchk,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
 								else PrintToChat(client,"Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
 					}
@@ -2296,14 +2339,14 @@ public Action setprops(int client, int args)
 								SetEntPropEnt(targ,Prop_Send,propname,secondint);
 								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
 								else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropEnt(targ,Prop_Send,propname,secondint,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
 								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
 					}
@@ -2322,14 +2365,14 @@ public Action setprops(int client, int args)
 								SetEntPropEnt(targ,Prop_Data,propname,secondint);
 								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
 								else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropEnt(targ,Prop_Data,propname,secondint,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
 								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
 					}
@@ -2356,14 +2399,14 @@ public Action setprops(int client, int args)
 								SetEntProp(targ,Prop_Send,propname,secondint);
 								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
 								else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntProp(targ,Prop_Send,propname,secondint,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
 								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
 					}
@@ -2382,14 +2425,14 @@ public Action setprops(int client, int args)
 								SetEntProp(targ,Prop_Data,propname,secondint);
 								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
 								else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntProp(targ,Prop_Data,propname,secondint,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
 								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
-								ChangeEdictState(targ);
+								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
 					}
