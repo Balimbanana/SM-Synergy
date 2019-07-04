@@ -1195,7 +1195,7 @@ public Action listents(int client, int args)
 					{
 						Format(stateinf,sizeof(stateinf),"%sStartDisabled %i ",stateinf,GetEntProp(targ,Prop_Data,"m_iDisabled"));
 					}
-					if (HasEntProp(targ,Prop_Data,"m_toggle_state"))
+					if ((StrContains(ent,"func_",false) == 0) && (HasEntProp(targ,Prop_Data,"m_toggle_state")))
 					{
 						int togglestate = GetEntProp(targ,Prop_Data,"m_toggle_state");
 						if (togglestate == 1) Format(stateinf,sizeof(stateinf),"%sToggleState %i (Closed) ",stateinf,togglestate);
