@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.19"
+#define PLUGIN_VERSION "1.20"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -1208,6 +1208,12 @@ public Action listents(int client, int args)
 						if (enablestate == 32) Format(stateinf,sizeof(stateinf),"%sToggleState: Disabled ",stateinf);
 						else Format(stateinf,sizeof(stateinf),"%sToggleState: Enabled ",stateinf);
 					}
+					if ((StrContains(ent,"trigger_",false) == 0) && (HasEntProp(targ,Prop_Data,"m_bDisabled")))
+					{
+						int enablestate = GetEntProp(targ,Prop_Data,"m_bDisabled");
+						if (enablestate == 1) Format(stateinf,sizeof(stateinf),"%sToggleState: Disabled ",stateinf);
+						else Format(stateinf,sizeof(stateinf),"%sToggleState: Enabled ",stateinf);
+					}
 					if ((HasEntProp(targ,Prop_Data,"m_iHealth")) && (HasEntProp(targ,Prop_Data,"m_iMaxHealth")))
 					{
 						int targh = GetEntProp(targ,Prop_Data,"m_iHealth");
@@ -1273,6 +1279,12 @@ public Action listents(int client, int args)
 						int enablestate = GetEntProp(j,Prop_Data,"m_fEffects");
 						if (enablestate == 32) Format(displaymsg,sizeof(displaymsg),"%s ToggleState: Disabled",displaymsg);
 						else Format(displaymsg,sizeof(displaymsg),"%s ToggleState: Enabled",displaymsg);
+					}
+					else if ((StrContains(clsname,"trigger_",false) == 0) && (HasEntProp(j,Prop_Data,"m_bDisabled")))
+					{
+						int enablestate = GetEntProp(j,Prop_Data,"m_bDisabled");
+						if (enablestate == 1) Format(displaymsg,sizeof(displaymsg),"%s ToggleState: Disabled ",displaymsg);
+						else Format(displaymsg,sizeof(displaymsg),"%s ToggleState: Enabled ",displaymsg);
 					}
 					if (client == 0) PrintToServer("%s",displaymsg);
 					else PrintToChat(client,"%s",displaymsg);
