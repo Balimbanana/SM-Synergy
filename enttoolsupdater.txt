@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.19"
-			"Previous"	"1.18"
+			"Latest"  	"1.20"
+			"Previous"	"1.19"
 		}
 		
-		"Notes"	"Added info to listents for filters, types of func_door states, and func_brush states."
+		"Notes"	"Added info to listents for filters, types of func_door states, trigger states, and func_brush states."
 	}
 	
 	"Files"
