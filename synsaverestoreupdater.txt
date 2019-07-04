@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.992"
-			"Previous"	"1.991"
+			"Latest"  	"1.993"
+			"Previous"	"1.992"
 		}
 		
-		"Notes"	"Added static transition pos for Alyx on ep1_c17_00a."
+		"Notes"	"Added additional directory checks."
 	}
 	
 	"Files"
