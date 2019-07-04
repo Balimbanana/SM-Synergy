@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.18"
-			"Previous"	"1.17"
+			"Latest"  	"1.19"
+			"Previous"	"1.18"
 		}
 		
-		"Notes"	"Added a couple entity creation types. Added point_template to lists and inputs. Added angles myangs to cc."
+		"Notes"	"Added info to listents for filters, types of func_door states, and func_brush states."
 	}
 	
 	"Files"
