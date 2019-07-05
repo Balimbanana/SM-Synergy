@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.993"
-			"Previous"	"1.992"
+			"Latest"  	"1.994"
+			"Previous"	"1.993"
 		}
 		
-		"Notes"	"Added additional directory checks."
+		"Notes"	"Additional transition checks."
 	}
 	
 	"Files"
