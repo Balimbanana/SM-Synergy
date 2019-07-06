@@ -49,7 +49,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.994"
+#define PLUGIN_VERSION "1.995"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2810,7 +2810,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 									PushArrayCell(transitionents,dp);
 									PushArrayCell(ignoreent,i);
 								}
-								PrintToServer("Transition %s %s %s",clsname,targn,mdl);
+								//PrintToServer("Transition %s %s %s",clsname,targn,mdl);
 							}
 						}
 					}
