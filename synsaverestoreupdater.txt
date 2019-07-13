@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.995"
-			"Previous"	"1.994"
+			"Latest"  	"1.996"
+			"Previous"	"1.995"
 		}
 		
-		"Notes"	"Additional transition checks."
+		"Notes"	"Additional transition checks. Re-setup Syn transition prevention to hopefully stop pSaveData globals errors."
 	}
 	
 	"Files"
