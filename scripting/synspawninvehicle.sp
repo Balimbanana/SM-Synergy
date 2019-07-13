@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.13"
+#define PLUGIN_VERSION "1.14"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -660,6 +660,71 @@ public OnClientDisconnect(int client)
 		if (vckent != -1)
 		{
 			setupvehicle(vckent,client,false);
+		}
+	}
+}
+
+int g_LastButtons[MAXPLAYERS+1];
+
+public OnClientDisconnect_Post(int client)
+{
+	g_LastButtons[client] = 0;
+}
+
+public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
+{
+	if (buttons & IN_SPEED) {
+		if (!(g_LastButtons[client] & IN_SPEED)) {
+			OnButtonPressBoostchk(client,IN_SPEED);
+		}
+	}
+	g_LastButtons[client] = buttons;
+}
+
+public OnButtonPressBoostchk(int client, int button)
+{
+	if (IsValidEntity(client))
+	{
+		if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && !IsFakeClient(client))
+		{
+			if (HasEntProp(client,Prop_Data,"m_hVehicle"))
+			{
+				int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
+				if (IsValidEntity(vehicle))
+				{
+					char cls[32];
+					GetEntityClassname(vehicle,cls,sizeof(cls));
+					if (StrEqual(cls,"prop_vehicle_mp",false))
+					{
+						if ((HasEntProp(vehicle,Prop_Data,"m_nBoostTimeLeft")) && (HasEntProp(vehicle,Prop_Data,"m_nSpeed")))
+						{
+							int boosttime = GetEntProp(vehicle,Prop_Data,"m_nBoostTimeLeft");
+							int speedchk = GetEntProp(vehicle,Prop_Data,"m_nSpeed");
+							int hasboost = GetEntProp(vehicle,Prop_Data,"m_nHasBoost");
+							if ((boosttime == 100) && (hasboost > 0) && (speedchk > 20))
+							{
+								CreateTimer(0.1,boostveh,vehicle,TIMER_FLAG_NO_MAPCHANGE);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+public Action boostveh(Handle timer, int vehicle)
+{
+	if (IsValidEntity(vehicle))
+	{
+		if (HasEntProp(vehicle,Prop_Data,"m_hPlayer"))
+		{
+			int plychk = GetEntPropEnt(vehicle,Prop_Data,"m_hPlayer");
+			if (IsValidEntity(plychk) && (plychk < MaxClients+1))
+			{
+				SetEntPropFloat(vehicle,Prop_Data,"m_controls.boost",1.0);
+				ChangeEdictState(vehicle);
+			}
 		}
 	}
 }
