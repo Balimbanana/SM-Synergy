@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.13"
-			"Previous"	"1.12"
+			"Latest"  	"1.14"
+			"Previous"	"1.13"
 		}
 		
-		"Notes"	"Ensure clients are fully spawned in and equipped before spawning in vehicles."
+		"Notes"	"Added boost to prop_vehicle_mp vehicle bases."
 	}
 	
 	"Files"
