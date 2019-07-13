@@ -49,7 +49,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.995"
+#define PLUGIN_VERSION "1.996"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1433,598 +1433,608 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 public void OnMapStart()
 {
 	mapstarttime = GetTickedTime()+2.0;
-	logsv = CreateEntityByName("logic_autosave");
-	if ((logsv != -1) && (IsValidEntity(logsv)))
+	if (GetMapHistorySize() > 0)
 	{
-		DispatchSpawn(logsv);
-		ActivateEntity(logsv);
-	}
-	Handle savedirh = FindConVar("sv_savedir");
-	if (savedirh != INVALID_HANDLE)
-	{
-		GetConVarString(savedirh,savedir,sizeof(savedir));
-		if (StrContains(savedir,"\\",false) != -1)
-			ReplaceString(savedir,sizeof(savedir),"\\","");
-		else if (StrContains(savedir,"/",false) != -1)
-			ReplaceString(savedir,sizeof(savedir),"/","");
-	}
-	CloseHandle(savedirh);
-	enterfrom04 = true;
-	GetCurrentMap(mapbuf,sizeof(mapbuf));
-	if (StrContains(mapbuf,"_spymap_ep3",false) != -1)
-		findtrigs(-1,"trigger_once");
-	if ((StrEqual(mapbuf,"remount",false)) && (enterfromep1))
-	{
-		int loginp = CreateEntityByName("logic_auto");
-		DispatchKeyValue(loginp, "spawnflags","1");
-		DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep1,kill,,0,-1");
-		DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep2,Enable,,0,-1");
-		DispatchSpawn(loginp);
-		ActivateEntity(loginp);
-		enterfromep1 = false;
-	}
-	else if ((StrEqual(mapbuf,"remount",false)) && (enterfromep2))
-	{
-		int loginp = CreateEntityByName("logic_auto");
-		DispatchKeyValue(loginp, "spawnflags","1");
-		DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep1,kill,,0,-1");
-		DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep2,kill,,0,-1");
-		DispatchKeyValue(loginp, "OnMapSpawn","syn_hudtimer,AddOutput,OnTimer syn_reltohl2:Trigger::0:-1,0,-1");
-		DispatchSpawn(loginp);
-		ActivateEntity(loginp);
-		int syn_reltohl2 = CreateEntityByName("logic_relay");
-		DispatchKeyValue(syn_reltohl2, "targetname","syn_reltohl2");
-		DispatchKeyValue(syn_reltohl2, "OnTrigger","syn_ps,Command,changelevel hl2 d1_trainstation_01,0,1");
-		DispatchSpawn(syn_reltohl2);
-		ActivateEntity(syn_reltohl2);
-		enterfromep2 = false;
-	}
-	if (reloadingmap)
-	{
-		if ((enterfrom04pb) && (StrEqual(mapbuf,"ep2_outland_02",false)))
+		logsv = CreateEntityByName("logic_autosave");
+		if ((logsv != -1) && (IsValidEntity(logsv)))
 		{
-			int spawnpos = CreateEntityByName("info_player_coop");
-			DispatchKeyValue(spawnpos, "targetname","syn_spawn_player_3rebuild");
-			DispatchKeyValue(spawnpos, "StartDisabled","1");
-			DispatchKeyValue(spawnpos, "parentname","elevator");
-			float spawnposg[3];
-			spawnposg[0] = -3106.0;
-			spawnposg[1] = -9455.0;
-			spawnposg[2] = -3077.0;
-			TeleportEntity(spawnpos,spawnposg,NULL_VECTOR,NULL_VECTOR);
-			DispatchSpawn(spawnpos);
-			ActivateEntity(spawnpos);
+			DispatchSpawn(logsv);
+			ActivateEntity(logsv);
+		}
+		Handle savedirh = FindConVar("sv_savedir");
+		if (savedirh != INVALID_HANDLE)
+		{
+			GetConVarString(savedirh,savedir,sizeof(savedir));
+			if (StrContains(savedir,"\\",false) != -1)
+				ReplaceString(savedir,sizeof(savedir),"\\","");
+			else if (StrContains(savedir,"/",false) != -1)
+				ReplaceString(savedir,sizeof(savedir),"/","");
+		}
+		CloseHandle(savedirh);
+		enterfrom04 = true;
+		GetCurrentMap(mapbuf,sizeof(mapbuf));
+		if (StrContains(mapbuf,"_spymap_ep3",false) != -1)
+			findtrigs(-1,"trigger_once");
+		if ((StrEqual(mapbuf,"remount",false)) && (enterfromep1))
+		{
 			int loginp = CreateEntityByName("logic_auto");
 			DispatchKeyValue(loginp, "spawnflags","1");
-			DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,Enable,,0,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,Trigger,,0.1,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,TouchTest,,0.1,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3rebuild,0,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","debug_choreo_start_in_elevator,Trigger,,0,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","pointTemplate_vortCalvary,ForceSpawn,,1,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","ss_heal_loop,BeginSequence,,1.2,-1");
+			DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep1,kill,,0,-1");
+			DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep2,Enable,,0,-1");
 			DispatchSpawn(loginp);
 			ActivateEntity(loginp);
+			enterfromep1 = false;
 		}
-		else if (enterfrom04pb)
-			enterfrom04pb = false;
-		if (StrEqual(mapbuf,"ep1_c17_00",false))
+		else if ((StrEqual(mapbuf,"remount",false)) && (enterfromep2))
 		{
 			int loginp = CreateEntityByName("logic_auto");
-			if (loginp != -1)
+			DispatchKeyValue(loginp, "spawnflags","1");
+			DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep1,kill,,0,-1");
+			DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep2,kill,,0,-1");
+			DispatchKeyValue(loginp, "OnMapSpawn","syn_hudtimer,AddOutput,OnTimer syn_reltohl2:Trigger::0:-1,0,-1");
+			DispatchSpawn(loginp);
+			ActivateEntity(loginp);
+			int syn_reltohl2 = CreateEntityByName("logic_relay");
+			DispatchKeyValue(syn_reltohl2, "targetname","syn_reltohl2");
+			DispatchKeyValue(syn_reltohl2, "OnTrigger","syn_ps,Command,changelevel hl2 d1_trainstation_01,0,1");
+			DispatchSpawn(syn_reltohl2);
+			ActivateEntity(syn_reltohl2);
+			enterfromep2 = false;
+		}
+		if (reloadingmap)
+		{
+			if ((enterfrom04pb) && (StrEqual(mapbuf,"ep2_outland_02",false)))
 			{
+				int spawnpos = CreateEntityByName("info_player_coop");
+				DispatchKeyValue(spawnpos, "targetname","syn_spawn_player_3rebuild");
+				DispatchKeyValue(spawnpos, "StartDisabled","1");
+				DispatchKeyValue(spawnpos, "parentname","elevator");
+				float spawnposg[3];
+				spawnposg[0] = -3106.0;
+				spawnposg[1] = -9455.0;
+				spawnposg[2] = -3077.0;
+				TeleportEntity(spawnpos,spawnposg,NULL_VECTOR,NULL_VECTOR);
+				DispatchSpawn(spawnpos);
+				ActivateEntity(spawnpos);
+				int loginp = CreateEntityByName("logic_auto");
 				DispatchKeyValue(loginp, "spawnflags","1");
-				DispatchKeyValue(loginp, "OnMapSpawn","ss_alyx_duckunder,BeginSequence,,5,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,Enable,,0,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,Trigger,,0.1,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,TouchTest,,0.1,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3rebuild,0,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","debug_choreo_start_in_elevator,Trigger,,0,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","pointTemplate_vortCalvary,ForceSpawn,,1,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","ss_heal_loop,BeginSequence,,1.2,-1");
 				DispatchSpawn(loginp);
 				ActivateEntity(loginp);
 			}
-		}
-		if (StrEqual(mapbuf,"d1_canals_09",false))
-		{
-			int trigtp = CreateEntityByName("trigger_teleport");
-			if (trigtp != -1)
+			else if (enterfrom04pb)
+				enterfrom04pb = false;
+			if (StrEqual(mapbuf,"ep1_c17_00",false))
 			{
-				int starttp = CreateEntityByName("info_teleport_destination");
-				if (starttp != -1)
+				int loginp = CreateEntityByName("logic_auto");
+				if (loginp != -1)
 				{
-					DispatchKeyValue(starttp,"targetname","syn_startspawntp");
+					DispatchKeyValue(loginp, "spawnflags","1");
+					DispatchKeyValue(loginp, "OnMapSpawn","ss_alyx_duckunder,BeginSequence,,5,-1");
+					DispatchSpawn(loginp);
+					ActivateEntity(loginp);
+				}
+			}
+			if (StrEqual(mapbuf,"d1_canals_09",false))
+			{
+				int trigtp = CreateEntityByName("trigger_teleport");
+				if (trigtp != -1)
+				{
+					int starttp = CreateEntityByName("info_teleport_destination");
+					if (starttp != -1)
+					{
+						DispatchKeyValue(starttp,"targetname","syn_startspawntp");
+						float orgs[3];
+						orgs[0] = 7737.0;
+						orgs[1] = 9744.0;
+						orgs[2] = -444.0;
+						float angs[3];
+						angs[1] = 90.0;
+						TeleportEntity(starttp,orgs,angs,NULL_VECTOR);
+						DispatchSpawn(starttp);
+						ActivateEntity(starttp);
+					}
+					DispatchKeyValue(trigtp,"model","*13");
+					DispatchKeyValue(trigtp,"spawnflags","1");
+					DispatchKeyValue(trigtp,"target","syn_startspawntp");
 					float orgs[3];
-					orgs[0] = 7737.0;
-					orgs[1] = 9744.0;
-					orgs[2] = -444.0;
+					orgs[0] = 7735.0;
+					orgs[1] = 8150.0;
+					orgs[2] = -395.0;
 					float angs[3];
 					angs[1] = 90.0;
-					TeleportEntity(starttp,orgs,angs,NULL_VECTOR);
-					DispatchSpawn(starttp);
-					ActivateEntity(starttp);
+					TeleportEntity(trigtp,orgs,angs,NULL_VECTOR);
+					DispatchSpawn(trigtp);
+					ActivateEntity(trigtp);
 				}
-				DispatchKeyValue(trigtp,"model","*13");
-				DispatchKeyValue(trigtp,"spawnflags","1");
-				DispatchKeyValue(trigtp,"target","syn_startspawntp");
-				float orgs[3];
-				orgs[0] = 7735.0;
-				orgs[1] = 8150.0;
-				orgs[2] = -395.0;
-				float angs[3];
-				angs[1] = 90.0;
-				TeleportEntity(trigtp,orgs,angs,NULL_VECTOR);
-				DispatchSpawn(trigtp);
-				ActivateEntity(trigtp);
 			}
-		}
-		if ((enterfrom03pb) && (StrEqual(mapbuf,"d1_town_02",false)))
-		{
-			findrmstarts(-1,"info_player_start");
-			int loginp = CreateEntityByName("logic_auto");
-			DispatchKeyValue(loginp, "spawnflags","1");
-			DispatchKeyValue(loginp, "OnMapSpawn","edt_alley_push,Enable,,0,1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_temp_ally,ForceSpawn,,1,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_removeme_temp_t02,ForceSpawn,,0,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3,0,1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_vint_trav_gman,Kill,,0,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_removeme_t03,Kill,,0,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_vint_stopplayerjump_1,Kill,,0,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
-			DispatchSpawn(loginp);
-			ActivateEntity(loginp);
-			int trigtpstart = CreateEntityByName("info_teleport_destination");
-			DispatchKeyValue(trigtpstart,"targetname","syn_transition_dest");
-			DispatchKeyValue(trigtpstart,"angles","0 70 0");
-			DispatchSpawn(trigtpstart);
-			ActivateEntity(trigtpstart);
-			float tporigin[3];
-			tporigin[0] = -3735.0;
-			tporigin[1] = -5.0;
-			tporigin[2] = -3440.0;
-			TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
-			trigtpstart = CreateEntityByName("trigger_teleport");
-			DispatchKeyValue(trigtpstart,"spawnflags","1");
-			DispatchKeyValue(trigtpstart,"targetname","syn_starttptransition");
-			DispatchKeyValue(trigtpstart,"model","*1");
-			DispatchKeyValue(trigtpstart,"target","syn_transition_dest");
-			DispatchSpawn(trigtpstart);
-			ActivateEntity(trigtpstart);
-			tporigin[0] = -736.0;
-			tporigin[1] = 864.0;
-			tporigin[2] = -3350.0;
-			TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
-		}
-		else if (enterfrom03pb)
-			enterfrom03pb = false;
-		if ((enterfrom08pb) && (StrEqual(mapbuf,"d2_coast_07",false)))
-		{
-			if ((rmsaves) && (GetArraySize(transitionents) > 0)) findtransitionback(-1);
-			findrmstarts(-1,"info_player_start");
-			int loginp = CreateEntityByName("logic_auto");
-			DispatchKeyValue(loginp, "spawnflags","1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_shiz,Trigger,,0,1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_4,0,1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
-			DispatchKeyValue(loginp, "OnMapSpawn","dropship,kill,,0,1");
-			DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Unlock,,0,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Close,,0.1,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Lock,,0.5,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
-			DispatchSpawn(loginp);
-			ActivateEntity(loginp);
-			int trigtpstart = CreateEntityByName("info_teleport_destination");
-			DispatchKeyValue(trigtpstart,"targetname","syn_transition_dest");
-			DispatchKeyValue(trigtpstart,"angles","0 180 0");
-			DispatchSpawn(trigtpstart);
-			ActivateEntity(trigtpstart);
-			float tporigin[3];
-			tporigin[0] = 3200.0;
-			tporigin[1] = 5216.0;
-			tporigin[2] = 1544.0;
-			TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
-			trigtpstart = CreateEntityByName("trigger_teleport");
-			DispatchKeyValue(trigtpstart,"spawnflags","1");
-			DispatchKeyValue(trigtpstart,"targetname","syn_starttptransition");
-			DispatchKeyValue(trigtpstart,"model","*9");
-			DispatchKeyValue(trigtpstart,"target","syn_transition_dest");
-			DispatchSpawn(trigtpstart);
-			ActivateEntity(trigtpstart);
-			tporigin[0] = -7616.0;
-			tporigin[1] = 5856.0;
-			tporigin[2] = 1601.0;
-			TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
-		}
-		else if (enterfrom08pb)
-			enterfrom08pb = false;
-		if (GetArraySize(globalsarr) > 0)
-		{
-			int loginp;
-			for (int i = 0;i<GetArraySize(globalsarr);i++)
+			if ((enterfrom03pb) && (StrEqual(mapbuf,"d1_town_02",false)))
 			{
-				char itmp[32];
-				GetArrayString(globalsarr, i, itmp, sizeof(itmp));
-				int itmpval = GetArrayCell(globalsiarr,i);
-				loginp = CreateEntityByName("logic_auto");
+				findrmstarts(-1,"info_player_start");
+				int loginp = CreateEntityByName("logic_auto");
 				DispatchKeyValue(loginp, "spawnflags","1");
-				char formt[64];
-				if (itmpval == 1)
-					Format(formt,sizeof(formt),"%s,TurnOn,,0,-1",itmp);
-				else
-					Format(formt,sizeof(formt),"%s,TurnOff,,0,-1",itmp);
-				DispatchKeyValue(loginp, "OnMapSpawn", formt);
-				//PrintToServer("Setting %s to %i",itmp,itmpval);
-			}
-			if (loginp != 0)
-			{
+				DispatchKeyValue(loginp, "OnMapSpawn","edt_alley_push,Enable,,0,1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_temp_ally,ForceSpawn,,1,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_removeme_temp_t02,ForceSpawn,,0,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3,0,1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_vint_trav_gman,Kill,,0,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_removeme_t03,Kill,,0,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_vint_stopplayerjump_1,Kill,,0,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
 				DispatchSpawn(loginp);
 				ActivateEntity(loginp);
+				int trigtpstart = CreateEntityByName("info_teleport_destination");
+				DispatchKeyValue(trigtpstart,"targetname","syn_transition_dest");
+				DispatchKeyValue(trigtpstart,"angles","0 70 0");
+				DispatchSpawn(trigtpstart);
+				ActivateEntity(trigtpstart);
+				float tporigin[3];
+				tporigin[0] = -3735.0;
+				tporigin[1] = -5.0;
+				tporigin[2] = -3440.0;
+				TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
+				trigtpstart = CreateEntityByName("trigger_teleport");
+				DispatchKeyValue(trigtpstart,"spawnflags","1");
+				DispatchKeyValue(trigtpstart,"targetname","syn_starttptransition");
+				DispatchKeyValue(trigtpstart,"model","*1");
+				DispatchKeyValue(trigtpstart,"target","syn_transition_dest");
+				DispatchSpawn(trigtpstart);
+				ActivateEntity(trigtpstart);
+				tporigin[0] = -736.0;
+				tporigin[1] = 864.0;
+				tporigin[2] = -3350.0;
+				TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
 			}
-		}
-		findprevlvls(-1);
-		reloadingmap = false;
-	}
-	ClearArray(globalsarr);
-	ClearArray(globalsiarr);
-	ClearArray(equiparr);
-	ClearArray(ignoreent);
-	Format(reloadthissave,sizeof(reloadthissave),"");
-	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:onchangelevel);
-	if (rmsaves)
-	{
-		/*
-		Handle savedirrmh = OpenDirectory(savedir, false);
-		char subfilen[64];
-		while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
-		{
-			if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+			else if (enterfrom03pb)
+				enterfrom03pb = false;
+			if ((enterfrom08pb) && (StrEqual(mapbuf,"d2_coast_07",false)))
 			{
-				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+				if ((rmsaves) && (GetArraySize(transitionents) > 0)) findtransitionback(-1);
+				findrmstarts(-1,"info_player_start");
+				int loginp = CreateEntityByName("logic_auto");
+				DispatchKeyValue(loginp, "spawnflags","1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_shiz,Trigger,,0,1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_4,0,1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
+				DispatchKeyValue(loginp, "OnMapSpawn","dropship,kill,,0,1");
+				DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Unlock,,0,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Close,,0.1,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Lock,,0.5,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
+				DispatchSpawn(loginp);
+				ActivateEntity(loginp);
+				int trigtpstart = CreateEntityByName("info_teleport_destination");
+				DispatchKeyValue(trigtpstart,"targetname","syn_transition_dest");
+				DispatchKeyValue(trigtpstart,"angles","0 180 0");
+				DispatchSpawn(trigtpstart);
+				ActivateEntity(trigtpstart);
+				float tporigin[3];
+				tporigin[0] = 3200.0;
+				tporigin[1] = 5216.0;
+				tporigin[2] = 1544.0;
+				TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
+				trigtpstart = CreateEntityByName("trigger_teleport");
+				DispatchKeyValue(trigtpstart,"spawnflags","1");
+				DispatchKeyValue(trigtpstart,"targetname","syn_starttptransition");
+				DispatchKeyValue(trigtpstart,"model","*9");
+				DispatchKeyValue(trigtpstart,"target","syn_transition_dest");
+				DispatchSpawn(trigtpstart);
+				ActivateEntity(trigtpstart);
+				tporigin[0] = -7616.0;
+				tporigin[1] = 5856.0;
+				tporigin[2] = 1601.0;
+				TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
+			}
+			else if (enterfrom08pb)
+				enterfrom08pb = false;
+			if (GetArraySize(globalsarr) > 0)
+			{
+				int loginp;
+				for (int i = 0;i<GetArraySize(globalsarr);i++)
 				{
-					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-					if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
-					{
-						DeleteFile(subfilen,false);
-						Handle subfiletarg = OpenFile(subfilen,"wb");
-						if (subfiletarg != INVALID_HANDLE)
-						{
-							WriteFileLine(subfiletarg,"");
-						}
-						CloseHandle(subfiletarg);
-					}
+					char itmp[32];
+					GetArrayString(globalsarr, i, itmp, sizeof(itmp));
+					int itmpval = GetArrayCell(globalsiarr,i);
+					loginp = CreateEntityByName("logic_auto");
+					DispatchKeyValue(loginp, "spawnflags","1");
+					char formt[64];
+					if (itmpval == 1)
+						Format(formt,sizeof(formt),"%s,TurnOn,,0,-1",itmp);
+					else
+						Format(formt,sizeof(formt),"%s,TurnOff,,0,-1",itmp);
+					DispatchKeyValue(loginp, "OnMapSpawn", formt);
+					//PrintToServer("Setting %s to %i",itmp,itmpval);
+				}
+				if (loginp != 0)
+				{
+					DispatchSpawn(loginp);
+					ActivateEntity(loginp);
 				}
 			}
+			findprevlvls(-1);
+			reloadingmap = false;
 		}
-		CloseHandle(savedirrmh);
-		*/
-		CreateTimer(0.1,redel);
-		if ((logsv != -1) && (IsValidEntity(logsv))) saveresetveh(false);
-		if (transitionply)
+		ClearArray(globalsarr);
+		ClearArray(globalsiarr);
+		ClearArray(equiparr);
+		ClearArray(ignoreent);
+		Format(reloadthissave,sizeof(reloadthissave),"");
+		HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:onchangelevel);
+		if (rmsaves)
 		{
-			findent(MaxClients+1,"info_player_equip");
-			if (GetArraySize(equiparr) > 0)
+			/*
+			Handle savedirrmh = OpenDirectory(savedir, false);
+			char subfilen[64];
+			while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
 			{
-				for (int j; j<GetArraySize(equiparr); j++)
+				if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
 				{
-					int jtmp = GetArrayCell(equiparr, j);
-					if (IsValidEntity(jtmp))
-						AcceptEntityInput(jtmp,"Disable");
-				}
-			}
-			timouthndl = CreateTimer(121.0,transitiontimeout,_,TIMER_FLAG_NO_MAPCHANGE);
-		}
-		int alyxtransition = -1;
-		bool alyxenter = false;
-		float aljeepchk[3];
-		float aljeepchkj[3];
-		if (strlen(landmarkname) > 0)
-		{
-			findlandmark(-1,"info_landmark");
-			if (SynFixesRunning)
-			{
-				char custentinffile[256];
-				Format(custentinffile,sizeof(custentinffile),"%s\\customenttransitioninf.txt",savedir);
-				if (FileExists(custentinffile,false))
-				{
-					ReplaceString(custentinffile,sizeof(custentinffile),"/","\\");
-					SynFixesReadCache(0,custentinffile,landmarkorigin);
-					DeleteFile(custentinffile,false);
-				}
-			}
-			if (GetArraySize(transitionents) > 0)
-			{
-				for (int i = 0;i<GetArraySize(transitionents);i++)
-				{
-					Handle dp = GetArrayCell(transitionents,i);
-					ResetPack(dp);
-					char clsname[32];
-					char targn[32];
-					char mdl[64];
-					ReadPackString(dp,clsname,sizeof(clsname));
-					ReadPackString(dp,targn,sizeof(targn));
-					ReadPackString(dp,mdl,sizeof(mdl));
-					if (!IsModelPrecached(mdl)) PrecacheModel(mdl,true);
-					int curh = ReadPackCell(dp);
-					float porigin[3];
-					float angs[3];
-					char vehscript[64];
-					porigin[0] = ReadPackFloat(dp);
-					porigin[1] = ReadPackFloat(dp);
-					porigin[2] = ReadPackFloat(dp);
-					porigin[0]+=landmarkorigin[0];
-					porigin[1]+=landmarkorigin[1];
-					porigin[2]+=landmarkorigin[2];
-					angs[0] = ReadPackFloat(dp);
-					angs[1] = ReadPackFloat(dp);
-					angs[2] = ReadPackFloat(dp);
-					ReadPackString(dp,vehscript,sizeof(vehscript));
-					char spawnflags[32];
-					ReadPackString(dp,spawnflags,sizeof(spawnflags));
-					char additionalequip[32];
-					ReadPackString(dp,additionalequip,sizeof(additionalequip));
-					char skin[4];
-					ReadPackString(dp,skin,sizeof(skin));
-					char hdwtype[4];
-					ReadPackString(dp,hdwtype,sizeof(hdwtype));
-					char parentname[32];
-					ReadPackString(dp,parentname,sizeof(parentname));
-					char state[4];
-					ReadPackString(dp,state,sizeof(state));
-					char target[32];
-					ReadPackString(dp,target,sizeof(target));
-					int doorstate = ReadPackCell(dp);
-					int sleepstate = ReadPackCell(dp);
-					char npctype[4];
-					ReadPackString(dp,npctype,sizeof(npctype));
-					char solidity[4];
-					ReadPackString(dp,solidity,sizeof(solidity));
-					int gunenable = ReadPackCell(dp);
-					char gunenablech[4];
-					Format(gunenablech,sizeof(gunenablech),"%i",gunenable);
-					char defanim[32];
-					ReadPackString(dp,defanim,sizeof(defanim));
-					char scriptinf[256];
-					ReadPackString(dp,scriptinf,sizeof(scriptinf));
-					if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"d2_prison_08",false)))
+					if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 					{
-						porigin[0] = -2497.0;
-						porigin[1] = 2997.0;
-						porigin[2] = 999.0;
-					}
-					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_05",false)))
-					{
-						porigin[0] = -2952.0;
-						porigin[1] = 736.0;
-						porigin[2] = 190.0;
-					}
-					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_06",false)))
-					{
-						porigin[0] = -448.0;
-						porigin[1] = 112.0;
-						porigin[2] = 878.0;
-					}
-					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_01",false)))
-					{
-						porigin[0] = -6208.0;
-						porigin[1] = 6424.0;
-						porigin[2] = 2685.0;
-					}
-					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_02",false)))
-					{
-						porigin[0] = -8602.0;
-						porigin[1] = 924.0;
-						porigin[2] = 837.0;
-					}
-					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_02b",false)))
-					{
-						porigin[0] = 1951.0;
-						porigin[1] = 4367.0;
-						porigin[2] = 2532.0;
-					}
-					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_00a",false)))
-					{
-						porigin[0] = 800.0;
-						porigin[1] = 2600.0;
-						porigin[2] = 353.0;
-					}
-					else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_01",false)))
-					{
-						porigin[0] = 4881.0;
-						porigin[1] = -339.0;
-						porigin[2] = -203.0;
-					}
-					else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_06",false)))
-					{
-						porigin[0] = -448.0;
-						porigin[1] = 40.0;
-						porigin[2] = 878.0;
-					}
-					else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_04",false)))
-					{
-						porigin[0] = 4244.0;
-						porigin[1] = -1708.0;
-						porigin[2] = 425.0;
-					}
-					else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_03",false)))
-					{
-						porigin[0] = -1300.0;
-						porigin[1] = -3885.0;
-						porigin[2] = -855.0;
-					}
-					int ent = CreateEntityByName(clsname);
-					if (TR_PointOutsideWorld(porigin))
-					{
-						AcceptEntityInput(ent,"kill");
-						ent = -1;
-					}
-					if (ent != -1)
-					{
-						bool beginseq = false;
-						bool applypropafter = false;
-						if (StrEqual(clsname,"npc_alyx",false))
+						Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+						if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
 						{
-							alyxtransition = ent;
-							aljeepchk[0] = porigin[0];
-							aljeepchk[1] = porigin[1];
-							aljeepchk[2] = porigin[2];
-						}
-						if (StrEqual(clsname,"prop_vehicle_jeep_episodic",false))
-						{
-							alyxenter = true;
-							aljeepchkj[0] = porigin[0];
-							aljeepchkj[1] = porigin[1];
-							aljeepchkj[2] = porigin[2];
-						}
-						if (strlen(targn) > 0) DispatchKeyValue(ent,"targetname",targn);
-						DispatchKeyValue(ent,"model",mdl);
-						if (strlen(vehscript) > 0) DispatchKeyValue(ent,"VehicleScript",vehscript);
-						if (strlen(additionalequip) > 0) DispatchKeyValue(ent,"AdditionalEquipment",additionalequip);
-						if (strlen(hdwtype) > 0) DispatchKeyValue(ent,"hardware",hdwtype);
-						if (strlen(parentname) > 0) DispatchKeyValue(ent,"ParentName",parentname);
-						if (strlen(state) > 0) DispatchKeyValue(ent,"State",state);
-						if (strlen(target) > 0) DispatchKeyValue(ent,"Target",target);
-						if (HasEntProp(ent,Prop_Data,"m_Type")) DispatchKeyValue(ent,"citizentype",npctype);
-						if (HasEntProp(ent,Prop_Data,"m_nSolidType")) DispatchKeyValue(ent,"solid",solidity);
-						if (HasEntProp(ent,Prop_Data,"m_bHasGun")) DispatchKeyValue(ent,"EnableGun",gunenablech);
-						if ((strlen(defanim) > 0) && (HasEntProp(ent,Prop_Data,"m_iszDefaultAnim"))) DispatchKeyValue(ent,"DefaultAnim",defanim);
-						char scriptexp[64][128];
-						if (!StrEqual(scriptinf,"endofpack",false))
-						{
-							ExplodeString(scriptinf," ",scriptexp,64,128);
-							for (int j = 0;j<64;j++)
+							DeleteFile(subfilen,false);
+							Handle subfiletarg = OpenFile(subfilen,"wb");
+							if (subfiletarg != INVALID_HANDLE)
 							{
-								bool skip2 = false;
-								int jadd = j+1;
-								if ((strlen(scriptexp[j]) > 0) && (strlen(scriptexp[jadd]) > 0))
-								{
-									if (StrContains(scriptexp[jadd],"\"",false) != -1)
-									{
-										Format(scriptexp[jadd],sizeof(scriptexp[]),"%s %s %s",scriptexp[jadd],scriptexp[jadd+1],scriptexp[jadd+2]);
-										ReplaceString(scriptexp[jadd],sizeof(scriptexp[]),"\"","");
-										skip2 = true;
-									}
-									//PrintToServer("Pushing %s %s",scriptexp[j],scriptexp[jadd]);
-									DispatchKeyValue(ent,scriptexp[j],scriptexp[jadd]);
-									if (StrContains(scriptexp[j],"m_angRotation",false) == 0)
-									{
-										applypropafter = true;
-									}
-								}
-								if (skip2) j+=2;
-								j++;
+								WriteFileLine(subfiletarg,"");
 							}
-							beginseq = true;
+							CloseHandle(subfiletarg);
 						}
-						DispatchKeyValue(ent,"spawnflags",spawnflags);
-						DispatchKeyValue(ent,"skin",skin);
-						DispatchSpawn(ent);
-						ActivateEntity(ent);
-						if (curh != 0) SetEntProp(ent,Prop_Data,"m_iHealth",curh);
-						TeleportEntity(ent,porigin,angs,NULL_VECTOR);
-						if ((HasEntProp(ent,Prop_Data,"m_eDoorState")) && (doorstate != 1)) SetEntProp(ent,Prop_Data,"m_eDoorState",doorstate);
-						if (HasEntProp(ent,Prop_Data,"m_SleepState")) SetEntProp(ent,Prop_Data,"m_SleepState",sleepstate);
-						if (beginseq) CreateTimer(0.2,beginseqd,ent);
-						if (applypropafter)
+					}
+				}
+			}
+			CloseHandle(savedirrmh);
+			*/
+			CreateTimer(0.1,redel);
+			if ((logsv != -1) && (IsValidEntity(logsv))) saveresetveh(false);
+			if (transitionply)
+			{
+				findent(MaxClients+1,"info_player_equip");
+				if (GetArraySize(equiparr) > 0)
+				{
+					for (int j; j<GetArraySize(equiparr); j++)
+					{
+						int jtmp = GetArrayCell(equiparr, j);
+						if (IsValidEntity(jtmp))
+							AcceptEntityInput(jtmp,"Disable");
+					}
+				}
+				timouthndl = CreateTimer(121.0,transitiontimeout,_,TIMER_FLAG_NO_MAPCHANGE);
+			}
+			int alyxtransition = -1;
+			bool alyxenter = false;
+			float aljeepchk[3];
+			float aljeepchkj[3];
+			if (strlen(landmarkname) > 0)
+			{
+				findlandmark(-1,"info_landmark");
+				if (SynFixesRunning)
+				{
+					char custentinffile[256];
+					Format(custentinffile,sizeof(custentinffile),"%s\\customenttransitioninf.txt",savedir);
+					if (FileExists(custentinffile,false))
+					{
+						ReplaceString(custentinffile,sizeof(custentinffile),"/","\\");
+						SynFixesReadCache(0,custentinffile,landmarkorigin);
+						DeleteFile(custentinffile,false);
+					}
+				}
+				if (GetArraySize(transitionents) > 0)
+				{
+					for (int i = 0;i<GetArraySize(transitionents);i++)
+					{
+						Handle dp = GetArrayCell(transitionents,i);
+						ResetPack(dp);
+						char clsname[32];
+						char targn[32];
+						char mdl[64];
+						ReadPackString(dp,clsname,sizeof(clsname));
+						ReadPackString(dp,targn,sizeof(targn));
+						ReadPackString(dp,mdl,sizeof(mdl));
+						if (!IsModelPrecached(mdl)) PrecacheModel(mdl,true);
+						int curh = ReadPackCell(dp);
+						float porigin[3];
+						float angs[3];
+						char vehscript[64];
+						porigin[0] = ReadPackFloat(dp);
+						porigin[1] = ReadPackFloat(dp);
+						porigin[2] = ReadPackFloat(dp);
+						porigin[0]+=landmarkorigin[0];
+						porigin[1]+=landmarkorigin[1];
+						porigin[2]+=landmarkorigin[2];
+						angs[0] = ReadPackFloat(dp);
+						angs[1] = ReadPackFloat(dp);
+						angs[2] = ReadPackFloat(dp);
+						ReadPackString(dp,vehscript,sizeof(vehscript));
+						char spawnflags[32];
+						ReadPackString(dp,spawnflags,sizeof(spawnflags));
+						char additionalequip[32];
+						ReadPackString(dp,additionalequip,sizeof(additionalequip));
+						char skin[4];
+						ReadPackString(dp,skin,sizeof(skin));
+						char hdwtype[4];
+						ReadPackString(dp,hdwtype,sizeof(hdwtype));
+						char parentname[32];
+						ReadPackString(dp,parentname,sizeof(parentname));
+						char state[4];
+						ReadPackString(dp,state,sizeof(state));
+						char target[32];
+						ReadPackString(dp,target,sizeof(target));
+						int doorstate = ReadPackCell(dp);
+						int sleepstate = ReadPackCell(dp);
+						char npctype[4];
+						ReadPackString(dp,npctype,sizeof(npctype));
+						char solidity[4];
+						ReadPackString(dp,solidity,sizeof(solidity));
+						int gunenable = ReadPackCell(dp);
+						char gunenablech[4];
+						Format(gunenablech,sizeof(gunenablech),"%i",gunenable);
+						char defanim[32];
+						ReadPackString(dp,defanim,sizeof(defanim));
+						char scriptinf[256];
+						ReadPackString(dp,scriptinf,sizeof(scriptinf));
+						if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"d2_prison_08",false)))
 						{
-							for (int j = 0;j<64;j++)
+							porigin[0] = -2497.0;
+							porigin[1] = 2997.0;
+							porigin[2] = 999.0;
+						}
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_05",false)))
+						{
+							porigin[0] = -2952.0;
+							porigin[1] = 736.0;
+							porigin[2] = 190.0;
+						}
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_06",false)))
+						{
+							porigin[0] = -448.0;
+							porigin[1] = 112.0;
+							porigin[2] = 878.0;
+						}
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_01",false)))
+						{
+							porigin[0] = -6208.0;
+							porigin[1] = 6424.0;
+							porigin[2] = 2685.0;
+						}
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_02",false)))
+						{
+							porigin[0] = -8602.0;
+							porigin[1] = 924.0;
+							porigin[2] = 837.0;
+						}
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_02b",false)))
+						{
+							porigin[0] = 1951.0;
+							porigin[1] = 4367.0;
+							porigin[2] = 2532.0;
+						}
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_00a",false)))
+						{
+							porigin[0] = 800.0;
+							porigin[1] = 2600.0;
+							porigin[2] = 353.0;
+						}
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_01",false)))
+						{
+							porigin[0] = 4881.0;
+							porigin[1] = -339.0;
+							porigin[2] = -203.0;
+						}
+						else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_06",false)))
+						{
+							porigin[0] = -448.0;
+							porigin[1] = 40.0;
+							porigin[2] = 878.0;
+						}
+						else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_04",false)))
+						{
+							porigin[0] = 4244.0;
+							porigin[1] = -1708.0;
+							porigin[2] = 425.0;
+						}
+						else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_03",false)))
+						{
+							porigin[0] = -1300.0;
+							porigin[1] = -3885.0;
+							porigin[2] = -855.0;
+						}
+						int ent = CreateEntityByName(clsname);
+						if (TR_PointOutsideWorld(porigin))
+						{
+							AcceptEntityInput(ent,"kill");
+							ent = -1;
+						}
+						if (ent != -1)
+						{
+							bool beginseq = false;
+							bool applypropafter = false;
+							if (StrEqual(clsname,"npc_alyx",false))
 							{
-								int jadd = j+1;
-								if ((strlen(scriptexp[j]) > 0) && (strlen(scriptexp[jadd]) > 0))
+								alyxtransition = ent;
+								aljeepchk[0] = porigin[0];
+								aljeepchk[1] = porigin[1];
+								aljeepchk[2] = porigin[2];
+							}
+							if (StrEqual(clsname,"prop_vehicle_jeep_episodic",false))
+							{
+								alyxenter = true;
+								aljeepchkj[0] = porigin[0];
+								aljeepchkj[1] = porigin[1];
+								aljeepchkj[2] = porigin[2];
+							}
+							if (StrEqual(clsname,"info_particle_system",false)) DispatchKeyValue(ent,"effect_name",mdl);
+							if (strlen(targn) > 0) DispatchKeyValue(ent,"targetname",targn);
+							DispatchKeyValue(ent,"model",mdl);
+							if (strlen(vehscript) > 0) DispatchKeyValue(ent,"VehicleScript",vehscript);
+							if (strlen(additionalequip) > 0) DispatchKeyValue(ent,"AdditionalEquipment",additionalequip);
+							if (strlen(hdwtype) > 0) DispatchKeyValue(ent,"hardware",hdwtype);
+							if (strlen(parentname) > 0) DispatchKeyValue(ent,"ParentName",parentname);
+							if (strlen(state) > 0) DispatchKeyValue(ent,"State",state);
+							if (strlen(target) > 0) DispatchKeyValue(ent,"Target",target);
+							if (HasEntProp(ent,Prop_Data,"m_Type")) DispatchKeyValue(ent,"citizentype",npctype);
+							if (HasEntProp(ent,Prop_Data,"m_nSolidType")) DispatchKeyValue(ent,"solid",solidity);
+							if (HasEntProp(ent,Prop_Data,"m_bHasGun")) DispatchKeyValue(ent,"EnableGun",gunenablech);
+							if ((strlen(defanim) > 0) && (HasEntProp(ent,Prop_Data,"m_iszDefaultAnim"))) DispatchKeyValue(ent,"DefaultAnim",defanim);
+							char scriptexp[64][128];
+							if (!StrEqual(scriptinf,"endofpack",false))
+							{
+								ExplodeString(scriptinf," ",scriptexp,64,128);
+								for (int j = 0;j<64;j++)
 								{
-									if (HasEntProp(ent,Prop_Data,scriptexp[j]))
+									bool skip2 = false;
+									int jadd = j+1;
+									if ((strlen(scriptexp[j]) > 0) && (strlen(scriptexp[jadd]) > 0))
 									{
-										PropFieldType type;
-										FindDataMapInfo(ent,scriptexp[j],type);
-										if ((type == PropField_String) || (type == PropField_String_T))
+										if (StrContains(scriptexp[jadd],"\"",false) != -1)
 										{
-											SetEntPropString(ent,Prop_Data,scriptexp[j],scriptexp[jadd]);
+											Format(scriptexp[jadd],sizeof(scriptexp[]),"%s %s %s",scriptexp[jadd],scriptexp[jadd+1],scriptexp[jadd+2]);
+											ReplaceString(scriptexp[jadd],sizeof(scriptexp[]),"\"","");
+											skip2 = true;
 										}
-										else if (type == PropField_Entity)
+										//PrintToServer("Pushing %s %s",scriptexp[j],scriptexp[jadd]);
+										DispatchKeyValue(ent,scriptexp[j],scriptexp[jadd]);
+										if (StrContains(scriptexp[j],"m_angRotation",false) == 0)
 										{
-											SetEntPropEnt(ent,Prop_Data,scriptexp[j],StringToInt(scriptexp[jadd]));
+											applypropafter = true;
 										}
-										else if (type == PropField_Integer)
+									}
+									if (skip2) j+=2;
+									j++;
+								}
+								beginseq = true;
+							}
+							DispatchKeyValue(ent,"spawnflags",spawnflags);
+							DispatchKeyValue(ent,"skin",skin);
+							DispatchSpawn(ent);
+							ActivateEntity(ent);
+							if (strlen(parentname) > 0)
+							{
+								SetVariantString(parentname);
+								AcceptEntityInput(ent,"SetParent");
+								if ((StrEqual(clsname,"prop_dynamic",false)) || (StrEqual(clsname,"prop_physics_multiplayer",false))) AcceptEntityInput(ent,"Enable");
+							}
+							if (curh != 0) SetEntProp(ent,Prop_Data,"m_iHealth",curh);
+							TeleportEntity(ent,porigin,angs,NULL_VECTOR);
+							if ((HasEntProp(ent,Prop_Data,"m_eDoorState")) && (doorstate != 1)) SetEntProp(ent,Prop_Data,"m_eDoorState",doorstate);
+							if (HasEntProp(ent,Prop_Data,"m_SleepState")) SetEntProp(ent,Prop_Data,"m_SleepState",sleepstate);
+							if (beginseq) CreateTimer(0.2,beginseqd,ent);
+							if (applypropafter)
+							{
+								for (int j = 0;j<64;j++)
+								{
+									int jadd = j+1;
+									if ((strlen(scriptexp[j]) > 0) && (strlen(scriptexp[jadd]) > 0))
+									{
+										if (HasEntProp(ent,Prop_Data,scriptexp[j]))
 										{
-											SetEntProp(ent,Prop_Data,scriptexp[j],StringToInt(scriptexp[jadd]));
-										}
-										else if (type == PropField_Float)
-										{
-											SetEntPropFloat(ent,Prop_Data,scriptexp[j],StringToFloat(scriptexp[jadd]));
-										}
-										else if (type == PropField_Vector)
-										{
-											//PrintToServer("Apply vec %s",scriptexp[j]);
-											float entvec[3];
-											char vecchk[8][32];
-											ExplodeString(scriptexp[jadd]," ",vecchk,8,32);
-											if (strlen(vecchk[2]) > 0)
+											PropFieldType type;
+											FindDataMapInfo(ent,scriptexp[j],type);
+											if ((type == PropField_String) || (type == PropField_String_T))
 											{
-												entvec[0] = StringToFloat(vecchk[0]);
-												entvec[1] = StringToFloat(vecchk[1]);
-												entvec[2] = StringToFloat(vecchk[2]);
-												SetEntPropVector(ent,Prop_Data,scriptexp[j],entvec);
-												if ((doorstate == 1) && (StrEqual(scriptexp[j],"m_angGoal",false)))
+												SetEntPropString(ent,Prop_Data,scriptexp[j],scriptexp[jadd]);
+											}
+											else if (type == PropField_Entity)
+											{
+												SetEntPropEnt(ent,Prop_Data,scriptexp[j],StringToInt(scriptexp[jadd]));
+											}
+											else if (type == PropField_Integer)
+											{
+												SetEntProp(ent,Prop_Data,scriptexp[j],StringToInt(scriptexp[jadd]));
+											}
+											else if (type == PropField_Float)
+											{
+												SetEntPropFloat(ent,Prop_Data,scriptexp[j],StringToFloat(scriptexp[jadd]));
+											}
+											else if (type == PropField_Vector)
+											{
+												//PrintToServer("Apply vec %s",scriptexp[j]);
+												float entvec[3];
+												char vecchk[8][32];
+												ExplodeString(scriptexp[jadd]," ",vecchk,8,32);
+												if (strlen(vecchk[2]) > 0)
 												{
-													TeleportEntity(ent,NULL_VECTOR,entvec,NULL_VECTOR);
+													entvec[0] = StringToFloat(vecchk[0]);
+													entvec[1] = StringToFloat(vecchk[1]);
+													entvec[2] = StringToFloat(vecchk[2]);
+													SetEntPropVector(ent,Prop_Data,scriptexp[j],entvec);
+													if ((doorstate == 1) && (StrEqual(scriptexp[j],"m_angGoal",false)))
+													{
+														TeleportEntity(ent,NULL_VECTOR,entvec,NULL_VECTOR);
+													}
 												}
 											}
 										}
 									}
+									j++;
 								}
-								j++;
 							}
 						}
+						CloseHandle(dp);
 					}
-					CloseHandle(dp);
 				}
 			}
-		}
-		ClearArray(transitionents);
-		if ((alyxenter) && (IsValidEntity(alyxtransition)) && (alyxtransition > MaxClients))
-		{
-			int aldouble = FindEntityByClassname(-1,"npc_alyx");
-			if ((aldouble != -1) && (IsValidEntity(aldouble)) && (aldouble != alyxtransition))
+			ClearArray(transitionents);
+			if ((alyxenter) && (IsValidEntity(alyxtransition)) && (alyxtransition > MaxClients))
 			{
-				char targn[16];
-				GetEntPropString(aldouble,Prop_Data,"m_iName",targn,sizeof(targn));
-				if (StrEqual(targn,"alyx",false)) AcceptEntityInput(aldouble,"kill");
-			}
-			if (!StrEqual(mapbuf,"ep2_outland_12",false))
-			{
-				float chkdist = GetVectorDistance(aljeepchk,aljeepchkj,false);
-				if (RoundFloat(chkdist) < 200)
+				int aldouble = FindEntityByClassname(-1,"npc_alyx");
+				if ((aldouble != -1) && (IsValidEntity(aldouble)) && (aldouble != alyxtransition))
 				{
-					SetVariantString("jeep");
-					AcceptEntityInput(alyxtransition,"EnterVehicleImmediately");
+					char targn[16];
+					GetEntPropString(aldouble,Prop_Data,"m_iName",targn,sizeof(targn));
+					if (StrEqual(targn,"alyx",false)) AcceptEntityInput(aldouble,"kill");
+				}
+				if (!StrEqual(mapbuf,"ep2_outland_12",false))
+				{
+					float chkdist = GetVectorDistance(aljeepchk,aljeepchkj,false);
+					if (RoundFloat(chkdist) < 200)
+					{
+						SetVariantString("jeep");
+						AcceptEntityInput(alyxtransition,"EnterVehicleImmediately");
+					}
 				}
 			}
-		}
-		resetareaportals(-1);
-		char curmapchk[32];
-		Format(curmapchk,sizeof(curmapchk),"%s/%s.hl1",savedir,mapbuf);
-		if (!FileExists(curmapchk))
-		{
-			Handle subfiletarg = OpenFile(curmapchk,"wb");
-			if (subfiletarg != INVALID_HANDLE)
+			resetareaportals(-1);
+			char curmapchk[32];
+			Format(curmapchk,sizeof(curmapchk),"%s/%s.hl1",savedir,mapbuf);
+			if (!FileExists(curmapchk))
 			{
-				WriteFileLine(subfiletarg,"");
+				Handle subfiletarg = OpenFile(curmapchk,"wb");
+				if (subfiletarg != INVALID_HANDLE)
+				{
+					WriteFileLine(subfiletarg,"");
+				}
+				CloseHandle(subfiletarg);
 			}
-			CloseHandle(subfiletarg);
-		}
-		Format(curmapchk,sizeof(curmapchk),"%s/%s.hl2",savedir,mapbuf);
-		if (!FileExists(curmapchk))
-		{
-			Handle subfiletarg = OpenFile(curmapchk,"wb");
-			if (subfiletarg != INVALID_HANDLE)
+			Format(curmapchk,sizeof(curmapchk),"%s/%s.hl2",savedir,mapbuf);
+			if (!FileExists(curmapchk))
 			{
-				WriteFileLine(subfiletarg,"");
+				Handle subfiletarg = OpenFile(curmapchk,"wb");
+				if (subfiletarg != INVALID_HANDLE)
+				{
+					WriteFileLine(subfiletarg,"");
+				}
+				CloseHandle(subfiletarg);
 			}
-			CloseHandle(subfiletarg);
-		}
-		Format(curmapchk,sizeof(curmapchk),"%s/%s.hl3",savedir,mapbuf);
-		if (!FileExists(curmapchk))
-		{
-			Handle subfiletarg = OpenFile(curmapchk,"wb");
-			if (subfiletarg != INVALID_HANDLE)
+			Format(curmapchk,sizeof(curmapchk),"%s/%s.hl3",savedir,mapbuf);
+			if (!FileExists(curmapchk))
 			{
-				WriteFileLine(subfiletarg,"");
+				Handle subfiletarg = OpenFile(curmapchk,"wb");
+				if (subfiletarg != INVALID_HANDLE)
+				{
+					WriteFileLine(subfiletarg,"");
+				}
+				CloseHandle(subfiletarg);
 			}
-			CloseHandle(subfiletarg);
 		}
 	}
 }
@@ -2055,15 +2065,17 @@ public void OnMapEnd()
 					if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 					{
 						Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-						if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
+						if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
 						{
 							DeleteFile(subfilen,false);
+							/*
 							Handle subfiletarg = OpenFile(subfilen,"wb");
 							if (subfiletarg != INVALID_HANDLE)
 							{
 								WriteFileLine(subfiletarg,"");
 							}
 							CloseHandle(subfiletarg);
+							*/
 						}
 					}
 				}
@@ -2181,15 +2193,17 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 					{
 						Format(subfilen,sizeof(subfilen),"%s/%s",savedir,subfilen);
-						if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
+						if ((StrContains(subfilen,"autosave.hl",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
 						{
 							DeleteFile(subfilen,false);
+							/*
 							Handle subfiletarg = OpenFile(subfilen,"wb");
 							if (subfiletarg != INVALID_HANDLE)
 							{
 								WriteFileLine(subfiletarg,"");
 							}
 							CloseHandle(subfiletarg);
+							*/
 						}
 					}
 				}
@@ -2410,6 +2424,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 	}
 	char custentinffile[256];
 	char writemode[8];
+	char parentglobal[16];
 	Format(writemode,sizeof(writemode),"a");
 	Format(custentinffile,sizeof(custentinffile),"%s\\customenttransitioninf.txt",savedir);
 	if (!FileExists(custentinffile,false)) Format(writemode,sizeof(writemode),"w");
@@ -2456,10 +2471,27 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 				if ((StrEqual(targn,"alyx",false)) || (StrEqual(targn,"vort",false)) || (StrEqual(targn,"jeep",false)))
 					alwaystransition = 1;
 			}
+			int par = -1;
+			if (StrEqual(clsname,"prop_dynamic",false))
+			{
+				if (HasEntProp(i,Prop_Data,"m_hParent"))
+				{
+					par = GetEntPropEnt(i,Prop_Data,"m_hParent");
+					if (IsValidEntity(par))
+					{
+						if (HasEntProp(par,Prop_Data,"m_iGlobalname")) GetEntPropString(par,Prop_Data,"m_iGlobalname",parentglobal,sizeof(parentglobal));
+						if (strlen(parentglobal) > 1)
+						{
+							//PrintToServer("Alwaystransition %i %s %s",i,clsname,parentglobal);
+							alwaystransition = 1;
+						}
+					}
+				}
+			}
 			if ((alwaystransition) || ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2])))
 			{
 				//Add func_tracktrain check if exists on next map OnTransition might not fire
-				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1) || (StrEqual(clsname,"light_dynamic",false)) || (StrEqual(clsname,"info_particle_system",false))) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"predicted_viewmodel",false)))
+				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"light_dynamic",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"predicted_viewmodel",false)))
 				{
 					if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 					if (StrContains(mdl,"*",false) != -1)
@@ -2527,22 +2559,19 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 								int hdw = GetEntProp(i,Prop_Data,"m_nHardwareType");
 								Format(hdwtype,sizeof(hdwtype),"%i",hdw);
 							}
-							if (HasEntProp(i,Prop_Data,"m_hParent"))
+							if (par != -1)
 							{
-								int par = GetEntPropEnt(i,Prop_Data,"m_hParent");
-								if (par != -1)
+								GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
+								if (HasEntProp(par,Prop_Data,"m_iGlobalname")) GetEntPropString(par,Prop_Data,"m_iGlobalname",parentglobal,sizeof(parentglobal));
+								if ((!StrEqual(parentname,"train_model",false)) && (strlen(parentglobal) < 1))
 								{
-									GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
-									if (!StrEqual(parentname,"train_model",false))
+									char parentcls[32];
+									GetEntityClassname(par,parentcls,sizeof(parentcls));
+									if (((StrEqual(parentcls,"func_door",false)) || (StrEqual(parentcls,"func_tracktrain",false))) && (StrContains(clsname,"npc_",false) == -1))
 									{
-										char parentcls[32];
-										GetEntityClassname(par,parentcls,sizeof(parentcls));
-										if (((StrEqual(parentcls,"func_door",false)) || (StrEqual(parentcls,"func_tracktrain",false))) && (StrContains(clsname,"npc_",false) == -1))
-										{
-											CloseHandle(dp);
-											transitionthis = false;
-											PushArrayCell(ignoreent,i);
-										}
+										CloseHandle(dp);
+										transitionthis = false;
+										PushArrayCell(ignoreent,i);
 									}
 								}
 							}
@@ -2642,6 +2671,10 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 								float angax[3];
 								GetEntPropVector(i,Prop_Data,"m_angGoal",angax);
 								Format(scriptinf,sizeof(scriptinf),"%sm_angGoal \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+							}
+							if ((HasEntProp(i,Prop_Data,"m_iszEffectName")) && (strlen(mdl) < 1))
+							{
+								GetEntPropString(i,Prop_Data,"m_iszEffectName",mdl,sizeof(mdl));
 							}
 							TrimString(scriptinf);
 							if (transitionthis)
@@ -3130,15 +3163,17 @@ void saveresetveh(bool rmsave)
 						if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 						{
 							Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-							if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1))
+							if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
 							{
 								DeleteFile(subfilen,false);
+								/*
 								Handle subfiletarg = OpenFile(subfilen,"wb");
 								if (subfiletarg != INVALID_HANDLE)
 								{
 									WriteFileLine(subfiletarg,"");
 								}
 								CloseHandle(subfiletarg);
+								*/
 							}
 						}
 					}
