@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.996"
-			"Previous"	"1.995"
+			"Latest"  	"1.997"
+			"Previous"	"1.996"
 		}
 		
-		"Notes"	"Additional transition checks. Re-setup Syn transition prevention to hopefully stop pSaveData globals errors."
+		"Notes"	"Added more prop_phyiscs and prop_dynamic transition conditions."
 	}
 	
 	"Files"
