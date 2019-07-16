@@ -41,7 +41,7 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.96"
+#define PLUGIN_VERSION "1.97"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -284,7 +284,7 @@ public Action fixalyx(int client, int args)
 {
 	char tmpmap[24];
 	GetCurrentMap(tmpmap,sizeof(tmpmap));
-	if ((StrEqual(tmpmap,"ep2_outland_12",false)) || (StrEqual(tmpmap,"ep2_outland_11b",false)) || (StrEqual(tmpmap,"ep2_outland_02",false))) return Plugin_Handled;
+	if ((StrEqual(tmpmap,"ep2_outland_12",false)) || (StrEqual(tmpmap,"ep2_outland_11b",false)) || (StrEqual(tmpmap,"ep2_outland_02",false)) || (StrEqual(tmpmap,"d3_breen_01",false))) return Plugin_Handled;
 	if (!StrEqual(tmpmap,"ep2_outland_12a",false)) findgfollow(-1,"alyx");
 	if (!findtargn("alyx"))
 		readoutputs(client,"alyx");
@@ -1954,6 +1954,8 @@ public Action resetown(Handle timer, int entity)
 				{
 					clrocket[own] = entity;
 					SetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity",0);
+					SetEntPropEnt(entity,Prop_Data,"m_hEffectEntity",own);
+					SDKHook(entity,SDKHook_StartTouch,StartTouchRPG);
 					int weap = GetEntPropEnt(own,Prop_Data,"m_hActiveWeapon");
 					char weapn[24];
 					GetClientWeapon(own,weapn,sizeof(weapn));
@@ -1965,6 +1967,20 @@ public Action resetown(Handle timer, int entity)
 					}
 				}
 			}
+		}
+	}
+}
+
+public Action StartTouchRPG(int entity, int other)
+{
+	if (IsValidEntity(entity))
+	{
+		if (HasEntProp(entity,Prop_Data,"m_hEffectEntity"))
+		{
+			int ownerchk = GetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity");
+			int effectchk = GetEntPropEnt(entity,Prop_Data,"m_hEffectEntity");
+			if (((ownerchk == -1) || (ownerchk == 0)) && (effectchk != -1))
+				SetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity",effectchk);
 		}
 	}
 }
