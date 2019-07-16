@@ -49,7 +49,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.996"
+#define PLUGIN_VERSION "1.997"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1848,6 +1848,8 @@ public void OnMapStart()
 							porigin[1] = -3885.0;
 							porigin[2] = -855.0;
 						}
+						if (StrEqual(clsname,"prop_physics",false)) Format(clsname,sizeof(clsname),"prop_physics_override",false);
+						else if (StrEqual(clsname,"prop_dynamic",false)) Format(clsname,sizeof(clsname),"prop_dynamic_override",false);
 						int ent = CreateEntityByName(clsname);
 						if (TR_PointOutsideWorld(porigin))
 						{
@@ -1921,7 +1923,7 @@ public void OnMapStart()
 							{
 								SetVariantString(parentname);
 								AcceptEntityInput(ent,"SetParent");
-								if ((StrEqual(clsname,"prop_dynamic",false)) || (StrEqual(clsname,"prop_physics_multiplayer",false))) AcceptEntityInput(ent,"Enable");
+								if ((StrEqual(clsname,"prop_dynamic_override",false)) || (StrEqual(clsname,"prop_dynamic",false)) || (StrEqual(clsname,"prop_physics_override",false)) || (StrEqual(clsname,"prop_physics",false))) AcceptEntityInput(ent,"Enable");
 							}
 							if (curh != 0) SetEntProp(ent,Prop_Data,"m_iHealth",curh);
 							TeleportEntity(ent,porigin,angs,NULL_VECTOR);
@@ -2472,7 +2474,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 					alwaystransition = 1;
 			}
 			int par = -1;
-			if (StrEqual(clsname,"prop_dynamic",false))
+			if ((StrEqual(clsname,"prop_dynamic",false)) || (StrEqual(clsname,"prop_physics",false)))
 			{
 				if (HasEntProp(i,Prop_Data,"m_hParent"))
 				{
