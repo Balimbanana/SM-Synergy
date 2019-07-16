@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.96"
-			"Previous"	"1.95"
+			"Latest"  	"1.97"
+			"Previous"	"1.96"
 		}
 		
-		"Notes"	"Added sm_allownoguide for rpg rocket noguide allow. Added m_bPlayerUnderwater check on spawn. Added spawnflag check to brush creation."
+		"Notes"	"Added no-guided rpg missile reset ownership on explode to check relations. Blocked !alyx on d3_breen_01."
 	}
 	
 	"Files"
