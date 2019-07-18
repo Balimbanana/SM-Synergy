@@ -27,6 +27,8 @@ int WeapList = -1;
 int spawneramt = 20;
 int restrictmode = 0;
 int clrocket[64];
+int longjumpactive = false;
+int slavezap = 10;
 bool allownoguide = true;
 bool guiderocket[64];
 bool restrictact = false;
@@ -41,7 +43,7 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.97"
+#define PLUGIN_VERSION "1.98"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -139,6 +141,60 @@ public void OnPluginStart()
 	RegConsoleCmd("npc_freeze_unselected",admblock);
 	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
 	AutoExecConfig(true, "synfixes");
+	CreateTimer(0.1,bmcvars);
+}
+
+public Action bmcvars(Handle timer)
+{
+	Handle cvarchk = FindConVar("synfixes_houndtint");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("synfixes_houndtint","1","Sets whether or not to use houndeye tint effect when charging.",_,true,0.0,true,1.0);
+	cvarchk = FindConVar("sk_human_security_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_human_security_health","40","Human Security health.",_,true,1.0,false);
+	cvarchk = FindConVar("sk_human_commander_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_human_commander_health","50","Human Commander health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_human_grunt_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_human_grunt_health","50","Human Grunt health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_human_medic_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_human_medic_health","50","Human Medic health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_zombie_scientist_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_zombie_scientist_health","40","Zombie Scientist health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_zombie_security_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_zombie_security_health","50","Zombie Security health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_alien_slave_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_alien_slave_health","38","Alien Slave health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_bullsquid_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_health","60",".",_,true,0.0,false);
+	cvarchk = FindConVar("sk_alien_grunt_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_alien_grunt_health","90",".",_,true,0.0,false);
+	cvarchk = FindConVar("sk_controller_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_controller_health","100","Alien Controller health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_human_assassin_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_human_assassin_health","50","Human Assassin health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_sentry_ceiling_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_sentry_ceiling_health","50","Ceiling Sentry health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_apache_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_apache_health","1500","Apache health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_houndeye_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_houndeye_health","50","Houndeye health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_gonarch_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_gonarch_health","1000","Gonarch health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_gonarch_dmg_strike");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_gonarch_dmg_strike","30.0","Gonarch strike damage.",_,true,1.0,false);
+	cvarchk = FindConVar("sk_osprey_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_osprey_health","300","Osprey health.",_,true,0.0,false);
+	cvarchk = FindConVar("sk_alien_slave_dmg_zap");
+	if (cvarchk == INVALID_HANDLE)
+	{
+		cvarchk = CreateConVar("sk_alien_slave_dmg_zap","10","Alien Slave zap damage.",_,true,0.0,false);
+		slavezap = 10;
+	}
+	else
+	{
+		slavezap = GetConVarInt(cvarchk);
+	}
+	HookConVarChange(cvarchk,vortzapch);
+	CloseHandle(cvarchk);
+	return Plugin_Handled;
 }
 
 public void OnMapStart()
@@ -1642,6 +1698,15 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 			return Plugin_Changed;
 		}
 	}
+	if (HasEntProp(inflictor,Prop_Data,"m_hEffectEntity"))
+	{
+		int atk = GetEntPropEnt(inflictor,Prop_Data,"m_hEffectEntity");
+		if ((!friendlyfire) && (atk < MaxClients+1) && (atk > 0) && (victim != atk))
+		{
+			damage = 0.0;
+			return Plugin_Changed;
+		}
+	}
 	char clsnamechk[32];
 	GetEntityClassname(inflictor,clsnamechk,sizeof(clsnamechk));
 	if (StrEqual(clsnamechk,"npc_turret_floor",false))
@@ -1660,15 +1725,70 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 		damage = 0.0;
 		return Plugin_Changed;
 	}
+	else if (StrContains(clsnamechk,"npc_zombie_s",false) == 0)
+	{
+		int rand = GetRandomInt(1,3);
+		char snd[64];
+		Format(snd,sizeof(snd),"npc\\zombie\\claw_strike%i.wav",rand);
+		EmitSoundToAll(snd, inflictor, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+	}
+	else if (StrEqual(clsnamechk,"npc_alien_slave",false))
+	{
+		float tkscale = 1.0;
+		Handle skillchk = FindConVar("skill");
+		if (skillchk != INVALID_HANDLE)
+		{
+			Handle tkscalechk = INVALID_HANDLE;
+			int skill = GetConVarInt(skillchk);
+			if (skill == 1) tkscalechk = FindConVar("sk_dmg_take_scale1");
+			else if (skill == 2) tkscalechk = FindConVar("sk_dmg_take_scale2");
+			else if (skill == 3) tkscalechk = FindConVar("sk_dmg_take_scale3");
+			if (tkscalechk != INVALID_HANDLE)
+			{
+				tkscale = GetConVarFloat(tkscalechk);
+			}
+		}
+		CloseHandle(skillchk);
+		damage = slavezap*tkscale;
+		return Plugin_Changed;
+	}
 	if (FindValueInArray(physboxarr,attacker) != -1)
 	{
 		damage = 0.0;
 		return Plugin_Changed;
 	}
-	if ((attacker == 0) && (inflictor == 0) && (damagetype != 32) && (StrEqual(clsnamechk,"npc_citizen",false)))
+	char atkcls[64];
+	GetEntityClassname(attacker,atkcls,sizeof(atkcls));
+	//PrintToServer("%i %i %i inf %s atk %s %1.f",attacker,inflictor,damagetype,clsnamechk,atkcls,damage);
+	if ((attacker == 0) && (inflictor == 0) && (damagetype == 1) && (StrEqual(clsnamechk,"worldspawn",false)) && (StrEqual(atkcls,"worldspawn",false)))
 	{
 		damage = 0.0;
 		return Plugin_Changed;
+	}
+	if (HasEntProp(victim,Prop_Data,"m_bitsDamageType"))
+	{
+		int dmgbit = GetEntProp(victim,Prop_Data,"m_bitsDamageType");
+		if ((dmgbit == 1179648) || (dmgbit == 1048576)) SetEntProp(victim,Prop_Data,"m_bitsDamageType",0);
+	}
+	if ((damagetype == 32) && (longjumpactive) && (victim < MaxClients+1))
+	{
+		damage = damage/3.0;
+		if (damage < 10.0) damage = 0.0;
+		return Plugin_Changed;
+	}
+	if ((damagetype == 32) && (HasEntProp(victim,Prop_Data,"m_hGroundEntity")))
+	{
+		int groundentchk = GetEntPropEnt(victim,Prop_Data,"m_hGroundEntity");
+		if (IsValidEntity(groundentchk))
+		{
+			char cls[32];
+			GetEntityClassname(groundentchk,cls,sizeof(cls));
+			if (StrEqual(cls,"env_xen_pushpad",false))
+			{
+				damage = 0.0;
+				return Plugin_Changed;
+			}
+		}
 	}
 	//Check disconnect projectile hit ply
 	//m_bThrownByPlayer
@@ -2431,4 +2551,9 @@ public noguidech(Handle convar, const char[] oldValue, const char[] newValue)
 			guiderocket[i] = true;
 		}
 	}
+}
+
+public vortzapch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	slavezap = StringToInt(newValue);
 }
