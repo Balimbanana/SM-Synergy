@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.11"
+#define PLUGIN_VERSION "1.12"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -411,25 +411,31 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	{
 		if (instspawnb)
 		{
-			if (lastspawned[killed] == 0) lastspawned[killed]++;
-			if (lastspawned[killed] > MaxClients) lastspawned[killed] = 1;
+			int team = GetEntProp(killed,Prop_Data,"m_iTeamNum");
+			if (((!dmset) && (!dmact)) && (lastspawned[killed] == 0)) lastspawned[killed]++;
+			if (((!dmset) && (!dmact)) && (lastspawned[killed] > MaxClients)) lastspawned[killed] = 1;
 			for (int i = lastspawned[killed]; i<MaxClients+1; i++)
 			{
-				if (IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i) && (killed != i))
+				if (i != 0)
 				{
-					int vck = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
-					if (vck == -1)
+					if (IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i) && (killed != i))
 					{
-						clused = i;
-						CreateTimer(0.1,tpclspawnnew,killed);
-						lastspawned[killed] = clused+1;
-						//PrintToServer("cl %i spawned on %i, next spawn %i",killed,i,lastspawned[killed]);
-						return Plugin_Continue;
+						int team2 = GetEntProp(i,Prop_Data,"m_iTeamNum");
+						int vck = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+						if ((vck == -1) && (team == team2) && (killed != i))
+						{
+							clused = i;
+							CreateTimer(0.1,tpclspawnnew,killed);
+							lastspawned[killed] = clused+1;
+							//PrintToServer("cl %i spawned on %i, next spawn %i",killed,i,lastspawned[killed]);
+							return Plugin_Continue;
+						}
 					}
 				}
 			}
-			lastspawned[killed] = 0;
+			if ((!dmset) && (!dmact)) lastspawned[killed] = 0;
 			clused = 0;
+			//PrintToServer("CL %i will spawn on %i last %i",killed,clused,lastspawned[killed]);
 			CreateTimer(0.1,tpclspawnnew,killed);
 		}
 		else if (instspawnuse)
@@ -546,9 +552,13 @@ public Action dmblock(int client, int args)
 		char h[8];
 		if (args > 0) GetCmdArg(1,h,sizeof(h));
 		if (StrEqual(h,"0",false)) return Plugin_Continue;
-		else return Plugin_Handled;
+		else
+		{
+			ClientCommand(client,"hud_player_info_enable 0");
+			return Plugin_Handled;
+		}
 	}
-	else return Plugin_Continue;
+	return Plugin_Continue;
 }
 
 public Action changeteam(int client, int args)
@@ -931,8 +941,7 @@ public Action scoreboardsh(int client, int args)
 }
 
 int buttonscoreboard = (1 << 16);
-
-int g_LastButtons[64];
+int g_LastButtons[MAXPLAYERS+1];
 
 public OnButtonPressscoreboard(int client, int button)
 {
@@ -954,6 +963,7 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 	{
 		int killid = GetEventInt(event, "killerID");
 		int vicid = GetEventInt(event, "victimID");
+		int suicidechk = GetEventBool(event, "suicide");
 		if ((killid < MaxClients+1) && (killid > 0) && (vicid < MaxClients+1) && (vicid > 0))
 		{
 			int a = GetEntProp(killid,Prop_Data,"m_iTeamNum");
@@ -962,12 +972,12 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 			if (a == 2)
 			{
 				SetEventInt(event,"killercolor",-6921216);
-				blueteamkills++;
+				if (!suicidechk) blueteamkills++;
 			}
 			if (a == 3)
 			{
 				SetEventInt(event,"killercolor",-16777041);
-				redteamkills++;
+				if (!suicidechk) redteamkills++;
 			}
 			if (b == 2) SetEventInt(event,"victimcolor",-6921216);
 			if (b == 3) SetEventInt(event,"victimcolor",-16777041);
@@ -977,12 +987,12 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 				SetEventInt(event,"victimcolor",-1052689);
 			}
 			int score;
-			dmkills[killid]++;
+			if (!suicidechk) dmkills[killid]++;
 			if (HasEntProp(killid,Prop_Data,"m_iFrags"))
 			{
 				SetEntProp(killid,Prop_Data,"m_iFrags",dmkills[killid]);
 			}
-			if (HasEntProp(killid,Prop_Data,"m_iPoints"))
+			if ((HasEntProp(killid,Prop_Data,"m_iPoints")) && (!suicidechk))
 			{
 				score = GetEntProp(killid, Prop_Data, "m_iPoints");
 				SetEntProp(killid, Prop_Data, "m_iPoints", score+35);
@@ -1200,7 +1210,8 @@ public Action tpclspawnnew(Handle timer, any i)
 	}
 	float pos[3];
 	GetClientAbsOrigin(i, pos);
-	if (((pos[0] <= 10.0) && (pos[0] >= -10.0)) && ((pos[1] <= 10.0) && (pos[1] >= -10.0)) && ((pos[2] <= 10.0) && (pos[2] >= -10.0)))
+	//(!dmset) && (dmact)
+	if ((isvehiclemap) || (((pos[0] <= 10.0) && (pos[0] >= -10.0)) && ((pos[1] <= 10.0) && (pos[1] >= -10.0)) && ((pos[2] <= 10.0) && (pos[2] >= -10.0))))
 	{
 		//Player most likely spawned at 0 0 0, need to attempt recovery...
 		ClearArray(equiparr);
@@ -1215,24 +1226,48 @@ public Action tpclspawnnew(Handle timer, any i)
 				GetEntPropVector(GetArrayCell(equiparr,0),Prop_Send,"m_vecOrigin",vec);
 				GetEntPropVector(GetArrayCell(equiparr,0),Prop_Send,"m_angRotation",spawnang);
 				TeleportEntity(i, vec, spawnang, NULL_VECTOR);
+				lastspawned[i] = GetArrayCell(equiparr,0);
 			}
 		}
 		else
 		{
 			int spawnent = GetArrayCell(equiparr,0);
-			if (lastspawned[i] != spawnent)
+			if ((lastspawned[i] != spawnent) && (!dmact))
 			{
 				lastspawned[i] = spawnent;
 			}
 			else
 			{
-				for (int j = 0;j<GetArraySize(equiparr);j++)
+				for (int j = GetRandomInt(0,GetArraySize(equiparr));j<GetArraySize(equiparr);j++)
 				{
 					int tmpsp = GetArrayCell(equiparr,j);
-					if (lastspawned[i] != tmpsp)
+					int team = GetEntProp(i,Prop_Data,"m_iTeamNum");
+					bool rangechk = true;
+					float spawnpos[3];
+					if (HasEntProp(tmpsp,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(tmpsp,Prop_Data,"m_vecAbsOrigin",spawnpos);
+					else if (HasEntProp(tmpsp,Prop_Send,"m_vecOrigin")) GetEntPropVector(tmpsp,Prop_Send,"m_vecOrigin",spawnpos);
+					if ((dmact) && (!dmset))
+					{
+						for (int k = 1;k<MaxClients+1;k++)
+						{
+							if ((IsValidEntity(k)) && (i != k))
+							{
+								if ((IsClientInGame(k)) && (IsPlayerAlive(k)))
+								{
+									float plypos[3];
+									GetClientAbsOrigin(k,pos);
+									float chkdist = GetVectorDistance(spawnpos,plypos,false)
+									int team2 = GetEntProp(k,Prop_Data,"m_iTeamNum");
+									if ((chkdist < 200) && (team != team2)) rangechk = false;
+								}
+							}
+						}
+					}
+					if ((lastspawned[i] != tmpsp) && (rangechk))
 					{
 						spawnent = tmpsp;
 						lastspawned[i] = tmpsp;
+						break;
 					}
 				}
 			}
@@ -2258,6 +2293,7 @@ public Action roundintermission(Handle event, const char[] name, bool dontBroadc
 {
 	float plyeyepos[3];
 	float plyeyeang[3];
+	float nullvec[3];
 	for (int i = 1;i<MaxClients+1;i++)
 	{
 		if ((IsClientInGame(i)) && (IsPlayerAlive(i)))
@@ -2265,7 +2301,7 @@ public Action roundintermission(Handle event, const char[] name, bool dontBroadc
 			GetClientAbsOrigin(i, plyeyepos);
 			GetClientEyeAngles(i, plyeyeang);
 			int cam = CreateEntityByName("point_viewcontrol");
-			TeleportEntity(cam, plyeyepos, plyeyeang, NULL_VECTOR);
+			TeleportEntity(cam, plyeyepos, plyeyeang, nullvec);
 			DispatchKeyValue(cam, "spawnflags","45");
 			DispatchKeyValue(cam, "targetname","roundendpv");
 			DispatchSpawn(cam);
@@ -2420,7 +2456,6 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			OnButtonPressscoreboard(client, buttonscoreboard);
 		}
 	}
-	return Plugin_Continue;
 }
 
 public Action joincfg(Handle timer, any:client)
@@ -2516,6 +2551,18 @@ public OnMapStart()
 	HookEntityOutput("func_door","OnFullyOpen",EntityOutput:trigsaves);
 	HookEntityOutput("func_door","OnClose",EntityOutput:trigsaves);
 	HookEntityOutput("func_door","OnFullyClosed",EntityOutput:trigsaves);
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		g_LastButtons[i] = 0;
+		if (IsValidEntity(i))
+		{
+			if (IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i))
+			{
+				SDKHook(i, SDKHook_OnTakeDamage, OnTakeDamage);
+				CreateTimer(0.1,joincfg,i);
+			}
+		}
+	}
 	CreateTimer(0.1,rehooksaves);
 }
 
