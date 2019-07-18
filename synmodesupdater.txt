@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.11"
-			"Previous"	"1.10"
+			"Latest"  	"1.12"
+			"Previous"	"1.11"
 		}
 		
-		"Notes"	"Added sm_instspawnforce which will force spawn players when sm_instspawntime runs out."
+		"Notes"	"Added random spawnpoint system to TDM and DM gamemodes. Fixed spawnpoint detection for vehicle maps."
 	}
 	
 	"Files"
