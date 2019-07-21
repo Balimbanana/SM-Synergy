@@ -17,8 +17,9 @@ bool clsecondchk[MAXPLAYERS+1];
 bool bhopdisable = false;
 bool sxpmact = false;
 bool hl1act = false;
+int bhopmode = 1;
 
-#define PLUGIN_VERSION "0.24"
+#define PLUGIN_VERSION "0.25"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synbhopupdater.txt"
 
 public Plugin:myinfo = 
@@ -57,6 +58,11 @@ public void OnPluginStart()
 		airaccelh = CreateConVar("bhopdisable", "0", "Enable or Disable BHopping", _, true, 0.0, true, 1.0);
 	bhopdisable = GetConVarBool(airaccelh);
 	HookConVarChange(airaccelh, disablech);
+	airaccelh = FindConVar("bhopmode");
+	if (airaccelh == INVALID_HANDLE)
+		airaccelh = CreateConVar("bhopmode", "2", "Sets BHop mode, 1 is by speed mod, 2 is by velocity mod", _, true, 1.0, true, 2.0);
+	bhopmode = GetConVarInt(airaccelh);
+	HookConVarChange(airaccelh, modech);
 	CloseHandle(airaccelh);
 }
 
@@ -111,6 +117,18 @@ public disablech(Handle convar, const char[] oldValue, const char[] newValue)
 		}
 	}
 	else bhopdisable = false;
+}
+
+public modech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) < 1)
+	{
+		bhopmode = 1;
+	}
+	else
+	{
+		bhopmode = StringToInt(newValue);
+	}
 }
 
 int button1 = (1 << 1);
@@ -194,38 +212,46 @@ public OnButtonPress(int client, int button)
 		{
 			SetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue",1.0);
 			float curspeed = GetEntPropFloat(client,Prop_Send,"m_flMaxspeed");
-			clreleased[client] = GetTickedTime()+0.8;
-			clresetspeed[client] = true;
-			if (curspeed < maxspeed)
+			if (bhopmode == 1)
 			{
-				SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",curspeed+airaccel);
-				if (curspeed+airaccel > 450.0)
+				clreleased[client] = GetTickedTime()+0.8;
+				clresetspeed[client] = true;
+				if (curspeed < maxspeed)
 				{
-					float mvval = 1.0 + (curspeed+airaccel) * 0.0001;
-					float gravset = 1.0-mvval+1.5;
-					if ((gravset < 0.2) && (!sxpmact))
-						SetEntityGravity(client,0.2);
-					else if (!sxpmact)
-						SetEntityGravity(client,gravset);
-					SetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue",mvval);
+					SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",curspeed+airaccel);
+					if (curspeed+airaccel > 450.0)
+					{
+						float mvval = 1.0 + (curspeed+airaccel) * 0.0001;
+						float gravset = 1.0-mvval+1.5;
+						if ((gravset < 0.2) && (!sxpmact))
+							SetEntityGravity(client,0.2);
+						else if (!sxpmact)
+							SetEntityGravity(client,gravset);
+						SetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue",mvval);
+					}
+				}
+				if (curspeed > maxspeed)
+				{
+					SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",maxspeed);
+					if (maxspeed > 450.0)
+					{
+						float mvval = 1.0 + (curspeed+airaccel) * 0.0001;
+						float gravset = 1.0-mvval+1.5;
+						if ((gravset < 0.2) && (!sxpmact))
+							SetEntityGravity(client,0.2);
+						else if (!sxpmact)
+							SetEntityGravity(client,gravset);
+						SetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue",mvval);
+					}
 				}
 			}
-			if (curspeed > maxspeed)
+			else if (bhopmode == 2)
 			{
 				SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",maxspeed);
-				if (maxspeed > 450.0)
-				{
-					float mvval = 1.0 + (curspeed+airaccel) * 0.0001;
-					float gravset = 1.0-mvval+1.5;
-					if ((gravset < 0.2) && (!sxpmact))
-						SetEntityGravity(client,0.2);
-					else if (!sxpmact)
-						SetEntityGravity(client,gravset);
-					SetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue",mvval);
-				}
+				CreateTimer(0.1,shootoff,client,TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
-		else if (groundchk == -1)
+		else if ((groundchk == -1) && (bhopmode == 1))
 		{
 			clreleased[client] = GetTickedTime()+0.1;
 			clresetspeed[client] = true;
@@ -236,6 +262,23 @@ public OnButtonPress(int client, int button)
 			clresetspeed[client] = false;
 		}
 		*/
+	}
+}
+
+public Action shootoff(Handle timer, int client)
+{
+	if (IsValidEntity(client))
+	{
+		float shootvel[3];
+		if (HasEntProp(client,Prop_Send,"m_vecVelocity[0]")) shootvel[0] = GetEntPropFloat(client,Prop_Send,"m_vecVelocity[0]");
+		if (HasEntProp(client,Prop_Send,"m_vecVelocity[1]")) shootvel[1] = GetEntPropFloat(client,Prop_Send,"m_vecVelocity[1]");
+		//ScaleVector(shootvel,1.0+(airaccel/10));
+		if (shootvel[0] > 0.0) shootvel[0]+=airaccel;
+		else shootvel[0]-=airaccel;
+		if (shootvel[1] > 0.0) shootvel[1]+=airaccel;
+		else shootvel[1]-=airaccel;
+		if (HasEntProp(client,Prop_Send,"m_vecVelocity[2]")) shootvel[2] = GetEntPropFloat(client,Prop_Send,"m_vecVelocity[2]");
+		TeleportEntity(client,NULL_VECTOR,NULL_VECTOR,shootvel);
 	}
 }
 
