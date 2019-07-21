@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.997"
-			"Previous"	"1.996"
+			"Latest"  	"1.998"
+			"Previous"	"1.997"
 		}
 		
-		"Notes"	"Added more prop_phyiscs and prop_dynamic transition conditions."
+		"Notes"	"Added more transition properties. Added more transition fallback disable."
 	}
 	
 	"Files"
