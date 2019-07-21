@@ -304,6 +304,12 @@ public OnLibraryAdded(const char[] name)
     }
 }
 
+public Updater_OnPluginUpdated()
+{
+	Handle nullpl = INVALID_HANDLE;
+	ReloadPlugin(nullpl);
+}
+
 public void OnMapStart()
 {
 	if ((FileExists("sound/scientist/scream01.wav",true,NULL_STRING)) && (FileExists("models/bullsquid.mdl",true,NULL_STRING)) && (FileExists("materials/halflife/!c1a1cw00.vtf",true,NULL_STRING))) hl1act = true;
