@@ -18,6 +18,7 @@ bool enterfrom08pb = false;
 bool enterfromep1 = false;
 bool enterfromep2 = false;
 bool reloadingmap = false;
+bool dbg = false;
 bool allowvotereloadsaves = false; //Set by cvar sm_reloadsaves
 bool allowvotecreatesaves = false; //Set by cvar sm_createsaves
 bool rmsaves = false; //Set by cvar sm_disabletransition
@@ -27,6 +28,7 @@ bool reloadaftersetup = false;
 int WeapList = -1;
 int reloadtype = 0;
 int logsv = -1;
+int logplyprox = -1;
 float votetime = 0.0;
 float perclimit = 0.80; //Set by cvar sm_voterestore
 float perclimitsave = 0.60; //Set by cvar sm_votecreatesave
@@ -49,7 +51,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.997"
+#define PLUGIN_VERSION "1.998"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -144,6 +146,11 @@ public void OnPluginStart()
 	else fallbackequip = true;
 	HookConVarChange(equipfallbh, equipfallbch);
 	CloseHandle(equipfallbh);
+	Handle transitiondbgh = CreateConVar("sm_transitiondebug", "0", "Logs transition entities for both save and restore.", _, true, 0.0, true, 1.0);
+	if (GetConVarBool(transitiondbgh) == true) dbg = true;
+	else dbg = false;
+	HookConVarChange(transitiondbgh, transitiondbgch);
+	CloseHandle(transitiondbgh);
 	RegServerCmd("changelevel",resettransition);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	AutoExecConfig(true, "synsaverestore");
@@ -235,6 +242,12 @@ public equipfallbch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) fallbackequip = false;
 	else fallbackequip = true;
+}
+
+public transitiondbgch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) dbg = true;
+	else dbg = false;
 }
 
 public Action votereloadchk(int client, int args)
@@ -1435,6 +1448,13 @@ public void OnMapStart()
 	mapstarttime = GetTickedTime()+2.0;
 	if (GetMapHistorySize() > 0)
 	{
+		logplyprox = CreateEntityByName("logic_playerproxy");
+		if (logplyprox != -1)
+		{
+			DispatchKeyValue(logplyprox,"targetname","synplyprox");
+			DispatchSpawn(logplyprox);
+			ActivateEntity(logplyprox);
+		}
 		logsv = CreateEntityByName("logic_autosave");
 		if ((logsv != -1) && (IsValidEntity(logsv)))
 		{
@@ -1776,6 +1796,8 @@ public void OnMapStart()
 						char solidity[4];
 						ReadPackString(dp,solidity,sizeof(solidity));
 						int gunenable = ReadPackCell(dp);
+						int tkdmg = ReadPackCell(dp);
+						int mvtype = ReadPackCell(dp);
 						char gunenablech[4];
 						Format(gunenablech,sizeof(gunenablech),"%i",gunenable);
 						char defanim[32];
@@ -1858,6 +1880,7 @@ public void OnMapStart()
 						}
 						if (ent != -1)
 						{
+							if (dbg) LogMessage("Restore Ent %s Transition info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\"",clsname,mdl,targn,StringToInt(solidity),StringToInt(spawnflags),mvtype);
 							bool beginseq = false;
 							bool applypropafter = false;
 							if (StrEqual(clsname,"npc_alyx",false))
@@ -1891,6 +1914,7 @@ public void OnMapStart()
 							if (!StrEqual(scriptinf,"endofpack",false))
 							{
 								ExplodeString(scriptinf," ",scriptexp,64,128);
+								char firstv[64];
 								for (int j = 0;j<64;j++)
 								{
 									bool skip2 = false;
@@ -1899,12 +1923,24 @@ public void OnMapStart()
 									{
 										if (StrContains(scriptexp[jadd],"\"",false) != -1)
 										{
+											Format(firstv,sizeof(firstv),"%s",scriptexp[jadd]);
 											Format(scriptexp[jadd],sizeof(scriptexp[]),"%s %s %s",scriptexp[jadd],scriptexp[jadd+1],scriptexp[jadd+2]);
 											ReplaceString(scriptexp[jadd],sizeof(scriptexp[]),"\"","");
 											skip2 = true;
 										}
 										//PrintToServer("Pushing %s %s",scriptexp[j],scriptexp[jadd]);
-										DispatchKeyValue(ent,scriptexp[j],scriptexp[jadd]);
+										if (StrEqual(scriptexp[j],"axis",false))
+										{
+											float addz = StringToFloat(scriptexp[jadd+2]);
+											addz+=50.0;
+											Format(scriptexp[jadd],sizeof(scriptexp[]),"%s, %s %s %1.f",scriptexp[jadd],firstv,scriptexp[jadd+1],addz);
+											PrintToServer("Dispatch %s %s",scriptexp[j],scriptexp[jadd]);
+											DispatchKeyValue(ent,scriptexp[j],scriptexp[jadd]);
+										}
+										else
+										{
+											DispatchKeyValue(ent,scriptexp[j],scriptexp[jadd]);
+										}
 										if (StrContains(scriptexp[j],"m_angRotation",false) == 0)
 										{
 											applypropafter = true;
@@ -1929,6 +1965,8 @@ public void OnMapStart()
 							TeleportEntity(ent,porigin,angs,NULL_VECTOR);
 							if ((HasEntProp(ent,Prop_Data,"m_eDoorState")) && (doorstate != 1)) SetEntProp(ent,Prop_Data,"m_eDoorState",doorstate);
 							if (HasEntProp(ent,Prop_Data,"m_SleepState")) SetEntProp(ent,Prop_Data,"m_SleepState",sleepstate);
+							if (HasEntProp(ent,Prop_Data,"m_takedamage")) SetEntProp(ent,Prop_Data,"m_takedamage",tkdmg);
+							if (HasEntProp(ent,Prop_Data,"movetype")) SetEntProp(ent,Prop_Data,"movetype",mvtype);
 							if (beginseq) CreateTimer(0.2,beginseqd,ent);
 							if (applypropafter)
 							{
@@ -2056,6 +2094,17 @@ public void OnMapEnd()
 {
 	if ((rmsaves) && (reloadingmap))
 	{
+		if (IsValidEntity(logplyprox))
+		{
+			char clschk[32];
+			GetEntityClassname(logplyprox,clschk,sizeof(clschk));
+			if (StrEqual(clschk,"logic_playerproxy",false))
+			{
+				AcceptEntityInput(logplyprox,"CancelRestorePlayers");
+			}
+		}
+		else
+			logplyprox = -1;
 		if (DirExists(savedir,false))
 		{
 			Handle savedirrmh = OpenDirectory(savedir, false);
@@ -2147,7 +2196,7 @@ public Action resettransition(int args)
 	GetCurrentMap(curmap,sizeof(curmap));
 	if ((StrEqual(getmap,"remount",false)) && (StrEqual(curmap,"ep1_c17_06",false))) enterfromep1 = true;
 	else enterfromep1 = false;
-	if ((StrEqual(getmap,"remount",false)) && (StrEqual(curmap,"ep2_outland_12a",false))) enterfromep2 = true;
+	if ((StrEqual(getmap,"remount",false)) && ((StrEqual(curmap,"ep2_outland_12a",false)) || (StrEqual(curmap,"xen_c5a1",false)))) enterfromep2 = true;
 	else enterfromep2 = false;
 	return Plugin_Continue;
 }
@@ -2158,6 +2207,17 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 	enterfromep1 = false;
 	if (rmsaves)
 	{
+		if (IsValidEntity(logplyprox))
+		{
+			char clschk[32];
+			GetEntityClassname(logplyprox,clschk,sizeof(clschk));
+			if (StrEqual(clschk,"logic_playerproxy",false))
+			{
+				AcceptEntityInput(logplyprox,"CancelRestorePlayers");
+			}
+		}
+		else
+			logplyprox = -1;
 		if ((IsValidEntity(caller)) && (IsEntNetworkable(caller)))
 		{
 			char clschk[32];
@@ -2302,6 +2362,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					}
 					WritePackString(dp,"endofpack");
 					PushArrayCell(transitiondp,dp);
+					if (dbg) LogMessage("Transition CL %N Transition info %i health %i armor %i ducking Offset %1.f %1.f %1.f",i,curh,cura,crouching,plyorigin[0],plyorigin[1],plyorigin[2]);
 				}
 			}
 		}
@@ -2541,7 +2602,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 							char solidity[4];
 							char defanim[32];
 							char scriptinf[512];
-							int doorstate, sleepstate, gunenable;
+							int doorstate, sleepstate, gunenable, tkdmg, mvtype;
 							if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 							if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
 							if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
@@ -2633,6 +2694,8 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 								Format(solidity,sizeof(solidity),"%i",solidtype);
 							}
 							if (HasEntProp(i,Prop_Data,"m_bHasGun")) gunenable = GetEntProp(i,Prop_Data,"m_bHasGun");
+							if (HasEntProp(i,Prop_Data,"m_takedamage")) tkdmg = GetEntProp(i,Prop_Data,"m_takedamage");
+							if (HasEntProp(i,Prop_Data,"movetype")) mvtype = GetEntProp(i,Prop_Data,"movetype");
 							if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
 							if (HasEntProp(i,Prop_Data,"m_vecAxis"))
 							{
@@ -2839,13 +2902,15 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 									WritePackString(dp,npctype);
 									WritePackString(dp,solidity);
 									WritePackCell(dp,gunenable);
+									WritePackCell(dp,tkdmg);
+									WritePackCell(dp,mvtype);
 									WritePackString(dp,defanim);
 									if (strlen(scriptinf) > 0) WritePackString(dp,scriptinf);
 									WritePackString(dp,"endofpack");
 									PushArrayCell(transitionents,dp);
 									PushArrayCell(ignoreent,i);
 								}
-								//PrintToServer("Transition %s %s %s",clsname,targn,mdl);
+								if (dbg) LogMessage("Save Transition %s TargetName \"%s\" Model \"%s\" Offset \"%1.f %1.f %1.f\"",clsname,targn,mdl,porigin[0],porigin[1],porigin[2]);
 							}
 						}
 					}
@@ -2898,7 +2963,7 @@ void transitionthisent(int i)
 	char scriptinf[512];
 	char scrtmp[64];
 	char defanim[32];
-	int doorstate, sleepstate, gunenable;
+	int doorstate, sleepstate, gunenable, tkdmg, mvtype;
 	if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 	if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 	if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
@@ -3067,6 +3132,8 @@ void transitionthisent(int i)
 		Format(solidity,sizeof(solidity),"%i",solidtype);
 	}
 	if (HasEntProp(i,Prop_Data,"m_bHasGun")) gunenable = GetEntProp(i,Prop_Data,"m_bHasGun");
+	if (HasEntProp(i,Prop_Data,"m_takedamage")) tkdmg = GetEntProp(i,Prop_Data,"m_takedamage");
+	if (HasEntProp(i,Prop_Data,"movetype")) mvtype = GetEntProp(i,Prop_Data,"movetype");
 	if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
 	TrimString(scriptinf);
 	WritePackString(dp,clsname);
@@ -3092,6 +3159,8 @@ void transitionthisent(int i)
 	WritePackString(dp,npctype);
 	WritePackString(dp,solidity);
 	WritePackCell(dp,gunenable);
+	WritePackCell(dp,tkdmg);
+	WritePackCell(dp,mvtype);
 	WritePackString(dp,defanim);
 	WritePackString(dp,scriptinf);
 	PushArrayCell(transitionents,dp);
@@ -3344,6 +3413,7 @@ public Action anotherdelay(Handle timer, int client)
 			plyorigin[0]+=landmarkorigin[0];
 			plyorigin[1]+=landmarkorigin[1];
 			plyorigin[2]+=landmarkorigin[2];
+			if (dbg) LogMessage("Restore CL %N Transition info %i health %i armor",client,curh,cura);
 			ReadPackString(dp,curweap,sizeof(curweap));
 			SetEntProp(client,Prop_Data,"m_iHealth",curh);
 			SetEntProp(client,Prop_Data,"m_ArmorValue",cura);
