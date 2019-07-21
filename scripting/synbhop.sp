@@ -18,7 +18,7 @@ bool bhopdisable = false;
 bool sxpmact = false;
 bool hl1act = false;
 
-#define PLUGIN_VERSION "0.23"
+#define PLUGIN_VERSION "0.24"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synbhopupdater.txt"
 
 public Plugin:myinfo = 
@@ -189,7 +189,8 @@ public OnButtonPress(int client, int button)
 		int ladderchk = GetEntPropEnt(client,Prop_Send,"m_hLadder");
 		float movemod = GetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue");
 		int vckent = GetEntPropEnt(client, Prop_Send, "m_hVehicle");
-		if ((movemod > 0.9) && (vckent != -1) && (ladderchk != -1) && (groundchk != -1) && (!(GetClientButtons(client) & button2)))
+		//PrintToServer("Chks %i %i %1.f %i",groundchk,ladderchk,movemod,vckent);
+		if ((movemod > 0.9) && (vckent == -1) && (ladderchk == -1) && (groundchk != -1) && (!(GetClientButtons(client) & button2)))
 		{
 			SetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue",1.0);
 			float curspeed = GetEntPropFloat(client,Prop_Send,"m_flMaxspeed");
