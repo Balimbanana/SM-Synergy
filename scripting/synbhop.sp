@@ -19,7 +19,7 @@ bool sxpmact = false;
 bool hl1act = false;
 int bhopmode = 1;
 
-#define PLUGIN_VERSION "0.25"
+#define PLUGIN_VERSION "0.26"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synbhopupdater.txt"
 
 public Plugin:myinfo = 
@@ -196,6 +196,19 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 				clreleased[client] = Time+0.1;
 			}
 		}
+		else if (bhopmode == 2)
+		{
+			float shootvel[3];
+			if (HasEntProp(client,Prop_Send,"m_vecVelocity[0]")) shootvel[0] = GetEntPropFloat(client,Prop_Send,"m_vecVelocity[0]");
+			if (HasEntProp(client,Prop_Send,"m_vecVelocity[1]")) shootvel[1] = GetEntPropFloat(client,Prop_Send,"m_vecVelocity[1]");
+			if (shootvel[0] > 0.0) shootvel[0]+=airaccel;
+			else shootvel[0]-=airaccel;
+			if (shootvel[1] > 0.0) shootvel[1]+=airaccel;
+			else shootvel[1]-=airaccel;
+			if (HasEntProp(client,Prop_Send,"m_vecVelocity[2]")) shootvel[2] = GetEntPropFloat(client,Prop_Send,"m_vecVelocity[2]");
+			TeleportEntity(client,NULL_VECTOR,NULL_VECTOR,shootvel);
+			clresetspeed[client] = false;
+		}
 	}
 }
 
@@ -248,7 +261,9 @@ public OnButtonPress(int client, int button)
 			else if (bhopmode == 2)
 			{
 				SetEntPropFloat(client,Prop_Send,"m_flMaxspeed",maxspeed);
-				CreateTimer(0.1,shootoff,client,TIMER_FLAG_NO_MAPCHANGE);
+				clreleased[client] = GetTickedTime()+0.05;
+				clresetspeed[client] = true;
+				//CreateTimer(0.1,shootoff,client,TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 		else if ((groundchk == -1) && (bhopmode == 1))
