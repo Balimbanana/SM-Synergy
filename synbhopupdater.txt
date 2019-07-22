@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.25"
-			"Previous"	"0.24"
+			"Latest"  	"0.26"
+			"Previous"	"0.25"
 		}
 		
 		"Notes"	"Added bhopmode cvar, 1 is by speed modification, 2 is by velocity modification."
