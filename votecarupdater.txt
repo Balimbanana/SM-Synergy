@@ -1,0 +1,19 @@
+"Updater"
+{
+	"Information"
+	{
+		"Version"
+		{
+			"Latest"  	"1.12"
+			"Previous"	"1.11"
+		}
+		
+		"Notes"	"Init updater."
+	}
+	
+	"Files"
+	{
+		"Plugin"	"Path_SM/plugins/votecar.smx"
+		"Source"	"Path_SM/scripting/votecar.sp"
+	}
+}
