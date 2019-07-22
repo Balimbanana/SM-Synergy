@@ -3,7 +3,8 @@
 #include <sdkhooks>
 #undef REQUIRE_PLUGIN
 #undef REQUIRE_EXTENSIONS
-#tryinclude <voteglobalset>
+#tryinclude <SteamWorks>
+#tryinclude <updater>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
@@ -29,6 +30,7 @@ int vehholo[MAXPLAYERS];
 int vehiclemdltype[MAXPLAYERS];
 int plyvehicle[MAXPLAYERS];
 int clused = 0;
+int carwalldist = 60;
 char vehicletype[64];
 
 char mapbuf[64];
@@ -41,12 +43,26 @@ int useapc = 0;
 int usejal = 0;
 //int collisiongroup = -1;
 
+Menu g_hVoteMenu = null;
+#define VOTE_NO "###no###"
+#define VOTE_YES "###yes###"
+
+enum voteType
+{
+	question
+}
+
+new voteType:g_voteType = voteType:question;
+
+#define PLUGIN_VERSION "1.12"
+#define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/votecarupdater.txt"
+
 public Plugin:myinfo = 
 {
 	name = "CCreateVehicle",
 	author = "Balimbanana",
 	description = "Creates vehicles with error correction",
-	version = "1.11",
+	version = PLUGIN_VERSION,
 	url = "https://github.com/Balimbanana/SM-Synergy/"
 }
 
@@ -92,6 +108,9 @@ public void OnPluginStart()
 	Handle vcarrmresh = CreateConVar("sm_votecarremove", "0", "0 allows removing of vehicles while there are passengers, 1 requires vehicle has no passengers to remove.", _, true, 0.0, true, 1.0);
 	restrictrm = GetConVarInt(vcarrmresh);
 	HookConVarChange(vcarrmresh, restrictvehrmresch);
+	vcarrmresh = CreateConVar("sm_votecardistcheck", "60", "Blocks spawning vehicles if the spawn position of the vehicle is this far away from walls.", _, true, 0.0, true, 300.0);
+	carwalldist = GetConVarInt(vcarrmresh);
+	HookConVarChange(vcarrmresh, restrictvehdistch);
 	CloseHandle(vcarrmresh);
 	HookEntityOutput("prop_vehicle_jeep","PlayerOn",EntityOutput:playeron);
 	HookEntityOutput("prop_vehicle_jeep_episodic","PlayerOn",EntityOutput:playeron);
@@ -102,7 +121,6 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
-	voteinprogress = false;
 	GetCurrentMap(mapbuf, sizeof(mapbuf));
 	//collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	ClearArray(globalsarr);
@@ -127,6 +145,20 @@ public void OnMapStart()
 	}
 	for (int i = 0; i<MaxClients+1; i++)
 		plyvehicle[i] = 0;
+}
+
+public OnLibraryAdded(const char[] name)
+{
+	if (StrEqual(name,"updater",false))
+	{
+		Updater_AddPlugin(UPDATE_URL);
+	}
+}
+
+public Updater_OnPluginUpdated()
+{
+	Handle nullpl = INVALID_HANDLE;
+	ReloadPlugin(nullpl);
 }
 
 public Action votecar(int client, int args)
@@ -191,7 +223,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	return Plugin_Continue;
 }
 
-public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
+public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 {
 	float Time = GetTickedTime();
 	char info[128];
@@ -204,7 +236,7 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 			return 0;
 		}
 	}
-	if ((action == MenuAction_Select) && (votetime[param1] <= Time) && (!voteinprogress))
+	if ((action == MenuAction_Select) && (votetime[param1] <= Time) && (!IsVoteInProgress()))
 	{
 		menu.GetItem(param2, info, sizeof(info));
 		if (StrEqual(info,"remvh",false))
@@ -276,7 +308,6 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 				g_hVoteMenu.AddItem(VOTE_NO, "No");
 				g_hVoteMenu.ExitButton = false;
 				g_hVoteMenu.DisplayVoteToAll(20);
-				voteinprogress = true;
 				votetime[param1] = Time + delaylimit;
 			}
 		}
@@ -289,7 +320,7 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 	{
 		delete menu;
 	}
-	else if ((voteinprogress) || (IsVoteInProgress()))
+	else if (IsVoteInProgress())
 	{
 		PrintToChat(param1,"There is a vote already in progress.");
 	}
@@ -403,7 +434,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 	return 0;
 }
 
-bool:CCreateVehicle(client,char[] vehiclemodel)
+bool CCreateVehicle(client,char[] vehiclemodel)
 {
 	if (client == 0)
 		return false;
@@ -461,7 +492,7 @@ bool:CCreateVehicle(client,char[] vehiclemodel)
 		fhitpos[2] += 10.0;
 		float chkdist = GetVectorDistance(PlayerOrigin,fhitpos,false);
 		
-		if ((RoundFloat(chkdist) >= 80) && (RoundFloat(chkdist) <= 500))
+		if ((RoundFloat(chkdist) >= carwalldist+20) && (RoundFloat(chkdist) <= 500))
 		{
 			float fhitposx[3];
 			hhitpos = INVALID_HANDLE;
@@ -473,7 +504,7 @@ bool:CCreateVehicle(client,char[] vehiclemodel)
 			TR_GetEndPosition(fhitposx,hhitpos);
 			chkdist = GetVectorDistance(fhitpos,fhitposx,false);
 			
-			if (RoundFloat(chkdist) >= 65)
+			if (RoundFloat(chkdist) >= carwalldist+5)
 			{
 				clanglesx[1] += 90.0;
 				TR_TraceRay(fhitpos,clanglesx,MASK_SOLID_BRUSHONLY,RayType_Infinite);
@@ -501,7 +532,7 @@ bool:CCreateVehicle(client,char[] vehiclemodel)
 				
 				//PrintToChat(client,"Left %i Right %i FL %i FR %i",RoundFloat(chkdistl),RoundFloat(chkdistr),RoundFloat(chkdistfr),RoundFloat(chkdistfl));
 				
-				if ((RoundFloat(chkdistl) > 60) && (RoundFloat(chkdistr) > 60) && (RoundFloat(chkdistfl) > 60) && (RoundFloat(chkdistfr) > 60))
+				if ((RoundFloat(chkdistl) > carwalldist) && (RoundFloat(chkdistr) > carwalldist) && (RoundFloat(chkdistfl) > carwalldist) && (RoundFloat(chkdistfr) > carwalldist))
 				{
 					vehholo[client] = CreateEntityByName("prop_dynamic");
 					clangles[0] = 0.0;
@@ -542,15 +573,15 @@ bool:CCreateVehicle(client,char[] vehiclemodel)
 					SetEntityMoveType(vehholo[client],MOVETYPE_NOCLIP);
 					return true;
 				}
-				else if ((RoundFloat(chkdistl) <= 60) || (RoundFloat(chkdistfl) > 60))
+				else if ((RoundFloat(chkdistl) <= carwalldist) || (RoundFloat(chkdistfl) > carwalldist))
 					PrintToChat(client,"%T","tooclosetoleft",client);
-				else if ((RoundFloat(chkdistr) <= 60) || (RoundFloat(chkdistfr) > 60))
+				else if ((RoundFloat(chkdistr) <= carwalldist) || (RoundFloat(chkdistfr) > carwalldist))
 					PrintToChat(client,"%T","tooclosetoright",client);
 			}
-			else if (RoundFloat(chkdist) <= 65)
+			else if (RoundFloat(chkdist) <= carwalldist+5)
 				PrintToChat(client,"%T","tooclosetofront",client);
 		}
-		else if (RoundFloat(chkdist) <= 80)
+		else if (RoundFloat(chkdist) <= carwalldist+20)
 			PrintToChat(client,"%T","tooclosetofront",client);
 		//PrintToChat(client,"Player at %i %i %i, spawn vehicle at %i %i %i",RoundFloat(PlayerOrigin[0]),RoundFloat(PlayerOrigin[1]),RoundFloat(PlayerOrigin[2]),RoundFloat(fhitpos[0]),RoundFloat(fhitpos[1]),RoundFloat(fhitpos[2]));
 	}
@@ -603,6 +634,11 @@ public restrictvehrmresch(Handle convar, const char[] oldValue, const char[] new
 	int nval = StringToInt(newValue);
 	if ((nval < 2) && (nval > -1))
 		restrictrm = nval;
+}
+
+public restrictvehdistch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	carwalldist = StringToInt(newValue);
 }
 
 bool:IsInView(client)
