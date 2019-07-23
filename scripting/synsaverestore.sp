@@ -3417,10 +3417,10 @@ public Action anotherdelay(Handle timer, int client)
 			plyorigin[1] = ReadPackFloat(dp);
 			plyorigin[2] = ReadPackFloat(dp);
 			if (((plyorigin[0] == 0.0) && (plyorigin[1] == 0.0) && (plyorigin[2] == 0.0)) || (TR_PointOutsideWorld(plyorigin))) teleport = false;
+			if (dbg) LogMessage("Restore CL %N Transition info %i health %i armor Offset \"%1.f %1.f %1.f\"",client,curh,cura,plyorigin[0],plyorigin[1],plyorigin[2]);
 			plyorigin[0]+=landmarkorigin[0];
 			plyorigin[1]+=landmarkorigin[1];
 			plyorigin[2]+=landmarkorigin[2];
-			if (dbg) LogMessage("Restore CL %N Transition info %i health %i armor Offset \"%1.f %1.f %1.f\"",client,curh,cura,plyorigin[0],plyorigin[1],plyorigin[2]);
 			ReadPackString(dp,curweap,sizeof(curweap));
 			SetEntProp(client,Prop_Data,"m_iHealth",curh);
 			SetEntProp(client,Prop_Data,"m_ArmorValue",cura);
