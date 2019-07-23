@@ -51,7 +51,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.998"
+#define PLUGIN_VERSION "1.999"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2528,6 +2528,13 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 					porigin[2] = mins[2]-mins[2];
 				}
 			}
+			else if (StrEqual(clsname,"prop_ragdoll",false))
+			{
+				AcceptEntityInput(i,"kill");
+				porigin[0] = mins[0]-mins[0];
+				porigin[1] = mins[1]-mins[1];
+				porigin[2] = mins[2]-mins[2];
+			}
 			if ((StrEqual(clsname,"npc_alyx",false)) || (StrEqual(clsname,"npc_vortigaunt",false)) || (StrEqual(clsname,"prop_vehicle_jeep_episodic",false)))
 			{
 				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
@@ -2551,7 +2558,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 					}
 				}
 			}
-			if ((alwaystransition) || ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2])))
+			if ((alwaystransition) || ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]) && (IsValidEntity(i))))
 			{
 				//Add func_tracktrain check if exists on next map OnTransition might not fire
 				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"light_dynamic",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"predicted_viewmodel",false)))
@@ -3409,11 +3416,11 @@ public Action anotherdelay(Handle timer, int client)
 			plyorigin[0] = ReadPackFloat(dp);
 			plyorigin[1] = ReadPackFloat(dp);
 			plyorigin[2] = ReadPackFloat(dp);
-			if ((plyorigin[0] == 0.0) && (plyorigin[1] == 0.0) && (plyorigin[2] == 0.0)) teleport = false;
+			if (((plyorigin[0] == 0.0) && (plyorigin[1] == 0.0) && (plyorigin[2] == 0.0)) || (TR_PointOutsideWorld(plyorigin))) teleport = false;
 			plyorigin[0]+=landmarkorigin[0];
 			plyorigin[1]+=landmarkorigin[1];
 			plyorigin[2]+=landmarkorigin[2];
-			if (dbg) LogMessage("Restore CL %N Transition info %i health %i armor",client,curh,cura);
+			if (dbg) LogMessage("Restore CL %N Transition info %i health %i armor Offset \"%1.f %1.f %1.f\"",client,curh,cura,plyorigin[0],plyorigin[1],plyorigin[2]);
 			ReadPackString(dp,curweap,sizeof(curweap));
 			SetEntProp(client,Prop_Data,"m_iHealth",curh);
 			SetEntProp(client,Prop_Data,"m_ArmorValue",cura);
