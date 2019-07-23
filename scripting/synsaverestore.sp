@@ -51,7 +51,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.999"
+#define PLUGIN_VERSION "1.9991"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1500,6 +1500,22 @@ public void OnMapStart()
 			DispatchSpawn(syn_reltohl2);
 			ActivateEntity(syn_reltohl2);
 			enterfromep2 = false;
+		}
+		else if (StrEqual(mapbuf,"d3_breen_01",false))
+		{
+			int loginp = CreateEntityByName("logic_auto");
+			DispatchKeyValue(loginp, "spawnflags","1");
+			DispatchKeyValue(loginp, "OnMapSpawn","logic_ending_credits,AddOutput,OnTrigger PSCTest:Command:changelevel remount:29:1,0,-1");
+			DispatchSpawn(loginp);
+			ActivateEntity(loginp);
+		}
+		else if (StrEqual(mapbuf,"ep1_c17_06",false))
+		{
+			int loginp = CreateEntityByName("logic_auto");
+			DispatchKeyValue(loginp, "spawnflags","1");
+			DispatchKeyValue(loginp, "OnMapSpawn","citfx_glowtrack3,AddOutput,OnPass theEndCmd:Command:changelevel remount:7.3:1,0,-1");
+			DispatchSpawn(loginp);
+			ActivateEntity(loginp);
 		}
 		if (reloadingmap)
 		{
