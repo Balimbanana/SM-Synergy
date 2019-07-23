@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.998"
-			"Previous"	"1.997"
+			"Latest"  	"1.999"
+			"Previous"	"1.998"
 		}
 		
-		"Notes"	"Added more transition properties. Added more transition fallback disable."
+		"Notes"	"Added transition CL offset to log and added outsideworld check to restore. Block transition of prop_ragdoll."
 	}
 	
 	"Files"
