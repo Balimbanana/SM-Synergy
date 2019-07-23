@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.12"
+#define PLUGIN_VERSION "1.13"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -49,12 +49,13 @@ int clspawntime[MAXPLAYERS+1];
 int clspawntimemax = 10;
 int lastspawned[MAXPLAYERS+1];
 int clused = 0;
+int canceltimer = 0;
 
 bool teambalance = true;
 int teambalancelimit = 0;
 float endfreezetime = 6.0;
 float roundtime = 150.0;
-Handle roundhchk = INVALID_HANDLE;
+float roundstartedat = 0.0;
 float roundstarttime = 5.0;
 bool falldamagedis = false;
 int fraglimit = 20;
@@ -104,7 +105,6 @@ public OnPluginStart()
 	}
 	globalsarr = CreateArray(32);
 	changelevels = CreateArray(16);
-	roundhchk = CreateArray(4);
 	respawnids = CreateArray(64);
 	inputsarrorigincls = CreateArray(768);
 	Handle instspawntime = INVALID_HANDLE;
@@ -157,6 +157,7 @@ public OnPluginStart()
 	HookConVarChange(resetmodeh,resetmodech);
 	resetmode = GetConVarInt(resetmodeh);
 	CloseHandle(resetmodeh);
+	CreateTimer(1.0,roundtimeout,_,TIMER_REPEAT);
 	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
 	AutoExecConfig(true, "synmodes");
 }
@@ -272,20 +273,6 @@ public freezetimech(Handle convar, const char[] oldValue, const char[] newValue)
 public roundtimech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	roundtime = StringToFloat(newValue)*60;
-	if (GetArraySize(roundhchk) > 0)
-	{
-		for (int i = 0;i<GetArraySize(roundhchk);i++)
-		{
-			Handle rm = GetArrayCell(roundhchk,i);
-			KillTimer(rm);
-		}
-		ClearArray(roundhchk);
-	}
-	if (roundtime > 0.0)
-	{
-		Handle roundmaxtime = CreateTimer(roundtime,roundtimeout);
-		PushArrayCell(roundhchk,roundmaxtime);
-	}
 }
 
 public restartdelch(Handle convar, const char[] oldValue, const char[] newValue)
@@ -358,6 +345,20 @@ public Action setinstspawn(int client, int args)
 			//ServerCommand("synconfoverr %i",set);
 		}
 		return Plugin_Handled;
+	}
+	return Plugin_Continue;
+}
+
+public Action timeleftinround(int client, int args)
+{
+	if ((dmact) || (dmset))
+	{
+		float Time = GetTickedTime();
+		if (client == 0) PrintToServer("Time left: %1.f",1.0*(roundstartedat-Time));
+		else if (IsValidEntity(client))
+		{
+			PrintToChat(client,"Time left: %1.f",1.0*(roundstartedat-Time));
+		}
 	}
 	return Plugin_Continue;
 }
@@ -1007,15 +1008,7 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 				char nick[64];
 				GetClientName(killid,nick,sizeof(nick));
 				PrintCenterTextAll("%s Wins!",nick);
-				if (GetArraySize(roundhchk) > 0)
-				{
-					for (int i = 0;i<GetArraySize(roundhchk);i++)
-					{
-						Handle rm = GetArrayCell(roundhchk,i);
-						if (rm != INVALID_HANDLE) KillTimer(rm);
-					}
-					ClearArray(roundhchk);
-				}
+				canceltimer++;
 			}
 			else if (blueteamkills >= fraglimit)
 			{
@@ -1025,15 +1018,7 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 				SetEventString(endround,"message","FragLimit Reached");
 				FireEvent(endround,false);
 				PrintCenterTextAll("Blue Team Wins!");
-				if (GetArraySize(roundhchk) > 0)
-				{
-					for (int i = 0;i<GetArraySize(roundhchk);i++)
-					{
-						Handle rm = GetArrayCell(roundhchk,i);
-						if (rm != INVALID_HANDLE) KillTimer(rm);
-					}
-					ClearArray(roundhchk);
-				}
+				canceltimer++;
 			}
 			else if (redteamkills >= fraglimit)
 			{
@@ -1043,15 +1028,7 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 				SetEventString(endround,"message","FragLimit Reached");
 				FireEvent(endround,false);
 				PrintCenterTextAll("Red Team Wins!");
-				if (GetArraySize(roundhchk) > 0)
-				{
-					for (int i = 0;i<GetArraySize(roundhchk);i++)
-					{
-						Handle rm = GetArrayCell(roundhchk,i);
-						if (rm != INVALID_HANDLE) KillTimer(rm);
-					}
-					ClearArray(roundhchk);
-				}
+				canceltimer++;
 			}
 			return Plugin_Changed;
 		}
@@ -1213,9 +1190,14 @@ public Action tpclspawnnew(Handle timer, any i)
 	//(!dmset) && (dmact)
 	if ((isvehiclemap) || (((pos[0] <= 10.0) && (pos[0] >= -10.0)) && ((pos[1] <= 10.0) && (pos[1] >= -10.0)) && ((pos[2] <= 10.0) && (pos[2] >= -10.0))))
 	{
-		//Player most likely spawned at 0 0 0, need to attempt recovery...
+		//Player most likely spawned at 0 0 0, or on a player when they shouldn't have, need to attempt recovery...
 		ClearArray(equiparr);
-		findent(MaxClients+1,"info_player_coop");
+		int team = GetEntProp(i,Prop_Data,"m_iTeamNum");
+		if (team == 2) findent(MaxClients+1,"info_player_rebel");
+		else if (team == 3) findent(MaxClients+1,"info_player_combine");
+		else if (team == 1) findent(MaxClients+1,"info_player_deathmatch");
+		if ((GetArraySize(equiparr) < 1) && (team != 0)) findent(MaxClients+1,"info_player_deathmatch");
+		if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_coop");
 		if (GetArraySize(equiparr) < 1)
 		{
 			findent(MaxClients+1,"info_player_start");
@@ -1241,7 +1223,6 @@ public Action tpclspawnnew(Handle timer, any i)
 				for (int j = GetRandomInt(0,GetArraySize(equiparr));j<GetArraySize(equiparr);j++)
 				{
 					int tmpsp = GetArrayCell(equiparr,j);
-					int team = GetEntProp(i,Prop_Data,"m_iTeamNum");
 					bool rangechk = true;
 					float spawnpos[3];
 					if (HasEntProp(tmpsp,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(tmpsp,Prop_Data,"m_vecAbsOrigin",spawnpos);
@@ -1287,7 +1268,8 @@ findent(int ent, char[] clsname)
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
-		int bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
+		int bdisabled = 0;
+		if (HasEntProp(thisent,Prop_Data,"m_bDisabled")) bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
 		if (StrEqual(clsname,"info_player_coop",false))
 		{
 			if (strlen(activecheckpoint) > 0)
@@ -1332,6 +1314,10 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 {
 	if (!IsValidEntity(client)) return Plugin_Continue;
 	if (!IsClientInGame(client)) return Plugin_Continue;
+	if (StrEqual(sArgs,"!timeleft",false))
+	{
+		timeleftinround(client,0);
+	}
 	if (StrContains(sArgs, "*moan*", false) != -1)
 	{
 		float Time = GetTickedTime();
@@ -2250,18 +2236,89 @@ public Action OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcas
 
 public Action roundstart(Handle event, const char[] name, bool dontBroadcast)
 {
-	float plyeyepos[3];
 	float plyeyeang[3];
 	float nullvec[3];
 	float Time = GetTickedTime();
+	roundstartedat = Time+999.0;
 	for (int i = 1;i<MaxClients+1;i++)
 	{
 		if ((IsClientInGame(i)) && (IsPlayerAlive(i)))
 		{
-			GetClientAbsOrigin(i, plyeyepos);
+			float pos[3];
+			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",pos);
+			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",pos);
+			ClearArray(equiparr);
+			int team = GetEntProp(i,Prop_Data,"m_iTeamNum");
+			if (team == 2) findent(MaxClients+1,"info_player_rebel");
+			else if (team == 3) findent(MaxClients+1,"info_player_combine");
+			else if (team == 1) findent(MaxClients+1,"info_player_deathmatch");
+			if ((GetArraySize(equiparr) < 1) && (team != 0)) findent(MaxClients+1,"info_player_deathmatch");
+			if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_coop");
+			if (GetArraySize(equiparr) < 1)
+			{
+				findent(MaxClients+1,"info_player_start");
+				if (GetArraySize(equiparr) > 0)
+				{
+					float vec[3];
+					float spawnang[3];
+					GetEntPropVector(GetArrayCell(equiparr,0),Prop_Send,"m_vecOrigin",vec);
+					GetEntPropVector(GetArrayCell(equiparr,0),Prop_Send,"m_angRotation",spawnang);
+					TeleportEntity(i, vec, spawnang, NULL_VECTOR);
+					lastspawned[i] = GetArrayCell(equiparr,0);
+				}
+			}
+			else
+			{
+				int spawnent = GetArrayCell(equiparr,0);
+				if ((lastspawned[i] != spawnent) && (!dmact))
+				{
+					lastspawned[i] = spawnent;
+				}
+				else
+				{
+					for (int j = GetRandomInt(0,GetArraySize(equiparr));j<GetArraySize(equiparr);j++)
+					{
+						int tmpsp = GetArrayCell(equiparr,j);
+						bool rangechk = true;
+						float spawnpos[3];
+						if (HasEntProp(tmpsp,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(tmpsp,Prop_Data,"m_vecAbsOrigin",spawnpos);
+						else if (HasEntProp(tmpsp,Prop_Send,"m_vecOrigin")) GetEntPropVector(tmpsp,Prop_Send,"m_vecOrigin",spawnpos);
+						if ((dmact) && (!dmset))
+						{
+							for (int k = 1;k<MaxClients+1;k++)
+							{
+								if ((IsValidEntity(k)) && (i != k))
+								{
+									if ((IsClientInGame(k)) && (IsPlayerAlive(k)))
+									{
+										float plypos[3];
+										GetClientAbsOrigin(k,pos);
+										float chkdist = GetVectorDistance(spawnpos,plypos,false)
+										int team2 = GetEntProp(k,Prop_Data,"m_iTeamNum");
+										if ((chkdist < 200) && (team != team2)) rangechk = false;
+									}
+								}
+							}
+						}
+						if ((lastspawned[i] != tmpsp) && (rangechk))
+						{
+							spawnent = tmpsp;
+							lastspawned[i] = tmpsp;
+							break;
+						}
+					}
+				}
+				float vec[3];
+				float spawnang[3];
+				GetEntPropVector(spawnent,Prop_Send,"m_vecOrigin",vec);
+				GetEntPropVector(spawnent,Prop_Send,"m_angRotation",spawnang);//m_angAbsRotation m_vecAngles
+				TeleportEntity(i, vec, spawnang, NULL_VECTOR);
+			}
+			ClearArray(equiparr);
+			GetClientAbsOrigin(i, pos);
 			GetClientEyeAngles(i, plyeyeang);
 			int cam = CreateEntityByName("point_viewcontrol");
-			TeleportEntity(cam, plyeyepos, plyeyeang, nullvec);
+			TeleportEntity(cam, pos, plyeyeang, nullvec);
 			DispatchKeyValue(cam, "spawnflags","45");
 			DispatchKeyValue(cam, "targetname","roundstartpv");
 			DispatchSpawn(cam);
@@ -2272,11 +2329,26 @@ public Action roundstart(Handle event, const char[] name, bool dontBroadcast)
 			changeteamcd[i] = Time + roundstarttime + 2.0;
 			SetEntProp(i,Prop_Data,"m_iHealth",100);
 			SetEntProp(i,Prop_Data,"m_ArmorValue",0);
+			CreateTimer(0.1,stopcams,cam,TIMER_FLAG_NO_MAPCHANGE);
 		}
 	}
-	PrintCenterTextAll("Starting next round in %1.f seconds",roundstarttime);
+	PrintCenterTextAll("Starting next round in %1.f seconds\nFrags To Win: %i Round End in %1.1f mins",roundstarttime,fraglimit,roundtime/60.0);
 	CreateTimer(roundstarttime,nextroundrelease);
 	return Plugin_Continue;
+}
+
+public Action stopcams(Handle timer, int cam)
+{
+	if (IsValidEntity(cam))
+	{
+		char cls[32];
+		GetEntityClassname(cam,cls,sizeof(cls));
+		if (StrEqual(cls,"point_viewcontrol",false))
+		{
+			float nullvec[3];
+			TeleportEntity(cam, NULL_VECTOR, NULL_VECTOR, nullvec);
+		}
+	}
 }
 
 public Action nextroundrelease(Handle timer)
@@ -2287,21 +2359,93 @@ public Action nextroundrelease(Handle timer)
 	DispatchKeyValue(loginp,"OnMapSpawn","roundstartpv,kill,,0.1,-1");
 	DispatchSpawn(loginp);
 	ActivateEntity(loginp);
+	roundstartedat = GetTickedTime()+roundtime;
 }
 
 public Action roundintermission(Handle event, const char[] name, bool dontBroadcast)
 {
-	float plyeyepos[3];
 	float plyeyeang[3];
 	float nullvec[3];
 	for (int i = 1;i<MaxClients+1;i++)
 	{
 		if ((IsClientInGame(i)) && (IsPlayerAlive(i)))
 		{
-			GetClientAbsOrigin(i, plyeyepos);
+			float pos[3];
+			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",pos);
+			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",pos);
+			ClearArray(equiparr);
+			int team = GetEntProp(i,Prop_Data,"m_iTeamNum");
+			if (team == 2) findent(MaxClients+1,"info_player_rebel");
+			else if (team == 3) findent(MaxClients+1,"info_player_combine");
+			else if (team == 1) findent(MaxClients+1,"info_player_deathmatch");
+			if ((GetArraySize(equiparr) < 1) && (team != 0)) findent(MaxClients+1,"info_player_deathmatch");
+			if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_coop");
+			if (GetArraySize(equiparr) < 1)
+			{
+				findent(MaxClients+1,"info_player_start");
+				if (GetArraySize(equiparr) > 0)
+				{
+					float vec[3];
+					float spawnang[3];
+					GetEntPropVector(GetArrayCell(equiparr,0),Prop_Send,"m_vecOrigin",vec);
+					GetEntPropVector(GetArrayCell(equiparr,0),Prop_Send,"m_angRotation",spawnang);
+					TeleportEntity(i, vec, spawnang, NULL_VECTOR);
+					lastspawned[i] = GetArrayCell(equiparr,0);
+				}
+			}
+			else
+			{
+				int spawnent = GetArrayCell(equiparr,0);
+				if ((lastspawned[i] != spawnent) && (!dmact))
+				{
+					lastspawned[i] = spawnent;
+				}
+				else
+				{
+					for (int j = GetRandomInt(0,GetArraySize(equiparr));j<GetArraySize(equiparr);j++)
+					{
+						int tmpsp = GetArrayCell(equiparr,j);
+						bool rangechk = true;
+						float spawnpos[3];
+						if (HasEntProp(tmpsp,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(tmpsp,Prop_Data,"m_vecAbsOrigin",spawnpos);
+						else if (HasEntProp(tmpsp,Prop_Send,"m_vecOrigin")) GetEntPropVector(tmpsp,Prop_Send,"m_vecOrigin",spawnpos);
+						if ((dmact) && (!dmset))
+						{
+							for (int k = 1;k<MaxClients+1;k++)
+							{
+								if ((IsValidEntity(k)) && (i != k))
+								{
+									if ((IsClientInGame(k)) && (IsPlayerAlive(k)))
+									{
+										float plypos[3];
+										GetClientAbsOrigin(k,pos);
+										float chkdist = GetVectorDistance(spawnpos,plypos,false)
+										int team2 = GetEntProp(k,Prop_Data,"m_iTeamNum");
+										if ((chkdist < 200) && (team != team2)) rangechk = false;
+									}
+								}
+							}
+						}
+						if ((lastspawned[i] != tmpsp) && (rangechk))
+						{
+							spawnent = tmpsp;
+							lastspawned[i] = tmpsp;
+							break;
+						}
+					}
+				}
+				float vec[3];
+				float spawnang[3];
+				GetEntPropVector(spawnent,Prop_Send,"m_vecOrigin",vec);
+				GetEntPropVector(spawnent,Prop_Send,"m_angRotation",spawnang);//m_angAbsRotation m_vecAngles
+				TeleportEntity(i, vec, spawnang, NULL_VECTOR);
+			}
+			ClearArray(equiparr);
+			GetClientAbsOrigin(i, pos);
 			GetClientEyeAngles(i, plyeyeang);
 			int cam = CreateEntityByName("point_viewcontrol");
-			TeleportEntity(cam, plyeyepos, plyeyeang, nullvec);
+			TeleportEntity(cam, pos, plyeyeang, nullvec);
+			CreateTimer(0.1,stopcams,cam,TIMER_FLAG_NO_MAPCHANGE);
 			DispatchKeyValue(cam, "spawnflags","45");
 			DispatchKeyValue(cam, "targetname","roundendpv");
 			DispatchSpawn(cam);
@@ -2332,31 +2476,37 @@ public Action nextroundstart(Handle timer)
 	SetEventFloat(startround,"timelimit",roundtime);
 	SetEventFloat(startround,"fraglimit",roundtime);
 	FireEvent(startround,false);
-	if (GetArraySize(roundhchk) > 0)
-	{
-		for (int i = 0;i<GetArraySize(roundhchk);i++)
-		{
-			Handle rm = GetArrayCell(roundhchk,i);
-			if (rm != INVALID_HANDLE) KillTimer(rm);
-		}
-		ClearArray(roundhchk);
-	}
-	if (roundtime > 0.0)
-	{
-		Handle roundmaxtime = CreateTimer(roundtime,roundtimeout);
-		PushArrayCell(roundhchk,roundmaxtime);
-	}
 	return Plugin_Handled;
 }
 
 public Action roundtimeout(Handle timer)
 {
-	Handle endround = CreateEvent("round_end");
-	SetEventInt(endround,"winner",0);
-	SetEventInt(endround,"reason",0);
-	SetEventString(endround,"message","Round Timed Out");
-	FireEvent(endround,false);
-	PrintCenterTextAll("Nobody Wins");
+	if ((dmact) || (dmset))
+	{
+		float Time = GetTickedTime();
+		if (1.0*(roundstartedat-Time) < 1.0)
+		{
+			Handle endround = CreateEvent("round_end");
+			SetEventInt(endround,"winner",0);
+			SetEventInt(endround,"reason",0);
+			SetEventString(endround,"message","Round Timed Out");
+			FireEvent(endround,false);
+			PrintCenterTextAll("Nobody Wins");
+			roundstartedat = Time + 999.0;
+		}
+		else if (RoundFloat(1.0*(roundstartedat-Time)) == 10)
+		{
+			PrintCenterTextAll("10 seconds left!");
+		}
+		else if ((RoundFloat(1.0*(roundstartedat-Time)) == 30) && (roundtime > 30.0))
+		{
+			PrintCenterTextAll("30 seconds left!");
+		}
+		else if ((RoundFloat(1.0*(roundstartedat-Time)) == 60) && (roundtime > 61.0))
+		{
+			PrintCenterTextAll("1 minute left!");
+		}
+	}
 }
 
 bool cltouchend(int client)
@@ -2527,12 +2677,12 @@ public OnMapStart()
 		}
 	}
 	CloseHandle(mdirlisting);
-	ClearArray(roundhchk);
 	ClearArray(respawnids);
 	ClearArray(changelevels);
 	ClearArray(inputsarrorigincls);
 	scoreshow = -1;
 	scoreshowstat = -1;
+	canceltimer = 0;
 	hasstarted = true;
 	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigsaves);
 	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigsaves);
@@ -2769,6 +2919,11 @@ readoutputsforinputs()
 					PushArrayString(inputsarrorigincls,lineadj);
 				}
 			}
+			//if (StrContains(line,"\"classname\"",false) == 0)
+			//Team 2 is combine
+			//Team 3 is rebel
+			//info_player_rebel
+			//info_player_combine
 		}
 	}
 	CloseHandle(filehandle);
