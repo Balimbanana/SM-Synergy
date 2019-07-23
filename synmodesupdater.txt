@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.12"
-			"Previous"	"1.11"
+			"Latest"  	"1.13"
+			"Previous"	"1.12"
 		}
 		
-		"Notes"	"Added random spawnpoint system to TDM and DM gamemodes. Fixed spawnpoint detection for vehicle maps."
+		"Notes"	"Re-worked round start/end system."
 	}
 	
 	"Files"
