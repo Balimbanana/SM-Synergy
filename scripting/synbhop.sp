@@ -14,12 +14,13 @@ float normsprintspeed = 320.0;
 float clreleased[MAXPLAYERS+1];
 bool clresetspeed[MAXPLAYERS+1];
 bool clsecondchk[MAXPLAYERS+1];
+bool clapplied[MAXPLAYERS+1];
 bool bhopdisable = false;
 bool sxpmact = false;
 bool hl1act = false;
 int bhopmode = 1;
 
-#define PLUGIN_VERSION "0.27"
+#define PLUGIN_VERSION "0.28"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synbhopupdater.txt"
 
 public Plugin:myinfo = 
@@ -189,6 +190,7 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 				SetEntPropFloat(client,Prop_Send,"m_flLaggedMovementValue",1.0);
 				clresetspeed[client] = false;
 				clsecondchk[client] = false;
+				clapplied[client] = false;
 			}
 			else
 			{
@@ -196,16 +198,18 @@ public Action OnPlayerRunCmd(client, &buttons, &impulse, float vel[3], float ang
 				clreleased[client] = Time+0.1;
 			}
 		}
-		else if (bhopmode == 2)
+		else if ((bhopmode == 2) && (!clapplied[client]))
 		{
 			float shootvel[3];
 			if (HasEntProp(client,Prop_Send,"m_vecVelocity[0]")) shootvel[0] = GetEntPropFloat(client,Prop_Send,"m_vecVelocity[0]");
 			if (HasEntProp(client,Prop_Send,"m_vecVelocity[1]")) shootvel[1] = GetEntPropFloat(client,Prop_Send,"m_vecVelocity[1]");
-			shootvel[0] = shootvel[0] * (1.0 + airaccel * 0.0029);
-			shootvel[1] = shootvel[1] * (1.0 + airaccel * 0.0029);
+			shootvel[0] = shootvel[0] * (1.0 + airaccel * 0.0129);
+			shootvel[1] = shootvel[1] * (1.0 + airaccel * 0.0129);
 			if (HasEntProp(client,Prop_Send,"m_vecVelocity[2]")) shootvel[2] = GetEntPropFloat(client,Prop_Send,"m_vecVelocity[2]");
 			TeleportEntity(client,NULL_VECTOR,NULL_VECTOR,shootvel);
-			clresetspeed[client] = false;
+			clresetspeed[client] = true;
+			clapplied[client] = true;
+			clreleased[client] = Time+0.15;
 		}
 	}
 }
