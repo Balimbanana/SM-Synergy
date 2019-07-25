@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.15"
-			"Previous"	"1.14"
+			"Latest"  	"1.16"
+			"Previous"	"1.15"
 		}
 		
-		"Notes"	"Added /afk system when instspawn is set above 0, added check to instspawn change."
+		"Notes"	"Changed vecorg check on spawnpoints."
 	}
 	
 	"Files"
