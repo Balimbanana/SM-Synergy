@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.14"
+#define PLUGIN_VERSION "1.15"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -203,6 +203,20 @@ public instspawnch(Handle convar, const char[] oldValue, const char[] newValue)
 		resdelay = FindConVar("mp_reset");
 		SetConVarInt(resdelay,0,false,false);
 		CloseHandle(resdelay);
+		for (int i = 1; i<MaxClients+1; i++)
+		{
+			if (IsValidEntity(i))
+			{
+				if (IsClientConnected(i) && IsClientInGame(i) && !IsFakeClient(i))
+				{
+					if (!IsPlayerAlive(i))
+					{
+						clused = 0;
+						CreateTimer(0.1,tpclspawnnew,i);
+					}
+				}
+			}
+		}
 	}
 	else if (StringToInt(newValue) == 2)
 	{
