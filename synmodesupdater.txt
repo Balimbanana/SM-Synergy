@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.13"
-			"Previous"	"1.12"
+			"Latest"  	"1.14"
+			"Previous"	"1.13"
 		}
 		
-		"Notes"	"Re-worked round start/end system."
+		"Notes"	"Added /afk system when instspawn is set above 0."
 	}
 	
 	"Files"
