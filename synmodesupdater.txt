@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.14"
-			"Previous"	"1.13"
+			"Latest"  	"1.15"
+			"Previous"	"1.14"
 		}
 		
-		"Notes"	"Added /afk system when instspawn is set above 0."
+		"Notes"	"Added /afk system when instspawn is set above 0, added check to instspawn change."
 	}
 	
 	"Files"
