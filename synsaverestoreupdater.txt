@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9991"
-			"Previous"	"1.999"
+			"Latest"  	"1.9992"
+			"Previous"	"1.9991"
 		}
 		
 		"Notes"	"Added transition to remount if available from d3_breen_01 and ep1_c17_06 without needing EDT changes."
