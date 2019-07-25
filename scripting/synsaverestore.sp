@@ -51,7 +51,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.9991"
+#define PLUGIN_VERSION "1.9992"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1454,6 +1454,7 @@ public void OnMapStart()
 			DispatchKeyValue(logplyprox,"targetname","synplyprox");
 			DispatchSpawn(logplyprox);
 			ActivateEntity(logplyprox);
+			AcceptEntityInput(logplyprox,"CancelRestorePlayers");
 		}
 		logsv = CreateEntityByName("logic_autosave");
 		if ((logsv != -1) && (IsValidEntity(logsv)))
@@ -1552,6 +1553,7 @@ public void OnMapStart()
 				if (loginp != -1)
 				{
 					DispatchKeyValue(loginp, "spawnflags","1");
+					DispatchKeyValue(loginp, "OnMapSpawn","ss_alyx_duckunder,CancelSequence,,4,-1");
 					DispatchKeyValue(loginp, "OnMapSpawn","ss_alyx_duckunder,BeginSequence,,5,-1");
 					DispatchSpawn(loginp);
 					ActivateEntity(loginp);
@@ -1867,6 +1869,12 @@ public void OnMapStart()
 							porigin[0] = 4881.0;
 							porigin[1] = -339.0;
 							porigin[2] = -203.0;
+						}
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_02a",false)))
+						{
+							porigin[0] = 5364.0;
+							porigin[1] = 6440.0;
+							porigin[2] = -2511.0;
 						}
 						else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_06",false)))
 						{
@@ -3225,6 +3233,37 @@ public OnClientAuthorized(int client, const char[] szAuth)
 {
 	if (rmsaves)
 	{
+		if (IsValidEntity(logplyprox))
+		{
+			char clschk[32];
+			GetEntityClassname(logplyprox,clschk,sizeof(clschk));
+			if (StrEqual(clschk,"logic_playerproxy",false))
+			{
+				AcceptEntityInput(logplyprox,"CancelRestorePlayers");
+			}
+			else
+			{
+				logplyprox = CreateEntityByName("logic_playerproxy");
+				if (logplyprox != -1)
+				{
+					DispatchKeyValue(logplyprox,"targetname","synplyprox");
+					DispatchSpawn(logplyprox);
+					ActivateEntity(logplyprox);
+					AcceptEntityInput(logplyprox,"CancelRestorePlayers");
+				}
+			}
+		}
+		else
+		{
+			logplyprox = CreateEntityByName("logic_playerproxy");
+			if (logplyprox != -1)
+			{
+				DispatchKeyValue(logplyprox,"targetname","synplyprox");
+				DispatchSpawn(logplyprox);
+				ActivateEntity(logplyprox);
+				AcceptEntityInput(logplyprox,"CancelRestorePlayers");
+			}
+		}
 		if ((logsv != -1) && (IsValidEntity(logsv)))
 		{
 			saveresetveh(true);
