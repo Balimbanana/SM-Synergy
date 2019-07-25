@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.15"
+#define PLUGIN_VERSION "1.16"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -1311,12 +1311,14 @@ public Action tpclspawnnew(Handle timer, any i)
 			findent(MaxClients+1,"info_player_start");
 			if (GetArraySize(equiparr) > 0)
 			{
+				int firstarr = GetArrayCell(equiparr,0);
 				float vec[3];
 				float spawnang[3];
-				GetEntPropVector(GetArrayCell(equiparr,0),Prop_Send,"m_vecOrigin",vec);
-				GetEntPropVector(GetArrayCell(equiparr,0),Prop_Send,"m_angRotation",spawnang);
+				if (HasEntProp(firstarr,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(firstarr,Prop_Data,"m_vecAbsOrigin",vec);
+				else if (HasEntProp(firstarr,Prop_Send,"m_vecOrigin")) GetEntPropVector(firstarr,Prop_Send,"m_vecOrigin",vec);
+				GetEntPropVector(firstarr,Prop_Send,"m_angRotation",spawnang);
 				TeleportEntity(i, vec, spawnang, NULL_VECTOR);
-				lastspawned[i] = GetArrayCell(equiparr,0);
+				lastspawned[i] = firstarr;
 			}
 		}
 		else
@@ -1362,7 +1364,8 @@ public Action tpclspawnnew(Handle timer, any i)
 			}
 			float vec[3];
 			float spawnang[3];
-			GetEntPropVector(spawnent,Prop_Send,"m_vecOrigin",vec);
+			if (HasEntProp(spawnent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(spawnent,Prop_Data,"m_vecAbsOrigin",vec);
+			else if (HasEntProp(spawnent,Prop_Send,"m_vecOrigin")) GetEntPropVector(spawnent,Prop_Send,"m_vecOrigin",vec);
 			GetEntPropVector(spawnent,Prop_Send,"m_angRotation",spawnang);//m_angAbsRotation m_vecAngles
 			TeleportEntity(i, vec, spawnang, NULL_VECTOR);
 		}
