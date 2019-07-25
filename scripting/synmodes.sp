@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.13"
+#define PLUGIN_VERSION "1.14"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -40,6 +40,7 @@ bool instspawnb = false;
 bool instspawnuse = false;
 bool isvehiclemap = false;
 bool clspawnforce = false;
+bool clinspectate[MAXPLAYERS+1];
 Handle globalsarr = INVALID_HANDLE;
 Handle changelevels = INVALID_HANDLE;
 Handle respawnids = INVALID_HANDLE;
@@ -77,6 +78,7 @@ public OnPluginStart()
 	RegConsoleCmd("saysounds",saysoundslist);
 	RegConsoleCmd("hud_player_info_enable",dmblock);
 	RegConsoleCmd("changeteam",changeteam);
+	RegConsoleCmd("afk",setupafk);
 	RegAdminCmd("gamemode",setupdm,ADMFLAG_ROOT,".");
 	RegConsoleCmd("showscoresdm",scoreboardsh);
 	RegConsoleCmd("instantspawn",setinstspawn);
@@ -194,7 +196,7 @@ public instspawnch(Handle convar, const char[] oldValue, const char[] newValue)
 		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY))
 		Handle resdelay = INVALID_HANDLE;
 		resdelay = FindConVar("mp_respawndelay");
-		SetConVarInt(resdelay,1,false,false);
+		SetConVarInt(resdelay,0,false,false);
 		cvarflag = GetCommandFlags("mp_reset");
 		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED))
 		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_NOTIFY))
@@ -367,6 +369,10 @@ public Action Atkspecpress(int client, int args)
 {
 	if ((clspawntimeallow[client]) && (!IsPlayerAlive(client)))
 	{
+		if (clinspectate[client])
+		{
+			return Plugin_Continue;
+		}
 		//bool nozero = false;
 		clspawntimeallow[client] = false;
 		clused = GetEntPropEnt(client,Prop_Send,"m_hObserverTarget");
@@ -410,9 +416,14 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	int killed = GetEventInt(event, "entindex_killed");
 	if ((killed <= MaxClients) && (killed > 0))
 	{
+		int teamnum = 0;
+		if (HasEntProp(killed,Prop_Data,"m_iTeamNum")) teamnum = GetEntProp(killed,Prop_Data,"m_iTeamNum");
+		if (clinspectate[killed])
+		{
+			return Plugin_Continue;
+		}
 		if (instspawnb)
 		{
-			int team = GetEntProp(killed,Prop_Data,"m_iTeamNum");
 			if (((!dmset) && (!dmact)) && (lastspawned[killed] == 0)) lastspawned[killed]++;
 			if (((!dmset) && (!dmact)) && (lastspawned[killed] > MaxClients)) lastspawned[killed] = 1;
 			for (int i = lastspawned[killed]; i<MaxClients+1; i++)
@@ -423,7 +434,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 					{
 						int team2 = GetEntProp(i,Prop_Data,"m_iTeamNum");
 						int vck = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
-						if ((vck == -1) && (team == team2) && (killed != i))
+						if ((vck == -1) && (teamnum == team2) && (killed != i))
 						{
 							clused = i;
 							CreateTimer(0.1,tpclspawnnew,killed);
@@ -778,17 +789,100 @@ void balanceteams()
 				SetEntProp(i,Prop_Data,"m_iTeamNum",2);
 				blueteam++;
 				redteam--;
-				CPrintToChatAll("{BLUE}%s has joined the Blue team",nick);
+				CPrintToChatAll("{BLUE}%s {DEFAULT}has joined the {BLUE}Blue team",nick);
 			}
 			else if (redteam < blueteam)
 			{
 				SetEntProp(i,Prop_Data,"m_iTeamNum",3);
 				redteam++;
 				blueteam--;
-				CPrintToChatAll("{RED}%s has joined the Red team",nick);
+				CPrintToChatAll("{RED}%s {DEFAULT}has joined the {RED}Red team",nick);
 			}
 		}
 	}
+}
+
+public Action setupafk(int client, int args)
+{
+	if ((!IsValidEntity(client)) || (client == 0)) return Plugin_Handled;
+	if ((!instspawnb) && (!instspawnuse))
+	{
+		PrintToChat(client,"Not supported in this mode.");
+		return Plugin_Handled;
+	}
+	if (!clinspectate[client])
+	{
+		clinspectate[client] = true;
+		SetVariantInt(1);
+		AcceptEntityInput(client,"SetTeamNum");
+		SetEntProp(client,Prop_Data,"m_iTeamNum",1);
+		SetEntProp(client,Prop_Data,"deadflag",1);
+		SetEntProp(client,Prop_Data,"m_iObserverMode",5);
+		SetEntProp(client,Prop_Data,"m_iHideHUD",2056);
+		SetEntProp(client,Prop_Data,"m_fEffects",40);
+		ForcePlayerSuicide(client);
+		PrintToChatAll("%N has joined the spectators",client);
+	}
+	else
+	{
+		SetVariantInt(0);
+		AcceptEntityInput(client,"SetTeamNum");
+		SetEntProp(client,Prop_Data,"m_iTeamNum",0);
+		PrintToChatAll("%N has left spectators.",client);
+		clinspectate[client] = false;
+		int teamnum = 0;
+		if (HasEntProp(client,Prop_Data,"m_iTeamNum")) teamnum = GetEntProp(client,Prop_Data,"m_iTeamNum");
+		if (instspawnb)
+		{
+			if (((!dmset) && (!dmact)) && (lastspawned[client] == 0)) lastspawned[client]++;
+			if (((!dmset) && (!dmact)) && (lastspawned[client] > MaxClients)) lastspawned[client] = 1;
+			for (int i = lastspawned[client]; i<MaxClients+1; i++)
+			{
+				if (i != 0)
+				{
+					if (IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i) && (client != i))
+					{
+						int team2 = GetEntProp(i,Prop_Data,"m_iTeamNum");
+						int vck = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+						if ((vck == -1) && (teamnum == team2) && (client != i))
+						{
+							clused = i;
+							CreateTimer(0.2,tpclspawnnew,client);
+							lastspawned[client] = clused+1;
+							return Plugin_Continue;
+						}
+					}
+				}
+			}
+			if ((!dmset) && (!dmact)) lastspawned[client] = 0;
+			clused = 0;
+			CreateTimer(0.2,tpclspawnnew,client);
+		}
+		else if (instspawnuse)
+		{
+			clspawntimeallow[client] = false;
+			if (!survivalact)
+			{
+				clspawntime[client] = clspawntimemax;
+				char resspawn[64];
+				Format(resspawn,sizeof(resspawn),"Allowed to respawn in: %i",clspawntime[client]);
+				SetHudTextParams(0.016, 0.05, 1.0, 255, 255, 0, 255, 1, 1.0, 1.0, 1.0);
+				ShowHudText(client, 3, "%s",resspawn);
+				CreateTimer(1.0,respawntime,client);
+			}
+			else if (survivalact)
+			{
+				char resspawn[64];
+				Format(resspawn,sizeof(resspawn),"You will respawn at the next checkpoint.");
+				SetHudTextParams(0.016, 0.05, 5.0, 255, 255, 0, 255, 1, 1.0, 1.0, 1.0);
+				ShowHudText(client, 3, "%s",resspawn);
+				char SteamID[32];
+				GetClientAuthId(client,AuthId_Steam2,SteamID,sizeof(SteamID));
+				PushArrayString(respawnids,SteamID);
+			}
+		}
+	}
+	return Plugin_Handled;
 }
 
 public Action scoreboardsh(int client, int args)
@@ -1039,7 +1133,7 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 public Action tpclspawnnew(Handle timer, any i)
 {
 	ClearArray(respawnids);
-	if (!IsValidEntity(i)) return Plugin_Handled;
+	if ((!IsValidEntity(i)) || (clinspectate[i])) return Plugin_Handled;
 	if (!IsClientInGame(i)) return Plugin_Handled;
 	bool relocglo = false;
 	if (GetArraySize(globalsarr) < 1)
@@ -2165,7 +2259,8 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		{
 			if (curteam == 2) CPrintToChatAll("{BLUE}%s{DEFAULT}: %s",nick,sArgs);
 			else if (curteam == 3) CPrintToChatAll("{RED}%s{DEFAULT}: %s",nick,sArgs);
-			else CPrintToChatAll("{DEFAULT}%s: %s",nick,sArgs);
+			else if (clinspectate[client]) PrintToChatAll("*SPEC* %s: %s",nick,sArgs);
+			else PrintToChatAll("%s: %s",nick,sArgs);
 		}
 		return Plugin_Handled;
 	}
@@ -2620,7 +2715,7 @@ public Action joincfg(Handle timer, any:client)
 			int curteam = GetEntProp(client,Prop_Data,"m_iTeamNum");
 			if (curteam == 0)
 			{
-				int rand = 1
+				int rand = 1;
 				if (!dmset) rand = GetRandomInt(2,3);
 				SetEntProp(client,Prop_Data,"m_iTeamNum",rand);
 			}
@@ -2704,6 +2799,7 @@ public OnMapStart()
 	for (int i = 1;i<MaxClients+1;i++)
 	{
 		g_LastButtons[i] = 0;
+		clinspectate[i] = false;
 		if (IsValidEntity(i))
 		{
 			if (IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i))
@@ -2980,4 +3076,5 @@ public OnClientDisconnect(int client)
 	scoreshowcd[client] = 0.0;
 	g_LastButtons[client] = 0;
 	antispamchk[client] = 0.0;
+	clinspectate[client] = false;
 }
