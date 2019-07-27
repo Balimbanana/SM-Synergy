@@ -43,7 +43,7 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.98"
+#define PLUGIN_VERSION "1.981"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -137,8 +137,19 @@ public void OnPluginStart()
 	RegConsoleCmd("stuck",stuckblck);
 	RegConsoleCmd("propaccuracy",setpropaccuracy);
 	RegConsoleCmd("con",enablecon);
+	RegConsoleCmd("whois",admblock);
 	RegConsoleCmd("npc_freeze",admblock);
 	RegConsoleCmd("npc_freeze_unselected",admblock);
+	RegConsoleCmd("mp_switchteams",admblock);
+	RegConsoleCmd("lightprobe",admblock);
+	RegConsoleCmd("buildcubemaps",admblock);
+	RegConsoleCmd("sv_benchmark_force_start",admblock);
+	RegConsoleCmd("mm_add_item",cmdblock);
+	RegConsoleCmd("mm_add_player",cmdblock);
+	RegConsoleCmd("mm_session_info",cmdblock);
+	RegConsoleCmd("mm_message",cmdblock);
+	RegConsoleCmd("mm_stats",cmdblock);
+	RegConsoleCmd("mm_select_session",cmdblock);
 	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
 	AutoExecConfig(true, "synfixes");
 	CreateTimer(0.1,bmcvars);
@@ -460,6 +471,11 @@ public Action admblock(int client, int args)
 {
 	if (GetUserFlagBits(client)&ADMFLAG_ROOT > 0)
 		return Plugin_Continue;
+	return Plugin_Handled;
+}
+
+public Action cmdblock(int client, int args)
+{
 	return Plugin_Handled;
 }
 
