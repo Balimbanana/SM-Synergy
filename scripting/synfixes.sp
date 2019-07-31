@@ -43,7 +43,7 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.981"
+#define PLUGIN_VERSION "1.982"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 public Plugin:myinfo =
@@ -889,6 +889,8 @@ public Action changeleveldelay(Handle timer, Handle data)
 		{
 			if (debuglvl > 1) PrintToServer("Failed to change map to %s attempting to change manually.",maptochange);
 			ServerCommand("changelevel %s",maptochange);
+			ServerCommand("changelevel ep1 %s",maptochange);
+			ServerCommand("changelevel ep2 %s",maptochange);
 			ServerCommand("changelevel Custom %s",maptochange);
 			ServerCommand("changelevel syn %s",maptochange);
 		}
