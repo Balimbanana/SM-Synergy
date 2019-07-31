@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.981"
-			"Previous"	"1.98"
+			"Latest"  	"1.982"
+			"Previous"	"1.981"
 		}
 		
-		"Notes"	"Added a couple command admin blocks."
+		"Notes"	"Added a couple changelevel fallbacks."
 	}
 	
 	"Files"
