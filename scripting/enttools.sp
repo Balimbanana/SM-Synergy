@@ -7,7 +7,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.20"
+#define PLUGIN_VERSION "1.21"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin:myinfo = 
@@ -1811,9 +1811,13 @@ public Action setprops(int client, int args)
 						int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
 						if ((arrsize != 1) && (arrsize != 0))
 						{
+							bool useelement = false;
+							if (StrEqual(propname,"m_iAmmo",false)) useelement = true;
 							for (int j = 0;j<arrsize;j++)
 							{
-								int enti = GetEntProp(targ,Prop_Data,propname,j);
+								int enti = 0;
+								if (!useelement) enti = GetEntProp(targ,Prop_Data,propname,j);
+								else enti = GetEntProp(targ,Prop_Data,propname,_,j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
 								else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
 							}
@@ -2076,6 +2080,14 @@ public Action setprops(int client, int args)
 					usefloat = false;
 					usestring = false;
 					usevec = true;
+					getpropinf = true;
+				}
+				else if ((StrEqual(secondintchk,"arr",false)) || (StrEqual(secondintchk,"array",false)))
+				{
+					usefloat = false;
+					usestring = false;
+					usevec = false;
+					usearr = 1;
 					getpropinf = true;
 				}
 				else if ((StrEqual(typechk,"fl",false)) || (StrEqual(typechk,"float",false)))
@@ -2394,6 +2406,130 @@ public Action setprops(int client, int args)
 						else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
 					}
 				}
+				else if ((usearr) && (getpropinf))
+				{
+					PropFieldType type;
+					FindDataMapInfo(targ,propname,type);
+					char cls[64];
+					GetEntityClassname(targ,cls,sizeof(cls));
+					if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
+					{
+						int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
+						if ((arrsize != 1) && (arrsize != 0))
+						{
+							if ((type == PropField_String) || (type == PropField_String_T))
+							{
+								for (int j = 0;j<arrsize;j++)
+								{
+									char propinf[64];
+									GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf),j);
+									if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+									else PrintToChat(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+								}
+							}
+							else if (type == PropField_Entity)
+							{
+								for (int j = 0;j<arrsize;j++)
+								{
+									int enth = GetEntPropEnt(targ,Prop_Send,propname,j);
+									if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+									else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+								}
+							}
+							else if (type == PropField_Integer)
+							{
+								for (int j = 0;j<arrsize;j++)
+								{
+									int enti = GetEntProp(targ,Prop_Send,propname,j);
+									if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+									else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+								}
+							}
+							else if (type == PropField_Float)
+							{
+								for (int j = 0;j<arrsize;j++)
+								{
+									float entf = GetEntPropFloat(targ,Prop_Send,propname,j);
+									if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+									else PrintToChat(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+								}
+							}
+							else if (type == PropField_Vector)
+							{
+								for (int j = 0;j<arrsize;j++)
+								{
+									float entvec[3];
+									GetEntPropVector(targ,Prop_Send,propname,entvec,j);
+									if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+									else PrintToChat(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+								}
+							}
+						}
+					}
+					else if ((pdata) && (HasEntProp(targ,Prop_Data,propname)))
+					{
+						int arrsize = GetEntPropArraySize(targ,Prop_Data,propname);
+						if ((arrsize != 1) && (arrsize != 0))
+						{
+							if ((type == PropField_String) || (type == PropField_String_T))
+							{
+								for (int j = 0;j<arrsize;j++)
+								{
+									char propinf[64];
+									GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf),j);
+									if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+									else PrintToChat(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+								}
+							}
+							else if (type == PropField_Entity)
+							{
+								for (int j = 0;j<arrsize;j++)
+								{
+									int enth = GetEntPropEnt(targ,Prop_Data,propname,j);
+									if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+									else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+								}
+							}
+							else if (type == PropField_Integer)
+							{
+								bool useelement = false;
+								if (StrEqual(propname,"m_iAmmo",false)) useelement = true;
+								for (int j = 0;j<arrsize;j++)
+								{
+									int enti = 0;
+									if (!useelement) enti = GetEntProp(targ,Prop_Data,propname,j);
+									else enti = GetEntProp(targ,Prop_Data,propname,_,j);
+									if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+									else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+								}
+							}
+							else if (type == PropField_Float)
+							{
+								for (int j = 0;j<arrsize;j++)
+								{
+									float entf = GetEntPropFloat(targ,Prop_Data,propname,j);
+									if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+									else PrintToChat(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+								}
+							}
+							else if (type == PropField_Vector)
+							{
+								for (int j = 0;j<arrsize;j++)
+								{
+									float entvec[3];
+									GetEntPropVector(targ,Prop_Data,propname,entvec,j);
+									if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+									else PrintToChat(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+								}
+							}
+						}
+					}
+					else
+					{
+						if (client == 0) PrintToServer("%i does not have property of type",targ);
+						else PrintToChat(client,"%i does not have property of type",targ);
+					}
+				}
 				else
 				{
 					if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
@@ -2415,7 +2551,10 @@ public Action setprops(int client, int args)
 							}
 							else
 							{
-								SetEntProp(targ,Prop_Send,propname,secondint,usearr);
+								bool useelement = false;
+								if (StrEqual(propname,"m_iAmmo",false)) useelement = true;
+								if (!useelement) SetEntProp(targ,Prop_Send,propname,secondint,usearr);
+								else SetEntProp(targ,Prop_Send,propname,secondint,_,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
 								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
 								if (targ > -1) ChangeEdictState(targ);
