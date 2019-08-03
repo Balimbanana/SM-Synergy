@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.83"
+#define PLUGIN_VERSION "1.84"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -25,6 +25,7 @@ Handle htarr = INVALID_HANDLE;
 Handle liarr = INVALID_HANDLE;
 Handle globalsarr = INVALID_HANDLE;
 bool bugbaitpicked = false;
+int targmode = 0;
 float antispamchk[MAXPLAYERS+1];
 
 Handle Handle_Database = INVALID_HANDLE;
@@ -70,6 +71,10 @@ public void OnPluginStart()
 		SQL_FastQuery(Handle_Database,tmpquer);
 		return;
 	}
+	Handle targmodh = CreateConVar("healthdisplay_targmode", "2", "Set targeting mode by: traceray and aimtarget 2, traceray 1, or aimtarget 0.", _, true, 0.0, true, 2.0);
+	HookConVarChange(targmodh, targmodech);
+	targmode = GetConVarInt(targmodh);
+	CloseHandle(targmodh);
 	//This is on a timer to call a function because when the function is called at this point,
 	//it can sometimes fail, so I found it was best to wait 1 second.
 	CreateTimer(1.0, reloadclientstime);
@@ -125,10 +130,10 @@ public Action clspawnpost(Handle timer, int client)
 
 public OnLibraryAdded(const char[] name)
 {
-    if (StrEqual(name,"updater",false))
-    {
-        Updater_AddPlugin(UPDATE_URL);
-    }
+	if (StrEqual(name,"updater",false))
+	{
+		Updater_AddPlugin(UPDATE_URL);
+	}
 }
 
 public Updater_OnPluginUpdated()
@@ -353,6 +358,8 @@ public Action cleararr(Handle timer)
 	addht("npc_headcrab_black");
 	addht("npc_headcrab_fast");
 	addht("npc_gargantua");
+	addht("npc_gonarch");
+	addht("npc_babycrab");
 	addht("npc_hunter");
 	addht("npc_advisor");
 	addht("npc_antlion");
@@ -454,13 +461,18 @@ bool IsInViewCtrl(int client)
 	return false;
 }
 
-public bool TraceEntityFilter(int entity, int mask, any data){
+public bool TraceEntityFilter(int entity, int mask, any data)
+{
 	if ((entity != -1) && (IsValidEntity(entity)))
 	{
 		char clsname[32];
 		GetEntityClassname(entity,clsname,sizeof(clsname));
 		if (StrEqual(clsname,"func_vehicleclip",false))
 			return false;
+	}
+	if (entity == data)
+	{
+		return false;
 	}
 	return true;
 }
@@ -474,7 +486,30 @@ public Action ShowTimer(Handle timer)
 		{
 			if (IsPlayerAlive(client) && !IsFakeClient(client) && (bclcookie[client] != 3))
 			{
-				int targ = GetClientAimTarget(client,false);
+				int targ = -1;
+				float PlayerOrigin[3];
+				float Location[3];
+				float clang[3];
+				GetClientEyePosition(client, Location);
+				GetClientEyeAngles(client,clang);
+				Handle hhitpos = INVALID_HANDLE;
+				if (targmode == 1)
+				{
+					TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
+					targ = TR_GetEntityIndex(hhitpos);
+				}
+				else if (targmode == 2)
+				{
+					TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
+					int tmptarg = TR_GetEntityIndex(hhitpos);
+					targ = GetClientAimTarget(client,false);
+					if (targ != tmptarg) targ = -1;
+				}
+				else
+				{
+					targ = GetClientAimTarget(client,false);
+				}
+				CloseHandle(hhitpos);
 				if ((targ != -1) && (targ > MaxClients))
 				{
 					char clsname[32];
@@ -482,11 +517,6 @@ public Action ShowTimer(Handle timer)
 					int vck = GetEntProp(client,Prop_Send,"m_hVehicle");
 					if ((StrContains(clsname,"clip",false) != -1) || ((StrContains(clsname,"prop_vehicle",false) != -1) && (vck != -1)))
 					{
-						float PlayerOrigin[3];
-						float Location[3];
-						float clang[3];
-						GetClientEyePosition(client, Location);
-						GetClientEyeAngles(client,clang);
 						PlayerOrigin[0] = (Location[0] + (60 * Cosine(DegToRad(clang[1]))));
 						PlayerOrigin[1] = (Location[1] + (60 * Sine(DegToRad(clang[1]))));
 						PlayerOrigin[2] = (Location[2] + 10);
@@ -499,10 +529,10 @@ public Action ShowTimer(Handle timer)
 							Location[1] = (PlayerOrigin[1] - (10 * Sine(DegToRad(clang[1]))));
 							Location[2] = (PlayerOrigin[2] - 10);
 						}
-						Handle hhitpos = INVALID_HANDLE;
-						TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter);
-						targ = TR_GetEntityIndex(hhitpos);
-						CloseHandle(hhitpos);
+						Handle hhitposthrough = INVALID_HANDLE;
+						TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
+						targ = TR_GetEntityIndex(hhitposthrough);
+						CloseHandle(hhitposthrough);
 						if (targ != -1)
 							GetEntityClassname(targ,clsname,sizeof(clsname));
 					}
@@ -1227,6 +1257,8 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_headcrab_black");
 		addht("npc_headcrab_fast");
 		addht("npc_gargantua");
+		addht("npc_gonarch");
+		addht("npc_babycrab");
 		addht("npc_hunter");
 		addht("npc_advisor");
 		addht("npc_antlion");
@@ -2044,4 +2076,9 @@ public CLStoreInTable(int client)
 		}
 	}
 	hChanged[client] = 0;
+}
+
+public targmodech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	targmode = StringToInt(newValue);
 }
