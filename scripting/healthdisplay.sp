@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.84"
+#define PLUGIN_VERSION "1.85"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -1216,7 +1216,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		if (StrEqual(clsname,"npc_turret_floor",false))
 		{
 			int sf = GetEntProp(entchk,Prop_Data,"m_spawnflags");
-			if (sf & 512) return true;
+			if (sf & 1<<9) return true; //512
 		}
 		else if (HasEntProp(entchk,Prop_Data,"m_bHackedByAlyx"))
 		{
@@ -1351,7 +1351,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		if (StrEqual(clsname,"npc_turret_floor",false))
 		{
 			int sf = GetEntProp(entchk,Prop_Data,"m_spawnflags");
-			if (sf & 512) return true;
+			if (sf & 1<<9) return true;
 		}
 		else if (HasEntProp(entchk,Prop_Data,"m_bHackedByAlyx"))
 		{
@@ -1405,7 +1405,6 @@ bool GetAntAlly()
 public Action onbugbaitpickup(const char[] output, int caller, int activator, float delay)
 {
 	bugbaitpicked = true;
-	UnhookEntityOutput("weapon_bugbait", "OnPlayerPickup", EntityOutput:onbugbaitpickup);
 }
 
 public Action findairel(int ent, char[] clsname)
