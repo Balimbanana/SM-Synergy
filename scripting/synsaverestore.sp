@@ -3236,7 +3236,7 @@ public OnClientAuthorized(int client, const char[] szAuth)
 {
 	if (rmsaves)
 	{
-		if ((!StrEqual(mapbuf,"d3_citadel_02",false)) && (!StrEqual(mapbuf,"ep2_outland_04",false)))
+		if ((!StrEqual(mapbuf,"d3_citadel_03",false)) && (!StrEqual(mapbuf,"ep2_outland_02",false)))
 		{
 			if (IsValidEntity(logplyprox))
 			{
