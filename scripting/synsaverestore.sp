@@ -51,7 +51,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.9992"
+#define PLUGIN_VERSION "1.9993"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1448,13 +1448,17 @@ public void OnMapStart()
 	mapstarttime = GetTickedTime()+2.0;
 	if (GetMapHistorySize() > 0)
 	{
-		logplyprox = CreateEntityByName("logic_playerproxy");
-		if (logplyprox != -1)
+		GetCurrentMap(mapbuf,sizeof(mapbuf));
+		if ((!StrEqual(mapbuf,"d3_citadel_03",false)) && (!StrEqual(mapbuf,"ep2_outland_02",false)))
 		{
-			DispatchKeyValue(logplyprox,"targetname","synplyprox");
-			DispatchSpawn(logplyprox);
-			ActivateEntity(logplyprox);
-			AcceptEntityInput(logplyprox,"CancelRestorePlayers");
+			logplyprox = CreateEntityByName("logic_playerproxy");
+			if (logplyprox != -1)
+			{
+				DispatchKeyValue(logplyprox,"targetname","synplyprox");
+				DispatchSpawn(logplyprox);
+				ActivateEntity(logplyprox);
+				AcceptEntityInput(logplyprox,"CancelRestorePlayers");
+			}
 		}
 		logsv = CreateEntityByName("logic_autosave");
 		if ((logsv != -1) && (IsValidEntity(logsv)))
@@ -1473,7 +1477,6 @@ public void OnMapStart()
 		}
 		CloseHandle(savedirh);
 		enterfrom04 = true;
-		GetCurrentMap(mapbuf,sizeof(mapbuf));
 		if (StrContains(mapbuf,"_spymap_ep3",false) != -1)
 			findtrigs(-1,"trigger_once");
 		if ((StrEqual(mapbuf,"remount",false)) && (enterfromep1))
@@ -2122,7 +2125,7 @@ public void OnMapEnd()
 		{
 			char clschk[32];
 			GetEntityClassname(logplyprox,clschk,sizeof(clschk));
-			if (StrEqual(clschk,"logic_playerproxy",false))
+			if ((StrEqual(clschk,"logic_playerproxy",false)) && (!StrEqual(mapbuf,"d3_citadel_02",false)) && (!StrEqual(mapbuf,"ep2_outland_04",false)))
 			{
 				AcceptEntityInput(logplyprox,"CancelRestorePlayers");
 			}
@@ -2235,7 +2238,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		{
 			char clschk[32];
 			GetEntityClassname(logplyprox,clschk,sizeof(clschk));
-			if (StrEqual(clschk,"logic_playerproxy",false))
+			if ((StrEqual(clschk,"logic_playerproxy",false)) && (!StrEqual(mapbuf,"d3_citadel_02",false)) && (!StrEqual(mapbuf,"ep2_outland_04",false)))
 			{
 				AcceptEntityInput(logplyprox,"CancelRestorePlayers");
 			}
@@ -3233,13 +3236,27 @@ public OnClientAuthorized(int client, const char[] szAuth)
 {
 	if (rmsaves)
 	{
-		if (IsValidEntity(logplyprox))
+		if ((!StrEqual(mapbuf,"d3_citadel_02",false)) && (!StrEqual(mapbuf,"ep2_outland_04",false)))
 		{
-			char clschk[32];
-			GetEntityClassname(logplyprox,clschk,sizeof(clschk));
-			if (StrEqual(clschk,"logic_playerproxy",false))
+			if (IsValidEntity(logplyprox))
 			{
-				AcceptEntityInput(logplyprox,"CancelRestorePlayers");
+				char clschk[32];
+				GetEntityClassname(logplyprox,clschk,sizeof(clschk));
+				if (StrEqual(clschk,"logic_playerproxy",false))
+				{
+					AcceptEntityInput(logplyprox,"CancelRestorePlayers");
+				}
+				else
+				{
+					logplyprox = CreateEntityByName("logic_playerproxy");
+					if (logplyprox != -1)
+					{
+						DispatchKeyValue(logplyprox,"targetname","synplyprox");
+						DispatchSpawn(logplyprox);
+						ActivateEntity(logplyprox);
+						AcceptEntityInput(logplyprox,"CancelRestorePlayers");
+					}
+				}
 			}
 			else
 			{
@@ -3251,17 +3268,6 @@ public OnClientAuthorized(int client, const char[] szAuth)
 					ActivateEntity(logplyprox);
 					AcceptEntityInput(logplyprox,"CancelRestorePlayers");
 				}
-			}
-		}
-		else
-		{
-			logplyprox = CreateEntityByName("logic_playerproxy");
-			if (logplyprox != -1)
-			{
-				DispatchKeyValue(logplyprox,"targetname","synplyprox");
-				DispatchSpawn(logplyprox);
-				ActivateEntity(logplyprox);
-				AcceptEntityInput(logplyprox,"CancelRestorePlayers");
 			}
 		}
 		if ((logsv != -1) && (IsValidEntity(logsv)))
