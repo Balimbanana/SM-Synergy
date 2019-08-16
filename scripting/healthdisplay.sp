@@ -1,6 +1,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include <healthdisplay>
 #undef REQUIRE_PLUGIN
 #undef REQUIRE_EXTENSIONS
 #tryinclude <SteamWorks>
@@ -8,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.85"
+#define PLUGIN_VERSION "1.86"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -100,6 +101,26 @@ public void OnMapStart()
 	ClearArray(globalsarr);
 	bugbaitpicked = false;
 	HookEntityOutput("weapon_bugbait", "OnPlayerPickup", EntityOutput:onbugbaitpickup);
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
+{
+	RegPluginLibrary("HealthDisplay");
+	CreateNative("CheckNPCAlly", Native_GetNPCAlly);
+	return APLRes_Success;
+}
+
+public Native_GetNPCAlly(Handle plugin, numParams)
+{
+	if (numParams > 1)
+	{
+		char clsname[64];
+		GetNativeString(1,clsname,sizeof(clsname));
+		int enttarg = GetNativeCell(2);
+		if (!GetNPCAlly(clsname,enttarg)) return false;
+		else return true;
+	}
+	return false;
 }
 
 public OnClientAuthorized(int client, const char[] szAuth)
@@ -349,6 +370,7 @@ public Action cleararr(Handle timer)
 	addht("npc_turret_floor");
 	addht("npc_zombie");
 	addht("npc_zombie_torso");
+	addht("npc_zombie_worker");
 	addht("npc_zombine");
 	addht("npc_fastzombie");
 	addht("npc_fastzombie_torso");
@@ -1248,6 +1270,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_turret_floor");
 		addht("npc_zombie");
 		addht("npc_zombie_torso");
+		addht("npc_zombie_worker");
 		addht("npc_zombine");
 		addht("npc_fastzombie");
 		addht("npc_fastzombie_torso");
