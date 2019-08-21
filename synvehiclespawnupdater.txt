@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.14"
-			"Previous"	"1.13"
+			"Latest"  	"1.15"
+			"Previous"	"1.14"
 		}
 		
-		"Notes"	"Added boost to prop_vehicle_mp vehicle bases."
+		"Notes"	"Additional checks on vehicle type."
 	}
 	
 	"Files"
