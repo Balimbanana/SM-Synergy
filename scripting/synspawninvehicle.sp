@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.14"
+#define PLUGIN_VERSION "1.15"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -35,6 +35,7 @@ public void OnPluginStart()
 	HookConVarChange(spawninvehiclesh, vehiclespawnch);
 	CloseHandle(spawninvehiclesh);
 	spawnplayers = CreateArray(MAXPLAYERS+1);
+	RegConsoleCmd("stuck",stuckblck);
 }
 
 public void OnMapStart()
@@ -601,50 +602,58 @@ public Action seatadjtimer(Handle timer, Handle dp)
 public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast)
 {
 	int killed = GetEventInt(event, "entindex_killed");
-	if (HasEntProp(killed,Prop_Data,"m_hVehicle"))
+	if ((killed > 0) && (killed < MaxClients+1))
 	{
-		int vehiclechk = GetEntPropEnt(killed,Prop_Data,"m_hVehicle");
-		if (vehiclechk != -1)
+		if (HasEntProp(killed,Prop_Data,"m_hVehicle"))
 		{
-			//int vehicleowner = -1;
-			//if (HasEntProp(vehiclechk,Prop_Data,"m_iOnlyUser")) vehicleowner = GetEntProp(vehiclechk,Prop_Data,"m_iOnlyUser");
-			setupvehicle(vehiclechk,killed,false);
-			SetEntPropEnt(killed,Prop_Data,"m_hMoveParent",-1);
-			SetEntPropEnt(killed,Prop_Data,"m_hParent",-1);
-			SetEntPropEnt(killed,Prop_Data,"m_pParent",-1);
-			SetEntProp(killed,Prop_Data,"m_iHideHUD",2048);
-			int clweap = GetEntPropEnt(killed,Prop_Data,"m_hActiveWeapon");
-			if (clweap != -1)
-				if (HasEntProp(clweap,Prop_Data,"m_fEffects")) SetEntProp(clweap,Prop_Data,"m_fEffects",161);
-			/*
-			//m_bRespawnOnOwnerDeath
-			bool removeveh = true;
-			if (vehicleowner != killed)
+			int vehiclechk = GetEntPropEnt(killed,Prop_Data,"m_hVehicle");
+			if (vehiclechk != -1)
 			{
-				for (int i = 1;i<MaxClients+1;i++)
+				char cls[24];
+				GetEntityClassname(vehiclechk,cls,sizeof(cls));
+				if ((!StrEqual(cls,"prop_vehicle_prisoner_pod",false)) && (StrContains(cls,"choreo",false) == -1))
 				{
-					if (IsValidEntity(i))
+					//int vehicleowner = -1;
+					//if (HasEntProp(vehiclechk,Prop_Data,"m_iOnlyUser")) vehicleowner = GetEntProp(vehiclechk,Prop_Data,"m_iOnlyUser");
+					setupvehicle(vehiclechk,killed,false);
+					SetEntPropEnt(killed,Prop_Data,"m_hMoveParent",-1);
+					SetEntPropEnt(killed,Prop_Data,"m_hParent",-1);
+					SetEntPropEnt(killed,Prop_Data,"m_pParent",-1);
+					SetEntProp(killed,Prop_Data,"m_iHideHUD",2048);
+					int clweap = GetEntPropEnt(killed,Prop_Data,"m_hActiveWeapon");
+					if (clweap != -1)
+						if (HasEntProp(clweap,Prop_Data,"m_fEffects")) SetEntProp(clweap,Prop_Data,"m_fEffects",161);
+					/*
+					//m_bRespawnOnOwnerDeath
+					bool removeveh = true;
+					if (vehicleowner != killed)
 					{
-						if (IsClientConnected(i))
+						for (int i = 1;i<MaxClients+1;i++)
 						{
-							if (IsClientInGame(i))
+							if (IsValidEntity(i))
 							{
-								if (IsPlayerAlive(i))
+								if (IsClientConnected(i))
 								{
-									int curveh = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
-									if (curveh == vehiclechk)
+									if (IsClientInGame(i))
 									{
-										removeveh = false;
-										break;
+										if (IsPlayerAlive(i))
+										{
+											int curveh = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+											if (curveh == vehiclechk)
+											{
+												removeveh = false;
+												break;
+											}
+										}
 									}
 								}
 							}
 						}
 					}
+					if (removeveh) AcceptEntityInput(vehiclechk,"kill");
+					*/
 				}
 			}
-			if (removeveh) AcceptEntityInput(vehiclechk,"kill");
-			*/
 		}
 	}
 }
