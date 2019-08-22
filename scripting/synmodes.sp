@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.16"
+#define PLUGIN_VERSION "1.17"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -31,6 +31,7 @@ bool dmset = false;
 bool hasstarted = false;
 bool survivalact = false;
 bool hasread = false;
+int WeapList = -1;
 int scoreshow = -1;
 int scoreshowstat = -1;
 int dmkills[MAXPLAYERS+1];
@@ -203,6 +204,17 @@ public instspawnch(Handle convar, const char[] oldValue, const char[] newValue)
 		resdelay = FindConVar("mp_reset");
 		SetConVarInt(resdelay,0,false,false);
 		CloseHandle(resdelay);
+		Handle resforce = FindConVar("mp_forcerespawn");
+		cvarflag = GetCommandFlags("mp_forcerespawn");
+		SetCommandFlags("mp_forcerespawn", (cvarflag & ~FCVAR_REPLICATED))
+		SetCommandFlags("mp_forcerespawn", (cvarflag & ~FCVAR_NOTIFY))
+		SetConVarInt(resforce,0,false,false);
+		resforce = FindConVar("mp_spawntime");
+		cvarflag = GetCommandFlags("mp_spawntime");
+		SetCommandFlags("mp_spawntime", (cvarflag & ~FCVAR_REPLICATED))
+		SetCommandFlags("mp_spawntime", (cvarflag & ~FCVAR_NOTIFY))
+		SetConVarInt(resforce,0,false,false);
+		CloseHandle(resforce);
 		for (int i = 1; i<MaxClients+1; i++)
 		{
 			if (IsValidEntity(i))
@@ -234,6 +246,17 @@ public instspawnch(Handle convar, const char[] oldValue, const char[] newValue)
 		resdelay = FindConVar("mp_reset");
 		SetConVarInt(resdelay,0,false,false);
 		CloseHandle(resdelay);
+		Handle resforce = FindConVar("mp_forcerespawn");
+		cvarflag = GetCommandFlags("mp_forcerespawn");
+		SetCommandFlags("mp_forcerespawn", (cvarflag & ~FCVAR_REPLICATED))
+		SetCommandFlags("mp_forcerespawn", (cvarflag & ~FCVAR_NOTIFY))
+		SetConVarInt(resforce,0,false,false);
+		resforce = FindConVar("mp_spawntime");
+		cvarflag = GetCommandFlags("mp_spawntime");
+		SetCommandFlags("mp_spawntime", (cvarflag & ~FCVAR_REPLICATED))
+		SetCommandFlags("mp_spawntime", (cvarflag & ~FCVAR_NOTIFY))
+		SetConVarInt(resforce,0,false,false);
+		CloseHandle(resforce);
 	}
 	else
 	{
@@ -385,6 +408,14 @@ public Action Atkspecpress(int client, int args)
 	{
 		if (clinspectate[client])
 		{
+			int spectarg = GetEntPropEnt(client,Prop_Data,"m_hObserverTarget");
+			if (spectarg != -1)
+			{
+				float orgreset[3];
+				if (HasEntProp(spectarg,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(spectarg,Prop_Data,"m_vecAbsOrigin",orgreset);
+				else if (HasEntProp(spectarg,Prop_Data,"m_vecOrigin")) GetEntPropVector(spectarg,Prop_Data,"m_vecOrigin",orgreset);
+				SetEntPropVector(client,Prop_Data,"m_vecOrigin",orgreset);
+			}
 			return Plugin_Continue;
 		}
 		//bool nozero = false;
@@ -1239,7 +1270,13 @@ public Action tpclspawnnew(Handle timer, any i)
 		{
 			int jtmp = GetArrayCell(equiparr, j);
 			if (IsValidEntity(jtmp))
+			{
 				AcceptEntityInput(jtmp,"EquipPlayer",i);
+				if (HasEntProp(jtmp,Prop_Data,"m_iszResponseContext"))
+				{
+					EquipCustom(jtmp,i);
+				}
+			}
 		}
 		ClearArray(equiparr);
 	}
@@ -1256,6 +1293,10 @@ public Action tpclspawnnew(Handle timer, any i)
 			}
 		}
 		DispatchSpawn(i);
+		float pos[3];
+		GetClientAbsOrigin(i, pos);
+		float plyang[3];
+		GetClientEyeAngles(i, plyang);
 		if (GetArraySize(equiparr) > 0)
 		{
 			for (int j; j<GetArraySize(equiparr); j++)
@@ -1264,7 +1305,13 @@ public Action tpclspawnnew(Handle timer, any i)
 				char clsnam[32];
 				GetEntityClassname(jtmp,clsnam,sizeof(clsnam));
 				if (IsValidEntity(jtmp))
+				{
 					AcceptEntityInput(jtmp,"EquipPlayer",i);
+					if (HasEntProp(jtmp,Prop_Data,"m_iszResponseContext"))
+					{
+						EquipCustom(jtmp,i);
+					}
+				}
 			}
 		}
 		else
@@ -1278,7 +1325,13 @@ public Action tpclspawnnew(Handle timer, any i)
 					char clsnam[32];
 					GetEntityClassname(jtmp,clsnam,sizeof(clsnam));
 					if (IsValidEntity(jtmp))
+					{
 						AcceptEntityInput(jtmp,"EquipPlayer",i);
+						if (HasEntProp(jtmp,Prop_Data,"m_iszResponseContext"))
+						{
+							EquipCustom(jtmp,i);
+						}
+					}
 				}
 			}
 		}
@@ -1346,7 +1399,7 @@ public Action tpclspawnnew(Handle timer, any i)
 								if ((IsClientInGame(k)) && (IsPlayerAlive(k)))
 								{
 									float plypos[3];
-									GetClientAbsOrigin(k,pos);
+									GetClientAbsOrigin(k,plypos);
 									float chkdist = GetVectorDistance(spawnpos,plypos,false)
 									int team2 = GetEntProp(k,Prop_Data,"m_iTeamNum");
 									if ((chkdist < 200) && (team != team2)) rangechk = false;
@@ -1372,6 +1425,63 @@ public Action tpclspawnnew(Handle timer, any i)
 		ClearArray(equiparr);
 	}
 	return Plugin_Handled;
+}
+
+public void EquipCustom(int equip, int client)
+{
+	if ((IsValidEntity(equip)) && (IsValidEntity(client)))
+	{
+		float pos[3];
+		GetClientAbsOrigin(client, pos);
+		float plyang[3];
+		GetClientEyeAngles(client, plyang);
+		char additionalweaps[256];
+		GetEntPropString(equip,Prop_Data,"m_iszResponseContext",additionalweaps,sizeof(additionalweaps));
+		if (strlen(additionalweaps) > 0)
+		{
+			char additionalweap[64][64];
+			char basecls[64];
+			ExplodeString(additionalweaps," ",additionalweap,64,64,true);
+			for (int k = 0;k<64;k++)
+			{
+				if (strlen(additionalweap[k]) > 0)
+				{
+					TrimString(additionalweap[k]);
+					bool addweap = true;
+					if (WeapList == -1) WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
+					if (WeapList != -1)
+					{
+						char clschk[32];
+						for (int j; j<48; j += 4)
+						{
+							int tmpi = GetEntDataEnt2(client,WeapList + j);
+							if ((tmpi != 0) && (IsValidEntity(tmpi)))
+							{
+								GetEntityClassname(tmpi,clschk,sizeof(clschk));
+								if (StrEqual(clschk,additionalweap[k],false)) addweap = false;
+							}
+						}
+					}
+					if (addweap)
+					{
+						Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
+						if ((StrEqual(basecls,"weapon_gluon",false)) || (StrEqual(basecls,"weapon_gauss",false))) Format(basecls,sizeof(basecls),"weapon_shotgun");
+						else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+						else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+						else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+						int ent = CreateEntityByName(basecls);
+						if (ent != -1)
+						{
+							TeleportEntity(ent,pos,plyang,NULL_VECTOR);
+							DispatchKeyValue(ent,"classname",additionalweap[k]);
+							DispatchSpawn(ent);
+							ActivateEntity(ent);
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 findent(int ent, char[] clsname)
@@ -2619,6 +2729,26 @@ public Action roundtimeout(Handle timer)
 			PrintCenterTextAll("1 minute left!");
 		}
 	}
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if (IsValidEntity(i))
+		{
+			if ((IsClientConnected(i)) && (IsClientInGame(i)))
+			{
+				if (clinspectate[i])
+				{
+					int spectarg = GetEntPropEnt(i,Prop_Data,"m_hObserverTarget");
+					if (spectarg != -1)
+					{
+						float orgreset[3];
+						if (HasEntProp(spectarg,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(spectarg,Prop_Data,"m_vecAbsOrigin",orgreset);
+						else if (HasEntProp(spectarg,Prop_Data,"m_vecOrigin")) GetEntPropVector(spectarg,Prop_Data,"m_vecOrigin",orgreset);
+						SetEntPropVector(i,Prop_Data,"m_vecOrigin",orgreset);
+					}
+				}
+			}
+		}
+	}
 }
 
 bool cltouchend(int client)
@@ -2792,6 +2922,7 @@ public OnMapStart()
 	ClearArray(respawnids);
 	ClearArray(changelevels);
 	ClearArray(inputsarrorigincls);
+	WeapList = -1;
 	scoreshow = -1;
 	scoreshowstat = -1;
 	canceltimer = 0;
