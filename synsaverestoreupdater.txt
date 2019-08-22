@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9993"
-			"Previous"	"1.9992"
+			"Latest"  	"1.9994"
+			"Previous"	"1.9993"
 		}
 		
-		"Notes"	"Additional cancel restore conditions."
+		"Notes"	"Additional weapon inventory check over transition."
 	}
 	
 	"Files"
