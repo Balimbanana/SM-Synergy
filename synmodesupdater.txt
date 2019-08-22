@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.16"
-			"Previous"	"1.15"
+			"Latest"  	"1.17"
+			"Previous"	"1.16"
 		}
 		
-		"Notes"	"Changed vecorg check on spawnpoints."
+		"Notes"	"Fixed a couple settings in /afk Added another cvar restriction based on spawn mode."
 	}
 	
 	"Files"
