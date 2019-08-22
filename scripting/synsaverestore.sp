@@ -51,7 +51,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.9993"
+#define PLUGIN_VERSION "1.9994"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -453,7 +453,7 @@ public Action savecurgamedp(Handle timer, any dp)
 			}
 			if (WeapList != -1)
 			{
-				for (int j; j<48; j += 4)
+				for (int j; j<76; j += 4)
 				{
 					int tmpi = GetEntDataEnt2(i,WeapList + j);
 					if (tmpi != -1)
@@ -2376,7 +2376,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					}
 					if (WeapList != -1)
 					{
-						for (int j; j<48; j += 4)
+						for (int j; j<76; j += 4)
 						{
 							int tmpi = GetEntDataEnt2(i,WeapList + j);
 							if (tmpi != -1)
@@ -3458,7 +3458,7 @@ public Action anotherdelay(Handle timer, int client)
 			}
 			char ammoset[24];
 			char ammosetexp[24][2];
-			char ammosettype[24];
+			char ammosettype[32];
 			char ammosetamm[16];
 			char curweap[24];
 			RemoveFromArray(transitionid,arrindx);
@@ -3510,7 +3510,31 @@ public Action anotherdelay(Handle timer, int client)
 					Format(ammosettype,sizeof(ammosettype),"%s",ammoset);
 					Format(ammosetamm,sizeof(ammosetamm),"%s",ammoset[breakstr+1]);
 					ReplaceString(ammosettype,sizeof(ammosettype),ammoset[breakstr],"");
-					int weapindx = GivePlayerItem(client,ammosettype);
+					int weapindx = -1;
+					char basecls[32];
+					if ((StrEqual(ammosettype,"weapon_gluon",false)) || (StrEqual(ammosettype,"weapon_gauss",false))) Format(basecls,sizeof(basecls),"weapon_shotgun");
+					else if ((StrEqual(ammosettype,"weapon_glock",false)) || (StrEqual(ammosettype,"weapon_pistol_worker",false)) || (StrEqual(ammosettype,"weapon_flaregun",false)) || (StrEqual(ammosettype,"weapon_manhack",false)) || (StrEqual(ammosettype,"weapon_manhackgun",false)) || (StrEqual(ammosettype,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+					else if ((StrEqual(ammosettype,"weapon_medkit",false)) || (StrEqual(ammosettype,"weapon_snark",false)) || (StrEqual(ammosettype,"weapon_hivehand",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+					else if ((StrEqual(ammosettype,"weapon_mp5",false)) || (StrEqual(ammosettype,"weapon_sl8",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+					if (strlen(basecls) > 0)
+					{
+						weapindx = CreateEntityByName(basecls);
+						if (weapindx != -1)
+						{
+							float tmporgs[3];
+							float tmpangs[3];
+							GetClientAbsAngles(client,tmpangs);
+							GetClientAbsOrigin(client,tmporgs);
+							tmporgs[2]+=30.0;
+							TeleportEntity(weapindx,tmporgs,tmpangs,NULL_VECTOR);
+							DispatchKeyValue(weapindx,"classname",ammosettype);
+							DispatchSpawn(weapindx);
+							ActivateEntity(weapindx);
+							SetVariantString("!activator");
+							AcceptEntityInput(weapindx,"SetParent",client);
+						}
+					}
+					if (weapindx == -1) weapindx = GivePlayerItem(client,ammosettype);
 					if (weapindx != -1)
 					{
 						int weapamm = StringToInt(ammosetamm);
