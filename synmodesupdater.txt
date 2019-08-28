@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.17"
-			"Previous"	"1.16"
+			"Latest"  	"1.18"
+			"Previous"	"1.17"
 		}
 		
-		"Notes"	"Fixed a couple settings in /afk Added another cvar restriction based on spawn mode."
+		"Notes"	"Added EquipCustom fallback, increased weaponlist detection."
 	}
 	
 	"Files"
