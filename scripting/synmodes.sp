@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.17"
+#define PLUGIN_VERSION "1.18"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -1433,6 +1433,7 @@ public void EquipCustom(int equip, int client)
 	{
 		float pos[3];
 		GetClientAbsOrigin(client, pos);
+		pos[2]+=20.0;
 		float plyang[3];
 		GetClientEyeAngles(client, plyang);
 		char additionalweaps[256];
@@ -1452,7 +1453,7 @@ public void EquipCustom(int equip, int client)
 					if (WeapList != -1)
 					{
 						char clschk[32];
-						for (int j; j<48; j += 4)
+						for (int j; j<104; j += 4)
 						{
 							int tmpi = GetEntDataEnt2(client,WeapList + j);
 							if ((tmpi != 0) && (IsValidEntity(tmpi)))
@@ -1465,10 +1466,11 @@ public void EquipCustom(int equip, int client)
 					if (addweap)
 					{
 						Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
-						if ((StrEqual(basecls,"weapon_gluon",false)) || (StrEqual(basecls,"weapon_gauss",false))) Format(basecls,sizeof(basecls),"weapon_shotgun");
+						if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
 						else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
 						else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false))) Format(basecls,sizeof(basecls),"weapon_slam");
 						else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+						else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 						int ent = CreateEntityByName(basecls);
 						if (ent != -1)
 						{
@@ -2885,6 +2887,19 @@ public Action joincfg(Handle timer, any:client)
 				PrintToChat(client,"You cannot respawn yet.");
 			}
 		}
+		findent(MaxClients+1,"info_player_equip");
+		for (int j; j<GetArraySize(equiparr); j++)
+		{
+			int jtmp = GetArrayCell(equiparr, j);
+			if (IsValidEntity(jtmp))
+			{
+				if (HasEntProp(jtmp,Prop_Data,"m_iszResponseContext"))
+				{
+					EquipCustom(jtmp,client);
+				}
+			}
+		}
+		ClearArray(equiparr);
 	}
 	else if (IsClientConnected(client))
 	{
