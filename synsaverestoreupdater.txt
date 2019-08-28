@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9994"
-			"Previous"	"1.9993"
+			"Latest"  	"1.9995"
+			"Previous"	"1.9994"
 		}
 		
-		"Notes"	"Additional weapon inventory check over transition."
+		"Notes"	"Added EquipCustom fallbacks, increased weaponlist detection."
 	}
 	
 	"Files"
