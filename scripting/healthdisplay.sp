@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.86"
+#define PLUGIN_VERSION "1.87"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -107,6 +107,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
 {
 	RegPluginLibrary("HealthDisplay");
 	CreateNative("CheckNPCAlly", Native_GetNPCAlly);
+	CreateNative("GetLIList", Native_GetLIList);
+	CreateNative("GetHTList", Native_GetHTList);
 	return APLRes_Success;
 }
 
@@ -121,6 +123,16 @@ public Native_GetNPCAlly(Handle plugin, numParams)
 		else return true;
 	}
 	return false;
+}
+
+public Native_GetLIList(Handle plugin, int numParams)
+{
+	return _:liarr;
+}
+
+public Native_GetHTList(Handle plugin, int numParams)
+{
+	return _:htarr;
 }
 
 public OnClientAuthorized(int client, const char[] szAuth)
@@ -412,6 +424,7 @@ public Action cleararr(Handle timer)
 	addht("monster_ichthyosaur");
 	addht("monster_tentacle");
 	addht("monster_sentry");
+	addht("monster_snark");
 	addht("monster_houndeye");
 	addht("monster_barnacle");
 	addht("monster_apache");
@@ -1312,6 +1325,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("monster_ichthyosaur");
 		addht("monster_tentacle");
 		addht("monster_sentry");
+		addht("monster_snark");
 		addht("monster_houndeye");
 		addht("monster_barnacle");
 		addht("monster_apache");
