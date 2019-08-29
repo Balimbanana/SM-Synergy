@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.18"
-			"Previous"	"1.17"
+			"Latest"  	"1.19"
+			"Previous"	"1.18"
 		}
 		
-		"Notes"	"Added EquipCustom fallback, increased weaponlist detection."
+		"Notes"	"Added increased weaponlist detection."
 	}
 	
 	"Files"
