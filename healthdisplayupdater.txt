@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.86"
-			"Previous"	"1.85"
+			"Latest"  	"1.87"
+			"Previous"	"1.86"
 		}
 		
-		"Notes"	"Added native CheckNPCAlly for additional plugins."
+		"Notes"	"Added monster_snark to HT list. Added Natives GetLIList() and GetHTList() for checking lists for friend/foe."
 	}
 	
 	"Files"
