@@ -4,16 +4,17 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.64"
-			"Previous"	"1.63"
+			"Latest"  	"1.65"
+			"Previous"	"1.64"
 		}
 		
-		"Notes"	"Added !modelbody # which will allow anyone to set the bodygroup of their model to what they define."
+		"Notes"	"Added cvar sm_modelloader_soundfix default 1. Applies fix for gender/sound responses for custom models."
 	}
 	
 	"Files"
 	{
 		"Plugin"	"Path_SM/plugins/modelloader.smx"
+		"Plugin"	"Path_SM/translations/modelloader.phrases.txt"
 		"Source"	"Path_SM/scripting/modelloader.sp"
 	}
 }
