@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.64"
+#define PLUGIN_VERSION "1.65"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
 public Plugin:myinfo = 
@@ -31,6 +31,7 @@ char desmodel[MAXPLAYERS+1][128];
 float antispamchk[MAXPLAYERS+1];
 
 bool dlactive = false;
+bool soundfix = true;
 
 Handle magisterarray;
 Handle darxarray;
@@ -95,6 +96,10 @@ public void OnPluginStart()
 	dlactive = GetConVarBool(modelloaderdlh);
 	HookConVarChange(modelloaderdlh,dlch);
 	CloseHandle(modelloaderdlh);
+	Handle modelloadersndh = CreateConVar("sm_modelloader_soundfix", "1", "Applies sound fix for pain response on custom models.", _, true, 0.0, true, 1.0);
+	soundfix = GetConVarBool(modelloadersndh);
+	HookConVarChange(modelloadersndh,sndfixch);
+	CloseHandle(modelloadersndh);
 	CreateTimer(1.0, sortarray);
 	CreateTimer(10.0, recheckmodel, _, TIMER_REPEAT);
 	RegConsoleCmd("modelskin",setmodelskin);
@@ -103,6 +108,7 @@ public void OnPluginStart()
 	RegConsoleCmd("modelpacks",showmodelpacks);
 	bclcookieh = RegClientCookie("PlayerModelSkinNum", "Model skin number Settings", CookieAccess_Private);
 	bclcookie2h = RegClientCookie("PlayerModelBodyNum", "Model body number Settings", CookieAccess_Private);
+	AddNormalSoundHook(customsoundchecksnorm);
 }
 
 public OnLibraryAdded(const char[] name)
@@ -136,11 +142,11 @@ public Action onsuitpickup(const char[] output, int caller, int activator, float
 		float Time = GetTickedTime();
 		if (antispamchk[activator] <= Time)
 		{
-			for (int client = 0; client<MaxClients+1 ;client++)
+			for (int client = 1; client<MaxClients+1 ;client++)
 			{
-				if (client != 0)
+				if (IsValidEntity(client))
 				{
-					if (IsValidEntity(client))
+					if (IsClientConnected(client))
 					{
 						CreateTimer(0.1, setmodeltimer, client);
 						antispamchk[activator] = Time + 3.0;
@@ -1159,4 +1165,135 @@ public Action resetmotd(Handle timer, int client)
 		ShowMOTDPanel(client,"Synergy Workshop","http://steamcommunity.com/sharedfiles/filedetails/?id=947132295",MOTDPANEL_TYPE_URL);
 		ClientCommand(client,"cl_motd_disable 1");
 	}
+}
+
+public sndfixch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) soundfix = true;
+	else soundfix = false;
+}
+
+public Action customsoundchecksnorm(int clients[64], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags)
+{
+	if (soundfix)
+	{
+		if ((StrContains(sample,"vo",false) != -1) && (entity > 0) && (entity < MaxClients+1))
+		{
+			int randsound = GetRandomInt(1,9);
+			char randcat[64];
+			IntToString(randsound,randcat,sizeof(randcat));
+			char plymdl[64];
+			GetClientModel(entity, plymdl, sizeof(plymdl));
+			if ((StrContains(plymdl,"scientist_female - bms",false) != -1) && (FileExists("sound/vo/npc/scientist_female01/ow01.wav",true,NULL_STRING)))
+			{
+				if (StrContains(sample,"/ow",false) != -1)
+					Format(randcat,sizeof(randcat),"vo\\npc\\scientist_female01\\ow0%i.wav",randsound);
+				else
+					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\pain0%i.wav",GetRandomInt(1,9));
+			}
+			else if (StrContains(plymdl,"female") != -1)
+			{
+				if (StrContains(sample,"gut",false) != -1)
+					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\hitingut0%i.wav",GetRandomInt(1,2));
+				else if (StrContains(sample,"arm",false) != -1)
+					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\myarm0%i.wav",GetRandomInt(1,2));
+				else if (StrContains(sample,"leg",false) != -1)
+					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\myleg0%i.wav",GetRandomInt(1,2));
+				else
+					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\pain0%i.wav",GetRandomInt(1,9));
+			}
+			else if (StrContains(plymdl,"combine") != -1)
+			{
+				Format(randcat,sizeof(randcat),"npc\\combine_soldier\\pain%i.wav",GetRandomInt(1,3));
+			}
+			else if ((StrContains(plymdl,"metropolice") != -1) || (StrContains(plymdl,"metrocop") != -1))
+			{
+				Format(randcat,sizeof(randcat),"npc\\metropolice\\pain%i.wav",GetRandomInt(1,4));
+			}
+			else if (StrContains(plymdl,"robo",false) != -1)
+			{
+				randsound = GetRandomInt(1,19);
+				if ((randsound == 12) || (randsound == 13)) randsound = 11;
+				Format(randcat,sizeof(randcat),"buttons\\button%i.wav",randsound);
+			}
+			else if (StrContains(plymdl,"gman",false) != -1)
+			{
+				randsound = GetRandomInt(1,9);
+				Format(randcat,sizeof(randcat),"vo\\citadel\\gman_exit0%i.wav",randsound);
+			}
+			else if ((StrContains(plymdl,"barney",false) != -1) || (StrContains(plymdl,"guard - bms",false) != -1))
+			{
+				if (FileExists("sound/vo/npc/barneys/pain16.wav",true,NULL_STRING))
+				{
+					if (StrContains(sample,"gut",false) != -1)
+						Format(randcat,sizeof(randcat),"vo\\npc\\barneys\\mygut0%i.wav",GetRandomInt(1,3));
+					else if (StrContains(sample,"arm",false) != -1)
+						Format(randcat,sizeof(randcat),"vo\\npc\\barneys\\myarm0%i.wav",GetRandomInt(1,3));
+					else if (StrContains(sample,"leg",false) != -1)
+						Format(randcat,sizeof(randcat),"vo\\npc\\barneys\\myleg0%i.wav",GetRandomInt(1,3));
+					else if (StrContains(sample,"/ow",false) != -1)
+						Format(randcat,sizeof(randcat),"vo\\npc\\barneys\\ow0%i.wav",GetRandomInt(1,5));
+					else
+					{
+						int rand = GetRandomInt(1,16);
+						if (rand < 10) Format(randcat,sizeof(randcat),"vo\\npc\\barneys\\pain0%i.wav",rand);
+						else Format(randcat,sizeof(randcat),"vo\\npc\\barneys\\pain%i.wav",rand);
+					}
+				}
+				else
+				{
+					int rand = GetRandomInt(1,10);
+					if (rand < 10) Format(randcat,sizeof(randcat),"vo\\npc\\barney\\ba_pain0%i.wav",rand);
+					else Format(randcat,sizeof(randcat),"vo\\npc\\barney\\ba_pain%i.wav",rand);
+				}
+			}
+			else if ((StrContains(plymdl,"scientist - bms",false)) && (FileExists("sound/vo/npc/scientist_male01/pain01.wav",true,NULL_STRING)))
+			{
+				if (StrContains(sample,"gut",false) != -1)
+				{
+					switch(GetRandomInt(1,6))
+					{
+						case 1:
+							Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\hitingut01a_sp01.wav");
+						case 2:
+							Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\hitingut01b_sp01.wav");
+						case 3:
+							Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\hitingut02_sp01.wav");
+						case 4:
+							Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\hitingut03_sp01.wav");
+						case 5:
+							Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\hitingut04_sp01.wav");
+						case 6:
+							Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\hitingut05_sp01.wav");
+					}
+				}
+				else if (StrContains(sample,"arm",false) != -1)
+					Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\myarm01_take01.wav");
+				else if (StrContains(sample,"/ow",false) != -1)
+					Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\ow0%i.wav",GetRandomInt(1,8));
+				else
+				{
+					randsound = GetRandomInt(1,20);
+					if (randsound < 10) Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\pain0%i.wav",randsound);
+					else Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\pain%i.wav",randsound);
+				}
+			}
+			else
+			{
+				if (StrContains(sample,"gut",false) != -1)
+					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\hitingut0%i.wav",GetRandomInt(1,2));
+				else if (StrContains(sample,"arm",false) != -1)
+					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\myarm0%i.wav",GetRandomInt(1,2));
+				else if (StrContains(sample,"leg",false) != -1)
+					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\myleg0%i.wav",GetRandomInt(1,2));
+				else
+					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\pain0%i.wav",randsound);
+			}
+			if (!IsSoundPrecached(randcat)) PrecacheSound(randcat,true);
+			//PrintToServer("Changed %s to %s mdl %s",sample,randcat,plymdl);
+			Format(sample,sizeof(sample),"%s",randcat);
+			return Plugin_Changed;
+		}
+	}
+	return Plugin_Continue;
 }
