@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.66"
-			"Previous"	"1.65"
+			"Latest"  	"1.67"
+			"Previous"	"1.66"
 		}
 		
-		"Notes"	"Reconfigured precached sound detection."
+		"Notes"	"Added help phrases to responses. Ensured VO fixes don't overwrite voice menu voices."
 	}
 	
 	"Files"
