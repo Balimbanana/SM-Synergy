@@ -1180,7 +1180,7 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 {
 	if (soundfix)
 	{
-		if ((StrContains(sample,"vo",false) != -1) && ((StrContains(sample,"ow",false) != -1) || (StrContains(sample,"pain",false) != -1) || (StrContains(sample,"gut",false) != -1) || (StrContains(sample,"arm",false) != -1) || (StrContains(sample,"leg",false) != -1)) && (entity > 0) && (entity < MaxClients+1))
+		if ((StrContains(sample,"vo",false) != -1) && ((StrContains(sample,"/ow",false) != -1) || (StrContains(sample,"pain",false) != -1) || (StrContains(sample,"gut",false) != -1) || (StrContains(sample,"arm",false) != -1) || (StrContains(sample,"leg",false) != -1)) && (entity > 0) && (entity < MaxClients+1))
 		{
 			int randsound = GetRandomInt(1,9);
 			char randcat[64];
