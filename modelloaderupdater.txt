@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.65"
-			"Previous"	"1.64"
+			"Latest"  	"1.66"
+			"Previous"	"1.65"
 		}
 		
-		"Notes"	"Added cvar sm_modelloader_soundfix default 1. Applies fix for gender/sound responses for custom models."
+		"Notes"	"Reconfigured precached sound detection."
 	}
 	
 	"Files"
