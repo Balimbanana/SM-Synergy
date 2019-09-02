@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.65"
+#define PLUGIN_VERSION "1.66"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
 public Plugin:myinfo = 
@@ -47,6 +47,7 @@ Handle hl1array;
 Handle l4darray;
 Handle scarray;
 Handle modelarray2;
+Handle precachedarr;
 
 Handle bclcookieh = INVALID_HANDLE;
 Handle bclcookie2h = INVALID_HANDLE;
@@ -77,6 +78,7 @@ public void OnPluginStart()
 	l4darray = CreateArray(10);
 	scarray = CreateArray(20);
 	//ocarray = CreateArray(392);
+	precachedarr = CreateArray(256);
 	char Error[100];
 	Handle_Database = SQLite_UseDatabase("sourcemod-local",Error,100-1);
 	if (Handle_Database == INVALID_HANDLE)
@@ -1127,6 +1129,7 @@ public recursion(const String:sbuf[128])
 
 public void OnMapStart()
 {
+	ClearArray(precachedarr);
 	if (dlactive)
 	{
 		for (int k;k<GetArraySize(matarray);k++)
@@ -1289,7 +1292,12 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 				else
 					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\pain0%i.wav",randsound);
 			}
-			if (!IsSoundPrecached(randcat)) PrecacheSound(randcat,true);
+			if (FindStringInArray(precachedarr,randcat) == -1)
+			{
+				PrecacheSound(randcat,true);
+				PushArrayString(precachedarr,randcat);
+			}
+			//IsSoundPrecached() always returns true in Synergy.
 			//PrintToServer("Changed %s to %s mdl %s",sample,randcat,plymdl);
 			Format(sample,sizeof(sample),"%s",randcat);
 			return Plugin_Changed;
