@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.67"
+#define PLUGIN_VERSION "1.68"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
 public Plugin:myinfo = 
@@ -1191,7 +1191,7 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 			{
 				if (StrContains(sample,"/ow",false) != -1)
 					Format(randcat,sizeof(randcat),"vo\\npc\\scientist_female01\\ow0%i.wav",randsound);
-				else if (StrContains(sample,"help",false))
+				else if (StrContains(sample,"help",false) != -1)
 					Format(randcat,sizeof(randcat),"vo\\npc\\scientist_female01\\help0%i.wav",GetRandomInt(1,2));
 				else
 					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\pain0%i.wav",randsound);
@@ -1204,7 +1204,7 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\myarm0%i.wav",GetRandomInt(1,2));
 				else if (StrContains(sample,"leg",false) != -1)
 					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\myleg0%i.wav",GetRandomInt(1,2));
-				else if (StrContains(sample,"help",false))
+				else if (StrContains(sample,"help",false) != -1)
 					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\help01.wav");
 				else
 					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\pain0%i.wav",GetRandomInt(1,9));
@@ -1215,7 +1215,7 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 			}
 			else if ((StrContains(plymdl,"metropolice") != -1) || (StrContains(plymdl,"metrocop") != -1))
 			{
-				if (StrContains(sample,"help",false))
+				if (StrContains(sample,"help",false) != -1)
 					Format(randcat,sizeof(randcat),"npc\\metropolice\\vo\\officerneedshelp.wav");
 				else
 					Format(randcat,sizeof(randcat),"npc\\metropolice\\pain%i.wav",GetRandomInt(1,4));
@@ -1252,7 +1252,7 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 				}
 				else
 				{
-					if (StrContains(sample,"help",false))
+					if (StrContains(sample,"help",false) != -1)
 						Format(randcat,sizeof(randcat),"vo\\npc\\barney\\ba_littlehelphere.wav");
 					else
 					{
@@ -1262,7 +1262,7 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 					}
 				}
 			}
-			else if ((StrContains(plymdl,"scientist - bms",false)) && (FileExists("sound/vo/npc/scientist_male01/pain01.wav",true,NULL_STRING)))
+			else if ((StrContains(plymdl,"scientist - bms",false) != -1) && (FileExists("sound/vo/npc/scientist_male01/pain01.wav",true,NULL_STRING)))
 			{
 				if (StrContains(sample,"gut",false) != -1)
 				{
@@ -1286,7 +1286,7 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 					Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\myarm01_take01.wav");
 				else if (StrContains(sample,"/ow",false) != -1)
 					Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\ow0%i.wav",GetRandomInt(1,8));
-				else if (StrContains(sample,"help",false))
+				else if (StrContains(sample,"help",false) != -1)
 					Format(randcat,sizeof(randcat),"vo\\npc\\scientist_male01\\help0%i_sp03.wav",GetRandomInt(1,5));
 				else
 				{
@@ -1303,7 +1303,7 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\myarm0%i.wav",GetRandomInt(1,2));
 				else if (StrContains(sample,"leg",false) != -1)
 					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\myleg0%i.wav",GetRandomInt(1,2));
-				else if (StrContains(sample,"help",false))
+				else if (StrContains(sample,"help",false) != -1)
 					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\help01.wav");
 				else
 					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\pain0%i.wav",randsound);
