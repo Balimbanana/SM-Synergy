@@ -2750,7 +2750,6 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									if (!StrEqual(curweap,"weapon_handgrenade",false))
 									{
 										CreateTimer(0.75,resetviewmdl,viewmdl);
-										//asfasf
 										float targpos[3];
 										float shootvel[3];
 										float plyfirepos[3];
@@ -3975,11 +3974,11 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 			else if (StrEqual(curweap,"weapon_manhacktoss",false))
 			{
-				if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);//asfasf
+				if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);//need to check
 			}
 			else if (StrEqual(curweap,"weapon_immolator",false))
 			{
-				if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);//asfasf
+				if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);//need to check
 			}
 			else if (StrEqual(curweap,"weapon_snark",false))
 			{
