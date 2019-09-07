@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.19"
+#define PLUGIN_VERSION "1.20"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -35,6 +35,7 @@ int WeapList = -1;
 int scoreshow = -1;
 int scoreshowstat = -1;
 int dmkills[MAXPLAYERS+1];
+int teamnum[MAXPLAYERS+1];
 float scoreshowcd[MAXPLAYERS+1];
 
 bool instspawnb = false;
@@ -68,6 +69,7 @@ char mapbuf[64];
 char activecheckpoint[64];
 int resetmode = 0;
 bool resetvehpass = false;
+bool aggro = false;
 
 public OnPluginStart()
 {
@@ -160,6 +162,10 @@ public OnPluginStart()
 	HookConVarChange(resetmodeh,resetmodech);
 	resetmode = GetConVarInt(resetmodeh);
 	CloseHandle(resetmodeh);
+	Handle aggroh = CreateConVar("syn_extraaggro", "0", "Increases awareness of enemies.", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 0.0, true, 2.0);
+	HookConVarChange(aggroh,aggroch);
+	aggro = GetConVarBool(aggroh);
+	CloseHandle(aggroh);
 	CreateTimer(1.0,roundtimeout,_,TIMER_REPEAT);
 	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
 	AutoExecConfig(true, "synmodes");
@@ -184,6 +190,62 @@ public void OnAllPluginsLoaded()
 	Handle sfixchk = FindConVar("seqdbg");
 	if (sfixchk != INVALID_HANDLE) resetvehpass = true;
 	else resetvehpass = false;
+}
+
+public OnEntityCreated(int entity, const char[] classname)
+{
+	if (aggro)
+	{
+		if (IsValidEntity(entity))
+		{
+			if (IsEntNetworkable(entity))
+			{
+				CreateTimer(0.1,recheck,entity,TIMER_FLAG_NO_MAPCHANGE);
+			}
+		}
+	}
+}
+
+public Action recheck(Handle timer, int entity)
+{
+	if (IsValidEntity(entity))
+	{
+		if (IsEntNetworkable(entity))
+		{
+			int scr = -1;
+			if (HasEntProp(entity,Prop_Data,"m_hTarget")) scr = GetEntPropEnt(entity,Prop_Data,"m_hTarget");
+			if ((scr == -1) && (HasEntProp(entity,Prop_Data,"m_hTargetEnt"))) scr = GetEntPropEnt(entity,Prop_Data,"m_hTargetEnt");
+			if (scr == -1)
+			{
+				if (HasEntProp(entity,Prop_Data,"m_bShouldPatrol"))
+				{
+					SetEntProp(entity,Prop_Data,"m_bShouldPatrol",1);
+					AcceptEntityInput(entity,"SetReadinessHigh");
+					SetVariantString("High");
+					AcceptEntityInput(entity,"LockReadiness");
+					if (HasEntProp(entity,Prop_Data,"m_iNumGrenades"))
+					{
+						int gren = GetEntProp(entity,Prop_Data,"m_iNumGrenades");
+						if (gren < 1) SetEntProp(entity,Prop_Data,"m_iNumGrenades",3);
+						else SetEntProp(entity,Prop_Data,"m_iNumGrenades",gren+1);
+					}
+					if (HasEntProp(entity,Prop_Data,"m_bWakeSquad"))
+					{
+						SetEntProp(entity,Prop_Data,"m_bWakeSquad",1);
+						SetEntPropFloat(entity,Prop_Data,"m_flWakeRadius",2048.0);
+					}
+					if (HasEntProp(entity,Prop_Data,"m_bNoExpirationTime"))
+					{
+						SetEntProp(entity,Prop_Data,"m_bNoExpirationTime",1);
+					}
+					if (HasEntProp(entity,Prop_Data,"m_bNoShootWhileMove"))
+					{
+						SetEntProp(entity,Prop_Data,"m_bNoShootWhileMove",0);
+					}
+				}
+			}
+		}
+	}
 }
 
 public instspawnch(Handle convar, const char[] oldValue, const char[] newValue)
@@ -335,6 +397,91 @@ public resetmodech(Handle convar, const char[] oldValue, const char[] newValue)
 	resetmode = StringToInt(newValue);
 }
 
+public aggroch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1)
+	{
+		aggro = true;
+		for (int i = MaxClients+1;i<GetMaxEntities();i++)
+		{
+			if (IsValidEntity(i))
+			{
+				if (IsEntNetworkable(i))
+				{
+					if (HasEntProp(i,Prop_Data,"m_bShouldPatrol"))
+					{
+						SetEntProp(i,Prop_Data,"m_bShouldPatrol",1);
+						AcceptEntityInput(i,"SetReadinessHigh");
+						SetVariantString("High");
+						AcceptEntityInput(i,"LockReadiness");
+						if (HasEntProp(i,Prop_Data,"m_iNumGrenades"))
+						{
+							int gren = GetEntProp(i,Prop_Data,"m_iNumGrenades");
+							if (gren < 1) SetEntProp(i,Prop_Data,"m_iNumGrenades",3);
+							else SetEntProp(i,Prop_Data,"m_iNumGrenades",gren+1);
+						}
+					}
+				}
+			}
+		}
+		float orgs[3];
+		for (int i = 1;i<MaxClients+1;i++)
+		{
+			if (IsValidEntity(i))
+			{
+				if (IsClientConnected(i))
+				{
+					if (IsPlayerAlive(i))
+					{
+						if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",orgs);
+						else if (HasEntProp(i,Prop_Data,"m_vecOrigin")) GetEntPropVector(i,Prop_Data,"m_vecOrigin",orgs);
+						int finder = CreateEntityByName("npc_enemyfinder");
+						if (finder != -1)
+						{
+							DispatchKeyValue(finder,"spawnflags","0");
+							DispatchKeyValue(finder,"FieldOfView","-1");
+							DispatchKeyValue(finder,"MaxSearchDist","4096");
+							DispatchKeyValue(finder,"StartOn","1");
+							TeleportEntity(finder,orgs,NULL_VECTOR,NULL_VECTOR);
+							DispatchSpawn(finder);
+							ActivateEntity(finder);
+							SetVariantString("!activator");
+							AcceptEntityInput(finder,"SetParent",i);
+						}
+						char apoint[64];
+						GetClientAuthId(i,AuthId_Steam2,apoint,sizeof(apoint));
+						Format(apoint,sizeof(apoint),"%sapoint",apoint);
+						finder = CreateEntityByName("assault_assaultpoint");
+						if (finder != -1)
+						{
+							DispatchKeyValue(finder,"targetname",apoint);
+							DispatchKeyValue(finder,"assaulttimeout","10");
+							DispatchKeyValue(finder,"allowdiversion","1");
+							DispatchKeyValue(finder,"nevertimeout","1");
+							TeleportEntity(finder,orgs,NULL_VECTOR,NULL_VECTOR);
+							DispatchSpawn(finder);
+							ActivateEntity(finder);
+							SetVariantString("!activator");
+							AcceptEntityInput(finder,"SetParent",i);
+						}
+						finder = CreateEntityByName("assault_rallypoint");
+						if (finder != -1)
+						{
+							DispatchKeyValue(finder,"assaultpoint",apoint);
+							TeleportEntity(finder,orgs,NULL_VECTOR,NULL_VECTOR);
+							DispatchSpawn(finder);
+							ActivateEntity(finder);
+							SetVariantString("!activator");
+							AcceptEntityInput(finder,"SetParent",i);
+						}
+					}
+				}
+			}
+		}
+	}
+	else aggro = false;
+}
+
 public gmch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StrEqual(newValue,"dm",false)) setupdmfor("dm");
@@ -396,7 +543,8 @@ public Action timeleftinround(int client, int args)
 		if (client == 0) PrintToServer("Time left: %1.f",1.0*(roundstartedat-Time));
 		else if (IsValidEntity(client))
 		{
-			PrintToChat(client,"Time left: %1.f",1.0*(roundstartedat-Time));
+			if (roundtime < 1) PrintToChat(client,"No time limit on this round.");
+			else PrintToChat(client,"Time left: %1.f",1.0*(roundstartedat-Time));
 		}
 	}
 	return Plugin_Continue;
@@ -461,8 +609,6 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	int killed = GetEventInt(event, "entindex_killed");
 	if ((killed <= MaxClients) && (killed > 0))
 	{
-		int teamnum = 0;
-		if (HasEntProp(killed,Prop_Data,"m_iTeamNum")) teamnum = GetEntProp(killed,Prop_Data,"m_iTeamNum");
 		if (clinspectate[killed])
 		{
 			return Plugin_Continue;
@@ -477,9 +623,8 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				{
 					if (IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i) && (killed != i))
 					{
-						int team2 = GetEntProp(i,Prop_Data,"m_iTeamNum");
 						int vck = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
-						if ((vck == -1) && (teamnum == team2) && (killed != i))
+						if ((vck == -1) && (teamnum[killed] == teamnum[i]) && (killed != i))
 						{
 							clused = i;
 							CreateTimer(0.1,tpclspawnnew,killed);
@@ -630,25 +775,24 @@ public Action changeteam(int client, int args)
 	{
 		char nick[64];
 		GetClientName(client, nick, sizeof(nick));
-		int curteam = GetEntProp(client,Prop_Data,"m_iTeamNum");
 		int blueteam,redteam;
 		for (int i = 1;i<MaxClients+1;i++)
 		{
 			if ((IsClientConnected(i)) && (IsClientInGame(i)))
 			{
-				int allteam = GetEntProp(i,Prop_Data,"m_iTeamNum");
-				if (allteam == 2) blueteam++;
+				if (teamnum[i] == 2) blueteam++;
 				else redteam++;
 			}
 		}
-		if (curteam == 2)
+		if (teamnum[client] == 2)
 		{
 			if ((redteam > blueteam+teambalancelimit) && (teambalancelimit != 0))
 			{
 				PrintToChat(client,"Too many people on Red team.");
 				return Plugin_Handled;
 			}
-			SetEntProp(client,Prop_Data,"m_iTeamNum",3);
+			//SetEntProp(client,Prop_Data,"m_iTeamNum",3);
+			teamnum[client] = 3;
 			PrintToChatAll("%s has joined the Red team",nick);
 		}
 		else
@@ -658,7 +802,8 @@ public Action changeteam(int client, int args)
 				PrintToChat(client,"Too many people on Blue team.");
 				return Plugin_Handled;
 			}
-			SetEntProp(client,Prop_Data,"m_iTeamNum",2);
+			//SetEntProp(client,Prop_Data,"m_iTeamNum",2);
+			teamnum[client] = 2;
 			PrintToChatAll("%s has joined the Blue team",nick);
 		}
 		float damageForce[3];
@@ -736,7 +881,8 @@ void setupdmfor(char[] gametype)
 				ClientCommand(i,"bind tab +showscores");
 			}
 			else ClientCommand(i,"hud_player_info_enable 0");
-			SetEntProp(i,Prop_Data,"m_iTeamNum",rand);
+			teamnum[i] = rand;
+			//SetEntProp(i,Prop_Data,"m_iTeamNum",rand);
 		}
 	}
 	int globalset = FindEntityByClassname(-1,"info_global_settings");
@@ -818,9 +964,8 @@ void balanceteams()
 	{
 		if ((IsClientConnected(i)) && (IsClientInGame(i)))
 		{
-			int curteam = GetEntProp(i,Prop_Data,"m_iTeamNum");
-			if (curteam == 2) blueteam++;
-			else if (curteam == 3) redteam++;
+			if (teamnum[i] == 2) blueteam++;
+			else if (teamnum[i] == 3) redteam++;
 		}
 	}
 	for (int i = 1;i<MaxClients+1;i++)
@@ -831,14 +976,16 @@ void balanceteams()
 			GetClientName(i, nick, sizeof(nick));
 			if (blueteam < redteam)
 			{
-				SetEntProp(i,Prop_Data,"m_iTeamNum",2);
+				//SetEntProp(i,Prop_Data,"m_iTeamNum",2);
+				teamnum[i] = 2;
 				blueteam++;
 				redteam--;
 				CPrintToChatAll("{BLUE}%s {DEFAULT}has joined the {BLUE}Blue team",nick);
 			}
 			else if (redteam < blueteam)
 			{
-				SetEntProp(i,Prop_Data,"m_iTeamNum",3);
+				//SetEntProp(i,Prop_Data,"m_iTeamNum",3);
+				teamnum[i] = 3;
 				redteam++;
 				blueteam--;
 				CPrintToChatAll("{RED}%s {DEFAULT}has joined the {RED}Red team",nick);
@@ -861,6 +1008,7 @@ public Action setupafk(int client, int args)
 		SetVariantInt(1);
 		AcceptEntityInput(client,"SetTeamNum");
 		SetEntProp(client,Prop_Data,"m_iTeamNum",1);
+		teamnum[client] = 1;
 		SetEntProp(client,Prop_Data,"deadflag",1);
 		SetEntProp(client,Prop_Data,"m_iObserverMode",5);
 		SetEntProp(client,Prop_Data,"m_iHideHUD",2056);
@@ -873,10 +1021,9 @@ public Action setupafk(int client, int args)
 		SetVariantInt(0);
 		AcceptEntityInput(client,"SetTeamNum");
 		SetEntProp(client,Prop_Data,"m_iTeamNum",0);
+		teamnum[client] = 0;
 		PrintToChatAll("%N has left spectators.",client);
 		clinspectate[client] = false;
-		int teamnum = 0;
-		if (HasEntProp(client,Prop_Data,"m_iTeamNum")) teamnum = GetEntProp(client,Prop_Data,"m_iTeamNum");
 		if (instspawnb)
 		{
 			if (((!dmset) && (!dmact)) && (lastspawned[client] == 0)) lastspawned[client]++;
@@ -887,9 +1034,8 @@ public Action setupafk(int client, int args)
 				{
 					if (IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i) && (client != i))
 					{
-						int team2 = GetEntProp(i,Prop_Data,"m_iTeamNum");
 						int vck = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
-						if ((vck == -1) && (teamnum == team2) && (client != i))
+						if ((vck == -1) && (teamnum[client] == teamnum[i]) && (client != i))
 						{
 							clused = i;
 							CreateTimer(0.2,tpclspawnnew,client);
@@ -968,17 +1114,16 @@ public Action scoreboardsh(int client, int args)
 		{
 			if ((IsClientConnected(i)) && (IsClientInGame(i)))
 			{
-				int team = GetEntProp(i,Prop_Data,"m_iTeamNum");
 				deaths = GetEntProp(i, Prop_Data, "m_iDeaths");
 				if (HasEntProp(i,Prop_Data,"m_iPoints"))
 					score = GetEntProp(i, Prop_Data, "m_iPoints");
-				if (team == 2)
+				if (teamnum[i] == 2)
 				{
 					PushArrayCell(tmparrblue,i);
 					blueteamscore+=score;
 					blueteamdeaths+=deaths;
 				}
-				else if (team == 3)
+				else if (teamnum[i] == 3)
 				{
 					PushArrayCell(tmparrred,i);
 					redteamscore+=score;
@@ -1106,8 +1251,8 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 		int suicidechk = GetEventBool(event, "suicide");
 		if ((killid < MaxClients+1) && (killid > 0) && (vicid < MaxClients+1) && (vicid > 0))
 		{
-			int a = GetEntProp(killid,Prop_Data,"m_iTeamNum");
-			int b = GetEntProp(vicid,Prop_Data,"m_iTeamNum");
+			int a = teamnum[killid];//GetEntProp(killid,Prop_Data,"m_iTeamNum");
+			int b = teamnum[vicid];//GetEntProp(vicid,Prop_Data,"m_iTeamNum");
 			//-6921216 is blue -16083416 is green -16777041 is red -1052689 is white -3644216 is purple
 			if (a == 2)
 			{
@@ -1353,11 +1498,10 @@ public Action tpclspawnnew(Handle timer, any i)
 	{
 		//Player most likely spawned at 0 0 0, or on a player when they shouldn't have, need to attempt recovery...
 		ClearArray(equiparr);
-		int team = GetEntProp(i,Prop_Data,"m_iTeamNum");
-		if (team == 2) findent(MaxClients+1,"info_player_rebel");
-		else if (team == 3) findent(MaxClients+1,"info_player_combine");
-		else if (team == 1) findent(MaxClients+1,"info_player_deathmatch");
-		if ((GetArraySize(equiparr) < 1) && (team != 0)) findent(MaxClients+1,"info_player_deathmatch");
+		if (teamnum[i] == 2) findent(MaxClients+1,"info_player_rebel");
+		else if (teamnum[i] == 3) findent(MaxClients+1,"info_player_combine");
+		else if (teamnum[i] == 1) findent(MaxClients+1,"info_player_deathmatch");
+		if ((GetArraySize(equiparr) < 1) && (teamnum[i] != 0)) findent(MaxClients+1,"info_player_deathmatch");
 		if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_coop");
 		if (GetArraySize(equiparr) < 1)
 		{
@@ -1401,8 +1545,7 @@ public Action tpclspawnnew(Handle timer, any i)
 									float plypos[3];
 									GetClientAbsOrigin(k,plypos);
 									float chkdist = GetVectorDistance(spawnpos,plypos,false)
-									int team2 = GetEntProp(k,Prop_Data,"m_iTeamNum");
-									if ((chkdist < 200) && (team != team2)) rangechk = false;
+									if ((chkdist < 200) && (teamnum[i] != teamnum[k])) rangechk = false;
 								}
 							}
 						}
@@ -2371,26 +2514,24 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	{
 		char nick[64];
 		GetClientName(client,nick,sizeof(nick));
-		int curteam = GetEntProp(client,Prop_Data,"m_iTeamNum");
 		if (StrEqual(command,"say_team",false))
 		{
 			for (int i = 1;i<MaxClients+1;i++)
 			{
 				if (IsClientInGame(i))
 				{
-					int clteam = GetEntProp(i,Prop_Data,"m_iTeamNum");
-					if (curteam == clteam)
+					if (teamnum[client] == teamnum[i])
 					{
-						if (curteam == 3) CPrintToChat(i,"{DEFAULT}(TEAM) {RED}%s{DEFAULT}: %s",nick,sArgs);
-						else if (curteam == 3) CPrintToChat(i,"{DEFAULT}(TEAM) {BLUE}%s{DEFAULT}: %s",nick,sArgs);
+						if (teamnum[client] == 3) CPrintToChat(i,"{DEFAULT}(TEAM) {RED}%s{DEFAULT}: %s",nick,sArgs);
+						else if (teamnum[client] == 2) CPrintToChat(i,"{DEFAULT}(TEAM) {BLUE}%s{DEFAULT}: %s",nick,sArgs);
 					}
 				}
 			}
 		}
 		else
 		{
-			if (curteam == 2) CPrintToChatAll("{BLUE}%s{DEFAULT}: %s",nick,sArgs);
-			else if (curteam == 3) CPrintToChatAll("{RED}%s{DEFAULT}: %s",nick,sArgs);
+			if (teamnum[client] == 2) CPrintToChatAll("{BLUE}%s{DEFAULT}: %s",nick,sArgs);
+			else if (teamnum[client] == 3) CPrintToChatAll("{RED}%s{DEFAULT}: %s",nick,sArgs);
 			else if (clinspectate[client]) PrintToChatAll("*SPEC* %s: %s",nick,sArgs);
 			else PrintToChatAll("%s: %s",nick,sArgs);
 		}
@@ -2475,11 +2616,10 @@ public Action roundstart(Handle event, const char[] name, bool dontBroadcast)
 			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",pos);
 			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",pos);
 			ClearArray(equiparr);
-			int team = GetEntProp(i,Prop_Data,"m_iTeamNum");
-			if (team == 2) findent(MaxClients+1,"info_player_rebel");
-			else if (team == 3) findent(MaxClients+1,"info_player_combine");
-			else if (team == 1) findent(MaxClients+1,"info_player_deathmatch");
-			if ((GetArraySize(equiparr) < 1) && (team != 0)) findent(MaxClients+1,"info_player_deathmatch");
+			if (teamnum[i] == 2) findent(MaxClients+1,"info_player_rebel");
+			else if (teamnum[i] == 3) findent(MaxClients+1,"info_player_combine");
+			else if (teamnum[i] == 1) findent(MaxClients+1,"info_player_deathmatch");
+			if ((GetArraySize(equiparr) < 1) && (teamnum[i] != 0)) findent(MaxClients+1,"info_player_deathmatch");
 			if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_coop");
 			if (GetArraySize(equiparr) < 1)
 			{
@@ -2521,8 +2661,7 @@ public Action roundstart(Handle event, const char[] name, bool dontBroadcast)
 										float plypos[3];
 										GetClientAbsOrigin(k,pos);
 										float chkdist = GetVectorDistance(spawnpos,plypos,false)
-										int team2 = GetEntProp(k,Prop_Data,"m_iTeamNum");
-										if ((chkdist < 200) && (team != team2)) rangechk = false;
+										if ((chkdist < 200) && (teamnum[i] != teamnum[k])) rangechk = false;
 									}
 								}
 							}
@@ -2601,11 +2740,10 @@ public Action roundintermission(Handle event, const char[] name, bool dontBroadc
 			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",pos);
 			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",pos);
 			ClearArray(equiparr);
-			int team = GetEntProp(i,Prop_Data,"m_iTeamNum");
-			if (team == 2) findent(MaxClients+1,"info_player_rebel");
-			else if (team == 3) findent(MaxClients+1,"info_player_combine");
-			else if (team == 1) findent(MaxClients+1,"info_player_deathmatch");
-			if ((GetArraySize(equiparr) < 1) && (team != 0)) findent(MaxClients+1,"info_player_deathmatch");
+			if (teamnum[i] == 2) findent(MaxClients+1,"info_player_rebel");
+			else if (teamnum[i] == 3) findent(MaxClients+1,"info_player_combine");
+			else if (teamnum[i] == 1) findent(MaxClients+1,"info_player_deathmatch");
+			if ((GetArraySize(equiparr) < 1) && (teamnum[i] != 0)) findent(MaxClients+1,"info_player_deathmatch");
 			if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_coop");
 			if (GetArraySize(equiparr) < 1)
 			{
@@ -2647,8 +2785,7 @@ public Action roundintermission(Handle event, const char[] name, bool dontBroadc
 										float plypos[3];
 										GetClientAbsOrigin(k,pos);
 										float chkdist = GetVectorDistance(spawnpos,plypos,false)
-										int team2 = GetEntProp(k,Prop_Data,"m_iTeamNum");
-										if ((chkdist < 200) && (team != team2)) rangechk = false;
+										if ((chkdist < 200) && (teamnum[i] != teamnum[k])) rangechk = false;
 									}
 								}
 							}
@@ -2708,7 +2845,7 @@ public Action nextroundstart(Handle timer)
 
 public Action roundtimeout(Handle timer)
 {
-	if ((dmact) || (dmset))
+	if (((dmact) || (dmset)) && (roundtime != 0))
 	{
 		float Time = GetTickedTime();
 		if (1.0*(roundstartedat-Time) < 1.0)
@@ -2831,17 +2968,20 @@ public OnClientPutInServer(int client)
 
 public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype)
 {
-	int cl1team = GetEntProp(attacker,Prop_Data,"m_iTeamNum");
-	int cl2team = GetEntProp(victim,Prop_Data,"m_iTeamNum");
-	if ((cl1team == cl2team) && (dmact) && (!dmset))
+	//int cl1team = GetEntProp(attacker,Prop_Data,"m_iTeamNum");
+	//int cl2team = GetEntProp(victim,Prop_Data,"m_iTeamNum");
+	if ((attacker < MaxClients+1) && (victim < MaxClients+1))
 	{
-		damage = 0.0;
-		return Plugin_Changed;
-	}
-	if ((damagetype == 32) && (falldamagedis))
-	{
-		damage = 0.0;
-		return Plugin_Changed;
+		if ((teamnum[attacker] == teamnum[victim]) && (dmact) && (!dmset))
+		{
+			damage = 0.0;
+			return Plugin_Changed;
+		}
+		if ((damagetype == 32) && (falldamagedis))
+		{
+			damage = 0.0;
+			return Plugin_Changed;
+		}
 	}
 	return Plugin_Continue;
 }
@@ -2864,12 +3004,12 @@ public Action joincfg(Handle timer, any:client)
 			SetEntProp(client,Prop_Send,"m_bDisplayReticle",1);
 		if (dmact)
 		{
-			int curteam = GetEntProp(client,Prop_Data,"m_iTeamNum");
-			if (curteam == 0)
+			if (teamnum[client] == 0)
 			{
 				int rand = 1;
 				if (!dmset) rand = GetRandomInt(2,3);
-				SetEntProp(client,Prop_Data,"m_iTeamNum",rand);
+				//SetEntProp(client,Prop_Data,"m_iTeamNum",rand);
+				teamnum[client] = rand;
 			}
 			ClientCommand(client,"hud_player_info_enable 0");
 		}
@@ -2877,7 +3017,8 @@ public Action joincfg(Handle timer, any:client)
 		{
 			ClientCommand(client,"hud_player_info_enable 1");
 			ClientCommand(client,"bind tab +showscores");
-			SetEntProp(client,Prop_Data,"m_iTeamNum",0);
+			//SetEntProp(client,Prop_Data,"m_iTeamNum",0);
+			teamnum[client] = 0;
 		}
 		if (survivalact)
 		{
@@ -2903,6 +3044,38 @@ public Action joincfg(Handle timer, any:client)
 			}
 		}
 		ClearArray(equiparr);
+		if (aggro)
+		{
+			float orgs[3];
+			if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
+			else if (HasEntProp(client,Prop_Data,"m_vecOrigin")) GetEntPropVector(client,Prop_Data,"m_vecOrigin",orgs);
+			char apoint[64];
+			GetClientAuthId(client,AuthId_Steam2,apoint,sizeof(apoint));
+			Format(apoint,sizeof(apoint),"%sapoint",apoint);
+			int finder = CreateEntityByName("assault_assaultpoint");
+			if (finder != -1)
+			{
+				DispatchKeyValue(finder,"targetname",apoint);
+				DispatchKeyValue(finder,"assaulttimeout","10");
+				DispatchKeyValue(finder,"allowdiversion","1");
+				DispatchKeyValue(finder,"nevertimeout","1");
+				TeleportEntity(finder,orgs,NULL_VECTOR,NULL_VECTOR);
+				DispatchSpawn(finder);
+				ActivateEntity(finder);
+				SetVariantString("!activator");
+				AcceptEntityInput(finder,"SetParent",client);
+			}
+			finder = CreateEntityByName("assault_rallypoint");
+			if (finder != -1)
+			{
+				DispatchKeyValue(finder,"assaultpoint",apoint);
+				TeleportEntity(finder,orgs,NULL_VECTOR,NULL_VECTOR);
+				DispatchSpawn(finder);
+				ActivateEntity(finder);
+				SetVariantString("!activator");
+				AcceptEntityInput(finder,"SetParent",client);
+			}
+		}
 	}
 	else if (IsClientConnected(client))
 	{
