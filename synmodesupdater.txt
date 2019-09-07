@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.19"
-			"Previous"	"1.18"
+			"Latest"  	"1.20"
+			"Previous"	"1.19"
 		}
 		
-		"Notes"	"Added increased weaponlist detection."
+		"Notes"	"Re-worked teams setup for less chance of crash. Fixed round time 0. Added syn_extraaggro cvar (experimental)."
 	}
 	
 	"Files"
