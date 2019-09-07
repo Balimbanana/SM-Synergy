@@ -5958,7 +5958,7 @@ ShootBullet(int client, char[] curweap, float orgs[3], float angs[3], int sideof
 				ScaleVector(shootvel,2.0);
 				SDKHooks_TakeDamage(targ,client,client,damage,DMG_BULLET,-1,shootvel,orgs);
 			}
-			else if ((StrContains(clsname,"prop_",false) != -1) || (StrEqual(clsname,"func_breakable",false)))
+			else if ((StrContains(clsname,"prop_",false) != -1) || (StrEqual(clsname,"func_breakable",false)) || (StrContains(clsname,"item_",false) == 0))
 			{
 				SDKHooks_TakeDamage(targ,client,client,damage,DMG_BULLET,-1,shootvel,orgs);
 				ScaleVector(shootvel,1.5);
