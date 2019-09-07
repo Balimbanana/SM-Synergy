@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "0.9"
+#define PLUGIN_VERSION "0.91"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -3104,7 +3104,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				else if (StrEqual(curweap,"weapon_sl8",false))
 				{
 					int fov = GetEntProp(client,Prop_Send,"m_iFOV");
-					if (fov > 60)
+					if ((fov > 60) || (fov == 0))
 					{
 						SetEntProp(client,Prop_Send,"m_iFOVStart",fov);
 						SetEntPropFloat(client,Prop_Send,"m_flFOVTime",GetGameTime());
@@ -3145,7 +3145,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				else if (StrEqual(curweap,"weapon_oicw",false))
 				{
 					int fov = GetEntProp(client,Prop_Send,"m_iFOV");
-					if (fov > 60)
+					if ((fov > 60) || (fov == 0))
 					{
 						SetEntProp(client,Prop_Send,"m_iFOVStart",fov);
 						SetEntPropFloat(client,Prop_Send,"m_flFOVTime",GetGameTime());
@@ -3221,6 +3221,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							{
 								EnergyAmm[client]--;
 								TauCharge[client]++;
+								//m_flPlaybackRate
 								if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",EnergyAmm[client]);
 								if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",EnergyAmm[client]);
 								if (seq != mdlseq) SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
@@ -4193,7 +4194,7 @@ public Action OnWeaponUse(int client, int weapon)
 			}
 		}
 		int fov = GetEntProp(client,Prop_Send,"m_iFOV");
-		if (fov < 75)
+		if ((fov < 75) && (fov != 0))
 		{
 			SetEntProp(client,Prop_Send,"m_iFOVStart",fov);
 			SetEntPropFloat(client,Prop_Send,"m_flFOVTime",GetGameTime());
@@ -5902,6 +5903,7 @@ ShootBullet(int client, char[] curweap, float orgs[3], float angs[3], int sideof
 		float endpos[3];
 		float shootvel[3];
 		orgs[2]+=13.0;
+		if (GetEntProp(client,Prop_Data,"m_bDucked")) orgs[2]-=28.0;
 		TE_Start("Shotgun Shot");
 		angs[1]+=90.0;
 		orgs[0] = (orgs[0] + (sideoffs * Cosine(DegToRad(angs[1]))));
