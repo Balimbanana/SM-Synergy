@@ -22,6 +22,7 @@ bool dbg = false;
 bool allowvotereloadsaves = false; //Set by cvar sm_reloadsaves
 bool allowvotecreatesaves = false; //Set by cvar sm_createsaves
 bool rmsaves = false; //Set by cvar sm_disabletransition
+bool nodel = true; //Set by cvar sm_disabletransition 3
 bool transitionply = false; //Set by cvar sm_disabletransition 2
 bool fallbackequip = false; //Set by cvar sm_equipfallback_disable
 bool reloadaftersetup = false;
@@ -51,7 +52,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.9996"
+#define PLUGIN_VERSION "1.9997"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -113,14 +114,16 @@ public void OnPluginStart()
 	perclimitsave = GetConVarFloat(votecspercenth);
 	HookConVarChange(votecspercenth, restrictvotepercsch);
 	CloseHandle(votecspercenth);
-	Handle disabletransitionh = CreateConVar("sm_disabletransition", "2", "Disable transition save/reloads. 2 rebuilds transitions using SourceMod.", _, true, 0.0, true, 2.0);
-	if (GetConVarInt(disabletransitionh) == 2)
+	Handle disabletransitionh = CreateConVar("sm_disabletransition", "2", "Disable transition save/reloads. 2 rebuilds transitions using SourceMod. 3 rebuilds and will not delete certain save data.", _, true, 0.0, true, 3.0);
+	if (GetConVarInt(disabletransitionh) >= 2)
 	{
 		Handle svcvar = FindConVar("mp_save_disable");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
 		svcvar = FindConVar("sv_autosave");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
 		CloseHandle(svcvar);
+		if (GetConVarInt(disabletransitionh) == 3) nodel = true;
+		else nodel = false;
 		rmsaves = true;
 		transitionply = true;
 	}
@@ -132,11 +135,13 @@ public void OnPluginStart()
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,1,false,false);
 		CloseHandle(svcvar);
 		rmsaves = true;
+		nodel = false;
 		transitionply = false;
 	}
 	else if (GetConVarInt(disabletransitionh) == 0)
 	{
 		rmsaves = false;
+		nodel = true;
 		transitionply = false;
 	}
 	HookConVarChange(disabletransitionh, disabletransitionch);
@@ -211,8 +216,10 @@ public restrictvotepercsch(Handle convar, const char[] oldValue, const char[] ne
 
 public disabletransitionch(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	if (StringToInt(newValue) == 2)
+	if (StringToInt(newValue) >= 2)
 	{
+		if (StringToInt(newValue) == 3) nodel = true;
+		else nodel = false;
 		rmsaves = true;
 		transitionply = true;
 		Handle svcvar = FindConVar("mp_save_disable");
@@ -224,6 +231,7 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 	else if (StringToInt(newValue) == 1)
 	{
 		rmsaves = true;
+		nodel = false;
 		transitionply = false;
 		Handle svcvar = FindConVar("mp_save_disable");
 		if (svcvar != INVALID_HANDLE) SetConVarInt(svcvar,0,false,false);
@@ -234,6 +242,7 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 	else if (StringToInt(newValue) == 0)
 	{
 		rmsaves = false;
+		nodel = true;
 		transitionply = false;
 	}
 }
@@ -1645,6 +1654,7 @@ public void OnMapStart()
 				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_4,0,1");
 				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
 				DispatchKeyValue(loginp, "OnMapSpawn","dropship,kill,,0,1");
+				DispatchKeyValue(loginp, "OnMapSpawn","windmill,kill,,0,1");
 				DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Unlock,,0,-1");
 				DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Close,,0.1,-1");
 				DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Lock,,0.5,-1");
@@ -2132,33 +2142,36 @@ public void OnMapEnd()
 		}
 		else
 			logplyprox = -1;
-		if (DirExists(savedir,false))
+		if (!nodel)
 		{
-			Handle savedirrmh = OpenDirectory(savedir, false);
-			char subfilen[64];
-			while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
+			if (DirExists(savedir,false))
 			{
-				if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+				Handle savedirrmh = OpenDirectory(savedir, false);
+				char subfilen[64];
+				while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
 				{
-					if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+					if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
 					{
-						Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-						if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
+						if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 						{
-							DeleteFile(subfilen,false);
-							/*
-							Handle subfiletarg = OpenFile(subfilen,"wb");
-							if (subfiletarg != INVALID_HANDLE)
+							Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+							if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
 							{
-								WriteFileLine(subfiletarg,"");
+								DeleteFile(subfilen,false);
+								/*
+								Handle subfiletarg = OpenFile(subfilen,"wb");
+								if (subfiletarg != INVALID_HANDLE)
+								{
+									WriteFileLine(subfiletarg,"");
+								}
+								CloseHandle(subfiletarg);
+								*/
 							}
-							CloseHandle(subfiletarg);
-							*/
 						}
 					}
 				}
+				CloseHandle(savedirrmh);
 			}
-			CloseHandle(savedirrmh);
 		}
 	}
 	else if (!reloadingmap)
@@ -2271,33 +2284,36 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			enterfrom04pb = true;
 		}
 		reloadingmap = true;
-		if (DirExists(savedir,false))
+		if (!nodel)
 		{
-			Handle savedirh = OpenDirectory(savedir, false);
-			char subfilen[64];
-			while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
+			if (DirExists(savedir,false))
 			{
-				if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+				Handle savedirh = OpenDirectory(savedir, false);
+				char subfilen[64];
+				while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
 				{
-					if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+					if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
 					{
-						Format(subfilen,sizeof(subfilen),"%s/%s",savedir,subfilen);
-						if ((StrContains(subfilen,"autosave.hl",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
+						if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 						{
-							DeleteFile(subfilen,false);
-							/*
-							Handle subfiletarg = OpenFile(subfilen,"wb");
-							if (subfiletarg != INVALID_HANDLE)
+							Format(subfilen,sizeof(subfilen),"%s/%s",savedir,subfilen);
+							if ((StrContains(subfilen,"autosave.hl",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
 							{
-								WriteFileLine(subfiletarg,"");
+								DeleteFile(subfilen,false);
+								/*
+								Handle subfiletarg = OpenFile(subfilen,"wb");
+								if (subfiletarg != INVALID_HANDLE)
+								{
+									WriteFileLine(subfiletarg,"");
+								}
+								CloseHandle(subfiletarg);
+								*/
 							}
-							CloseHandle(subfiletarg);
-							*/
 						}
 					}
 				}
+				CloseHandle(savedirh);
 			}
-			CloseHandle(savedirh);
 		}
 		if (transitionply)
 		{
@@ -3292,7 +3308,7 @@ void saveresetveh(bool rmsave)
 	float Time = GetTickedTime();
 	if (mapstarttime <= Time)
 	{
-		if (rmsave)
+		if ((rmsave) && (!nodel) && (strlen(savedir) > 0))
 		{
 			if (DirExists(savedir,false))
 			{
