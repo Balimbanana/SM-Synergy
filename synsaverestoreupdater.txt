@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9996"
-			"Previous"	"1.9995"
+			"Latest"  	"1.9997"
+			"Previous"	"1.9996"
 		}
 		
-		"Notes"	"Added increased weaponlist detection."
+		"Notes"	"Added sm_disabletransition 3 which will preserve certain save files while still using SourceMod for restore."
 	}
 	
 	"Files"
