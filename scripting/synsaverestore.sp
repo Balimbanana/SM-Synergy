@@ -52,7 +52,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.9997"
+#define PLUGIN_VERSION "1.9998"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1835,6 +1835,7 @@ public void OnMapStart()
 						ReadPackString(dp,defanim,sizeof(defanim));
 						char scriptinf[256];
 						ReadPackString(dp,scriptinf,sizeof(scriptinf));
+						bool ragdoll = false;
 						if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"d2_prison_08",false)))
 						{
 							porigin[0] = -2497.0;
@@ -1909,6 +1910,11 @@ public void OnMapStart()
 						}
 						if (StrEqual(clsname,"prop_physics",false)) Format(clsname,sizeof(clsname),"prop_physics_override",false);
 						else if (StrEqual(clsname,"prop_dynamic",false)) Format(clsname,sizeof(clsname),"prop_dynamic_override",false);
+						else if (StrEqual(clsname,"prop_ragdoll",false))
+						{
+							Format(clsname,sizeof(clsname),"generic_actor");
+							ragdoll = true;
+						}
 						int ent = CreateEntityByName(clsname);
 						if (TR_PointOutsideWorld(porigin))
 						{
@@ -2055,6 +2061,7 @@ public void OnMapStart()
 									j++;
 								}
 							}
+							if (ragdoll) AcceptEntityInput(ent,"BecomeRagdoll");
 						}
 						CloseHandle(dp);
 					}
@@ -2569,14 +2576,15 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 					porigin[0] = mins[0]-mins[0];
 					porigin[1] = mins[1]-mins[1];
 					porigin[2] = mins[2]-mins[2];
+					i = -1;
+					clsname = "";
 				}
 			}
-			else if (StrEqual(clsname,"prop_ragdoll",false))
+			else if (StrEqual(clsname,"point_viewcontrol",false))
 			{
 				AcceptEntityInput(i,"kill");
-				porigin[0] = mins[0]-mins[0];
-				porigin[1] = mins[1]-mins[1];
-				porigin[2] = mins[2]-mins[2];
+				i = -1;
+				clsname = "";
 			}
 			if ((StrEqual(clsname,"npc_alyx",false)) || (StrEqual(clsname,"npc_vortigaunt",false)) || (StrEqual(clsname,"prop_vehicle_jeep_episodic",false)))
 			{
