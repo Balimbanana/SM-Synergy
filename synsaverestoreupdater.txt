@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9997"
-			"Previous"	"1.9996"
+			"Latest"  	"1.9998"
+			"Previous"	"1.9997"
 		}
 		
-		"Notes"	"Added sm_disabletransition 3 which will preserve certain save files while still using SourceMod for restore."
+		"Notes"	"Added transition of ragdolls in new system. Blocked transition of point_viewcontrols."
 	}
 	
 	"Files"
