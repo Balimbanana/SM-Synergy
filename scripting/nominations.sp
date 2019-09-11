@@ -55,7 +55,7 @@ Handle g_MapList = null;
 char currentMap[32];
 int passedcl = 0;
 int modsact = 0;
-bool syn,hl2,hl1,r24m,lcm,ep1m,ep2m,metam,calm,citm,ci7m,upm,ram,dwm,prem,c2am,ep3m,offm,radm,cdm,ntm,opm,mim,smm,s2em,rhm,snm,mprm,cem,mpm,el87m,alm,esm,dfm,stm,btm,llm,dhm,lum,thm,ddm,amm,ptsd,yla,ktm,t7,bm,bmxen,bmdamo;
+bool syn,hl2,hl1,r24m,lcm,ep1m,ep2m,metam,calm,citm,ci7m,upm,ram,dwm,prem,c2am,ep3m,offm,radm,cdm,ntm,opm,mim,smm,s2em,rhm,snm,mprm,cem,mpm,el87m,alm,esm,dfm,stm,btm,llm,dhm,lum,thm,ddm,amm,ptsd,yla,ktm,t7,bm,bmxen,bmdamo,hl2pene,ant,tsew,undh;
 
 #define MAPSTATUS_ENABLED (1<<0)
 #define MAPSTATUS_DISABLED (1<<1)
@@ -455,6 +455,10 @@ public Action AttemptNominate(int client, int args)
 	if (ktm) menu.AddItem("kill the monk", "Kill The Monk");
 	if (t7) menu.AddItem("terminal 7", "Terminal 7");
 	if (ptsd) menu.AddItem("ptsd", "PTSD Mod");
+	if (hl2pene) menu.AddItem("half-life 2: penetration", "Half-Life 2: Penetration");
+	if (ant) menu.AddItem("antlions everywhere", "Antlions Everywhere");
+	if (tsew) menu.AddItem("the sewer", "The Sewer");
+	if (undh) menu.AddItem("underhell", "Underhell");
 	menu.AddItem("allmaps", "All Maps");
 	menu.ExitButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
@@ -1073,6 +1077,12 @@ public Action GetMapTag(const char[] map)
 		dhm = true;
 		Format(maptag, sizeof(maptag), "Day Hard");
 	}
+	else if ((StrContains(map,"mine01_0",false) == 0) || (StrContains(map,"mine_01_0",false) == 0))
+	{
+		if (!ant) modsact++;
+		ant = true;
+		Format(maptag, sizeof(maptag), "Antlions Everywhere");
+	}
 	else if ((StrContains(map,"intro0",false) == 0) || (StrContains(map,"mines0",false) == 0) || (StrEqual(map,"sewer01",false)) || (StrContains(map,"scape0",false) == 0) || (StrEqual(map,"ldtd01",false)) || StrEqual(map, "tull01", false) || StrEqual(map, "surreal01", false) || StrEqual(map, "outside01", false) || StrEqual(map, "ending01", false))
 	{
 		if (!lum) modsact++;
@@ -1138,6 +1148,24 @@ public Action GetMapTag(const char[] map)
 		if (!bmxen) modsact++;
 		bmxen = true;
 		Format(maptag, sizeof(maptag), "Black Mesa: Improved Xen");
+	}
+	else if (StrContains(map,"Penetration0",false) == 0)
+	{
+		if (!hl2pene) modsact++;
+		hl2pene = true;
+		Format(maptag, sizeof(maptag), "Half-Life 2: Penetration");
+	}
+	else if (StrContains(map,"sewer",false) == 0)
+	{
+		if (!tsew) modsact++;
+		tsew = true;
+		Format(maptag, sizeof(maptag), "The Sewer");
+	}
+	else if ((StrContains(map,"Uh_Prologue_",false) == 0) || (StrContains(map,"Uh_Chapter1_",false) == 0) || (StrContains(map,"Uh_Chapter2_",false) == 0) || (StrContains(map,"Uh_House_",false) == 0) || (StrContains(map,"Uh_Dreams_",false) == 0))
+	{
+		if (!undh) modsact++;
+		undh = true;
+		Format(maptag, sizeof(maptag), "Underhell");
 	}
 	else
 	{
