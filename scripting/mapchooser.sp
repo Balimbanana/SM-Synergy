@@ -1356,27 +1356,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "The Citizen Returns");
 	}
-	else if (StrContains(map, "mel_lastman_square_f", false) == 0)
-	{
-		Format(maptag, sizeof(maptag), "City 7: Toronto Conflict");
-	}
-	else if (StrContains(map, "subway_system_f", false) == 0)
-	{
-		Format(maptag, sizeof(maptag), "City 7: Toronto Conflict");
-	}
-	else if (StrContains(map, "dundas_square_f", false) == 0)
-	{
-		Format(maptag, sizeof(maptag), "City 7: Toronto Conflict");
-	}
-	else if (StrContains(map, "yonge_st_f", false) == 0)
-	{
-		Format(maptag, sizeof(maptag), "City 7: Toronto Conflict");
-	}
-	else if (StrContains(map, "shuter_st_f", false) == 0)
-	{
-		Format(maptag, sizeof(maptag), "City 7: Toronto Conflict");
-	}
-	else if (StrContains(map, "st_michaels_", false) == 0)
+	else if ((StrContains(map, "shuter_st_f", false) == 0) || (StrContains(map, "st_michaels_", false) == 0) || (StrContains(map, "yonge_st_f", false) == 0) || (StrContains(map, "dundas_square_f", false) == 0) || (StrContains(map, "subway_system_f", false) == 0) || (StrContains(map, "mel_lastman_square_f", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "City 7: Toronto Conflict");
 	}
@@ -1476,6 +1456,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Day Hard");
 	}
+	else if ((StrContains(map,"mine01_0",false) == 0) || (StrContains(map,"mine_01_0",false) == 0))
+	{
+		Format(maptag, sizeof(maptag), "Antlions Everywhere");
+	}
 	else if (StrEqual(map, "intro01", false) || StrEqual(map, "intro02", false) || StrEqual(map, "mines01", false) || StrEqual(map, "mines02", false) || StrEqual(map, "sewer01", false) || StrEqual(map, "scape01", false) || StrEqual(map, "scape02", false) || StrEqual(map, "scape03", false) || StrEqual(map, "ldtd01", false) || StrEqual(map, "tull01", false) || StrEqual(map, "surreal01", false) || StrEqual(map, "outside01", false) || StrEqual(map, "ending01", false))
 	{
 		Format(maptag, sizeof(maptag), "Lost Under The Snow");
@@ -1531,6 +1515,18 @@ public Action GetMapTag(const char[] map)
 	else if ((StrEqual(map,"am2",false)) || (StrEqual(map,"am3",false)) || (StrEqual(map,"am4",false)))
 	{
 		Format(maptag, sizeof(maptag), "Aftermath");
+	}
+	else if (StrContains(map,"Penetration0",false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Half-Life 2: Penetration");
+	}
+	else if (StrContains(map,"sewer",false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "The Sewer");
+	}
+	else if ((StrContains(map,"Uh_Prologue_",false) == 0) || (StrContains(map,"Uh_Chapter1_",false) == 0) || (StrContains(map,"Uh_Chapter2_",false) == 0) || (StrContains(map,"Uh_House_",false) == 0) || (StrContains(map,"Uh_Dreams_",false) == 0))
+	{
+		Format(maptag, sizeof(maptag), "Underhell");
 	}
 	else
 	{
