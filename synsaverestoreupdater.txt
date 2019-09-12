@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9998"
-			"Previous"	"1.9997"
+			"Latest"  	"1.9999"
+			"Previous"	"1.9998"
 		}
 		
-		"Notes"	"Added transition of ragdolls in new system. Blocked transition of point_viewcontrols."
+		"Notes"	"Removed overwrite save on auth if sm_disabletransition is 3."
 	}
 	
 	"Files"
