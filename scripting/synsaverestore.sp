@@ -52,7 +52,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.9998"
+#define PLUGIN_VERSION "1.9999"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3294,18 +3294,21 @@ public OnClientAuthorized(int client, const char[] szAuth)
 				}
 			}
 		}
-		if ((logsv != -1) && (IsValidEntity(logsv)))
+		if (!nodel)
 		{
-			saveresetveh(true);
-		}
-		else
-		{
-			logsv = CreateEntityByName("logic_autosave");
 			if ((logsv != -1) && (IsValidEntity(logsv)))
 			{
-				DispatchSpawn(logsv);
-				ActivateEntity(logsv);
 				saveresetveh(true);
+			}
+			else
+			{
+				logsv = CreateEntityByName("logic_autosave");
+				if ((logsv != -1) && (IsValidEntity(logsv)))
+				{
+					DispatchSpawn(logsv);
+					ActivateEntity(logsv);
+					saveresetveh(true);
+				}
 			}
 		}
 	}
