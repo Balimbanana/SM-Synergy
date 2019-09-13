@@ -18,6 +18,7 @@ bool enterfrom08pb = false;
 bool enterfromep1 = false;
 bool enterfromep2 = false;
 bool reloadingmap = false;
+bool IsVehicleMap = false;
 bool dbg = false;
 bool allowvotereloadsaves = false; //Set by cvar sm_reloadsaves
 bool allowvotecreatesaves = false; //Set by cvar sm_createsaves
@@ -52,7 +53,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.9999"
+#define PLUGIN_VERSION "1.99991"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1716,6 +1717,7 @@ public void OnMapStart()
 		ClearArray(globalsiarr);
 		ClearArray(equiparr);
 		ClearArray(ignoreent);
+		IsVehicleMap = findvmap(-1);
 		Format(reloadthissave,sizeof(reloadthissave),"");
 		HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:onchangelevel);
 		if (rmsaves)
@@ -1747,7 +1749,7 @@ public void OnMapStart()
 			*/
 			CreateTimer(0.1,redel);
 			if ((logsv != -1) && (IsValidEntity(logsv))) saveresetveh(false);
-			if (transitionply)
+			if ((transitionply) && (IsVehicleMap))
 			{
 				findent(MaxClients+1,"info_player_equip");
 				if (GetArraySize(equiparr) > 0)
@@ -3462,7 +3464,10 @@ public Action anotherdelay(Handle timer, int client)
 							char clscheck[32];
 							GetEntityClassname(jtmp,clscheck,sizeof(clscheck));
 							if (StrEqual(clscheck,"info_player_equip",false))
-								AcceptEntityInput(jtmp,"Disable");
+							{
+								if (IsVehicleMap)
+									AcceptEntityInput(jtmp,"Disable");
+							}
 							else
 							{
 								ClearArray(equiparr);
@@ -3479,7 +3484,7 @@ public Action anotherdelay(Handle timer, int client)
 				for (int j; j<GetArraySize(equiparr); j++)
 				{
 					int jtmp = GetArrayCell(equiparr, j);
-					if (IsValidEntity(jtmp))
+					if ((IsValidEntity(jtmp)) && (IsVehicleMap))
 						AcceptEntityInput(jtmp,"Disable");
 				}
 			}
@@ -3592,7 +3597,7 @@ public Action anotherdelay(Handle timer, int client)
 							GetEntityClassname(jtmp,clscheck,sizeof(clscheck));
 							if (StrEqual(clscheck,"info_player_equip",false))
 							{
-								AcceptEntityInput(jtmp,"Disable");
+								if (IsVehicleMap) AcceptEntityInput(jtmp,"Disable");
 								AcceptEntityInput(jtmp,"EquipPlayer",client);
 								EquipCustom(jtmp,client);
 							}
@@ -3614,7 +3619,7 @@ public Action anotherdelay(Handle timer, int client)
 					int jtmp = GetArrayCell(equiparr, j);
 					if (IsValidEntity(jtmp))
 					{
-						AcceptEntityInput(jtmp,"Disable");
+						if (IsVehicleMap) AcceptEntityInput(jtmp,"Disable");
 						AcceptEntityInput(jtmp,"EquipPlayer",client);
 						EquipCustom(jtmp,client);
 					}
@@ -3637,7 +3642,7 @@ public Action delayequip(Handle timer, int client)
 				int jtmp = GetArrayCell(equiparr, j);
 				if (IsValidEntity(jtmp))
 				{
-					AcceptEntityInput(jtmp,"Disable");
+					if (IsVehicleMap) AcceptEntityInput(jtmp,"Disable");
 					AcceptEntityInput(jtmp,"EquipPlayer",client);
 					EquipCustom(jtmp,client);
 				}
@@ -3719,6 +3724,19 @@ findent(int ent, char[] clsname)
 			PushArrayCell(equiparr,thisent);
 		findent(thisent++,clsname);
 	}
+}
+
+bool findvmap(int ent)
+{
+	int thisent = FindEntityByClassname(ent,"info_global_settings");
+	if ((IsValidEntity(thisent)) && (thisent != 0))
+	{
+		int bdisabled = GetEntProp(thisent,Prop_Data,"m_bIsVehicleMap");
+		if (bdisabled == 1)
+			return true;
+		findvmap(thisent++);
+	}
+	return false;
 }
 
 findentwdis(int ent, char[] clsname)
