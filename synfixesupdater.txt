@@ -4,16 +4,18 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.982"
-			"Previous"	"1.981"
+			"Latest"  	"1.998"
+			"Previous"	"1.988"
 		}
 		
-		"Notes"	"Added a couple changelevel fallbacks."
+		"Notes"	"Custom entity support. Other major updates. Futher expanded natives, reworked various systems. New Decls."
 	}
 	
 	"Files"
 	{
 		"Plugin"	"Path_SM/plugins/synfixes.smx"
 		"Source"	"Path_SM/scripting/synfixes.sp"
+		"Source"	"Path_SM/scripting/include/synfixes.inc"
+		"Source"	"Path_SM/scripting/include/synfixes/synfixesglobals.inc"
 	}
 }
