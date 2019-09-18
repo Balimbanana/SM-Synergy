@@ -362,7 +362,7 @@ public Action cleararr(Handle timer)
 	ClearArray(htarr);
 	ClearArray(liarr);
 	ClearArray(airelarr);
-	findairel(MaxClients+1,"ai_relationship");
+	findairel(-1,"ai_relationship");
 	addht("npc_combine_s");
 	addht("npc_metropolice");
 	addht("prop_vehicle_apc");
@@ -418,6 +418,7 @@ public Action cleararr(Handle timer)
 	addht("npc_abrams");
 	addht("npc_apache");
 	addht("npc_ichthyosaur");
+	addht("npc_clawscanner");
 	addht("monster_alien_slave");
 	addht("monster_bullchicken");
 	addht("monster_headcrab");
@@ -473,7 +474,7 @@ public Action cleararr(Handle timer)
 			}
 		}
 		else
-			findairel(MaxClients+1,"ai_relationship");
+			findairel(-1,"ai_relationship");
 	}
 	if (GetAntAlly())
 	{
@@ -676,6 +677,7 @@ public Action ShowTimer(Handle timer)
 										else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"John");
 										else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Mitch");
 										else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
+										else if (StrContains(targn,"oleg",false) != -1) Format(clsname,sizeof(clsname),"Oleg");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
 									}
@@ -779,6 +781,7 @@ public Action ShowTimer(Handle timer)
 									else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Sarah");
 									else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Mina");
 									else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
+									else if (StrEqual(targn,"oleg",false)) Format(clsname,sizeof(clsname),"Oleg");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
 								}
@@ -974,6 +977,7 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"Friend: John");
 		else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Friend: Mitch");
 		else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Friend: Argento");
+		else if (StrContains(targn,"oleg",false) != -1) Format(clsname,sizeof(clsname),"Friend: Oleg");
 		else if (StrEqual(clsname,"npc_citizen",false))
 		{
 			char cmodel[64];
@@ -1245,7 +1249,7 @@ bool GetNPCAllyTarg(char[] clsname)
 bool GetNPCAlly(char[] clsname, int entchk)
 {
 	if (GetArraySize(airelarr) < 1)
-		findairel(MaxClients+1,"ai_relationship");
+		findairel(-1,"ai_relationship");
 	if (GetArraySize(htarr) > 0)
 	{
 		if (StrEqual(clsname,"npc_turret_floor",false))
@@ -1319,6 +1323,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_abrams");
 		addht("npc_apache");
 		addht("npc_ichthyosaur");
+		addht("npc_clawscanner");
 		addht("monster_alien_slave");
 		addht("monster_bullchicken");
 		addht("monster_headcrab");
@@ -1374,7 +1379,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 				}
 			}
 			else
-				findairel(MaxClients+1,"ai_relationship");
+				findairel(-1,"ai_relationship");
 		}
 		if (GetAntAlly())
 		{
