@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99991"
-			"Previous"	"1.9999"
+			"Latest"  	"1.99992"
+			"Previous"	"1.99991"
 		}
 		
-		"Notes"	"Added IsVehicleMap check to certain checks."
+		"Notes"	"Additional properties over save/restore."
 	}
 	
 	"Files"
