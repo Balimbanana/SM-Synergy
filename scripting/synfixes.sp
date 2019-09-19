@@ -4951,6 +4951,13 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					else if ((StrEqual(cls,"trigger_once_oc",false)) || (StrEqual(cls,"trigger_multiple_oc",false)))
 					{
 						ReplaceString(cls,sizeof(cls),"_oc","");
+						int find = FindStringInArray(passedarr,"classname");
+						if (find != -1)
+						{
+							RemoveFromArray(passedarr,find);
+							find++;
+							RemoveFromArray(passedarr,find);
+						}
 					}
 					else if (StrEqual(cls,"game_text_quick",false))
 					{
