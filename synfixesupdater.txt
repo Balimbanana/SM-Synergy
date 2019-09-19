@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.998"
-			"Previous"	"1.988"
+			"Latest"  	"1.9981"
+			"Previous"	"1.998"
 		}
 		
-		"Notes"	"Custom entity support. Other major updates. Futher expanded natives, reworked various systems. New Decls."
+		"Notes"	"Added npc_merchant, cleaned up a bit of logic_merchant_relay as well."
 	}
 	
 	"Files"
