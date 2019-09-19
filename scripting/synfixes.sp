@@ -14430,6 +14430,74 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 						if (StrEqual(targchk,"rappelfrom",false)) DispatchKeyValue(ent,"waitingtorappel","1");
 					}
 				}
+				if (StrEqual(oldcls,"logic_merchant_relay",false))
+				{
+					for (int i = 0;i<GetArraySize(passedarr);i++)
+					{
+						char arrstart[64];
+						char arrnext[128];
+						GetArrayString(passedarr,i,arrstart,sizeof(arrstart));
+						i++;
+						GetArrayString(passedarr,i,arrnext,sizeof(arrnext));
+						if (StrEqual(arrstart,"IsShared",false)) SetEntProp(ent,Prop_Data,"m_bInvulnerable",StringToInt(arrnext));
+						else if (StrEqual(arrstart,"AnnounceCashNeeded",false)) SetEntPropFloat(ent,Prop_Data,"m_flSpeed",StringToFloat(arrnext));
+						else if (StrEqual(arrstart,"purchasesound",false)) SetEntPropString(ent,Prop_Data,"m_iszResponseContext",arrnext);
+						else if (StrEqual(arrstart,"CostOf",false)) SetEntProp(ent,Prop_Data,"m_iHealth",StringToInt(arrnext));
+						else if (StrEqual(arrstart,"MaxPointsTake",false)) SetEntProp(ent,Prop_Data,"m_iMaxHealth",StringToInt(arrnext));
+						else if (StrEqual(arrstart,"PurchaseName",false)) SetEntPropString(ent,Prop_Data,"m_target",arrnext);
+						else if (StrEqual(arrstart,"OnPurchased",false)) DispatchKeyValue(ent,"OnUser1",arrnext);
+						else if (StrEqual(arrstart,"OnNotEnoughCash",false)) DispatchKeyValue(ent,"OnUser2",arrnext);
+						else if (StrEqual(arrstart,"OnCashReduced",false)) DispatchKeyValue(ent,"OnUser3",arrnext);
+						else if (StrEqual(arrstart,"OnDisabled",false)) DispatchKeyValue(ent,"OnUser4",arrnext);
+						HookSingleEntityOutput(ent,"OnUser1",LogMerchPurchased);
+						HookSingleEntityOutput(ent,"OnUser2",LogMerchNotEnough);
+						HookSingleEntityOutput(ent,"OnUser3",LogMerchCashReduced);
+						HookSingleEntityOutput(ent,"OnUser4",LogMerchDisabled);
+					}
+				}
+				else if (StrEqual(oldcls,"npc_merchant",false))
+				{
+					char merchicon[64];
+					Format(merchicon,sizeof(merchicon),"sprites/merchant_buy.vmt");
+					int starticonon = 1;
+					float posabove = 80.0;
+					for (int i = 0;i<GetArraySize(passedarr);i++)
+					{
+						char arrstart[64];
+						char arrnext[128];
+						GetArrayString(passedarr,i,arrstart,sizeof(arrstart));
+						i++;
+						GetArrayString(passedarr,i,arrnext,sizeof(arrnext));
+						if (StrEqual(arrstart,"MerchantScript",false)) DispatchKeyValue(ent,"ResponseContext",arrnext);
+						else if (StrEqual(arrstart,"MerchantIconMaterial",false)) Format(merchicon,sizeof(merchicon),"%s",arrnext);
+						else if (StrEqual(arrstart,"ShowIcon",false)) starticonon = StringToInt(arrnext);
+						else if (StrEqual(arrstart,"IconHeight",false)) posabove = StringToFloat(arrnext);
+						else if (StrEqual(arrstart,"OnPlayerUse",false)) DispatchKeyValue(ent,"OnUser1",arrnext);
+					}
+					DispatchKeyValue(ent,"citizentype","4");
+					SetEntProp(ent,Prop_Data,"m_bInvulnerable",1);
+					if (HasEntProp(ent,Prop_Data,"m_takedamage")) SetEntProp(ent,Prop_Data,"m_takedamage",0);
+					int sprite = CreateEntityByName("env_sprite");
+					if (sprite != -1)
+					{
+						DispatchKeyValue(sprite,"model",merchicon);
+						DispatchKeyValue(sprite,"framerate","1");
+						DispatchKeyValue(sprite,"RenderMode","5");
+						DispatchKeyValue(sprite,"scale","0.5");
+						if (starticonon) DispatchKeyValue(sprite,"spawnflags","1");
+						else DispatchKeyValue(sprite,"spawnflags","0");
+						float startpos[3];
+						startpos[0] = fileorigin[0];
+						startpos[1] = fileorigin[1];
+						startpos[2] = fileorigin[2]+posabove;
+						TeleportEntity(sprite,startpos,NULL_VECTOR,NULL_VECTOR);
+						DispatchSpawn(sprite);
+						ActivateEntity(sprite);
+						SetVariantString("!activator");
+						AcceptEntityInput(sprite,"SetParent",ent);
+					}
+					HookSingleEntityOutput(ent,"OnUser1",MerchantUse);
+				}
 				DispatchSpawn(ent);
 				ActivateEntity(ent);
 				if (StrEqual(oldcls,"npc_houndeye",false))
