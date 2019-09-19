@@ -885,6 +885,7 @@ public void OnMapStart()
 			HookEntityOutput("env_xen_portal","OnSpawnNPC",onxenspawn);
 			HookEntityOutput("env_xen_portal_template","OnSpawnNPC",onxenspawn);
 			HookEntityOutput("npc_human_security","OnFoundEnemy",SecFoundEnemy);
+			HookEntityOutput("env_entity_maker","OnEntitySpawned",ptadditionalspawn);
 		}
 		PrecacheSound("npc\\roller\\code2.wav",true);
 	}
@@ -2919,6 +2920,20 @@ public Action tripmineexplode(Handle timer, int expl)
 	if ((IsValidEntity(expl)) && (expl != 0))
 	{
 		AcceptEntityInput(expl,"Explode");
+	}
+}
+
+public void ptadditionalspawn(const char[] output, int caller, int activator, float delay)
+{
+	if (IsValidEntity(caller))
+	{
+		if (HasEntProp(caller,Prop_Data,"m_iszTemplate"))
+		{
+			char targn[64];
+			GetEntPropString(caller,Prop_Data,"m_iszTemplate",targn,sizeof(targn));
+			if (strlen(targn) > 0)
+				findpts(targn,0.0);
+		}
 	}
 }
 
@@ -4958,6 +4973,8 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							find++;
 							RemoveFromArray(passedarr,find);
 						}
+						PushArrayString(passedarr,"classname");
+						PushArrayString(passedarr,cls);
 					}
 					else if (StrEqual(cls,"game_text_quick",false))
 					{
