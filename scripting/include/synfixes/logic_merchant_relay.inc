@@ -43,7 +43,7 @@ public Action merchantinputdelay(Handle timer, Handle dp)
 
 public void LogMerchInputs(int ent, int activator, char[] input, char[] parampass)
 {
-	PrintToServer("LogMerchInputs %i %i %s %s",ent,activator,input,parampass);
+	//PrintToServer("LogMerchInputs %i %i %s %s",ent,activator,input,parampass);
 	if ((activator != 0) && (IsValidEntity(activator)))
 	{
 		if (HasEntProp(activator,Prop_Data,"m_iPoints"))
@@ -52,7 +52,7 @@ public void LogMerchInputs(int ent, int activator, char[] input, char[] parampas
 			if (StrEqual(input,"Purchase",false))
 			{
 				int cost = GetEntProp(ent,Prop_Data,"m_iHealth");
-				PrintToServer("Activator %i has %i cost is %i",activator,points,cost);
+				//PrintToServer("Activator %i has %i cost is %i",activator,points,cost);
 				if (points >= cost)
 				{
 					SetEntProp(activator,Prop_Data,"m_iPoints",points-cost);
@@ -98,7 +98,7 @@ public void LogMerchInputs(int ent, int activator, char[] input, char[] parampas
 
 public Action LogMerchPurchased(const char[] output, int caller, int activator, float delay)
 {
-	PrintToServer("LogMerch %i %s activator %i",caller,output,activator);
+	//PrintToServer("LogMerch %i %s activator %i",caller,output,activator);
 	char targn[128];
 	GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
 	float origin[3];
@@ -109,15 +109,15 @@ public Action LogMerchPurchased(const char[] output, int caller, int activator, 
 
 public Action LogMerchNotEnough(const char[] output, int caller, int activator, float delay)
 {
-	PrintToServer("LogMerch %i %s activator %i",caller,output,activator);
+	//PrintToServer("LogMerch %i %s activator %i",caller,output,activator);
 }
 
 public Action LogMerchCashReduced(const char[] output, int caller, int activator, float delay)
 {
-	PrintToServer("LogMerch %i %s activator %i",caller,output,activator);
+	//PrintToServer("LogMerch %i %s activator %i",caller,output,activator);
 }
 
 public Action LogMerchDisabled(const char[] output, int caller, int activator, float delay)
 {
-	PrintToServer("LogMerch %i %s activator %i",caller,output,activator);
+	//PrintToServer("LogMerch %i %s activator %i",caller,output,activator);
 }

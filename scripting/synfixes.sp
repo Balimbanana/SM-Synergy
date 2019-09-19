@@ -24,6 +24,7 @@
 #include <synfixes/monster_zombie>
 #include <synfixes/prop_surgerybot>
 #include <synfixes/logic_merchant_relay>
+#include <synfixes/npc_merchant>
 #undef REQUIRE_PLUGIN
 #undef REQUIRE_EXTENSIONS
 #tryinclude <SteamWorks>
@@ -81,7 +82,7 @@ bool reloadaftersetup = false;
 bool weapmanagersplaced = false;
 bool mapchanging = false;
 
-#define PLUGIN_VERSION "1.998"
+#define PLUGIN_VERSION "1.9981"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -219,6 +220,8 @@ public void OnPluginStart()
 	passedstrings = CreateArray(128);
 	restorecustoments = CreateArray(256);
 	inputsarrorigincls = CreateArray(768);
+	merchantscr = CreateArray(32);
+	merchantscrd = CreateArray(32);
 	//nextweapreset = CreateArray(512);
 	RegConsoleCmd("alyx",fixalyx);
 	RegConsoleCmd("barney",fixbarney);
@@ -393,6 +396,8 @@ public void OnMapStart()
 		ClearArray(delayedspeech);
 		ClearArray(passedstrings);
 		ClearArray(globalsarr);
+		ClearArray(merchantscr);
+		ClearArray(merchantscrd);
 		//ClearArray(nextweapreset);
 		FindGlobals(-1);
 		for (int i = 1;i<MaxClients+1;i++)
@@ -775,6 +780,7 @@ public void OnMapStart()
 		PushArrayString(customentlist,"game_text_quick");
 		PushArrayString(customentlist,"weapon_scripted");
 		PushArrayString(customentlist,"logic_merchant_relay");
+		PushArrayString(customentlist,"npc_merchant");
 		if ((rebuildentsset) && (!customents))
 		{
 			char mapspec[128];
@@ -5017,6 +5023,10 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					{
 						Format(cls,sizeof(cls),"logic_relay");
 					}
+					else if (StrEqual(cls,"npc_merchant",false))
+					{
+						Format(cls,sizeof(cls),"generic_actor");
+					}
 					ent = CreateEntityByName(cls);
 					if (StrEqual(setupent,"zombie"))
 					{
@@ -5220,6 +5230,49 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							HookSingleEntityOutput(ent,"OnUser3",LogMerchCashReduced);
 							HookSingleEntityOutput(ent,"OnUser4",LogMerchDisabled);
 						}
+					}
+					else if (StrEqual(oldcls,"npc_merchant",false))
+					{
+						char merchicon[64];
+						Format(merchicon,sizeof(merchicon),"sprites/merchant_buy.vmt");
+						int starticonon = 1;
+						float posabove = 80.0;
+						for (int i = 0;i<GetArraySize(passedarr);i++)
+						{
+							char arrstart[64];
+							char arrnext[128];
+							GetArrayString(passedarr,i,arrstart,sizeof(arrstart));
+							i++;
+							GetArrayString(passedarr,i,arrnext,sizeof(arrnext));
+							if (StrEqual(arrstart,"MerchantScript",false)) DispatchKeyValue(ent,"ResponseContext",arrnext);
+							else if (StrEqual(arrstart,"MerchantIconMaterial",false)) Format(merchicon,sizeof(merchicon),"%s",arrnext);
+							else if (StrEqual(arrstart,"ShowIcon",false)) starticonon = StringToInt(arrnext);
+							else if (StrEqual(arrstart,"IconHeight",false)) posabove = StringToFloat(arrnext);
+							else if (StrEqual(arrstart,"OnPlayerUse",false)) DispatchKeyValue(ent,"OnUser1",arrnext);
+						}
+						DispatchKeyValue(ent,"citizentype","4");
+						SetEntProp(ent,Prop_Data,"m_bInvulnerable",1);
+						if (HasEntProp(ent,Prop_Data,"m_takedamage")) SetEntProp(ent,Prop_Data,"m_takedamage",0);
+						int sprite = CreateEntityByName("env_sprite");
+						if (sprite != -1)
+						{
+							DispatchKeyValue(sprite,"model",merchicon);
+							DispatchKeyValue(sprite,"framerate","1");
+							DispatchKeyValue(sprite,"RenderMode","5");
+							DispatchKeyValue(sprite,"scale","0.5");
+							if (starticonon) DispatchKeyValue(sprite,"spawnflags","1");
+							else DispatchKeyValue(sprite,"spawnflags","0");
+							float startpos[3];
+							startpos[0] = fileorigin[0];
+							startpos[1] = fileorigin[1];
+							startpos[2] = fileorigin[2]+posabove;
+							TeleportEntity(sprite,startpos,NULL_VECTOR,NULL_VECTOR);
+							DispatchSpawn(sprite);
+							ActivateEntity(sprite);
+							SetVariantString("!activator");
+							AcceptEntityInput(sprite,"SetParent",ent);
+						}
+						HookSingleEntityOutput(ent,"OnUser1",MerchantUse);
 					}
 					DispatchSpawn(ent);
 					ActivateEntity(ent);
@@ -13534,6 +13587,8 @@ public Action onreload(const char[] output, int caller, int activator, float del
 			ClearArray(controllers);
 			ClearArray(templateslist);
 			ClearArray(equiparr);
+			ClearArray(merchantscr);
+			ClearArray(merchantscrd);
 			for (int i = 1;i<GetMaxEntities();i++)
 			{
 				isattacking[i] = 0;
@@ -14297,6 +14352,14 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				Format(clsname,sizeof(clsname),"prop_physics_override");
 			else if (StrEqual(clsname,"monster_ichthyosaur"))
 				Format(clsname,sizeof(clsname),"npc_ichthyosaur");
+			else if (StrEqual(clsname,"trigger_once_oc"))
+				Format(clsname,sizeof(clsname),"trigger_once");
+			else if (StrEqual(clsname,"trigger_multiple_oc"))
+				Format(clsname,sizeof(clsname),"trigger_multiple");
+			else if (StrEqual(clsname,"logic_merchant_relay"))
+				Format(clsname,sizeof(clsname),"logic_relay");
+			else if (StrEqual(clsname,"npc_merchant",false))
+				Format(clsname,sizeof(clsname),"generic_actor");
 			else if (StrContains(clsname,"customweapons/",false) == 0)
 			{
 				findcls = FindStringInArray(dp,"ResponseContext");
@@ -16117,7 +16180,8 @@ public void OnButtonPressUse(int client)
 			{
 				char cls[32];
 				GetEntityClassname(targ,cls,sizeof(cls));
-				if ((StrEqual(cls,"npc_human_security",false)) || (StrEqual(cls,"npc_human_scientist",false)) || (StrEqual(cls,"npc_human_scientist_female",false)))
+				if (StrEqual(cls,"npc_merchant",false)) AcceptEntityInput(targ,"FireUser1",client);
+				else if ((StrEqual(cls,"npc_human_security",false)) || (StrEqual(cls,"npc_human_scientist",false)) || (StrEqual(cls,"npc_human_scientist_female",false)))
 				{
 					float orgs[3];
 					float targorgs[3];

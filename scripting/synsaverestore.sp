@@ -53,7 +53,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.99991"
+#define PLUGIN_VERSION "1.99992"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -554,6 +554,7 @@ public Action savecurgamedp(Handle timer, any dp)
 					char npctarg[4];
 					char npctargpath[32];
 					char defanim[32];
+					char response[64];
 					int doorstate, sleepstate, sequence, parentattach, body, maxh, curh, sf, hdw, skin, state, npctype;
 					if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 					if (HasEntProp(i,Prop_Data,"m_iMaxHealth")) maxh = GetEntProp(i,Prop_Data,"m_iMaxHealth");
@@ -561,6 +562,7 @@ public Action savecurgamedp(Handle timer, any dp)
 					if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
 					if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
 					if (HasEntProp(i,Prop_Data,"m_spawnEquipment")) GetEntPropString(i,Prop_Data,"m_spawnEquipment",additionalequip,sizeof(additionalequip));
+					if (HasEntProp(i,Prop_Data,"m_iszResponseContext")) GetEntPropString(i,Prop_Data,"m_iszResponseContext",response,sizeof(response));
 					if (HasEntProp(i,Prop_Data,"m_spawnflags"))
 					{
 						sf = GetEntProp(i,Prop_Data,"m_spawnflags");
@@ -739,6 +741,11 @@ public Action savecurgamedp(Handle timer, any dp)
 					if (body != 0)
 					{
 						Format(pushch,sizeof(pushch),"\"body\" \"%i\"",body);
+						WriteFileLine(custentinf,pushch);
+					}
+					if (strlen(response) > 0)
+					{
+						Format(pushch,sizeof(pushch),"\"ResponseContext\" \"%s\"",response);
 						WriteFileLine(custentinf,pushch);
 					}
 					Format(pushch,sizeof(pushch),"\"classname\" \"%s\"",cls);
@@ -1835,6 +1842,8 @@ public void OnMapStart()
 						Format(gunenablech,sizeof(gunenablech),"%i",gunenable);
 						char defanim[32];
 						ReadPackString(dp,defanim,sizeof(defanim));
+						char response[64];
+						ReadPackString(dp,response,sizeof(response));
 						char scriptinf[256];
 						ReadPackString(dp,scriptinf,sizeof(scriptinf));
 						bool ragdoll = false;
@@ -1955,6 +1964,7 @@ public void OnMapStart()
 							if (HasEntProp(ent,Prop_Data,"m_nSolidType")) DispatchKeyValue(ent,"solid",solidity);
 							if (HasEntProp(ent,Prop_Data,"m_bHasGun")) DispatchKeyValue(ent,"EnableGun",gunenablech);
 							if ((strlen(defanim) > 0) && (HasEntProp(ent,Prop_Data,"m_iszDefaultAnim"))) DispatchKeyValue(ent,"DefaultAnim",defanim);
+							if ((strlen(response) > 0) && (HasEntProp(ent,Prop_Data,"m_iszResponseContext"))) DispatchKeyValue(ent,"ResponseContext",response);
 							char scriptexp[64][128];
 							if (!StrEqual(scriptinf,"endofpack",false))
 							{
@@ -2664,6 +2674,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 							char npctarg[64];
 							char solidity[4];
 							char defanim[32];
+							char response[64];
 							char scriptinf[512];
 							int doorstate, sleepstate, gunenable, tkdmg, mvtype;
 							if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
@@ -2804,6 +2815,10 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 							{
 								GetEntPropString(i,Prop_Data,"m_iszEffectName",mdl,sizeof(mdl));
 							}
+							if (HasEntProp(i,Prop_Data,"m_iszResponseContext"))
+							{
+								GetEntPropString(i,Prop_Data,"m_iszResponseContext",response,sizeof(response));
+							}
 							TrimString(scriptinf);
 							if (transitionthis)
 							{
@@ -2936,6 +2951,11 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 										Format(pushch,sizeof(pushch),"\"body\" \"%i\"",body);
 										WriteFileLine(custentinf,pushch);
 									}
+									if (strlen(response) > 0)
+									{
+										Format(pushch,sizeof(pushch),"\"ResponseContext\" \"%s\"",response);
+										WriteFileLine(custentinf,pushch);
+									}
 									Format(pushch,sizeof(pushch),"\"classname\" \"%s\"",clsname);
 									WriteFileLine(custentinf,pushch);
 									WriteFileLine(custentinf,"}");
@@ -2968,6 +2988,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 									WritePackCell(dp,tkdmg);
 									WritePackCell(dp,mvtype);
 									WritePackString(dp,defanim);
+									WritePackString(dp,response);
 									if (strlen(scriptinf) > 0) WritePackString(dp,scriptinf);
 									WritePackString(dp,"endofpack");
 									PushArrayCell(transitionents,dp);

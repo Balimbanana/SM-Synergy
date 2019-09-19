@@ -143,6 +143,8 @@ void grenthink(int entity)
 				SetEntProp(entmdl,Prop_Data,"m_nSequence",22);
 				int body = GetEntProp(entity,Prop_Data,"m_nBody");
 				SetEntProp(entmdl,Prop_Data,"m_nBody",body);
+				int skin = GetEntProp(entity,Prop_Data,"m_nSkin");
+				SetEntProp(entmdl,Prop_Data,"m_nSkin",skin);
 				isattacking[entity] = entmdl;
 				int entmdlweap = CreateEntityByName("prop_dynamic");
 				DispatchKeyValue(entmdlweap,"model","models/weapons/w_rocket_launcher.mdl");
@@ -154,6 +156,9 @@ void grenthink(int entity)
 				AcceptEntityInput(entmdlweap,"SetParent",entmdl);
 				SetVariantString("anim_attachment_RH");
 				AcceptEntityInput(entmdlweap,"SetParentAttachment");
+				angs[0]-=5.0;
+				angs[1]+=80.0;
+				TeleportEntity(entmdlweap,NULL_VECTOR,angs,NULL_VECTOR);
 			}
 		}
 	}
