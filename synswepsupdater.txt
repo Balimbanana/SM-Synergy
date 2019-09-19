@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.92"
-			"Previous"	"0.91"
+			"Latest"  	"0.93"
+			"Previous"	"0.92"
 		}
 		
-		"Notes"	"Added weapon_scripted with FireModes 1 through 4 supported currently."
+		"Notes"	"Added nodraw to weapon_scripted while in vehicle or using prop."
 	}
 	
 	"Files"
