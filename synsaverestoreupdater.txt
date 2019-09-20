@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99992"
-			"Previous"	"1.99991"
+			"Latest"  	"1.99993"
+			"Previous"	"1.99992"
 		}
 		
-		"Notes"	"Additional properties over save/restore."
+		"Notes"	"Additional custom ents over savegame."
 	}
 	
 	"Files"
