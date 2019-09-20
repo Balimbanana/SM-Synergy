@@ -53,7 +53,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.99993"
+#define PLUGIN_VERSION "1.99994"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2612,7 +2612,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 			if (HasEntProp(i,Prop_Data,"m_bAlwaysTransition")) alwaystransition = GetEntProp(i,Prop_Data,"m_bAlwaysTransition");
 			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
 			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
-			if (i < MaxClients+1)
+			if ((i < MaxClients+1) && (i > 0))
 			{
 				if (IsPlayerAlive(i))
 				{
@@ -2629,14 +2629,14 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 					porigin[0] = mins[0]-mins[0];
 					porigin[1] = mins[1]-mins[1];
 					porigin[2] = mins[2]-mins[2];
-					i = -1;
+					alwaystransition = -1;
 					clsname = "";
 				}
 			}
 			else if (StrEqual(clsname,"point_viewcontrol",false))
 			{
 				AcceptEntityInput(i,"kill");
-				i = -1;
+				alwaystransition = -1;
 				clsname = "";
 			}
 			if ((StrEqual(clsname,"npc_alyx",false)) || (StrEqual(clsname,"npc_vortigaunt",false)) || (StrEqual(clsname,"prop_vehicle_jeep_episodic",false)))
@@ -2665,386 +2665,389 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 					}
 				}
 			}
-			if ((alwaystransition) || ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]) && (IsValidEntity(i))))
+			if (alwaystransition != -1)
 			{
-				//Add func_tracktrain check if exists on next map OnTransition might not fire
-				if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"light_dynamic",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"predicted_viewmodel",false)))
+				if ((alwaystransition) || ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]) && (IsValidEntity(i))))
 				{
-					if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-					if (StrContains(mdl,"*",false) != -1)
+					//Add func_tracktrain check if exists on next map OnTransition might not fire
+					if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"light_dynamic",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"predicted_viewmodel",false)))
 					{
-						//LogError("Attempt to transition ent with precached model %s %s",clsname,mdl);
-						PushArrayCell(ignoreent,i);
-					}
-					else
-					{
-						if ((remove) && (i > MaxClients))
+						if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+						if (StrContains(mdl,"*",false) != -1)
 						{
-							AcceptEntityInput(i,"kill");
+							//LogError("Attempt to transition ent with precached model %s %s",clsname,mdl);
+							PushArrayCell(ignoreent,i);
 						}
 						else
 						{
-							if (HasEntProp(i,Prop_Data,"m_hTargetEnt"))
+							if ((remove) && (i > MaxClients))
 							{
-								int targent = GetEntPropEnt(i,Prop_Data,"m_hTargetEnt");
-								if ((IsValidEntity(targent)) && (IsEntNetworkable(targent)))
+								AcceptEntityInput(i,"kill");
+							}
+							else
+							{
+								if (HasEntProp(i,Prop_Data,"m_hTargetEnt"))
 								{
-									char targentcls[24];
-									GetEntityClassname(targent,targentcls,sizeof(targentcls));
-									if (StrEqual(targentcls,"scripted_sequence",false))
-										transitionthisent(targent);
-								}
-							}
-							bool transitionthis = true;
-							Handle dp = CreateDataPack();
-							porigin[0]-=landmarkorigin[0];
-							porigin[1]-=landmarkorigin[1];
-							porigin[2]-=landmarkorigin[2];
-							GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-							int curh = 0;
-							char vehscript[64];
-							char additionalequip[32];
-							char spawnflags[32];
-							char skin[4];
-							char hdwtype[4];
-							char parentname[32];
-							char state[4];
-							char target[32];
-							char npctype[4];
-							char npctargpath[64];
-							char npctarg[64];
-							char solidity[4];
-							char defanim[32];
-							char response[64];
-							char scriptinf[512];
-							int doorstate, sleepstate, gunenable, tkdmg, mvtype;
-							if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
-							if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
-							if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
-							if (HasEntProp(i,Prop_Data,"m_spawnEquipment")) GetEntPropString(i,Prop_Data,"m_spawnEquipment",additionalequip,sizeof(additionalequip));
-							if (HasEntProp(i,Prop_Data,"m_spawnflags"))
-							{
-								int sf = GetEntProp(i,Prop_Data,"m_spawnflags");
-								Format(spawnflags,sizeof(spawnflags),"%i",sf);
-							}
-							if (HasEntProp(i,Prop_Data,"m_nSkin"))
-							{
-								int sk = GetEntProp(i,Prop_Data,"m_nSkin");
-								Format(skin,sizeof(skin),"%i",sk);
-							}
-							if (HasEntProp(i,Prop_Data,"m_nHardwareType"))
-							{
-								int hdw = GetEntProp(i,Prop_Data,"m_nHardwareType");
-								Format(hdwtype,sizeof(hdwtype),"%i",hdw);
-							}
-							if (par != -1)
-							{
-								GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
-								if (HasEntProp(par,Prop_Data,"m_iGlobalname")) GetEntPropString(par,Prop_Data,"m_iGlobalname",parentglobal,sizeof(parentglobal));
-								if ((!StrEqual(parentname,"train_model",false)) && (strlen(parentglobal) < 1))
-								{
-									char parentcls[32];
-									GetEntityClassname(par,parentcls,sizeof(parentcls));
-									if (((StrEqual(parentcls,"func_door",false)) || (StrEqual(parentcls,"func_tracktrain",false))) && (StrContains(clsname,"npc_",false) == -1))
+									int targent = GetEntPropEnt(i,Prop_Data,"m_hTargetEnt");
+									if ((IsValidEntity(targent)) && (IsEntNetworkable(targent)))
 									{
-										CloseHandle(dp);
-										transitionthis = false;
-										PushArrayCell(ignoreent,i);
+										char targentcls[24];
+										GetEntityClassname(targent,targentcls,sizeof(targentcls));
+										if (StrEqual(targentcls,"scripted_sequence",false))
+											transitionthisent(targent);
 									}
 								}
-							}
-							if (StrEqual(mdl,"models/alyx_emptool_prop.mdl"))
-							{
-								CloseHandle(dp);
-								transitionthis = false;
-								PushArrayCell(ignoreent,i);
-							}
-							if (HasEntProp(i,Prop_Data,"m_state"))
-							{
-								int istate = GetEntProp(i,Prop_Data,"m_state");
-								Format(state,sizeof(state),"%i",istate);
-								//PrintToServer("State %s",state);
-							}
-							if (HasEntProp(i,Prop_Data,"m_hTargetEnt"))
-							{
-								int targent = GetEntPropEnt(i,Prop_Data,"m_hTargetEnt");
-								if ((IsValidEntity(targent)) && (IsEntNetworkable(targent)))
+								bool transitionthis = true;
+								Handle dp = CreateDataPack();
+								porigin[0]-=landmarkorigin[0];
+								porigin[1]-=landmarkorigin[1];
+								porigin[2]-=landmarkorigin[2];
+								GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+								int curh = 0;
+								char vehscript[64];
+								char additionalequip[32];
+								char spawnflags[32];
+								char skin[4];
+								char hdwtype[4];
+								char parentname[32];
+								char state[4];
+								char target[32];
+								char npctype[4];
+								char npctargpath[64];
+								char npctarg[64];
+								char solidity[4];
+								char defanim[32];
+								char response[64];
+								char scriptinf[512];
+								int doorstate, sleepstate, gunenable, tkdmg, mvtype;
+								if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
+								if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
+								if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
+								if (HasEntProp(i,Prop_Data,"m_spawnEquipment")) GetEntPropString(i,Prop_Data,"m_spawnEquipment",additionalequip,sizeof(additionalequip));
+								if (HasEntProp(i,Prop_Data,"m_spawnflags"))
 								{
-									if (HasEntProp(targent,Prop_Data,"m_iName")) GetEntPropString(targent,Prop_Data,"m_iName",npctarg,sizeof(npctarg));
-									if (strlen(npctarg) < 1) Format(npctarg,sizeof(npctarg),"%i",targent);
+									int sf = GetEntProp(i,Prop_Data,"m_spawnflags");
+									Format(spawnflags,sizeof(spawnflags),"%i",sf);
 								}
-							}
-							if (HasEntProp(i,Prop_Data,"m_target"))
-							{
-								PropFieldType type;
-								FindDataMapInfo(i,"m_target",type);
-								if (type == PropField_String)
+								if (HasEntProp(i,Prop_Data,"m_nSkin"))
 								{
-									GetEntPropString(i,Prop_Data,"m_target",target,sizeof(target));
+									int sk = GetEntProp(i,Prop_Data,"m_nSkin");
+									Format(skin,sizeof(skin),"%i",sk);
 								}
-								else if ((type == PropField_Entity) && (strlen(npctarg) < 1))
+								if (HasEntProp(i,Prop_Data,"m_nHardwareType"))
 								{
-									int targent = GetEntPropEnt(i,Prop_Data,"m_target");
-									if (targent != -1) Format(npctarg,sizeof(npctarg),"%i",targent);
+									int hdw = GetEntProp(i,Prop_Data,"m_nHardwareType");
+									Format(hdwtype,sizeof(hdwtype),"%i",hdw);
 								}
-								if ((strlen(npctargpath) < 1) && (HasEntProp(i,Prop_Data,"m_vecDesiredPosition")))
+								if (par != -1)
 								{
-									float findtargetpos[3];
-									GetEntPropVector(i,Prop_Data,"m_vecDesiredPosition",findtargetpos);
-									char findpath[128];
-									findpathtrack(-1,findtargetpos,findpath);
-									if (strlen(findpath) > 0) Format(npctargpath,sizeof(npctargpath),"%s",findpath);
+									GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
+									if (HasEntProp(par,Prop_Data,"m_iGlobalname")) GetEntPropString(par,Prop_Data,"m_iGlobalname",parentglobal,sizeof(parentglobal));
+									if ((!StrEqual(parentname,"train_model",false)) && (strlen(parentglobal) < 1))
+									{
+										char parentcls[32];
+										GetEntityClassname(par,parentcls,sizeof(parentcls));
+										if (((StrEqual(parentcls,"func_door",false)) || (StrEqual(parentcls,"func_tracktrain",false))) && (StrContains(clsname,"npc_",false) == -1))
+										{
+											CloseHandle(dp);
+											transitionthis = false;
+											PushArrayCell(ignoreent,i);
+										}
+									}
 								}
-							}
-							if (HasEntProp(i,Prop_Data,"m_eDoorState")) doorstate = GetEntProp(i,Prop_Data,"m_eDoorState");
-							if (HasEntProp(i,Prop_Data,"m_SleepState")) sleepstate = GetEntProp(i,Prop_Data,"m_SleepState");
-							if (HasEntProp(i,Prop_Data,"m_Type"))
-							{
-								int inpctype = GetEntProp(i,Prop_Data,"m_Type");
-								Format(npctype,sizeof(npctype),"%i",inpctype);
-							}
-							if (HasEntProp(i,Prop_Data,"m_nSolidType"))
-							{
-								int solidtype = GetEntProp(i,Prop_Data,"m_nSolidType");
-								Format(solidity,sizeof(solidity),"%i",solidtype);
-							}
-							if (HasEntProp(i,Prop_Data,"m_bHasGun")) gunenable = GetEntProp(i,Prop_Data,"m_bHasGun");
-							if (HasEntProp(i,Prop_Data,"m_takedamage")) tkdmg = GetEntProp(i,Prop_Data,"m_takedamage");
-							if (HasEntProp(i,Prop_Data,"movetype")) mvtype = GetEntProp(i,Prop_Data,"movetype");
-							if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
-							if (HasEntProp(i,Prop_Data,"m_vecAxis"))
-							{
-								float angax[3];
-								GetEntPropVector(i,Prop_Data,"m_vecAxis",angax);
-								Format(scriptinf,sizeof(scriptinf),"%saxis \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
-							}
-							if (HasEntProp(i,Prop_Data,"m_flDistance"))
-							{
-								float dist = GetEntPropFloat(i,Prop_Data,"m_flDistance");
-								Format(scriptinf,sizeof(scriptinf),"%sdistance %1.f ",scriptinf,dist);
-							}
-							if (HasEntProp(i,Prop_Data,"m_flSpeed"))
-							{
-								float speed = GetEntPropFloat(i,Prop_Data,"m_flSpeed");
-								if (speed > 0.0) Format(scriptinf,sizeof(scriptinf),"%sspeed %1.f ",scriptinf,speed);
-							}
-							if (HasEntProp(i,Prop_Data,"m_angRotationClosed"))
-							{
-								float angax[3];
-								GetEntPropVector(i,Prop_Data,"m_angRotationClosed",angax);
-								Format(scriptinf,sizeof(scriptinf),"%sm_angRotationClosed \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
-							}
-							if (HasEntProp(i,Prop_Data,"m_angRotationOpenForward"))
-							{
-								float angax[3];
-								GetEntPropVector(i,Prop_Data,"m_angRotationOpenForward",angax);
-								Format(scriptinf,sizeof(scriptinf),"%sm_angRotationOpenForward \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
-							}
-							if (HasEntProp(i,Prop_Data,"m_angRotationOpenBack"))
-							{
-								float angax[3];
-								GetEntPropVector(i,Prop_Data,"m_angRotationOpenBack",angax);
-								Format(scriptinf,sizeof(scriptinf),"%sm_angRotationOpenBack \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
-							}
-							if (HasEntProp(i,Prop_Data,"m_angGoal"))
-							{
-								float angax[3];
-								GetEntPropVector(i,Prop_Data,"m_angGoal",angax);
-								Format(scriptinf,sizeof(scriptinf),"%sm_angGoal \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
-							}
-							if ((HasEntProp(i,Prop_Data,"m_iszEffectName")) && (strlen(mdl) < 1))
-							{
-								GetEntPropString(i,Prop_Data,"m_iszEffectName",mdl,sizeof(mdl));
-							}
-							if (HasEntProp(i,Prop_Data,"m_iszResponseContext"))
-							{
-								GetEntPropString(i,Prop_Data,"m_iszResponseContext",response,sizeof(response));
-							}
-							TrimString(scriptinf);
-							if (transitionthis)
-							{
-								bool custenttransition = false;
-								if ((custentlist != INVALID_HANDLE) && (SynFixesRunning))
+								if (StrEqual(mdl,"models/alyx_emptool_prop.mdl"))
 								{
-									if (FindStringInArray(custentlist,clsname) != -1) custenttransition = true;
-								}
-								if (custenttransition)
-								{
-									int sequence, body, parentattach, maxh;
-									char spawnercls[64];
-									char spawnertargn[64];
-									if (HasEntProp(i,Prop_Data,"m_iMaxHealth")) maxh = GetEntProp(i,Prop_Data,"m_iMaxHealth");
-									if (HasEntProp(i,Prop_Data,"m_iszNPCClassname")) GetEntPropString(i,Prop_Data,"m_iszNPCClassname",spawnercls,sizeof(spawnercls));
-									if (HasEntProp(i,Prop_Data,"m_ChildTargetName")) GetEntPropString(i,Prop_Data,"m_ChildTargetName",spawnertargn,sizeof(spawnertargn));
-									if (HasEntProp(i,Prop_Data,"m_nSequence")) sequence = GetEntProp(i,Prop_Data,"m_nSequence");
-									if (HasEntProp(i,Prop_Data,"m_iParentAttachment")) parentattach = GetEntProp(i,Prop_Data,"m_iParentAttachment");
-									if (HasEntProp(i,Prop_Data,"m_nBody")) body = GetEntProp(i,Prop_Data,"m_nBody");
-									WriteFileLine(custentinf,"{");
-									char pushch[256];
-									Format(pushch,sizeof(pushch),"\"origin\" \"%f %f %f\"",porigin[0],porigin[1],porigin[2]);
-									WriteFileLine(custentinf,pushch);
-									Format(pushch,sizeof(pushch),"\"angles\" \"%f %f %f\"",angs[0],angs[1],angs[2]);
-									WriteFileLine(custentinf,pushch);
-									if (strlen(vehscript) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"vehiclescript\" \"%s\"",vehscript);
-										WriteFileLine(custentinf,pushch);
-									}
-									Format(pushch,sizeof(pushch),"\"spawnflags\" \"%s\"",spawnflags);
-									WriteFileLine(custentinf,pushch);
-									if (strlen(targn) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"targetname\" \"%s\"",targn);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(mdl) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"model\" \"%s\"",mdl);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (sleepstate != -10)
-									{
-										Format(pushch,sizeof(pushch),"\"sleepstate\" \"%i\"",sleepstate);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(additionalequip) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"additionalequipment\" \"%s\"",additionalequip);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(parentname) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"parentname\" \"%s\"",parentname);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(npctarg) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"targetentity\" \"%s\"",npctarg);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(npctargpath) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"target\" \"%s\"",npctargpath);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(defanim) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"DefaultAnim\" \"%s\"",defanim);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(spawnercls) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"NPCType\" \"%s\"",spawnercls);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(spawnertargn) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"NPCTargetname\" \"%s\"",spawnertargn);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (curh != 0)
-									{
-										Format(pushch,sizeof(pushch),"\"health\" \"%i\"",curh);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (maxh != 0)
-									{
-										Format(pushch,sizeof(pushch),"\"max_health\" \"%i\"",maxh);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(skin) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"skin\" \"%s\"",skin);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(hdwtype) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"hardware\" \"%s\"",hdwtype);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(state) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"npcstate\" \"%s\"",state);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(npctype) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"citizentype\" \"%s\"",npctype);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (doorstate != 0)
-									{
-										Format(pushch,sizeof(pushch),"\"doorstate\" \"%i\"",doorstate);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (sequence != 0)
-									{
-										Format(pushch,sizeof(pushch),"\"sequence\" \"%i\"",sequence);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (parentattach != 0)
-									{
-										Format(pushch,sizeof(pushch),"\"parentattachment\" \"%i\"",parentattach);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (body != 0)
-									{
-										Format(pushch,sizeof(pushch),"\"body\" \"%i\"",body);
-										WriteFileLine(custentinf,pushch);
-									}
-									if (strlen(response) > 0)
-									{
-										Format(pushch,sizeof(pushch),"\"ResponseContext\" \"%s\"",response);
-										WriteFileLine(custentinf,pushch);
-									}
-									Format(pushch,sizeof(pushch),"\"classname\" \"%s\"",clsname);
-									WriteFileLine(custentinf,pushch);
-									WriteFileLine(custentinf,"}");
-								}
-								else
-								{
-									WritePackString(dp,clsname);
-									WritePackString(dp,targn);
-									WritePackString(dp,mdl);
-									WritePackCell(dp,curh);
-									WritePackFloat(dp,porigin[0]);
-									WritePackFloat(dp,porigin[1]);
-									WritePackFloat(dp,porigin[2]);
-									WritePackFloat(dp,angs[0]);
-									WritePackFloat(dp,angs[1]);
-									WritePackFloat(dp,angs[2]);
-									WritePackString(dp,vehscript);
-									WritePackString(dp,spawnflags);
-									WritePackString(dp,additionalequip);
-									WritePackString(dp,skin);
-									WritePackString(dp,hdwtype);
-									WritePackString(dp,parentname);
-									WritePackString(dp,state);
-									WritePackString(dp,npctargpath);
-									WritePackCell(dp,doorstate);
-									WritePackCell(dp,sleepstate);
-									WritePackString(dp,npctype);
-									WritePackString(dp,solidity);
-									WritePackCell(dp,gunenable);
-									WritePackCell(dp,tkdmg);
-									WritePackCell(dp,mvtype);
-									WritePackString(dp,defanim);
-									WritePackString(dp,response);
-									if (strlen(scriptinf) > 0) WritePackString(dp,scriptinf);
-									WritePackString(dp,"endofpack");
-									PushArrayCell(transitionents,dp);
+									CloseHandle(dp);
+									transitionthis = false;
 									PushArrayCell(ignoreent,i);
 								}
-								if (dbg) LogMessage("Save Transition %s TargetName \"%s\" Model \"%s\" Offset \"%1.f %1.f %1.f\"",clsname,targn,mdl,porigin[0],porigin[1],porigin[2]);
+								if (HasEntProp(i,Prop_Data,"m_state"))
+								{
+									int istate = GetEntProp(i,Prop_Data,"m_state");
+									Format(state,sizeof(state),"%i",istate);
+									//PrintToServer("State %s",state);
+								}
+								if (HasEntProp(i,Prop_Data,"m_hTargetEnt"))
+								{
+									int targent = GetEntPropEnt(i,Prop_Data,"m_hTargetEnt");
+									if ((IsValidEntity(targent)) && (IsEntNetworkable(targent)))
+									{
+										if (HasEntProp(targent,Prop_Data,"m_iName")) GetEntPropString(targent,Prop_Data,"m_iName",npctarg,sizeof(npctarg));
+										if (strlen(npctarg) < 1) Format(npctarg,sizeof(npctarg),"%i",targent);
+									}
+								}
+								if (HasEntProp(i,Prop_Data,"m_target"))
+								{
+									PropFieldType type;
+									FindDataMapInfo(i,"m_target",type);
+									if (type == PropField_String)
+									{
+										GetEntPropString(i,Prop_Data,"m_target",target,sizeof(target));
+									}
+									else if ((type == PropField_Entity) && (strlen(npctarg) < 1))
+									{
+										int targent = GetEntPropEnt(i,Prop_Data,"m_target");
+										if (targent != -1) Format(npctarg,sizeof(npctarg),"%i",targent);
+									}
+									if ((strlen(npctargpath) < 1) && (HasEntProp(i,Prop_Data,"m_vecDesiredPosition")))
+									{
+										float findtargetpos[3];
+										GetEntPropVector(i,Prop_Data,"m_vecDesiredPosition",findtargetpos);
+										char findpath[128];
+										findpathtrack(-1,findtargetpos,findpath);
+										if (strlen(findpath) > 0) Format(npctargpath,sizeof(npctargpath),"%s",findpath);
+									}
+								}
+								if (HasEntProp(i,Prop_Data,"m_eDoorState")) doorstate = GetEntProp(i,Prop_Data,"m_eDoorState");
+								if (HasEntProp(i,Prop_Data,"m_SleepState")) sleepstate = GetEntProp(i,Prop_Data,"m_SleepState");
+								if (HasEntProp(i,Prop_Data,"m_Type"))
+								{
+									int inpctype = GetEntProp(i,Prop_Data,"m_Type");
+									Format(npctype,sizeof(npctype),"%i",inpctype);
+								}
+								if (HasEntProp(i,Prop_Data,"m_nSolidType"))
+								{
+									int solidtype = GetEntProp(i,Prop_Data,"m_nSolidType");
+									Format(solidity,sizeof(solidity),"%i",solidtype);
+								}
+								if (HasEntProp(i,Prop_Data,"m_bHasGun")) gunenable = GetEntProp(i,Prop_Data,"m_bHasGun");
+								if (HasEntProp(i,Prop_Data,"m_takedamage")) tkdmg = GetEntProp(i,Prop_Data,"m_takedamage");
+								if (HasEntProp(i,Prop_Data,"movetype")) mvtype = GetEntProp(i,Prop_Data,"movetype");
+								if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
+								if (HasEntProp(i,Prop_Data,"m_vecAxis"))
+								{
+									float angax[3];
+									GetEntPropVector(i,Prop_Data,"m_vecAxis",angax);
+									Format(scriptinf,sizeof(scriptinf),"%saxis \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+								}
+								if (HasEntProp(i,Prop_Data,"m_flDistance"))
+								{
+									float dist = GetEntPropFloat(i,Prop_Data,"m_flDistance");
+									Format(scriptinf,sizeof(scriptinf),"%sdistance %1.f ",scriptinf,dist);
+								}
+								if (HasEntProp(i,Prop_Data,"m_flSpeed"))
+								{
+									float speed = GetEntPropFloat(i,Prop_Data,"m_flSpeed");
+									if (speed > 0.0) Format(scriptinf,sizeof(scriptinf),"%sspeed %1.f ",scriptinf,speed);
+								}
+								if (HasEntProp(i,Prop_Data,"m_angRotationClosed"))
+								{
+									float angax[3];
+									GetEntPropVector(i,Prop_Data,"m_angRotationClosed",angax);
+									Format(scriptinf,sizeof(scriptinf),"%sm_angRotationClosed \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+								}
+								if (HasEntProp(i,Prop_Data,"m_angRotationOpenForward"))
+								{
+									float angax[3];
+									GetEntPropVector(i,Prop_Data,"m_angRotationOpenForward",angax);
+									Format(scriptinf,sizeof(scriptinf),"%sm_angRotationOpenForward \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+								}
+								if (HasEntProp(i,Prop_Data,"m_angRotationOpenBack"))
+								{
+									float angax[3];
+									GetEntPropVector(i,Prop_Data,"m_angRotationOpenBack",angax);
+									Format(scriptinf,sizeof(scriptinf),"%sm_angRotationOpenBack \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+								}
+								if (HasEntProp(i,Prop_Data,"m_angGoal"))
+								{
+									float angax[3];
+									GetEntPropVector(i,Prop_Data,"m_angGoal",angax);
+									Format(scriptinf,sizeof(scriptinf),"%sm_angGoal \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+								}
+								if ((HasEntProp(i,Prop_Data,"m_iszEffectName")) && (strlen(mdl) < 1))
+								{
+									GetEntPropString(i,Prop_Data,"m_iszEffectName",mdl,sizeof(mdl));
+								}
+								if (HasEntProp(i,Prop_Data,"m_iszResponseContext"))
+								{
+									GetEntPropString(i,Prop_Data,"m_iszResponseContext",response,sizeof(response));
+								}
+								TrimString(scriptinf);
+								if (transitionthis)
+								{
+									bool custenttransition = false;
+									if ((custentlist != INVALID_HANDLE) && (SynFixesRunning))
+									{
+										if (FindStringInArray(custentlist,clsname) != -1) custenttransition = true;
+									}
+									if (custenttransition)
+									{
+										int sequence, body, parentattach, maxh;
+										char spawnercls[64];
+										char spawnertargn[64];
+										if (HasEntProp(i,Prop_Data,"m_iMaxHealth")) maxh = GetEntProp(i,Prop_Data,"m_iMaxHealth");
+										if (HasEntProp(i,Prop_Data,"m_iszNPCClassname")) GetEntPropString(i,Prop_Data,"m_iszNPCClassname",spawnercls,sizeof(spawnercls));
+										if (HasEntProp(i,Prop_Data,"m_ChildTargetName")) GetEntPropString(i,Prop_Data,"m_ChildTargetName",spawnertargn,sizeof(spawnertargn));
+										if (HasEntProp(i,Prop_Data,"m_nSequence")) sequence = GetEntProp(i,Prop_Data,"m_nSequence");
+										if (HasEntProp(i,Prop_Data,"m_iParentAttachment")) parentattach = GetEntProp(i,Prop_Data,"m_iParentAttachment");
+										if (HasEntProp(i,Prop_Data,"m_nBody")) body = GetEntProp(i,Prop_Data,"m_nBody");
+										WriteFileLine(custentinf,"{");
+										char pushch[256];
+										Format(pushch,sizeof(pushch),"\"origin\" \"%f %f %f\"",porigin[0],porigin[1],porigin[2]);
+										WriteFileLine(custentinf,pushch);
+										Format(pushch,sizeof(pushch),"\"angles\" \"%f %f %f\"",angs[0],angs[1],angs[2]);
+										WriteFileLine(custentinf,pushch);
+										if (strlen(vehscript) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"vehiclescript\" \"%s\"",vehscript);
+											WriteFileLine(custentinf,pushch);
+										}
+										Format(pushch,sizeof(pushch),"\"spawnflags\" \"%s\"",spawnflags);
+										WriteFileLine(custentinf,pushch);
+										if (strlen(targn) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"targetname\" \"%s\"",targn);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(mdl) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"model\" \"%s\"",mdl);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (sleepstate != -10)
+										{
+											Format(pushch,sizeof(pushch),"\"sleepstate\" \"%i\"",sleepstate);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(additionalequip) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"additionalequipment\" \"%s\"",additionalequip);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(parentname) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"parentname\" \"%s\"",parentname);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(npctarg) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"targetentity\" \"%s\"",npctarg);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(npctargpath) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"target\" \"%s\"",npctargpath);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(defanim) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"DefaultAnim\" \"%s\"",defanim);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(spawnercls) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"NPCType\" \"%s\"",spawnercls);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(spawnertargn) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"NPCTargetname\" \"%s\"",spawnertargn);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (curh != 0)
+										{
+											Format(pushch,sizeof(pushch),"\"health\" \"%i\"",curh);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (maxh != 0)
+										{
+											Format(pushch,sizeof(pushch),"\"max_health\" \"%i\"",maxh);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(skin) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"skin\" \"%s\"",skin);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(hdwtype) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"hardware\" \"%s\"",hdwtype);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(state) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"npcstate\" \"%s\"",state);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(npctype) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"citizentype\" \"%s\"",npctype);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (doorstate != 0)
+										{
+											Format(pushch,sizeof(pushch),"\"doorstate\" \"%i\"",doorstate);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (sequence != 0)
+										{
+											Format(pushch,sizeof(pushch),"\"sequence\" \"%i\"",sequence);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (parentattach != 0)
+										{
+											Format(pushch,sizeof(pushch),"\"parentattachment\" \"%i\"",parentattach);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (body != 0)
+										{
+											Format(pushch,sizeof(pushch),"\"body\" \"%i\"",body);
+											WriteFileLine(custentinf,pushch);
+										}
+										if (strlen(response) > 0)
+										{
+											Format(pushch,sizeof(pushch),"\"ResponseContext\" \"%s\"",response);
+											WriteFileLine(custentinf,pushch);
+										}
+										Format(pushch,sizeof(pushch),"\"classname\" \"%s\"",clsname);
+										WriteFileLine(custentinf,pushch);
+										WriteFileLine(custentinf,"}");
+									}
+									else
+									{
+										WritePackString(dp,clsname);
+										WritePackString(dp,targn);
+										WritePackString(dp,mdl);
+										WritePackCell(dp,curh);
+										WritePackFloat(dp,porigin[0]);
+										WritePackFloat(dp,porigin[1]);
+										WritePackFloat(dp,porigin[2]);
+										WritePackFloat(dp,angs[0]);
+										WritePackFloat(dp,angs[1]);
+										WritePackFloat(dp,angs[2]);
+										WritePackString(dp,vehscript);
+										WritePackString(dp,spawnflags);
+										WritePackString(dp,additionalequip);
+										WritePackString(dp,skin);
+										WritePackString(dp,hdwtype);
+										WritePackString(dp,parentname);
+										WritePackString(dp,state);
+										WritePackString(dp,npctargpath);
+										WritePackCell(dp,doorstate);
+										WritePackCell(dp,sleepstate);
+										WritePackString(dp,npctype);
+										WritePackString(dp,solidity);
+										WritePackCell(dp,gunenable);
+										WritePackCell(dp,tkdmg);
+										WritePackCell(dp,mvtype);
+										WritePackString(dp,defanim);
+										WritePackString(dp,response);
+										if (strlen(scriptinf) > 0) WritePackString(dp,scriptinf);
+										WritePackString(dp,"endofpack");
+										PushArrayCell(transitionents,dp);
+										PushArrayCell(ignoreent,i);
+									}
+									if (dbg) LogMessage("Save Transition %s TargetName \"%s\" Model \"%s\" Offset \"%1.f %1.f %1.f\"",clsname,targn,mdl,porigin[0],porigin[1],porigin[2]);
+								}
 							}
 						}
 					}
-				}
-				else if ((StrEqual(clsname,"player",false)) && (!remove))
-				{
-					char SteamID[32];
-					GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
-					PushArrayString(transitionplyorigin,SteamID);
+					else if ((StrEqual(clsname,"player",false)) && (!remove))
+					{
+						char SteamID[32];
+						GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
+						PushArrayString(transitionplyorigin,SteamID);
+					}
 				}
 			}
 		}
