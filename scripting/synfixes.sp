@@ -82,7 +82,7 @@ bool reloadaftersetup = false;
 bool weapmanagersplaced = false;
 bool mapchanging = false;
 
-#define PLUGIN_VERSION "1.9981"
+#define PLUGIN_VERSION "1.9982"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -11712,10 +11712,6 @@ public Action recallreset(Handle timer)
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
-	if (StrEqual(classname,"env_entity_dissolver",false))
-	{
-		//AcceptEntityInput(entity,"kill");
-	}
 	if (((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false))) && (!StrEqual(classname,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(classname,"npc_bullseye",false)) && (!StrEqual(classname,"env_xen_portal",false)) && (!StrEqual(classname,"env_xen_portal_template",false)) && (!StrEqual(classname,"npc_maker",false)) && (!StrEqual(classname,"npc_template_maker",false)) && (StrContains(classname,"info_",false) == -1) && (StrContains(classname,"game_",false) == -1) && (StrContains(classname,"trigger_",false) == -1) && (FindValueInArray(entlist,entity) == -1))
 	{
 		PushArrayCell(entlist,entity);
@@ -14393,6 +14389,7 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 					GetArrayString(dp,findcls,clsname,sizeof(clsname));
 				}
 			}
+			if (strlen(clsname) < 1) Format(clsname,sizeof(clsname),"%s",oldcls);
 			int ent = CreateEntityByName(clsname);
 			//PrintToServer("RestoreEntArray %i %s %1.f %1.f %1.f",ent,clsname,porigin[0],porigin[1],porigin[2]);
 			if ((TR_PointOutsideWorld(porigin)) && (ent != -1))
@@ -14432,13 +14429,13 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				}
 				if (StrEqual(oldcls,"logic_merchant_relay",false))
 				{
-					for (int i = 0;i<GetArraySize(passedarr);i++)
+					for (int i = 0;i<GetArraySize(dp);i++)
 					{
 						char arrstart[64];
 						char arrnext[128];
-						GetArrayString(passedarr,i,arrstart,sizeof(arrstart));
+						GetArrayString(dp,i,arrstart,sizeof(arrstart));
 						i++;
-						GetArrayString(passedarr,i,arrnext,sizeof(arrnext));
+						GetArrayString(dp,i,arrnext,sizeof(arrnext));
 						if (StrEqual(arrstart,"IsShared",false)) SetEntProp(ent,Prop_Data,"m_bInvulnerable",StringToInt(arrnext));
 						else if (StrEqual(arrstart,"AnnounceCashNeeded",false)) SetEntPropFloat(ent,Prop_Data,"m_flSpeed",StringToFloat(arrnext));
 						else if (StrEqual(arrstart,"purchasesound",false)) SetEntPropString(ent,Prop_Data,"m_iszResponseContext",arrnext);
@@ -14461,13 +14458,13 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 					Format(merchicon,sizeof(merchicon),"sprites/merchant_buy.vmt");
 					int starticonon = 1;
 					float posabove = 80.0;
-					for (int i = 0;i<GetArraySize(passedarr);i++)
+					for (int i = 0;i<GetArraySize(dp);i++)
 					{
 						char arrstart[64];
 						char arrnext[128];
-						GetArrayString(passedarr,i,arrstart,sizeof(arrstart));
+						GetArrayString(dp,i,arrstart,sizeof(arrstart));
 						i++;
-						GetArrayString(passedarr,i,arrnext,sizeof(arrnext));
+						GetArrayString(dp,i,arrnext,sizeof(arrnext));
 						if (StrEqual(arrstart,"MerchantScript",false)) DispatchKeyValue(ent,"ResponseContext",arrnext);
 						else if (StrEqual(arrstart,"MerchantIconMaterial",false)) Format(merchicon,sizeof(merchicon),"%s",arrnext);
 						else if (StrEqual(arrstart,"ShowIcon",false)) starticonon = StringToInt(arrnext);
@@ -14487,9 +14484,9 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 						if (starticonon) DispatchKeyValue(sprite,"spawnflags","1");
 						else DispatchKeyValue(sprite,"spawnflags","0");
 						float startpos[3];
-						startpos[0] = fileorigin[0];
-						startpos[1] = fileorigin[1];
-						startpos[2] = fileorigin[2]+posabove;
+						startpos[0] = porigin[0];
+						startpos[1] = porigin[1];
+						startpos[2] = porigin[2]+posabove;
 						TeleportEntity(sprite,startpos,NULL_VECTOR,NULL_VECTOR);
 						DispatchSpawn(sprite);
 						ActivateEntity(sprite);
@@ -16862,7 +16859,7 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 
 public Action customsoundchecks(char sample[PLATFORM_MAX_PATH], int& entity, float& volume, int& level, int& pitch, float pos[3], int& flags, float& delay)
 {
-	if ((StrContains(sample,"ambient/energy/zap",false) == -1) && (StrContains(sample,"alarm",false) == -1) && (StrContains(sample,"shotgun_fire",false) == -1) && (StrContains(sample,"smg1_fire1.wav",false) == -1) && (!StrEqual(sample,"common/null.wav",false)))
+	if ((StrContains(sample,"ambient/energy/zap",false) == -1) && (StrContains(sample,"alarm",false) == -1) && (StrContains(sample,"shotgun_fire",false) == -1) && (StrContains(sample,"smg1_fire1.wav",false) == -1) && (StrContains(sample,"music",false) != -1) && (!StrEqual(sample,"common/null.wav",false)))
 	{
 		if (FindValueInArray(delayedsounds,entity) == -1)
 		{
