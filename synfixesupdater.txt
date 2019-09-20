@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9981"
-			"Previous"	"1.998"
+			"Latest"  	"1.9982"
+			"Previous"	"1.9981"
 		}
 		
-		"Notes"	"Added npc_merchant, cleaned up a bit of logic_merchant_relay as well."
+		"Notes"	"Reset delayed sounds to music only."
 	}
 	
 	"Files"
