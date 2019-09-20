@@ -53,7 +53,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.99992"
+#define PLUGIN_VERSION "1.99993"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -530,8 +530,25 @@ public Action savecurgamedp(Handle timer, any dp)
 	{
 		Handle custentlist = GetCustomEntList();
 		Handle custentinf = OpenFile(custentinffile,"w");
-		for (int i = MaxClients+1;i<GetMaxEntities();i++)
+		Handle arr = CreateArray(256);
+		FindAllByClassname(arr,-1,"logic_*");
+		int maxpass = GetMaxEntities();
+		bool usearr = false;
+		if (GetArraySize(arr) > 0) maxpass++;
+		for (int j = MaxClients+1;j<maxpass;j++)
 		{
+			int i = j;
+			if (i == GetMaxEntities())
+			{
+				j = 0;
+				i = GetArrayCell(arr,0);
+				maxpass = GetArraySize(arr);
+				usearr = true;
+			}
+			else if (usearr)
+			{
+				i = GetArrayCell(arr,j);
+			}
 			if (IsValidEntity(i))
 			{
 				char cls[64];
@@ -543,6 +560,7 @@ public Action savecurgamedp(Handle timer, any dp)
 					char mdl[64];
 					float porigin[3];
 					float angs[3];
+					float speed = 0.0;
 					if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
 					else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
 					GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
@@ -555,7 +573,7 @@ public Action savecurgamedp(Handle timer, any dp)
 					char npctargpath[32];
 					char defanim[32];
 					char response[64];
-					int doorstate, sleepstate, sequence, parentattach, body, maxh, curh, sf, hdw, skin, state, npctype;
+					int doorstate, sleepstate, sequence, parentattach, body, maxh, curh, sf, hdw, skin, state, npctype, invulnerable;
 					if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 					if (HasEntProp(i,Prop_Data,"m_iMaxHealth")) maxh = GetEntProp(i,Prop_Data,"m_iMaxHealth");
 					if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
@@ -631,6 +649,8 @@ public Action savecurgamedp(Handle timer, any dp)
 					if (HasEntProp(i,Prop_Data,"m_iParentAttachment")) parentattach = GetEntProp(i,Prop_Data,"m_iParentAttachment");
 					if (HasEntProp(i,Prop_Data,"m_nBody")) body = GetEntProp(i,Prop_Data,"m_nBody");
 					if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
+					if (HasEntProp(i,Prop_Data,"m_flSpeed")) speed = GetEntPropFloat(i,Prop_Data,"m_flSpeed");
+					if (HasEntProp(i,Prop_Data,"m_bInvulnerable")) invulnerable = GetEntProp(i,Prop_Data,"m_bInvulnerable");
 					char pushch[256];
 					Format(pushch,sizeof(pushch),"\"origin\" \"%f %f %f\"",porigin[0],porigin[1],porigin[2]);
 					WriteFileLine(custentinf,pushch);
@@ -703,6 +723,11 @@ public Action savecurgamedp(Handle timer, any dp)
 						Format(pushch,sizeof(pushch),"\"max_health\" \"%i\"",maxh);
 						WriteFileLine(custentinf,pushch);
 					}
+					if (invulnerable != 0)
+					{
+						Format(pushch,sizeof(pushch),"\"invulnerable\" \"%i\"",invulnerable);
+						WriteFileLine(custentinf,pushch);
+					}
 					if (skin != 0)
 					{
 						Format(pushch,sizeof(pushch),"\"skin\" \"%i\"",skin);
@@ -743,6 +768,11 @@ public Action savecurgamedp(Handle timer, any dp)
 						Format(pushch,sizeof(pushch),"\"body\" \"%i\"",body);
 						WriteFileLine(custentinf,pushch);
 					}
+					if (speed > 0.0)
+					{
+						Format(pushch,sizeof(pushch),"\"speed\" \"%1.f\"",speed);
+						WriteFileLine(custentinf,pushch);
+					}
 					if (strlen(response) > 0)
 					{
 						Format(pushch,sizeof(pushch),"\"ResponseContext\" \"%s\"",response);
@@ -754,6 +784,7 @@ public Action savecurgamedp(Handle timer, any dp)
 				}
 			}
 		}
+		CloseHandle(arr);
 		CloseHandle(custentinf);
 		CloseHandle(custentlist);
 	}
@@ -763,6 +794,16 @@ public Action savecurgamedp(Handle timer, any dp)
 		else PrintToChat(client,"Save created with name: %s",ctimestamp);
 	}
 	return Plugin_Handled;
+}
+
+void FindAllByClassname(Handle arr, int ent, char[] classname)
+{
+	int thisent = FindEntityByClassname(ent,classname);
+	if ((IsValidEntity(thisent)) && (thisent != -1))
+	{
+		PushArrayCell(arr,thisent);
+		FindAllByClassname(arr,thisent++,classname);
+	}
 }
 
 void findpathtrack(int ent, float pathorigin[3], char[] findpathname)
