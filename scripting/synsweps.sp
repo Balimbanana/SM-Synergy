@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "0.93"
+#define PLUGIN_VERSION "0.94"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -1892,183 +1892,155 @@ public OnClientDisconnect_Post(int client)
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
 	bool setbuttons = true;
-	if (buttons > 0)
+	char curweap[24];
+	//GetClientWeapon(client,curweap,sizeof(curweap));
+	int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+	if (IsValidEntity(weap)) GetEntPropString(weap,Prop_Data,"m_iClassname",curweap,sizeof(curweap));
+	int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
+	int useent = GetEntPropEnt(client,Prop_Data,"m_hUseEntity");
+	if ((vehicle == -1) && (useent == -1))
 	{
-		char curweap[24];
-		//GetClientWeapon(client,curweap,sizeof(curweap));
-		int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
-		if (IsValidEntity(weap)) GetEntPropString(weap,Prop_Data,"m_iClassname",curweap,sizeof(curweap));
-		int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
-		int useent = GetEntPropEnt(client,Prop_Data,"m_hUseEntity");
-		if ((vehicle == -1) && (useent == -1))
+		if (buttons & IN_ATTACK)
 		{
-			if (buttons & IN_ATTACK)
+			if (!(g_LastButtons[client] & IN_ATTACK))
 			{
-				if (!(g_LastButtons[client] & IN_ATTACK))
+				if (StrContains(curweap,"custom_",false) == 0)
 				{
-					if (StrContains(curweap,"custom_",false) == 0)
+					if (centnextatk[weap] < GetGameTime())
 					{
-						if (centnextatk[weap] < GetGameTime())
-						{
-							char custweap[64];
-							GetEntPropString(weap,Prop_Data,"m_iszResponseContext",custweap,sizeof(custweap));
-							FireCustomWeap(client,weap,custweap,1);
-						}
-						setbuttons = false;
+						char custweap[64];
+						GetEntPropString(weap,Prop_Data,"m_iszResponseContext",custweap,sizeof(custweap));
+						FireCustomWeap(client,weap,custweap,1);
 					}
-					else if (StrEqual(curweap,"weapon_immolator",false))
+					setbuttons = false;
+				}
+				else if (StrEqual(curweap,"weapon_immolator",false))
+				{
+					if (IsValidEntity(weap))
 					{
-						if (IsValidEntity(weap))
+						if (HasEntProp(weap,Prop_Data,"m_flNextPrimaryAttack"))
 						{
-							if (HasEntProp(weap,Prop_Data,"m_flNextPrimaryAttack"))
+							float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
+							if (centnextatk[client] < nextatk)
 							{
-								float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
-								if (centnextatk[client] < nextatk)
-								{
-									SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",nextatk-0.1);
-									centnextatk[client] = nextatk+0.05;
-									//create fireball sprite moving from cl with cone
-									//check collision dist from sprite, remove when out of world or timer
-								}
-								setbuttons = false;
+								SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",nextatk-0.1);
+								centnextatk[client] = nextatk+0.05;
+								//create fireball sprite moving from cl with cone
+								//check collision dist from sprite, remove when out of world or timer
 							}
+							setbuttons = false;
 						}
 					}
-					else if (StrEqual(curweap,"weapon_flaregun",false))
+				}
+				else if (StrEqual(curweap,"weapon_flaregun",false))
+				{
+					if (weap != -1)
 					{
-						if (weap != -1)
+						float Time = GetTickedTime();
+						if ((GetEntProp(weap,Prop_Data,"m_iClip1") > 0) && (WeapAttackSpeed[client] < Time))
 						{
-							float Time = GetTickedTime();
-							if ((GetEntProp(weap,Prop_Data,"m_iClip1") > 0) && (WeapAttackSpeed[client] < Time))
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
 							{
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if (viewmdl != -1)
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								int mdlseq = 1;
+								char mdl[64];
+								GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+								if (!StrEqual(mdl,"models/weapons/v_flaregun.mdl",false))
+									mdlseq = 2;
+								if (seq != mdlseq)
 								{
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									int mdlseq = 1;
-									char mdl[64];
-									GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-									if (!StrEqual(mdl,"models/weapons/v_flaregun.mdl",false))
-										mdlseq = 2;
-									if (seq != mdlseq)
+									SetEntProp(weap,Prop_Data,"m_iClip1",GetEntProp(weap,Prop_Data,"m_iClip1")-1);
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+									ChangeEdictState(viewmdl);
+									CreateTimer(0.6,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
+									int flare = CreateEntityByName("env_flare");
+									if (flare != -1)
 									{
-										SetEntProp(weap,Prop_Data,"m_iClip1",GetEntProp(weap,Prop_Data,"m_iClip1")-1);
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-										ChangeEdictState(viewmdl);
-										CreateTimer(0.6,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
-										int flare = CreateEntityByName("env_flare");
-										if (flare != -1)
+										float plyfirepos[3];
+										float plyang[3];
+										GetClientEyeAngles(client,plyang);
+										GetClientEyePosition(client,plyfirepos);
+										char flareduration[8];
+										Format(flareduration,sizeof(flareduration),"10");
+										Handle cvar = FindConVar("sk_flaregun_ignighttime");
+										if (cvar != INVALID_HANDLE) GetConVarString(cvar,flareduration,sizeof(flareduration));
+										CloseHandle(cvar);
+										DispatchKeyValue(flare,"duration",flareduration);
+										TeleportEntity(flare,plyfirepos,plyang,NULL_VECTOR);
+										DispatchSpawn(flare);
+										ActivateEntity(flare);
+										SetVariantString("900 0 10");
+										AcceptEntityInput(flare,"Launch");
+										int flarebox = CreateEntityByName("trigger_multiple");
+										if (flarebox != -1)
 										{
-											float plyfirepos[3];
-											float plyang[3];
-											GetClientEyeAngles(client,plyang);
-											GetClientEyePosition(client,plyfirepos);
-											char flareduration[8];
-											Format(flareduration,sizeof(flareduration),"10");
-											Handle cvar = FindConVar("sk_flaregun_ignighttime");
-											if (cvar != INVALID_HANDLE) GetConVarString(cvar,flareduration,sizeof(flareduration));
-											CloseHandle(cvar);
-											DispatchKeyValue(flare,"duration",flareduration);
-											TeleportEntity(flare,plyfirepos,plyang,NULL_VECTOR);
-											DispatchSpawn(flare);
-											ActivateEntity(flare);
-											SetVariantString("900 0 10");
-											AcceptEntityInput(flare,"Launch");
-											int flarebox = CreateEntityByName("trigger_multiple");
-											if (flarebox != -1)
-											{
-												DispatchKeyValue(flarebox,"spawnflags","66");
-												DispatchKeyValue(flarebox,"wait","1");
-												if (!IsModelPrecached("*1")) PrecacheModel("*1",true);
-												DispatchKeyValue(flarebox,"model","*1");
-												TeleportEntity(flarebox,plyfirepos,plyang,NULL_VECTOR);
-												DispatchSpawn(flarebox);
-												ActivateEntity(flarebox);
-												SetVariantString("!activator");
-												AcceptEntityInput(flarebox,"SetParent",flare);
-												HookSingleEntityOutput(flarebox,"OnTrigger",EntityOutput:StartTouchFlare);
-												SDKHook(flarebox, SDKHook_StartTouch, StartTouchFlaretch);
-												SDKHook(flare, SDKHook_StartTouch, StartTouchFlaretch);
-												float small[3];
-												small[0] = -30.0;
-												small[1] = -30.0;
-												small[2] = -30.0;
-												SetEntPropVector(flarebox,Prop_Data,"m_vecMins",small);
-												small[0] = 30.0;
-												small[1] = 30.0;
-												small[2] = 30.0;
-												SetEntPropVector(flarebox,Prop_Data,"m_vecMaxs",small);
-												SetEntPropEnt(flarebox,Prop_Data,"m_hEffectEntity",client);
-												SetEntPropEnt(flare,Prop_Data,"m_hEffectEntity",client);
-											}
+											DispatchKeyValue(flarebox,"spawnflags","66");
+											DispatchKeyValue(flarebox,"wait","1");
+											if (!IsModelPrecached("*1")) PrecacheModel("*1",true);
+											DispatchKeyValue(flarebox,"model","*1");
+											TeleportEntity(flarebox,plyfirepos,plyang,NULL_VECTOR);
+											DispatchSpawn(flarebox);
+											ActivateEntity(flarebox);
+											SetVariantString("!activator");
+											AcceptEntityInput(flarebox,"SetParent",flare);
+											HookSingleEntityOutput(flarebox,"OnTrigger",EntityOutput:StartTouchFlare);
+											SDKHook(flarebox, SDKHook_StartTouch, StartTouchFlaretch);
+											SDKHook(flare, SDKHook_StartTouch, StartTouchFlaretch);
+											float small[3];
+											small[0] = -30.0;
+											small[1] = -30.0;
+											small[2] = -30.0;
+											SetEntPropVector(flarebox,Prop_Data,"m_vecMins",small);
+											small[0] = 30.0;
+											small[1] = 30.0;
+											small[2] = 30.0;
+											SetEntPropVector(flarebox,Prop_Data,"m_vecMaxs",small);
+											SetEntPropEnt(flarebox,Prop_Data,"m_hEffectEntity",client);
+											SetEntPropEnt(flare,Prop_Data,"m_hEffectEntity",client);
 										}
-										if (FileExists("sound/weapons/flaregun/fire.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\flaregun\\fire.wav", weap, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
 									}
+									if (FileExists("sound/weapons/flaregun/fire.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\flaregun\\fire.wav", weap, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
 								}
-								WeapAttackSpeed[client] = Time+1.0;
 							}
+							WeapAttackSpeed[client] = Time+1.0;
 						}
 					}
-					else if (StrEqual(curweap,"weapon_medkit",false))
+				}
+				else if (StrEqual(curweap,"weapon_medkit",false))
+				{
+					if (weap != -1)
 					{
-						if (weap != -1)
+						int medkitammo = GetEntProp(client,Prop_Data,"m_iHealthPack");
+						if (medkitammo > 0)
 						{
-							int medkitammo = GetEntProp(client,Prop_Data,"m_iHealthPack");
-							if (medkitammo > 0)
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
 							{
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if (viewmdl != -1)
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								int mdlseq = 3;
+								if (seq != mdlseq)
 								{
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									int mdlseq = 3;
-									if (seq != mdlseq)
+									int targ = GetClientAimTarget(client, false);
+									if ((targ > 0) && (targ < MaxClients+1))
 									{
-										int targ = GetClientAimTarget(client, false);
-										if ((targ > 0) && (targ < MaxClients+1))
+										char clsname[24];
+										GetEntityClassname(targ,clsname,sizeof(clsname));
+										float orgs[3];
+										float targorgs[3];
+										GetEntPropVector(client, Prop_Data, "m_vecAbsOrigin", orgs);
+										GetEntPropVector(targ, Prop_Data, "m_vecAbsOrigin", targorgs);
+										float chkdist = GetVectorDistance(orgs, targorgs, false);
+										if ((StrEqual(clsname, "player")) && (RoundFloat(chkdist) < 91))
 										{
-											char clsname[24];
-											GetEntityClassname(targ,clsname,sizeof(clsname));
-											float orgs[3];
-											float targorgs[3];
-											GetEntPropVector(client, Prop_Data, "m_vecAbsOrigin", orgs);
-											GetEntPropVector(targ, Prop_Data, "m_vecAbsOrigin", targorgs);
-											float chkdist = GetVectorDistance(orgs, targorgs, false);
-											if ((StrEqual(clsname, "player")) && (RoundFloat(chkdist) < 91))
+											int a,b;
+											if (HasEntProp(client,Prop_Data,"m_iTeamNum")) a = GetEntProp(client,Prop_Data,"m_iTeamNum");
+											if (HasEntProp(targ,Prop_Data,"m_iTeamNum")) b = GetEntProp(targ,Prop_Data,"m_iTeamNum");
+											if (a == b)
 											{
-												int a,b;
-												if (HasEntProp(client,Prop_Data,"m_iTeamNum")) a = GetEntProp(client,Prop_Data,"m_iTeamNum");
-												if (HasEntProp(targ,Prop_Data,"m_iTeamNum")) b = GetEntProp(targ,Prop_Data,"m_iTeamNum");
-												if (a == b)
-												{
-													int targh = GetClientHealth(targ);
-													int targmh = 100;
-													if (HasEntProp(targ,Prop_Send,"m_iMaxHealth")) targmh = GetEntProp(targ,Prop_Send,"m_iMaxHealth");
-													if (targh < targmh)
-													{
-														float Time = GetTickedTime();
-														if (Time >= Healchk[client])
-														{
-															if (medkitammo-10 < 0) SetEntProp(client, Prop_Data, "m_iHealthPack", 0);
-															else SetEntProp(client, Prop_Data, "m_iHealthPack", medkitammo-10);
-															if (targh+10 > targmh) SetEntProp(targ, Prop_Data, "m_iHealth", targmh);
-															else SetEntProp(targ, Prop_Data, "m_iHealth", targh+10);
-															Healchk[client] = Time+0.6;
-															EmitSoundToAll("items/medshot4.wav", client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
-														}
-													}
-												}
-											}
-										}
-										else if (IsValidEntity(targ))
-										{
-											char clsname[24];
-											GetEntityClassname(targ,clsname,sizeof(clsname));
-											if ((StrContains(clsname,"npc_",false) == 0) || (StrContains(clsname,"monster_",false) == 0))
-											if (CheckNPCAlly(clsname,targ))
-											{
-												int targh = GetEntProp(targ,Prop_Data,"m_iHealth");
+												int targh = GetClientHealth(targ);
 												int targmh = 100;
-												if (HasEntProp(targ,Prop_Data,"m_iMaxHealth")) targmh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
+												if (HasEntProp(targ,Prop_Send,"m_iMaxHealth")) targmh = GetEntProp(targ,Prop_Send,"m_iMaxHealth");
 												if (targh < targmh)
 												{
 													float Time = GetTickedTime();
@@ -2084,1712 +2056,92 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 												}
 											}
 										}
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-										ChangeEdictState(viewmdl);
-										CreateTimer(0.6,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
 									}
-								}
-							}
-						}
-					}
-					else if ((StrEqual(curweap,"weapon_manhacktoss",false)) || (StrEqual(curweap,"weapon_manhackgun",false)) || (StrEqual(curweap,"weapon_manhack",false)))
-					{
-						if (weap != -1)
-						{
-							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-							if (viewmdl != -1)
-							{
-								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-								if ((seq >= 3) && (seq <= 6))
-								{
-									SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetRandomInt(5,6));
+									else if (IsValidEntity(targ))
+									{
+										char clsname[24];
+										GetEntityClassname(targ,clsname,sizeof(clsname));
+										if ((StrContains(clsname,"npc_",false) == 0) || (StrContains(clsname,"monster_",false) == 0))
+										if (CheckNPCAlly(clsname,targ))
+										{
+											int targh = GetEntProp(targ,Prop_Data,"m_iHealth");
+											int targmh = 100;
+											if (HasEntProp(targ,Prop_Data,"m_iMaxHealth")) targmh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
+											if (targh < targmh)
+											{
+												float Time = GetTickedTime();
+												if (Time >= Healchk[client])
+												{
+													if (medkitammo-10 < 0) SetEntProp(client, Prop_Data, "m_iHealthPack", 0);
+													else SetEntProp(client, Prop_Data, "m_iHealthPack", medkitammo-10);
+													if (targh+10 > targmh) SetEntProp(targ, Prop_Data, "m_iHealth", targmh);
+													else SetEntProp(targ, Prop_Data, "m_iHealth", targh+10);
+													Healchk[client] = Time+0.6;
+													EmitSoundToAll("items/medshot4.wav", client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+												}
+											}
+										}
+									}
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
 									ChangeEdictState(viewmdl);
-									CreateTimer(0.75,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
-									ManHackGo(client);
+									CreateTimer(0.6,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
 								}
-								else if (ManHackAmmo[client] > 0)
-								{
-									int mdlseq = 2;
-									if (seq != mdlseq)
-									{
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-										ChangeEdictState(viewmdl);
-										CreateTimer(2.0,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
-									}
-								}
-							}
-						}
-					}
-					else if (StrEqual(curweap,"weapon_cguard"))
-					{
-						float Time = GetTickedTime();
-						if ((antispamchk[client] <= Time) && (CGuardAmm[client] > 0))
-						{
-							cstr(client);
-							antispamchk[client] = Time + 1.5;
-							CGuardAmm[client]--;
-						}
-					}
-					else if (StrEqual(curweap,"weapon_gluon",false))
-					{
-						setbuttons = false;
-						if (weap != -1)
-						{
-							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-							if (viewmdl != -1)
-							{
-								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-								if ((EnergyAmm[client] < 1) && (seq == 1))
-								{
-									if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",EnergyAmm[client]);
-									if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",EnergyAmm[client]);
-									float orgs[3];
-									if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
-									else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
-									SetEntProp(viewmdl,Prop_Send,"m_nSequence",2);
-									char snd[64];
-									Format(snd,sizeof(snd),"weapons\\gluon\\special1.wav");
-									StopSound(weap,SNDCHAN_WEAPON,snd);
-									if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
-									Format(snd,sizeof(snd),"weapons\\gluon\\special2.wav");
-									EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
-									CreateTimer(0.2,resetviewmdl,viewmdl);
-									WeapSnd[client] = 0.0;
-									if ((EndTarg[client] != 0) && (IsValidEntity(EndTarg[client])))
-									{
-										int effect = CreateEntityByName("info_particle_system");
-										if (effect != -1)
-										{
-											float endorg[3];
-											if (HasEntProp(EndTarg[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(EndTarg[client],Prop_Data,"m_vecAbsOrigin",endorg);
-											else if (HasEntProp(EndTarg[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(EndTarg[client],Prop_Send,"m_vecOrigin",endorg);
-											float angs[3];
-											if (HasEntProp(EndTarg[client],Prop_Data,"m_angAbsRotation")) GetEntPropVector(EndTarg[client],Prop_Data,"m_angAbsRotation",angs);
-											DispatchKeyValue(effect,"effect_name","gluon_beam_burst");
-											DispatchKeyValue(effect,"start_active","1");
-											TeleportEntity(effect,endorg,angs,NULL_VECTOR);
-											DispatchSpawn(effect);
-											ActivateEntity(effect);
-											AcceptEntityInput(effect,"Start");
-											int entindx = EntIndexToEntRef(effect);
-											CreateTimer(0.5,cleanup,entindx,TIMER_FLAG_NO_MAPCHANGE);
-											int beam = GetEntPropEnt(EndTarg[client],Prop_Data,"m_hEffectEntity");
-											if ((beam != 0) && (IsValidEntity(beam)))
-											{
-												int beam2 = GetEntPropEnt(beam,Prop_Data,"m_hEffectEntity");
-												if ((beam2 != 0) && (IsValidEntity(beam2))) AcceptEntityInput(beam2,"kill");
-												AcceptEntityInput(beam,"kill");
-											}
-											if ((HandAttach[client] != 0) && (IsValidEntity(HandAttach[client])))
-											{
-												int sprite = GetEntPropEnt(HandAttach[client],Prop_Data,"m_hEffectEntity");
-												if ((sprite != 0) && (IsValidEntity(sprite)))
-												{
-													SetEntPropEnt(HandAttach[client],Prop_Data,"m_hEffectEntity",-1);
-													AcceptEntityInput(sprite,"kill");
-												}
-											}
-											AcceptEntityInput(EndTarg[client],"kill");
-										}
-										EndTarg[client] = 0;
-									}
-								}
-								else if (EnergyAmm[client] > 0)
-								{
-									if (seq != 1)
-									{
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",1);
-									}
-									else
-									{
-										if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",EnergyAmm[client]);
-										if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",EnergyAmm[client]);
-										if (HasEntProp(weap,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(weap,Prop_Data,"m_iPrimaryAmmoType",12);
-										int ammover = GetEntProp(client,Prop_Send,"m_iAmmo",_,12);
-										if (ammover > 0)
-										{
-											Ammo12Reset[client] = ammover;
-											SetEntProp(client,Prop_Data,"m_iAmmo",0,_,12);
-										}
-										float Time = GetTickedTime();
-										//GameSounds: weapon_gluon.Empty weapon_gluon.Special1 weapon_gluon.Special2 weapon_gluon.Special3
-										if (WeapSnd[client] < Time)
-										{
-											char snd[64];
-											Format(snd,sizeof(snd),"weapons\\gluon\\special1.wav");
-											StopSound(weap,SNDCHAN_WEAPON,snd);
-											if (WeapSnd[client] > 0.0)
-											{
-												float orgs[3];
-												if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
-												else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
-												EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
-												EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
-											}
-											else EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_TRAIN);
-											WeapSnd[client] = Time+9.0;
-										}
-										float endpos[3];
-										float plyfirepos[3];
-										float plyang[3];
-										GetClientEyeAngles(client,plyang);
-										GetClientEyePosition(client,plyfirepos);
-										TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
-										TR_GetEndPosition(endpos);
-										if (WeapAttackSpeed[client] < Time)
-										{
-											int targ = TR_GetEntityIndex();
-											int hitgroup = 0;
-											if ((IsValidEntity(targ)) && (targ != 0)) hitgroup = TR_GetHitGroup();
-											int ent = CreateEntityByName("env_explosion");
-											if (ent != -1)
-											{
-												DispatchKeyValue(ent,"iMagnitude","20");
-												DispatchKeyValue(ent,"iRadiusOverride","50");
-												DispatchKeyValue(ent,"spawnflags","9084");
-												TeleportEntity(ent,endpos,NULL_VECTOR,NULL_VECTOR);
-												DispatchSpawn(ent);
-												SetEntPropEnt(ent,Prop_Data,"m_hOwnerEntity",client);
-												AcceptEntityInput(ent,"Explode");
-												AcceptEntityInput(ent,"Kill");
-											}
-											//Push effect
-											ent = CreateEntityByName("env_physexplosion");
-											if (ent != -1)
-											{
-												DispatchKeyValue(ent,"magnitude","20");
-												DispatchKeyValue(ent,"radius","100");
-												DispatchKeyValue(ent,"inner_radius","0");
-												DispatchKeyValue(ent,"spawnflags","10");
-												TeleportEntity(ent,endpos,NULL_VECTOR,NULL_VECTOR);
-												DispatchSpawn(ent);
-												SetEntPropEnt(ent,Prop_Data,"m_hOwnerEntity",client);
-												AcceptEntityInput(ent,"Explode");
-												AcceptEntityInput(ent,"Kill");
-											}
-											if ((EndTarg[client] == 0) || (!IsValidEntity(EndTarg[client])))
-											{
-												EndTarg[client] = CreateEntityByName("generic_actor");
-												if (EndTarg[client] != -1)
-												{
-													DispatchKeyValue(EndTarg[client],"rendermode","10");
-													DispatchKeyValue(EndTarg[client],"DisableShadows","1");
-													DispatchKeyValue(EndTarg[client],"solid","0");
-													DispatchKeyValue(EndTarg[client],"model","models/props_junk/popcan01a.mdl");
-													TeleportEntity(EndTarg[client],endpos,plyang,NULL_VECTOR);
-													DispatchSpawn(EndTarg[client]);
-													ActivateEntity(EndTarg[client]);
-													if (HasEntProp(EndTarg[client],Prop_Data,"m_CollisionGroup")) SetEntProp(EndTarg[client],Prop_Data,"m_CollisionGroup",5);
-													if (HasEntProp(EndTarg[client],Prop_Data,"m_bloodColor")) SetEntProp(EndTarg[client],Prop_Data,"m_bloodColor",3);
-												}
-												if ((HandAttach[client] == 0) || (!IsValidEntity(HandAttach[client])))
-												{
-													HandAttach[client] = CreateEntityByName("info_target");
-													if (HandAttach[client] != -1)
-													{
-														TeleportEntity(HandAttach[client],plyfirepos,plyang,NULL_VECTOR);
-														DispatchSpawn(HandAttach[client]);
-														ActivateEntity(HandAttach[client]);
-														SetVariantString("!activator");
-														AcceptEntityInput(HandAttach[client],"SetParent",client);
-														SetVariantString("anim_attachment_RH");
-														AcceptEntityInput(HandAttach[client],"SetParentAttachment");
-														float orgoffs[3];
-														orgoffs[0] = 5.0;
-														orgoffs[1] = 0.0;
-														orgoffs[2] = 5.0;
-														SetEntPropVector(HandAttach[client],Prop_Data,"m_vecOrigin",orgoffs);
-														int effect = CreateEntityByName("env_sprite");
-														if (effect != -1)
-														{
-															DispatchKeyValue(effect,"model","sprites/glow01.spr");
-															DispatchKeyValue(effect,"scale","1.0");
-															DispatchKeyValue(effect,"GlowProxySize","8");
-															DispatchKeyValue(effect,"rendermode","9");
-															DispatchKeyValue(effect,"rendercolor","100 100 200");
-															TeleportEntity(effect,endpos,plyang,NULL_VECTOR);
-															DispatchSpawn(effect);
-															ActivateEntity(effect);
-															AcceptEntityInput(effect,"Activate");
-															SetVariantString("!activator");
-															AcceptEntityInput(effect,"SetParent",client);
-															SetVariantString("anim_attachment_RH");
-															AcceptEntityInput(effect,"SetParentAttachment");
-															orgoffs[0] = 7.0;
-															orgoffs[1] = 0.0;
-															orgoffs[2] = 0.0;
-															SetEntPropVector(effect,Prop_Data,"m_vecOrigin",orgoffs);
-														}
-														SetEntPropEnt(HandAttach[client],Prop_Data,"m_hEffectEntity",effect);
-													}
-												}
-												int effect = CreateEntityByName("env_sprite");
-												if (effect != -1)
-												{
-													DispatchKeyValue(effect,"model","sprites/glow01.spr");//effects/glowball.vmt
-													DispatchKeyValue(effect,"scale","1.0");
-													DispatchKeyValue(effect,"GlowProxySize","8");
-													DispatchKeyValue(effect,"rendermode","9");//2
-													DispatchKeyValue(effect,"rendercolor","200 200 255");
-													TeleportEntity(effect,endpos,plyang,NULL_VECTOR);
-													DispatchSpawn(effect);
-													ActivateEntity(effect);
-													AcceptEntityInput(effect,"Activate");
-													SetVariantString("!activator");
-													AcceptEntityInput(effect,"SetParent",EndTarg[client]);
-												}
-												int beam = CreateEntityByName("beam");
-												if (beam != -1)
-												{
-													DispatchKeyValue(beam,"model","effects/gluon_beam.vmt");
-													DispatchKeyValue(beam,"texture","effects/gluon_beam.vmt");
-													SetEntProp(beam,Prop_Data,"m_nModelIndex",gluonbeam);
-													SetEntProp(beam,Prop_Data,"m_nHaloIndex",gluonbeam);
-													TeleportEntity(beam,plyfirepos,plyang,NULL_VECTOR);
-													DispatchSpawn(beam);
-													ActivateEntity(beam);
-													SetEntityRenderColor(beam,255,255,255,255);
-													SetEntProp(beam,Prop_Data,"m_nBeamType",1);
-													SetEntProp(beam,Prop_Data,"m_nBeamFlags",0);
-													SetEntProp(beam,Prop_Data,"m_nNumBeamEnts",2);
-													SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",HandAttach[client],0);
-													//SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",client,0);
-													//int handatt = GetEntProp(weap,Prop_Data,"m_iParentAttachment");
-													//SetEntProp(beam,Prop_Data,"m_nAttachIndex",handatt,0);
-													SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",EndTarg[client],1);
-													SetEntPropEnt(beam,Prop_Data,"m_hEndEntity",EndTarg[client]);
-													//SetEntPropVector(beam,Prop_Data,"m_vecEndPos",endpos);
-													SetEntPropFloat(beam,Prop_Data,"m_fAmplitude",2.0);
-													SetEntPropFloat(beam,Prop_Data,"m_fWidth",4.0);
-													SetEntPropFloat(beam,Prop_Data,"m_fEndWidth",8.0);
-													SetEntPropFloat(beam,Prop_Data,"m_fSpeed",20.0);
-													SetEntPropFloat(beam,Prop_Data,"m_flFrameRate",20.0);
-													SetEntPropFloat(beam,Prop_Data,"m_flHDRColorScale",1.0);
-													SetEntProp(beam,Prop_Data,"m_nDissolveType",-1);
-													SetEntProp(beam,Prop_Data,"m_nRenderMode",2);
-													SetEntPropEnt(EndTarg[client],Prop_Data,"m_hEffectEntity",beam);
-												}
-												int beam2 = CreateEntityByName("beam");
-												if (beam2 != -1)
-												{
-													DispatchKeyValue(beam2,"model","effects/gluon_beam.vmt");
-													DispatchKeyValue(beam2,"texture","effects/gluon_beam.vmt");
-													SetEntProp(beam2,Prop_Data,"m_nModelIndex",gluonbeam);
-													TeleportEntity(beam2,plyfirepos,plyang,NULL_VECTOR);
-													DispatchSpawn(beam2);
-													ActivateEntity(beam2);
-													SetEntityRenderColor(beam2,255,255,255,255);
-													SetEntProp(beam2,Prop_Data,"m_nBeamType",1);
-													SetEntProp(beam2,Prop_Data,"m_nBeamFlags",0);
-													SetEntProp(beam2,Prop_Data,"m_nNumBeamEnts",2);
-													SetEntPropEnt(beam2,Prop_Data,"m_hAttachEntity",HandAttach[client],0);
-													//SetEntPropEnt(beam2,Prop_Data,"m_hAttachEntity",client,0);
-													//int handatt = GetEntProp(weap,Prop_Data,"m_iParentAttachment");
-													//SetEntProp(beam2,Prop_Data,"m_nAttachIndex",handatt,0);
-													SetEntPropEnt(beam2,Prop_Data,"m_hAttachEntity",EndTarg[client],1);
-													SetEntPropEnt(beam2,Prop_Data,"m_hEndEntity",EndTarg[client]);
-													//SetEntPropVector(beam2,Prop_Data,"m_vecEndPos",endpos);
-													SetEntPropFloat(beam2,Prop_Data,"m_fAmplitude",4.0);
-													SetEntPropFloat(beam2,Prop_Data,"m_fWidth",8.0);
-													SetEntPropFloat(beam2,Prop_Data,"m_fEndWidth",4.0);
-													SetEntPropFloat(beam2,Prop_Data,"m_fSpeed",1.0);
-													SetEntPropFloat(beam2,Prop_Data,"m_flFrameRate",1.0);
-													SetEntPropFloat(beam2,Prop_Data,"m_flHDRColorScale",1.0);
-													SetEntProp(beam2,Prop_Data,"m_nDissolveType",-1);
-													SetEntProp(beam2,Prop_Data,"m_nRenderMode",2);
-													SetEntPropEnt(beam,Prop_Data,"m_hEffectEntity",beam2);
-												}
-											}
-											else
-											{
-												SetEntProp(EndTarg[client],Prop_Data,"m_MoveType",8);
-												float endorg[3];
-												if (HasEntProp(EndTarg[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(EndTarg[client],Prop_Data,"m_vecAbsOrigin",endorg);
-												else if (HasEntProp(EndTarg[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(EndTarg[client],Prop_Send,"m_vecOrigin",endorg);
-												float shootvel[3];
-												MakeVectorFromPoints(endorg,endpos,shootvel);
-												ScaleVector(shootvel,3.0);
-												if (((shootvel[0] < 100.0) && (shootvel[0] > -100.0)) || ((shootvel[1] < 100.0) && (shootvel[1] > -100.0)))
-													ScaleVector(shootvel,2.0);
-												TeleportEntity(EndTarg[client],NULL_VECTOR,plyang,shootvel);
-												int decal = CreateEntityByName("infodecal");
-												if (decal != -1)
-												{
-													//effects/glowball
-													DispatchKeyValue(decal,"texture","decals/scorch2");
-													DispatchKeyValue(decal,"LowPriority","1");
-													TeleportEntity(decal,endorg,NULL_VECTOR,NULL_VECTOR);
-													DispatchSpawn(decal);
-													ActivateEntity(decal);
-													AcceptEntityInput(decal,"Activate");
-												}
-											}
-											if ((IsValidEntity(targ)) && (targ != 0))
-											{
-												char snd[64];
-												Format(snd,sizeof(snd),"weapons\\gluon\\hit%i.wav",GetRandomInt(1,4));
-												EmitSoundToAll(snd, targ, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
-												char clsname[32];
-												GetEntityClassname(targ,clsname,sizeof(clsname));
-												float damage = 1.0;
-												Handle cvar = FindConVar("sk_plr_dmg_gluon");
-												if (cvar != INVALID_HANDLE)
-												{
-													damage = GetConVarFloat(cvar);
-													float inflictscale = 1.0;
-													char scalechk[32];
-													Format(scalechk,sizeof(scalechk),"sk_dmg_inflict_scale%i",difficulty);
-													Handle scaleh = FindConVar(scalechk);
-													if (scaleh != INVALID_HANDLE) inflictscale = GetConVarFloat(scaleh);
-													CloseHandle(scaleh);
-													damage = damage/inflictscale;
-													if (hitgroup == headgroup) damage = damage*2.0;
-												}
-												CloseHandle(cvar);
-												if ((!CheckNPCAlly(clsname,targ)) || ((targ < MaxClients+1) && (targ > 0) && (friendlyfire)))
-												{
-													SDKHooks_TakeDamage(targ,client,client,damage,DMG_ENERGYBEAM|DMG_SONIC,-1,NULL_VECTOR,endpos);
-												}
-											}
-											EnergyAmm[client]--;
-											WeapAttackSpeed[client] = Time+0.25;
-										}
-									}
-								}
-							}
-						}
-					}
-					else if ((StrEqual(curweap,"weapon_tau",false)) || (StrEqual(curweap,"weapon_gauss",false)))
-					{
-						setbuttons = false;
-						if (weap != -1)
-						{
-							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-							if (viewmdl != -1)
-							{
-								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-								float Time = GetTickedTime();
-								if ((EnergyAmm[client] > 0) && (WeapAttackSpeed[client] < Time) && (seq != 4))
-								{
-									EnergyAmm[client]--;
-									char mdl[64];
-									char snd[64];
-									char beammdl[64];
-									int taubeammdl = taubeam;
-									int posside = 8;
-									float posz = 12.0;
-									GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-									Format(beammdl,sizeof(beammdl),"effects/tau_beam.vmt");
-									if (StrEqual(mdl,"models/v_gauss.mdl",false))
-									{
-										Format(snd,sizeof(snd),"weapons\\gauss2.wav");
-										taubeammdl = tauhl1beam;
-										Format(beammdl,sizeof(beammdl),"sprites/smoke.vmt");
-										if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
-										posside = 5;
-									}
-									else if (StrEqual(mdl,"models/weapons/v_gauss_suit.mdl",false))
-									{
-										float cycle = GetEntPropFloat(viewmdl,Prop_Data,"m_flCycle");
-										if (seq != 4) SetEntProp(viewmdl,Prop_Send,"m_nSequence",4);
-										else if ((seq == 4) && (cycle > 0.2)) SetEntPropFloat(viewmdl,Prop_Data,"m_flCycle",0.0);
-										Format(snd,sizeof(snd),"weapons\\gauss\\fire1.wav");
-										taubeammdl = tauhl2beam;
-										Format(beammdl,sizeof(beammdl),"sprites/laserbeam.vmt");
-										posside = 5;
-										posz = 8.0;
-									}
-									else
-									{
-										int randsnd = GetRandomInt(1,5);
-										if (randsnd == 4) Format(snd,sizeof(snd),"weapons\\tau\\single.wav");
-										else if (randsnd == 5) Format(snd,sizeof(snd),"weapons\\tau\\single2.wav");
-										else Format(snd,sizeof(snd),"weapons\\tau\\single0%i.wav",randsnd);
-										if (seq == 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",6);
-										else SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
-									}
-									if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",EnergyAmm[client]);
-									if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",EnergyAmm[client]);
-									EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
-									CreateTimer(0.2,resetviewmdl,viewmdl);
-									WeapAttackSpeed[client] = Time+0.3;
-									SetEntPropFloat(weap,Prop_Data,"m_flTimeWeaponIdle",0.0);
-									float endpos[3];
-									float plyfirepos[3];
-									float plyang[3];
-									float traceNormal[3];
-									GetClientEyeAngles(client,plyang);
-									GetClientEyePosition(client,plyfirepos);
-									TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
-									TR_GetEndPosition(endpos);
-									TR_GetPlaneNormal(INVALID_HANDLE,traceNormal);
-									/* from SDK vehicle_jeep
-										//Draw the main beam shaft
-										CBeam *pBeam = CBeam::BeamCreate( GAUSS_BEAM_SPRITE, 0.5 );
-										
-										pBeam->SetStartPos( startPos );
-										pBeam->PointEntInit( endPos, this );
-										pBeam->SetEndAttachment( LookupAttachment("Muzzle") );
-										//Value of width charged beam 9.6 regular 2.4
-										pBeam->SetWidth( width );
-										pBeam->SetEndWidth( 0.05f );
-										pBeam->SetBrightness( 255 );
-										pBeam->SetColor( 255, 185+random->RandomInt( -16, 16 ), 40 );
-										pBeam->RelinkBeam();
-										pBeam->LiveForTime( 0.1f );
-
-										//Draw electric bolts along shaft
-										pBeam = CBeam::BeamCreate( GAUSS_BEAM_SPRITE, 3.0f );
-										
-										pBeam->SetStartPos( startPos );
-										pBeam->PointEntInit( endPos, this );
-										pBeam->SetEndAttachment( LookupAttachment("Muzzle") );
-
-										pBeam->SetBrightness( random->RandomInt( 64, 255 ) );
-										pBeam->SetColor( 255, 255, 150+random->RandomInt( 0, 64 ) );
-										pBeam->RelinkBeam();
-										pBeam->LiveForTime( 0.1f );
-										pBeam->SetNoise( 1.6f );
-										pBeam->SetEndWidth( 0.1f );
-									*/
-									int beam = CreateEntityByName("beam");
-									if (beam != -1)
-									{
-										DispatchKeyValue(beam,"model",beammdl);
-										DispatchKeyValue(beam,"texture",beammdl);
-										SetEntProp(beam,Prop_Data,"m_nModelIndex",taubeammdl);
-										SetEntProp(beam,Prop_Data,"m_nHaloIndex",taubeammdl);
-										SetVariantString("OnUser4 !self:kill::0.1:-1")
-										AcceptEntityInput(beam,"addoutput");
-										AcceptEntityInput(beam,"FireUser4");
-										plyang[1]-=90.0;
-										plyfirepos[0] = (plyfirepos[0] + (posside * Cosine(DegToRad(plyang[1]))));
-										plyfirepos[1] = (plyfirepos[1] + (posside * Sine(DegToRad(plyang[1]))));
-										plyang[1]+=90.0;
-										plyfirepos[0] = (plyfirepos[0] + (8 * Cosine(DegToRad(plyang[1]))));
-										plyfirepos[1] = (plyfirepos[1] + (8 * Sine(DegToRad(plyang[1]))));
-										plyfirepos[2]-=posz;
-										TeleportEntity(beam,plyfirepos,plyang,NULL_VECTOR);
-										DispatchSpawn(beam);
-										ActivateEntity(beam);
-										SetEntityRenderColor(beam,255,GetRandomInt(150,220),40,255);
-										SetEntProp(beam,Prop_Data,"m_nBeamType",1);
-										SetEntProp(beam,Prop_Data,"m_nBeamFlags",0);
-										SetEntProp(beam,Prop_Data,"m_nNumBeamEnts",2);
-										//SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",HandAttach[client],0);
-										//SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",client,0);
-										//int handatt = GetEntProp(weap,Prop_Data,"m_iParentAttachment");
-										//SetEntProp(beam,Prop_Data,"m_nAttachIndex",handatt,0);
-										//SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",EndTarg[client],1);
-										//SetEntPropEnt(beam,Prop_Data,"m_hEndEntity",EndTarg[client]);
-										SetEntPropVector(beam,Prop_Data,"m_vecEndPos",endpos);
-										SetEntPropFloat(beam,Prop_Data,"m_fAmplitude",0.0);
-										SetEntPropFloat(beam,Prop_Data,"m_fWidth",2.4);
-										SetEntPropFloat(beam,Prop_Data,"m_fEndWidth",0.05);
-										SetEntPropFloat(beam,Prop_Data,"m_fSpeed",20.0);
-										SetEntPropFloat(beam,Prop_Data,"m_flFrameRate",20.0);
-										SetEntPropFloat(beam,Prop_Data,"m_flHDRColorScale",1.0);
-										SetEntProp(beam,Prop_Data,"m_nDissolveType",-1);
-										SetEntProp(beam,Prop_Data,"m_nRenderMode",2);
-										for (int i = 0;i<3;i++)
-										{
-											beam = CreateEntityByName("beam");
-											if (beam != -1)
-											{
-												DispatchKeyValue(beam,"model",beammdl);
-												DispatchKeyValue(beam,"texture",beammdl);
-												SetEntProp(beam,Prop_Data,"m_nModelIndex",taubeammdl);
-												SetEntProp(beam,Prop_Data,"m_nHaloIndex",taubeammdl);
-												TeleportEntity(beam,plyfirepos,plyang,NULL_VECTOR);
-												DispatchSpawn(beam);
-												ActivateEntity(beam);
-												SetVariantString("OnUser4 !self:kill::0.1:-1")
-												AcceptEntityInput(beam,"addoutput");
-												AcceptEntityInput(beam,"FireUser4");
-												SetEntityRenderColor(beam,255,255,GetRandomInt(150,214),GetRandomInt(64,255));
-												SetEntProp(beam,Prop_Data,"m_nBeamType",1);
-												SetEntProp(beam,Prop_Data,"m_nBeamFlags",0);
-												SetEntProp(beam,Prop_Data,"m_nNumBeamEnts",2);
-												SetEntPropVector(beam,Prop_Data,"m_vecEndPos",endpos);
-												SetEntPropFloat(beam,Prop_Data,"m_fAmplitude",2.6+i);
-												SetEntPropFloat(beam,Prop_Data,"m_fWidth",3.0+i);
-												SetEntPropFloat(beam,Prop_Data,"m_fEndWidth",0.1);
-												SetEntPropFloat(beam,Prop_Data,"m_fSpeed",20.0);
-												SetEntPropFloat(beam,Prop_Data,"m_flFrameRate",20.0);
-												SetEntPropFloat(beam,Prop_Data,"m_flHDRColorScale",1.0);
-												SetEntProp(beam,Prop_Data,"m_nDissolveType",-1);
-												SetEntProp(beam,Prop_Data,"m_nRenderMode",2);
-											}
-										}
-										int ent = CreateEntityByName("env_physexplosion");
-										if(ent != -1)
-										{
-											DispatchKeyValueFloat(ent,"magnitude",20.0);
-											DispatchKeyValue(ent,"radius","0");
-											DispatchKeyValue(ent,"inner_radius","0");
-											DispatchKeyValue(ent,"spawnflags","10");
-											TeleportEntity(ent,endpos,NULL_VECTOR,NULL_VECTOR);
-											DispatchSpawn(ent);
-											SetEntPropEnt(ent,Prop_Data,"m_hOwnerEntity",client);
-											AcceptEntityInput(ent,"Explode");
-											AcceptEntityInput(ent,"Kill");
-										}
-										int decal = CreateEntityByName("infodecal");
-										if (decal != -1)
-										{
-											DispatchKeyValue(decal,"texture","decals/scorch2");
-											DispatchKeyValue(decal,"LowPriority","1");
-											TeleportEntity(decal,endpos,NULL_VECTOR,NULL_VECTOR);
-											DispatchSpawn(decal);
-											ActivateEntity(decal);
-											AcceptEntityInput(decal,"Activate");
-										}
-										//From weapon_gauss CustomGuns plugin:
-										float vecFwd[3], vecUp[3], vecRight[3];
-										GetAngleVectors(plyang, vecFwd, vecRight, vecUp);
-										float vecDir[3];
-										float x, y, z;
-										//Gassian spread
-										do {
-											x = GetRandomFloat(-0.5,0.5) + GetRandomFloat(-0.5,0.5);
-											y = GetRandomFloat(-0.5,0.5) + GetRandomFloat(-0.5,0.5);
-											z = x*x+y*y;
-										} while (z > 1);
-									 
-										vecDir[0] = vecFwd[0] + x * 0.00873 * vecRight[0] + y * 0.00873 * vecUp[0];
-										vecDir[1] = vecFwd[1] + x * 0.00873 * vecRight[1] + y * 0.00873 * vecUp[1];
-										vecDir[2] = vecFwd[2] + x * 0.00873 * vecRight[2] + y * 0.00873 * vecUp[2];
-										float hitAngle = -GetVectorDotProduct(traceNormal, vecDir);
-										if ( hitAngle < 0.5 )
-										{
-											float vReflection[3];
-											vReflection[0] = 2.0 * traceNormal[0] * hitAngle + vecDir[0];
-											vReflection[1] = 2.0 * traceNormal[1] * hitAngle + vecDir[1];
-											vReflection[2] = 2.0 * traceNormal[2] * hitAngle + vecDir[2];
-											GetVectorAngles(vReflection, plyang);
-											plyfirepos = endpos;
-											TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
-											TR_GetEndPosition(endpos);
-											for (int i = 0;i<3;i++)
-											{
-												beam = CreateEntityByName("beam");
-												if (beam != -1)
-												{
-													DispatchKeyValue(beam,"model",beammdl);
-													DispatchKeyValue(beam,"texture",beammdl);
-													SetEntProp(beam,Prop_Data,"m_nModelIndex",taubeammdl);
-													SetEntProp(beam,Prop_Data,"m_nHaloIndex",taubeammdl);
-													TeleportEntity(beam,plyfirepos,plyang,NULL_VECTOR);
-													DispatchSpawn(beam);
-													ActivateEntity(beam);
-													SetVariantString("OnUser4 !self:kill::0.1:-1")
-													AcceptEntityInput(beam,"addoutput");
-													AcceptEntityInput(beam,"FireUser4");
-													if (i == 0)
-													{
-														SetEntPropFloat(beam,Prop_Data,"m_fWidth",2.4);
-														SetEntityRenderColor(beam,255,GetRandomInt(150,220),40,255);
-													}
-													else
-													{
-														SetEntPropFloat(beam,Prop_Data,"m_fWidth",3.0);
-														SetEntityRenderColor(beam,255,255,GetRandomInt(150,214),GetRandomInt(64,255));
-													}
-													SetEntProp(beam,Prop_Data,"m_nBeamType",1);
-													SetEntProp(beam,Prop_Data,"m_nBeamFlags",0);
-													SetEntProp(beam,Prop_Data,"m_nNumBeamEnts",2);
-													SetEntPropVector(beam,Prop_Data,"m_vecEndPos",endpos);
-													SetEntPropFloat(beam,Prop_Data,"m_fAmplitude",GetRandomFloat(1.0,1.7));
-													SetEntPropFloat(beam,Prop_Data,"m_fEndWidth",0.1);
-													SetEntPropFloat(beam,Prop_Data,"m_fSpeed",20.0);
-													SetEntPropFloat(beam,Prop_Data,"m_flFrameRate",20.0);
-													SetEntPropFloat(beam,Prop_Data,"m_flHDRColorScale",1.0);
-													SetEntProp(beam,Prop_Data,"m_nDissolveType",-1);
-													SetEntProp(beam,Prop_Data,"m_nRenderMode",2);
-												}
-											}
-											TE_Start("GaussExplosion");
-											TE_WriteFloat("m_vecOrigin[0]",endpos[0]);
-											TE_WriteFloat("m_vecOrigin[1]",endpos[1]);
-											TE_WriteFloat("m_vecOrigin[2]",endpos[2]);
-											TE_WriteNum("m_nType",0);
-											TE_WriteVector("m_vecDirection",traceNormal);
-											TE_SendToAll();
-											ent = CreateEntityByName("env_physexplosion");
-											if(ent != -1)
-											{
-												DispatchKeyValueFloat(ent,"magnitude",20.0);
-												DispatchKeyValue(ent,"radius","0");
-												DispatchKeyValue(ent,"inner_radius","0");
-												DispatchKeyValue(ent,"spawnflags","10");
-												TeleportEntity(ent,endpos,NULL_VECTOR,NULL_VECTOR);
-												DispatchSpawn(ent);
-												SetEntPropEnt(ent,Prop_Data,"m_hOwnerEntity",client);
-												AcceptEntityInput(ent,"Explode");
-												AcceptEntityInput(ent,"Kill");
-											}
-											decal = CreateEntityByName("infodecal");
-											if (decal != -1)
-											{
-												DispatchKeyValue(decal,"texture","decals/scorch2");//decals/redglowfade
-												DispatchKeyValue(decal,"LowPriority","1");
-												TeleportEntity(decal,endpos,NULL_VECTOR,NULL_VECTOR);
-												DispatchSpawn(decal);
-												ActivateEntity(decal);
-												AcceptEntityInput(decal,"Activate");
-											}
-										}
-										else
-										{
-											TE_Start("GaussExplosion");
-											TE_WriteFloat("m_vecOrigin[0]",endpos[0]);
-											TE_WriteFloat("m_vecOrigin[1]",endpos[1]);
-											TE_WriteFloat("m_vecOrigin[2]",endpos[2]);
-											TE_WriteNum("m_nType",0);
-											TE_WriteVector("m_vecDirection",traceNormal);
-											TE_SendToAll();
-										}
-										int effect = CreateEntityByName("env_sprite");
-										if (effect != -1)
-										{
-											DispatchKeyValue(effect,"model","sprites/glow01.spr");
-											DispatchKeyValue(effect,"scale","1.0");
-											DispatchKeyValue(effect,"GlowProxySize","3");
-											DispatchKeyValue(effect,"rendermode","9");
-											DispatchKeyValue(effect,"rendercolor","200 200 0");
-											TeleportEntity(effect,endpos,plyang,NULL_VECTOR);
-											DispatchSpawn(effect);
-											ActivateEntity(effect);
-											AcceptEntityInput(effect,"Activate");
-											SetVariantString("OnUser4 !self:kill::0.1:-1")
-											AcceptEntityInput(effect,"addoutput");
-											AcceptEntityInput(effect,"FireUser4");
-										}
-									}
-								}
-							}
-						}
-					}
-					else if (StrEqual(curweap,"weapon_glock",false))
-					{
-						if (weap != -1)
-						{
-							setbuttons = false;
-							float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
-							float Time = GetTickedTime();
-							if ((nextatk < GetGameTime()+0.04) && (WeapSnd[client] < Time))
-							{
-								StopSound(client,SNDCHAN_WEAPON,"weapons/pistol/pistol_fire2.wav");
-								char snd[64];
-								char mdl[32];
-								GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-								if (StrEqual(mdl,"models/v_9mmhandgun.mdl",false))
-								{
-									if (CLAttachment[client] == 1)
-									{
-										Format(snd,sizeof(snd),"weapons\\pl_gun1.wav");
-										SetEntPropFloat(client,Prop_Data,"m_flFlashTime",0.0);
-									}
-									else Format(snd,sizeof(snd),"weapons\\pl_gun3.wav");
-								}
-								else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
-								{
-									Format(snd,sizeof(snd),"weapons\\pistol\\glock_fire.wav");
-								}
-								else
-								{
-									Format(snd,sizeof(snd),"weapons\\glock\\single.wav");
-								}
-								int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
-								int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
-								if ((amm > 0) && (!inreload))
-								{
-									int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-									if (viewmdl != -1)
-									{
-										int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-										if (seq == 3)
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",4);
-										}
-										else
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",3);
-										}
-										EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
-										WeapSnd[client] = Time+0.05;
-									}
-								}
-								else if (inreload)
-								{
-									int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-									if (viewmdl != -1)
-									{
-										int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-										if (StrEqual(mdl,"models/v_9mmhandgun.mdl",false))
-										{
-											if ((seq != 5) && (seq != 6))
-											{
-												SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetRandomInt(5,6));
-												StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
-											}
-										}
-										else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
-										{
-											if (seq != 9)
-											{
-												SetEntProp(viewmdl,Prop_Send,"m_nSequence",9);
-												StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
-												Format(snd,sizeof(snd),"weapons\\pistol\\glock_reload.wav");
-												EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
-											}
-										}
-										else if ((seq != 6) && (seq != 7))
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetRandomInt(6,7));
-											StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
-											Format(snd,sizeof(snd),"weapons\\glock\\reload.wav");
-											EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
-										}
-									}
-								}
-								else
-								{
-									int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-									if (viewmdl != -1)
-									{
-										int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-										if (seq != 0)
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
-										}
-									}
-								}
-							}
-						}
-					}
-					else if ((StrEqual(curweap,"weapon_mp5",false)) || (StrEqual(curweap,"weapon_m4",false)) || (StrEqual(curweap,"weapon_g36c",false)))
-					{
-						if (weap != -1)
-						{
-							StopSound(client,SNDCHAN_WEAPON,"weapons/smg1/smg1_fire1.wav");
-							int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
-							int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
-							if ((amm > 0) && (!inreload))
-							{
-								float Time = GetTickedTime();
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if ((viewmdl != -1) && (WeapAttackSpeed[client] < Time))
-								{
-									char snd[64];
-									if (FileExists("sound/weapons/mp5/single1.wav",true,NULL_STRING)) Format(snd,sizeof(snd),"weapons\\mp5\\single%i.wav",GetRandomInt(1,3));
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									char mdl[32];
-									GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-									if (StrEqual(mdl,"models/v_9mmAR.mdl",false))
-									{
-										Format(snd,sizeof(snd),"weapons\\hks%i.wav",GetRandomInt(1,3));
-										if (seq == 6)
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",7);
-										}
-										else
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",6);
-										}
-									}
-									else if (StrEqual(mdl,"models/weapons/v_m4m203.mdl",false))
-									{
-										int rand = GetRandomInt(0,3);
-										if (seq == rand)
-										{
-											if (rand == 3) rand--;
-											else rand++;
-										}
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
-										Format(snd,sizeof(snd),"weapons\\m4\\m4_fire.wav");
-									}
-									else if (StrEqual(curweap,"weapon_g36c",false))
-									{
-										int rand = GetRandomInt(1,6);
-										if (seq == rand)
-										{
-											if (rand == 6) rand--;
-											else rand++;
-										}
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
-										Format(snd,sizeof(snd),"weapons\\g36c\\g36c_fire.wav");
-									}
-									else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
-									{
-										int rand = GetRandomInt(1,6);
-										if (seq == rand)
-										{
-											if (rand == 3) rand--;
-											else rand++;
-										}
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
-										Format(snd,sizeof(snd),"weapons\\mp5\\mp5_fire.wav");
-									}
-									else
-									{
-										if (seq == 3)
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
-										}
-										else
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",3);
-										}
-									}
-									EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
-									WeapAttackSpeed[client] = Time+0.1;
-								}
-							}
-							else if (inreload)
-							{
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if (viewmdl != -1)
-								{
-									int mdlseq = 2;
-									char snd[64];
-									char mdl[32];
-									GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-									if (StrEqual(mdl,"models/v_9mmAR.mdl",false))
-									{
-										mdlseq = 3;
-										Format(snd,sizeof(snd),"weapons\\reload3.wav");
-									}
-									else if (StrEqual(mdl,"models/weapons/v_m4m203.mdl",false))
-									{
-										mdlseq = 7;
-										Format(snd,sizeof(snd),"weapons\\m4\\m4_reload.wav");
-									}
-									else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
-									{
-										mdlseq = 9;
-										Format(snd,sizeof(snd),"weapons\\g36c\\g36c_reload.wav");
-									}
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									if (seq != mdlseq)
-									{
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-										if (strlen(snd) > 0) EmitSoundToAll(snd, client, SNDCHAN_ITEM, SNDLEVEL_DISHWASHER);
-									}
-								}
-							}
-							else
-							{
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if (viewmdl != -1)
-								{
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									if (seq != 0)
-									{
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
-									}
-								}
-							}
-							setbuttons = false;
-						}
-					}
-					else if (StrEqual(curweap,"weapon_sl8",false))
-					{
-						if (weap != -1)
-						{
-							StopSound(client,SNDCHAN_WEAPON,"weapons/smg1/smg1_fire1.wav");
-							int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
-							int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
-							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-							if ((amm > 0) && (!inreload))
-							{
-								float Time = GetTickedTime();
-								if ((viewmdl != -1) && (WeapAttackSpeed[client] < Time))
-								{
-									EmitSoundToAll("weapons\\SL8\\SL8-1.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									if (seq == 1)
-									{
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
-									}
-									else
-									{
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",1);
-									}
-									WeapAttackSpeed[client] = Time+0.2;
-									int shotsfired = GetEntProp(weap,Prop_Data,"m_nShotsFired");
-									SetEntProp(weap,Prop_Data,"m_nShotsFired",shotsfired+1);
-									float orgs[3];
-									float angs[3];
-									GetClientEyeAngles(client, angs);
-									if ((HandAttach[client] == 0) || (!IsValidEntity(HandAttach[client])))
-									{
-										HandAttach[client] = CreateEntityByName("info_target");
-										if (HandAttach[client] != -1)
-										{
-											float plyfirepos[3];
-											GetClientEyePosition(client,plyfirepos);
-											TeleportEntity(HandAttach[client],plyfirepos,angs,NULL_VECTOR);
-											DispatchSpawn(HandAttach[client]);
-											ActivateEntity(HandAttach[client]);
-											SetVariantString("!activator");
-											AcceptEntityInput(HandAttach[client],"SetParent",client);
-											SetVariantString("anim_attachment_RH");
-											AcceptEntityInput(HandAttach[client],"SetParentAttachment");
-											float orgoffs[3];
-											orgoffs[0] = 5.0;
-											orgoffs[1] = 0.0;
-											orgoffs[2] = 5.0;
-											SetEntPropVector(HandAttach[client],Prop_Data,"m_vecOrigin",orgoffs);
-										}
-									}
-									if (HasEntProp(HandAttach[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(HandAttach[client],Prop_Data,"m_vecAbsOrigin",orgs);
-									else if (HasEntProp(HandAttach[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(HandAttach[client],Prop_Send,"m_vecOrigin",orgs);
-									if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",amm-1);
-									float maxspread = 0.5+(shotsfired/2);
-									if (maxspread > 2.0) maxspread = 2.0;
-									int sideoffs = 5;
-									ShootBullet(client,weap,0,curweap,orgs,angs,sideoffs,maxspread);
-								}
-							}
-							else if ((amm <= 0) && (!inreload))
-							{
-								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-								int mdlseq = 2;
-								if (seq != mdlseq)
-								{
-									SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-									StopSound(client,SNDCHAN_ITEM,"weapons/smg1/smg1_reload.wav");
-									if (FileExists("sound/weapons/sl8/sl8_magout.wav",true,NULL_STRING))
-									{
-										char snd[64];
-										Format(snd,sizeof(snd),"weapons\\sl8\\sl8_magout.wav");
-										EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
-										CreateTimer(0.6,resetviewmdl,viewmdl);
-									}
-								}
-							}
-							setbuttons = false;
-						}
-					}
-					else if (StrEqual(curweap,"weapon_oicw",false))
-					{
-						if (weap != -1)
-						{
-							StopSound(client,SNDCHAN_WEAPON,"weapons/smg1/smg1_fire1.wav");
-							int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
-							int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
-							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-							if ((amm > 0) && (!inreload))
-							{
-								float Time = GetTickedTime();
-								if ((viewmdl != -1) && (WeapAttackSpeed[client] < Time))
-								{
-									if (FileExists("sound/weapons/oicw/oicw_fire1.wav",true,NULL_STRING))
-									{
-										char snd[64];
-										Format(snd,sizeof(snd),"weapons\\oicw\\oicw_fire%i.wav",GetRandomInt(1,3));
-										EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
-									}
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									int rand = GetRandomInt(1,3);
-									if (rand == seq)
-									{
-										if (rand+1 > 3) rand--;
-										else rand++;
-									}
-									SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
-									WeapAttackSpeed[client] = Time+0.1;
-									float orgs[3];
-									float angs[3];
-									GetClientEyeAngles(client, angs);
-									if ((HandAttach[client] == 0) || (!IsValidEntity(HandAttach[client])))
-									{
-										HandAttach[client] = CreateEntityByName("info_target");
-										if (HandAttach[client] != -1)
-										{
-											float plyfirepos[3];
-											GetClientEyePosition(client,plyfirepos);
-											TeleportEntity(HandAttach[client],plyfirepos,angs,NULL_VECTOR);
-											DispatchSpawn(HandAttach[client]);
-											ActivateEntity(HandAttach[client]);
-											SetVariantString("!activator");
-											AcceptEntityInput(HandAttach[client],"SetParent",client);
-											SetVariantString("anim_attachment_RH");
-											AcceptEntityInput(HandAttach[client],"SetParentAttachment");
-											float orgoffs[3];
-											orgoffs[0] = 5.0;
-											orgoffs[1] = 0.0;
-											orgoffs[2] = 5.0;
-											SetEntPropVector(HandAttach[client],Prop_Data,"m_vecOrigin",orgoffs);
-										}
-									}
-									if (HasEntProp(HandAttach[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(HandAttach[client],Prop_Data,"m_vecAbsOrigin",orgs);
-									else if (HasEntProp(HandAttach[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(HandAttach[client],Prop_Send,"m_vecOrigin",orgs);
-									if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",amm-1);
-									int shotsfired = GetEntProp(weap,Prop_Data,"m_nShotsFired");
-									SetEntProp(weap,Prop_Data,"m_nShotsFired",shotsfired+1);
-									int sideoffs = 5;
-									float maxspread = 0.5+(shotsfired/2);
-									if (maxspread > 2.0) maxspread = 2.0;
-									ShootBullet(client,weap,0,curweap,orgs,angs,sideoffs,maxspread);
-								}
-							}
-							else if ((amm <= 0) && (!inreload))
-							{
-								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-								int mdlseq = 5;
-								if (seq != mdlseq)
-								{
-									SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-									StopSound(client,SNDCHAN_ITEM,"weapons/smg1/smg1_reload.wav");
-									if (FileExists("sound/weapons/oicw/oicw_reload.wav",true,NULL_STRING))
-									{
-										EmitSoundToAll("weapons\\oicw\\oicw_reload.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
-										CreateTimer(2.3,resetviewmdl,viewmdl);
-										SetEntProp(weap,Prop_Data,"m_bInReload",1);
-									}
-								}
-							}
-							setbuttons = false;
-						}
-					}
-					else if ((StrEqual(curweap,"weapon_hivehand",false)) || (StrEqual(curweap,"weapon_hornetgun",false)))
-					{
-						if (weap != -1)
-						{
-							int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
-							if (amm > 0)
-							{
-								float Time = GetTickedTime();
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if ((viewmdl != -1) && (WeapAttackSpeed[client] < Time))
-								{
-									char snd[64];
-									Format(snd,sizeof(snd),"weapons\\hivehand\\single.wav");
-									EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									int rand = GetRandomInt(7,12);
-									if (seq == rand)
-									{
-										if (seq > 11) rand--;
-										else rand++;
-									}
-									SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
-									SetEntPropFloat(client,Prop_Data,"m_flFlashTime",GetGameTime()+0.5);
-									WeapAttackSpeed[client] = Time+0.5;
-									CreateHornet(client,weap);
-								}
-								SetEntPropFloat(weap,Prop_Data,"m_flTimeWeaponIdle",0.0);
-							}
-							setbuttons = false;
-						}
-					}
-					else if ((StrEqual(curweap,"weapon_handgrenade",false)) || (StrEqual(curweap,"weapon_satchel",false)))
-					{
-						if (weap != -1)
-						{
-							float Time = GetTickedTime();
-							if (WeapAttackSpeed[client] < Time)
-							{
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if (viewmdl != -1)
-								{
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									int hasammo = 0;
-									int mdlseq = 2;
-									char mdl[32];
-									GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-									if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
-									if ((seq != mdlseq) && (hasammo))
-									{
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-										if (!StrEqual(curweap,"weapon_handgrenade",false))
-										{
-											CreateTimer(0.75,resetviewmdl,viewmdl);
-											float targpos[3];
-											float shootvel[3];
-											float plyfirepos[3];
-											float plyang[3];
-											float maxscaler = 500.0;
-											float sideadj = 0.0;
-											char grenademdl[64];
-											GetClientEyeAngles(client,plyang);
-											if (StrEqual(curweap,"weapon_satchel",false))
-											{
-												sideadj = 10.0;
-												Format(grenademdl,sizeof(grenademdl),"models/weapons/w_satchel.mdl");
-											}
-											else
-											{
-												sideadj = -10.0;
-												maxscaler = 800.0;
-												Format(grenademdl,sizeof(grenademdl),"models/items/boxmrounds.mdl");
-											}
-											plyang[1]+=sideadj;
-											GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",plyfirepos);
-											plyfirepos[0] = (plyfirepos[0] + (40 * Cosine(DegToRad(plyang[1]))));
-											plyfirepos[1] = (plyfirepos[1] + (40 * Sine(DegToRad(plyang[1]))));
-											if (GetEntProp(client,Prop_Data,"m_bDucked")) plyfirepos[2]+=28.0;
-											else plyfirepos[2]+=48.0;
-											plyang[1]-=sideadj;
-											TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
-											TR_GetEndPosition(targpos);
-											MakeVectorFromPoints(plyfirepos,targpos,shootvel);
-											ScaleVector(shootvel,2.5);
-											if (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
-											{
-												while (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
-												{
-													ScaleVector(shootvel,0.95);
-												}
-											}
-											SatchelAmm[client]--;
-											if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",SatchelAmm[client]);
-											int satchel = CreateEntityByName("prop_physics_override");
-											if (satchel != -1)
-											{
-												DispatchKeyValue(satchel,"classname","grenade_satchel");
-												if (StrEqual(mdl,"models/v_satchel.mdl",false)) DispatchKeyValue(satchel,"model","models/items/boxmrounds.mdl");
-												else DispatchKeyValue(satchel,"model",grenademdl);
-												DispatchKeyValue(satchel,"solid","6");
-												DispatchKeyValue(satchel,"spawnflags","256");
-												TeleportEntity(satchel,plyfirepos,plyang,NULL_VECTOR);
-												DispatchSpawn(satchel);
-												ActivateEntity(satchel);
-												if (StrEqual(mdl,"models/v_satchel.mdl",false))
-												{
-													if (!IsModelPrecached("models/w_satchel.mdl")) PrecacheModel("models/w_satchel.mdl",true);
-													SetEntityModel(satchel,"models/w_satchel.mdl");
-													SetEntProp(satchel,Prop_Data,"m_usSolidFlags",1);
-												}
-												TeleportEntity(satchel,NULL_VECTOR,NULL_VECTOR,shootvel);
-												int endpoint = CreateEntityByName("env_explosion");
-												if (endpoint != -1)
-												{
-													char dmgmag[8] = "300";
-													char radius[8] = "150";
-													Handle cvar = FindConVar("sk_plr_dmg_satchel");
-													SDKHookEx(satchel,SDKHook_OnTakeDamage,grenademinetkdmg);
-													if (cvar != INVALID_HANDLE)
-													{
-														GetConVarString(cvar,dmgmag,sizeof(dmgmag));
-														if (StringToInt(dmgmag) < 1)
-														{
-															SetConVarString(cvar,"300",false,false);
-															Format(dmgmag,sizeof(dmgmag),"300");
-														}
-													}
-													cvar = FindConVar("sk_satchel_radius");
-													if (cvar != INVALID_HANDLE)
-													{
-														GetConVarString(cvar,radius,sizeof(radius));
-														if (StringToInt(radius) < 1)
-														{
-															SetConVarString(cvar,"150",false,false);
-															Format(radius,sizeof(radius),"150");
-														}
-													}
-													CloseHandle(cvar);
-													DispatchKeyValue(endpoint,"imagnitude",dmgmag);
-													DispatchKeyValue(endpoint,"iRadiusOverride",radius);
-													DispatchKeyValue(endpoint,"rendermode","0");
-													TeleportEntity(endpoint,plyfirepos,plyang,NULL_VECTOR);
-													DispatchSpawn(endpoint);
-													ActivateEntity(endpoint);
-													SetVariantString("!activator");
-													AcceptEntityInput(endpoint,"SetParent",satchel);
-													SetEntPropEnt(satchel,Prop_Data,"m_hOwnerEntity",endpoint);
-													SetEntPropEnt(endpoint,Prop_Data,"m_hOwnerEntity",client);
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-					else if (StrEqual(curweap,"weapon_tripmine",false))
-					{
-						if (weap != -1)
-						{
-							float Time = GetTickedTime();
-							if (WeapAttackSpeed[client] < Time)
-							{
-								float plyfirepos[3];
-								float angs[3];
-								float endpos[3];
-								GetClientEyePosition(client,plyfirepos);
-								GetClientEyeAngles(client,angs);
-								TR_TraceRayFilter(plyfirepos, angs, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
-								TR_GetEndPosition(endpos);
-								float chkdist = GetVectorDistance(plyfirepos,endpos,false);
-								if (chkdist < 100.0)
-								{
-									int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-									if (viewmdl != -1)
-									{
-										int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-										int mdlseq = 6;
-										char mdl[32];
-										GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-										if (StrEqual(mdl,"models/v_tripmine.mdl",false)) mdlseq = 3;
-										int hasammo = 0;
-										if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
-										if ((seq != mdlseq) && (hasammo))
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-											CreateTimer(0.15,resetviewmdl,viewmdl);
-										}
-									}
-									WeapAttackSpeed[client] = Time+1.0;
-								}
-							}
-						}
-					}
-					else if (StrEqual(curweap,"weapon_axe",false))
-					{
-						if (weap != -1)
-						{
-							float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
-							if (nextatk < GetGameTime())
-							{
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if (viewmdl != -1)
-								{
-									float plyfirepos[3];
-									float angs[3];
-									float endpos[3];
-									GetClientEyePosition(client,plyfirepos);
-									GetClientEyeAngles(client,angs);
-									TR_TraceRayFilter(plyfirepos, angs, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
-									TR_GetEndPosition(endpos);
-									float chkdist = GetVectorDistance(plyfirepos,endpos,false);
-									if (chkdist > 80.0)
-									{
-										int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-										int randmiss = GetRandomInt(3,5);
-										if (seq == randmiss)
-										{
-											if (randmiss == 5) randmiss--;
-											else randmiss++;
-										}
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",randmiss);
-									}
-									else
-									{
-										int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-										int randhit = GetRandomInt(6,7);
-										if (randhit == 5) randhit = 3;
-										if (seq == randhit)
-										{
-											if (randhit == 7) randhit--;
-											else if (randhit == 3) randhit = 6;
-											else randhit++;
-										}
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",randhit);
-									}
-								}
-							}
-							setbuttons = false;
-						}
-					}
-					else if (StrEqual(curweap,"weapon_snark",false))
-					{
-						if (weap != -1)
-						{
-							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-							if (viewmdl != -1)
-							{
-								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-								int mdlseq = 3;
-								int type = 1;
-								char mdl[32];
-								GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-								if (StrEqual(mdl,"models/v_squeak.mdl",false))
-								{
-									mdlseq = 5;
-									type = 0;
-								}
-								if ((seq != mdlseq) && (SnarkAmm[client] > 0))
-								{
-									SetEntPropFloat(weap,Prop_Data,"m_flTimeWeaponIdle",0.0);
-									SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-									CreateTimer(0.5,resetviewmdl,viewmdl);
-									SnarkAmm[client]--;
-									if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",SnarkAmm[client]);
-									if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",SnarkAmm[client]);
-									CreateSnark(client,type);
-									ChangeEdictState(weap);
-								}
-								else
-								{
-									SetEntProp(viewmdl,Prop_Send,"m_nSequence",6);
-								}
-							}
-						}
-					}
-					else if (StrEqual(curweap,"weapon_colt",false))
-					{
-						if (weap != -1)
-						{
-							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-							if (viewmdl != -1)
-							{
-								int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
-								int hasammo = 0;
-								if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
-								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-								float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
-								if (nextatk < GetGameTime()+0.05)
-								{
-									if (((seq != 1) || (seq != 2)) && (hasammo > 0) && (!inreload))
-									{
-										if (seq == 2) SetEntProp(viewmdl,Prop_Send,"m_nSequence",1);
-										else SetEntProp(viewmdl,Prop_Send,"m_nSequence",2);
-									}
-									else if (inreload)
-									{
-										if (seq != 4)
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",4);
-										}
-									}
-								}
-								setbuttons = false;
-							}
-						}
-					}
-					else if (StrEqual(curweap,"weapon_dualmp5k",false))
-					{
-						if (weap != -1)
-						{
-							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-							if (viewmdl != -1)
-							{
-								int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
-								int hasammo = 0;
-								if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
-								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-								if ((hasammo > 0) && (!inreload))
-								{
-									int rand = GetRandomInt(1,6);
-									if (seq == rand)
-									{
-										if (rand == 6) rand--;
-										else rand++;
-									}
-									SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
-								}
-								else if (inreload)
-								{
-									if (seq != 8)
-									{
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",8);
-									}
-								}
-								setbuttons = false;
 							}
 						}
 					}
 				}
-			}
-			else if (buttons & IN_ATTACK2)
-			{
-				if (!(g_LastButtons[client] & IN_ATTACK2))
+				else if ((StrEqual(curweap,"weapon_manhacktoss",false)) || (StrEqual(curweap,"weapon_manhackgun",false)) || (StrEqual(curweap,"weapon_manhack",false)))
 				{
-					if (StrContains(curweap,"custom_",false) == 0)
-					{
-						if (centnextatk[weap] < GetGameTime())
-						{
-							char custweap[64];
-							GetEntPropString(weap,Prop_Data,"m_iszResponseContext",custweap,sizeof(custweap));
-							FireCustomWeap(client,weap,custweap,2);
-						}
-						setbuttons = false;
-					}
-					else if ((StrEqual(curweap,"weapon_mp5",false)) || (StrEqual(curweap,"weapon_m4",false)))
-					{
-						if (IsValidEntity(weap))
-						{
-							float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack");
-							if (nextatk < GetGameTime()+0.1)
-							{
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if (viewmdl != -1)
-								{
-									int amm = GetEntProp(client,Prop_Send,"m_iAmmo",_,9);
-									if (amm > 0)
-									{
-										int mdlseq = 1;
-										char mdl[32];
-										GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-										if (StrEqual(mdl,"models/v_9mmAR.mdl",false)) mdlseq = 5;
-										else if (StrEqual(mdl,"models/weapons/v_m4m203.mdl",false))
-										{
-											mdlseq = 6;
-											EmitSoundToAll("weapons\\m4\\m4_altfire.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
-										}
-										int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-										if (seq != mdlseq)
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-										}
-										CreateTimer(0.5,resetinreload,weap,TIMER_FLAG_NO_MAPCHANGE);
-									}
-									else
-									{
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
-									}
-								}
-							}
-						}
-						setbuttons = false;
-					}
-					else if ((StrEqual(curweap,"weapon_hivehand",false)) || (StrEqual(curweap,"weapon_hornetgun",false)))
-					{
-						if (weap != -1)
-						{
-							int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
-							if (amm > 0)
-							{
-								float Time = GetTickedTime();
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if ((viewmdl != -1) && (WeapAttackSpeed[client] < Time))
-								{
-									CreateHornet(client,weap);
-									char snd[64];
-									Format(snd,sizeof(snd),"weapons\\hivehand\\single.wav");
-									EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									int rand = GetRandomInt(7,12);
-									if (seq == rand)
-									{
-										if (seq > 11) rand--;
-										else rand++;
-									}
-									SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
-									SetEntPropFloat(client,Prop_Data,"m_flFlashTime",GetGameTime()+0.5);
-									WeapAttackSpeed[client] = Time+0.2;
-								}
-								SetEntPropFloat(weap,Prop_Data,"m_flTimeWeaponIdle",0.0);
-							}
-							setbuttons = false;
-						}
-					}
-					else if (StrEqual(curweap,"weapon_sl8",false))
-					{
-						int fov = GetEntProp(client,Prop_Send,"m_iFOV");
-						if ((fov > 60) || (fov == 0))
-						{
-							SetEntProp(client,Prop_Send,"m_iFOVStart",fov);
-							SetEntPropFloat(client,Prop_Send,"m_flFOVTime",GetGameTime());
-							SetEntProp(client,Prop_Send,"m_iFOV",30);
-							SetEntPropFloat(client,Prop_Send,"m_flFOVRate",0.4);
-							if ((SL8Scope != 0) && (IsValidEntity(SL8Scope)))
-							{
-								CLInScope[client] = SL8Scope;
-								AcceptEntityInput(SL8Scope,"StartOverlays",client);
-							}
-							else
-							{
-								SL8Scope = CreateEntityByName("env_screenoverlay");
-								if (SL8Scope != -1)
-								{
-									DispatchKeyValue(SL8Scope,"spawnflags","1");
-									DispatchKeyValue(SL8Scope,"OverlayName1","sprites/scope01");
-									DispatchSpawn(SL8Scope);
-									ActivateEntity(SL8Scope);
-									CLInScope[client] = SL8Scope;
-									AcceptEntityInput(SL8Scope,"StartOverlays",client);
-								}
-							}
-						}
-						else
-						{
-							SetEntProp(client,Prop_Send,"m_iFOVStart",fov);
-							SetEntPropFloat(client,Prop_Send,"m_flFOVTime",GetGameTime());
-							SetEntProp(client,Prop_Send,"m_iFOV",90);
-							SetEntPropFloat(client,Prop_Send,"m_flFOVRate",0.4);
-							if ((SL8Scope != 0) && (IsValidEntity(SL8Scope)))
-							{
-								AcceptEntityInput(SL8Scope,"StopOverlays",client);
-								CLInScope[client] = 0;
-							}
-						}
-					}
-					else if (StrEqual(curweap,"weapon_oicw",false))
-					{
-						int fov = GetEntProp(client,Prop_Send,"m_iFOV");
-						if ((fov > 60) || (fov == 0))
-						{
-							SetEntProp(client,Prop_Send,"m_iFOVStart",fov);
-							SetEntPropFloat(client,Prop_Send,"m_flFOVTime",GetGameTime());
-							SetEntProp(client,Prop_Send,"m_iFOV",36);
-							SetEntPropFloat(client,Prop_Send,"m_flFOVRate",0.4);
-							if ((OICWScope != 0) && (IsValidEntity(OICWScope)))
-							{
-								CLInScope[client] = OICWScope;
-								AcceptEntityInput(OICWScope,"StartOverlays",client);
-							}
-							else
-							{
-								OICWScope = CreateEntityByName("env_screenoverlay");
-								if (OICWScope != -1)
-								{
-									DispatchKeyValue(OICWScope,"spawnflags","1");
-									DispatchKeyValue(OICWScope,"OverlayName1","overlays/weapons/oicw/scope_lens");
-									DispatchSpawn(OICWScope);
-									ActivateEntity(OICWScope);
-									CLInScope[client] = OICWScope;
-									AcceptEntityInput(OICWScope,"StartOverlays",client);
-								}
-							}
-						}
-						else
-						{
-							SetEntProp(client,Prop_Send,"m_iFOVStart",fov);
-							SetEntPropFloat(client,Prop_Send,"m_flFOVTime",GetGameTime());
-							SetEntProp(client,Prop_Send,"m_iFOV",90);
-							SetEntPropFloat(client,Prop_Send,"m_flFOVRate",0.4);
-							if ((OICWScope != 0) && (IsValidEntity(OICWScope)))
-							{
-								AcceptEntityInput(OICWScope,"StopOverlays",client);
-								CLInScope[client] = 0;
-							}
-						}
-					}
-					else if ((StrEqual(curweap,"weapon_tau",false)) || (StrEqual(curweap,"weapon_gauss",false)))
-					{
-						setbuttons = false;
-						if (weap != -1)
-						{
-							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-							if (viewmdl != -1)
-							{
-								float Time = GetTickedTime();
-								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-								int mdlseq = 4;
-								int pitch = 100;
-								int flags = SND_NOFLAGS;
-								char mdl[64];
-								GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-								char snd[64];
-								Format(snd,sizeof(snd),"weapons\\tau\\gauss_spinup.wav");
-								if (StrEqual(mdl,"models/v_gauss.mdl",false))
-								{
-									mdlseq = 3;
-									if ((seq == 3) && (TauCharge[client] > 3)) mdlseq = 4;
-									pitch+=TauCharge[client]*8;
-									if ((WeapAttackSpeed[client] < Time) && (TauCharge[client] < 20)) flags = SND_CHANGEPITCH;
-									Format(snd,sizeof(snd),"ambience\\pulsemachine.wav");
-								}
-								else if (StrEqual(mdl,"models/weapons/v_gauss_suit.mdl",false))
-								{
-									mdlseq = 2;
-									if ((seq == 2) || (TauCharge[client] > 3)) mdlseq = 3;
-									pitch+=TauCharge[client]*8;
-									if ((WeapAttackSpeed[client] < Time) && (TauCharge[client] < 20)) flags = SND_CHANGEPITCH;
-									Format(snd,sizeof(snd),"weapons\\gauss\\chargeloop.wav");
-								}
-								if ((EnergyAmm[client] > 0) && (WeapAttackSpeed[client] < Time) && (TauCharge[client] < 20))
-								{
-									EnergyAmm[client]--;
-									TauCharge[client]++;
-									//m_flPlaybackRate
-									if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",EnergyAmm[client]);
-									if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",EnergyAmm[client]);
-									if (seq != mdlseq) SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-									EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_TRAIN, flags, _, pitch);
-									WeapAttackSpeed[client] = Time+0.2;
-								}
-							}
-						}
-					}
-					else if (StrEqual(curweap,"weapon_glock",false))
-					{
-						if (weap != -1)
-						{
-							char mdl[32];
-							GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-							if (StrEqual(mdl,"models/v_9mmhandgun.mdl",false))
-							{
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if (viewmdl != -1)
-								{
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									if (seq != 9) SetEntProp(viewmdl,Prop_Send,"m_nSequence",9);
-									CreateTimer(0.5,resetviewmdl,viewmdl);
-								}
-							}
-						}
-					}
-					else if (StrEqual(curweap,"weapon_satchel",false))
-					{
-						DetSatchels(-1,client);
-					}
-					else if (StrEqual(curweap,"weapon_colt",false))
-					{
-						if (weap != -1)
-						{
-							float nextsecondary = GetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack");
-							if (nextsecondary < GetGameTime())
-							{
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if (viewmdl != -1)
-								{
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									if (seq != 8)
-									{
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",8);
-										SetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack",GetGameTime()+0.5);
-										ChangeEdictState(weap);
-										CreateTimer(0.2,resetviewmdl,viewmdl);
-										int targ = GetClientAimTarget(client,false)
-										if ((targ != 0) && (IsValidEntity(targ)))
-										{
-											char cls[32];
-											GetEntityClassname(targ,cls,sizeof(cls));
-											if (!CheckNPCAlly(cls,targ))
-											{
-												float curorgs[3];
-												float targorgs[3];
-												GetClientAbsOrigin(client,curorgs);
-												if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",targorgs);
-												else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",targorgs);
-												float chkdist = GetVectorDistance(curorgs,targorgs,false);
-												if (chkdist < 100.0)
-												{
-													float damageForce[3];
-													damageForce[0] = 5.0;
-													damageForce[1] = 5.0;
-													damageForce[2] = 5.0;
-													SDKHooks_TakeDamage(targ,client,client,15.0,DMG_CLUB,-1,damageForce,curorgs);
-													EmitSoundToAll("npc/zombie/zombie_hit.wav", weap, SNDCHAN_WEAPON, SNDLEVEL_TRAIN);
-												}
-											}
-										}
-									}
-								}
-							}
-							StopSound(client,SNDCHAN_WEAPON,"weapons/pistol/pistol_empty.wav");
-						}
-					}
-				}
-			}
-			else if (!(buttons & IN_ATTACK))
-			{
-				if (StrEqual(curweap,"weapon_gluon",false))
-				{
-					setbuttons = false;
 					if (weap != -1)
 					{
 						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
 						if (viewmdl != -1)
 						{
 							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-							if (seq == 1)
+							if ((seq >= 3) && (seq <= 6))
 							{
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetRandomInt(5,6));
+								ChangeEdictState(viewmdl);
+								CreateTimer(0.75,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
+								ManHackGo(client);
+							}
+							else if (ManHackAmmo[client] > 0)
+							{
+								int mdlseq = 2;
+								if (seq != mdlseq)
+								{
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+									ChangeEdictState(viewmdl);
+									CreateTimer(2.0,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
+								}
+							}
+						}
+					}
+				}
+				else if (StrEqual(curweap,"weapon_cguard"))
+				{
+					float Time = GetTickedTime();
+					if ((antispamchk[client] <= Time) && (CGuardAmm[client] > 0))
+					{
+						cstr(client);
+						antispamchk[client] = Time + 1.5;
+						CGuardAmm[client]--;
+					}
+				}
+				else if (StrEqual(curweap,"weapon_gluon",false))
+				{
+					setbuttons = false;
+					g_LastButtons[client] = 0;
+					if (weap != -1)
+					{
+						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+						if (viewmdl != -1)
+						{
+							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+							if ((EnergyAmm[client] < 1) && (seq == 1))
+							{
+								if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",EnergyAmm[client]);
+								if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",EnergyAmm[client]);
 								float orgs[3];
 								if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
 								else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
@@ -3832,9 +2184,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 											int sprite = GetEntPropEnt(HandAttach[client],Prop_Data,"m_hEffectEntity");
 											if ((sprite != 0) && (IsValidEntity(sprite)))
 											{
+												SetEntPropEnt(HandAttach[client],Prop_Data,"m_hEffectEntity",-1);
 												AcceptEntityInput(sprite,"kill");
-												AcceptEntityInput(HandAttach[client],"kill");
-												HandAttach[client] = 0;
 											}
 										}
 										AcceptEntityInput(EndTarg[client],"kill");
@@ -3842,177 +2193,364 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									EndTarg[client] = 0;
 								}
 							}
-						}
-					}
-				}
-				else if ((StrEqual(curweap,"weapon_hivehand",false)) || (StrEqual(curweap,"weapon_hornetgun",false)))
-				{
-					if (weap != -1)
-					{
-						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-						if (viewmdl != -1)
-						{
-							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-							if ((seq != 0) && (seq != 4) && (seq != 3))
-								SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
-						}
-					}
-				}
-				else if (StrEqual(curweap,"weapon_handgrenade",false))
-				{
-					if (weap != -1)
-					{
-						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-						if (viewmdl != -1)
-						{
-							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-							int curamm = GetEntProp(client,Prop_Send,"m_iAmmo",_,12);
-							if (seq == 2)
+							else if (EnergyAmm[client] > 0)
 							{
-								SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetRandomInt(3,5));
-								SetEntProp(client,Prop_Data,"m_iAmmo",curamm-1,_,12);
-								WeapAttackSpeed[client] = GetTickedTime()+1.0;
-								CreateTimer(0.5,resetviewmdl,viewmdl);
-								CreateTimer(1.0,resetviewmdl,viewmdl);
-								float targpos[3];
-								float shootvel[3];
-								float plyfirepos[3];
-								float plyang[3];
-								float maxscaler = 800.0;
-								float sideadj = -10.0;
-								GetClientEyeAngles(client,plyang);
-								plyang[1]+=sideadj;
-								GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",plyfirepos);
-								plyfirepos[0] = (plyfirepos[0] + (40 * Cosine(DegToRad(plyang[1]))));
-								plyfirepos[1] = (plyfirepos[1] + (40 * Sine(DegToRad(plyang[1]))));
-								if (GetEntProp(client,Prop_Data,"m_bDucked")) plyfirepos[2]+=28.0;
-								else plyfirepos[2]+=48.0;
-								plyang[1]-=sideadj;
-								TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
-								TR_GetEndPosition(targpos);
-								float chkdist = GetVectorDistance(plyfirepos,targpos,false);
-								if (chkdist < 200.0) targpos[2]+=60.0;
-								else targpos[2]+=20.0;
-								MakeVectorFromPoints(plyfirepos,targpos,shootvel);
-								ScaleVector(shootvel,2.5);
-								if (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+								if (seq != 1)
 								{
-									while (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",1);
+								}
+								else
+								{
+									if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",EnergyAmm[client]);
+									if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",EnergyAmm[client]);
+									if (HasEntProp(weap,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(weap,Prop_Data,"m_iPrimaryAmmoType",12);
+									int ammover = GetEntProp(client,Prop_Send,"m_iAmmo",_,12);
+									if (ammover > 0)
 									{
-										ScaleVector(shootvel,0.95);
+										Ammo12Reset[client] = ammover;
+										SetEntProp(client,Prop_Data,"m_iAmmo",0,_,12);
+									}
+									float Time = GetTickedTime();
+									//GameSounds: weapon_gluon.Empty weapon_gluon.Special1 weapon_gluon.Special2 weapon_gluon.Special3
+									if (WeapSnd[client] < Time)
+									{
+										char snd[64];
+										Format(snd,sizeof(snd),"weapons\\gluon\\special1.wav");
+										StopSound(weap,SNDCHAN_WEAPON,snd);
+										if (WeapSnd[client] > 0.0)
+										{
+											float orgs[3];
+											if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
+											else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
+											EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+											EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+										}
+										else EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_TRAIN);
+										WeapSnd[client] = Time+9.0;
+									}
+									float endpos[3];
+									float plyfirepos[3];
+									float plyang[3];
+									GetClientEyeAngles(client,plyang);
+									GetClientEyePosition(client,plyfirepos);
+									TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+									TR_GetEndPosition(endpos);
+									if (WeapAttackSpeed[client] < Time)
+									{
+										int targ = TR_GetEntityIndex();
+										int hitgroup = 0;
+										if ((IsValidEntity(targ)) && (targ != 0)) hitgroup = TR_GetHitGroup();
+										int ent = CreateEntityByName("env_explosion");
+										if (ent != -1)
+										{
+											DispatchKeyValue(ent,"iMagnitude","20");
+											DispatchKeyValue(ent,"iRadiusOverride","50");
+											DispatchKeyValue(ent,"spawnflags","9084");
+											TeleportEntity(ent,endpos,NULL_VECTOR,NULL_VECTOR);
+											DispatchSpawn(ent);
+											SetEntPropEnt(ent,Prop_Data,"m_hOwnerEntity",client);
+											AcceptEntityInput(ent,"Explode");
+											AcceptEntityInput(ent,"Kill");
+										}
+										//Push effect
+										ent = CreateEntityByName("env_physexplosion");
+										if (ent != -1)
+										{
+											DispatchKeyValue(ent,"magnitude","20");
+											DispatchKeyValue(ent,"radius","100");
+											DispatchKeyValue(ent,"inner_radius","0");
+											DispatchKeyValue(ent,"spawnflags","10");
+											TeleportEntity(ent,endpos,NULL_VECTOR,NULL_VECTOR);
+											DispatchSpawn(ent);
+											SetEntPropEnt(ent,Prop_Data,"m_hOwnerEntity",client);
+											AcceptEntityInput(ent,"Explode");
+											AcceptEntityInput(ent,"Kill");
+										}
+										if ((EndTarg[client] == 0) || (!IsValidEntity(EndTarg[client])))
+										{
+											EndTarg[client] = CreateEntityByName("generic_actor");
+											if (EndTarg[client] != -1)
+											{
+												DispatchKeyValue(EndTarg[client],"rendermode","10");
+												DispatchKeyValue(EndTarg[client],"DisableShadows","1");
+												DispatchKeyValue(EndTarg[client],"solid","0");
+												DispatchKeyValue(EndTarg[client],"model","models/props_junk/popcan01a.mdl");
+												TeleportEntity(EndTarg[client],endpos,plyang,NULL_VECTOR);
+												DispatchSpawn(EndTarg[client]);
+												ActivateEntity(EndTarg[client]);
+												if (HasEntProp(EndTarg[client],Prop_Data,"m_CollisionGroup")) SetEntProp(EndTarg[client],Prop_Data,"m_CollisionGroup",5);
+												if (HasEntProp(EndTarg[client],Prop_Data,"m_bloodColor")) SetEntProp(EndTarg[client],Prop_Data,"m_bloodColor",3);
+											}
+											if ((HandAttach[client] == 0) || (!IsValidEntity(HandAttach[client])))
+											{
+												HandAttach[client] = CreateEntityByName("info_target");
+												if (HandAttach[client] != -1)
+												{
+													TeleportEntity(HandAttach[client],plyfirepos,plyang,NULL_VECTOR);
+													DispatchSpawn(HandAttach[client]);
+													ActivateEntity(HandAttach[client]);
+													SetVariantString("!activator");
+													AcceptEntityInput(HandAttach[client],"SetParent",client);
+													SetVariantString("anim_attachment_RH");
+													AcceptEntityInput(HandAttach[client],"SetParentAttachment");
+													float orgoffs[3];
+													orgoffs[0] = 5.0;
+													orgoffs[1] = 0.0;
+													orgoffs[2] = 5.0;
+													SetEntPropVector(HandAttach[client],Prop_Data,"m_vecOrigin",orgoffs);
+													int effect = CreateEntityByName("env_sprite");
+													if (effect != -1)
+													{
+														DispatchKeyValue(effect,"model","sprites/glow01.spr");
+														DispatchKeyValue(effect,"scale","1.0");
+														DispatchKeyValue(effect,"GlowProxySize","8");
+														DispatchKeyValue(effect,"rendermode","9");
+														DispatchKeyValue(effect,"rendercolor","100 100 200");
+														TeleportEntity(effect,endpos,plyang,NULL_VECTOR);
+														DispatchSpawn(effect);
+														ActivateEntity(effect);
+														AcceptEntityInput(effect,"Activate");
+														SetVariantString("!activator");
+														AcceptEntityInput(effect,"SetParent",client);
+														SetVariantString("anim_attachment_RH");
+														AcceptEntityInput(effect,"SetParentAttachment");
+														orgoffs[0] = 7.0;
+														orgoffs[1] = 0.0;
+														orgoffs[2] = 0.0;
+														SetEntPropVector(effect,Prop_Data,"m_vecOrigin",orgoffs);
+													}
+													SetEntPropEnt(HandAttach[client],Prop_Data,"m_hEffectEntity",effect);
+												}
+											}
+											int effect = CreateEntityByName("env_sprite");
+											if (effect != -1)
+											{
+												DispatchKeyValue(effect,"model","sprites/glow01.spr");//effects/glowball.vmt
+												DispatchKeyValue(effect,"scale","1.0");
+												DispatchKeyValue(effect,"GlowProxySize","8");
+												DispatchKeyValue(effect,"rendermode","9");//2
+												DispatchKeyValue(effect,"rendercolor","200 200 255");
+												TeleportEntity(effect,endpos,plyang,NULL_VECTOR);
+												DispatchSpawn(effect);
+												ActivateEntity(effect);
+												AcceptEntityInput(effect,"Activate");
+												SetVariantString("!activator");
+												AcceptEntityInput(effect,"SetParent",EndTarg[client]);
+											}
+											int beam = CreateEntityByName("beam");
+											if (beam != -1)
+											{
+												DispatchKeyValue(beam,"model","effects/gluon_beam.vmt");
+												DispatchKeyValue(beam,"texture","effects/gluon_beam.vmt");
+												SetEntProp(beam,Prop_Data,"m_nModelIndex",gluonbeam);
+												SetEntProp(beam,Prop_Data,"m_nHaloIndex",gluonbeam);
+												TeleportEntity(beam,plyfirepos,plyang,NULL_VECTOR);
+												DispatchSpawn(beam);
+												ActivateEntity(beam);
+												SetEntityRenderColor(beam,255,255,255,255);
+												SetEntProp(beam,Prop_Data,"m_nBeamType",1);
+												SetEntProp(beam,Prop_Data,"m_nBeamFlags",0);
+												SetEntProp(beam,Prop_Data,"m_nNumBeamEnts",2);
+												SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",HandAttach[client],0);
+												//SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",client,0);
+												//int handatt = GetEntProp(weap,Prop_Data,"m_iParentAttachment");
+												//SetEntProp(beam,Prop_Data,"m_nAttachIndex",handatt,0);
+												SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",EndTarg[client],1);
+												SetEntPropEnt(beam,Prop_Data,"m_hEndEntity",EndTarg[client]);
+												//SetEntPropVector(beam,Prop_Data,"m_vecEndPos",endpos);
+												SetEntPropFloat(beam,Prop_Data,"m_fAmplitude",2.0);
+												SetEntPropFloat(beam,Prop_Data,"m_fWidth",4.0);
+												SetEntPropFloat(beam,Prop_Data,"m_fEndWidth",8.0);
+												SetEntPropFloat(beam,Prop_Data,"m_fSpeed",20.0);
+												SetEntPropFloat(beam,Prop_Data,"m_flFrameRate",20.0);
+												SetEntPropFloat(beam,Prop_Data,"m_flHDRColorScale",1.0);
+												SetEntProp(beam,Prop_Data,"m_nDissolveType",-1);
+												SetEntProp(beam,Prop_Data,"m_nRenderMode",2);
+												SetEntPropEnt(EndTarg[client],Prop_Data,"m_hEffectEntity",beam);
+											}
+											int beam2 = CreateEntityByName("beam");
+											if (beam2 != -1)
+											{
+												DispatchKeyValue(beam2,"model","effects/gluon_beam.vmt");
+												DispatchKeyValue(beam2,"texture","effects/gluon_beam.vmt");
+												SetEntProp(beam2,Prop_Data,"m_nModelIndex",gluonbeam);
+												TeleportEntity(beam2,plyfirepos,plyang,NULL_VECTOR);
+												DispatchSpawn(beam2);
+												ActivateEntity(beam2);
+												SetEntityRenderColor(beam2,255,255,255,255);
+												SetEntProp(beam2,Prop_Data,"m_nBeamType",1);
+												SetEntProp(beam2,Prop_Data,"m_nBeamFlags",0);
+												SetEntProp(beam2,Prop_Data,"m_nNumBeamEnts",2);
+												SetEntPropEnt(beam2,Prop_Data,"m_hAttachEntity",HandAttach[client],0);
+												//SetEntPropEnt(beam2,Prop_Data,"m_hAttachEntity",client,0);
+												//int handatt = GetEntProp(weap,Prop_Data,"m_iParentAttachment");
+												//SetEntProp(beam2,Prop_Data,"m_nAttachIndex",handatt,0);
+												SetEntPropEnt(beam2,Prop_Data,"m_hAttachEntity",EndTarg[client],1);
+												SetEntPropEnt(beam2,Prop_Data,"m_hEndEntity",EndTarg[client]);
+												//SetEntPropVector(beam2,Prop_Data,"m_vecEndPos",endpos);
+												SetEntPropFloat(beam2,Prop_Data,"m_fAmplitude",4.0);
+												SetEntPropFloat(beam2,Prop_Data,"m_fWidth",8.0);
+												SetEntPropFloat(beam2,Prop_Data,"m_fEndWidth",4.0);
+												SetEntPropFloat(beam2,Prop_Data,"m_fSpeed",1.0);
+												SetEntPropFloat(beam2,Prop_Data,"m_flFrameRate",1.0);
+												SetEntPropFloat(beam2,Prop_Data,"m_flHDRColorScale",1.0);
+												SetEntProp(beam2,Prop_Data,"m_nDissolveType",-1);
+												SetEntProp(beam2,Prop_Data,"m_nRenderMode",2);
+												SetEntPropEnt(beam,Prop_Data,"m_hEffectEntity",beam2);
+											}
+										}
+										else
+										{
+											SetEntProp(EndTarg[client],Prop_Data,"m_MoveType",8);
+											float endorg[3];
+											if (HasEntProp(EndTarg[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(EndTarg[client],Prop_Data,"m_vecAbsOrigin",endorg);
+											else if (HasEntProp(EndTarg[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(EndTarg[client],Prop_Send,"m_vecOrigin",endorg);
+											float shootvel[3];
+											MakeVectorFromPoints(endorg,endpos,shootvel);
+											ScaleVector(shootvel,3.0);
+											if (((shootvel[0] < 100.0) && (shootvel[0] > -100.0)) || ((shootvel[1] < 100.0) && (shootvel[1] > -100.0)))
+												ScaleVector(shootvel,2.0);
+											TeleportEntity(EndTarg[client],NULL_VECTOR,plyang,shootvel);
+											int decal = CreateEntityByName("infodecal");
+											if (decal != -1)
+											{
+												//effects/glowball
+												DispatchKeyValue(decal,"texture","decals/scorch2");
+												DispatchKeyValue(decal,"LowPriority","1");
+												TeleportEntity(decal,endorg,NULL_VECTOR,NULL_VECTOR);
+												DispatchSpawn(decal);
+												ActivateEntity(decal);
+												AcceptEntityInput(decal,"Activate");
+											}
+										}
+										if ((IsValidEntity(targ)) && (targ != 0))
+										{
+											char snd[64];
+											Format(snd,sizeof(snd),"weapons\\gluon\\hit%i.wav",GetRandomInt(1,4));
+											EmitSoundToAll(snd, targ, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+											char clsname[32];
+											GetEntityClassname(targ,clsname,sizeof(clsname));
+											float damage = 1.0;
+											Handle cvar = FindConVar("sk_plr_dmg_gluon");
+											if (cvar != INVALID_HANDLE)
+											{
+												damage = GetConVarFloat(cvar);
+												float inflictscale = 1.0;
+												char scalechk[32];
+												Format(scalechk,sizeof(scalechk),"sk_dmg_inflict_scale%i",difficulty);
+												Handle scaleh = FindConVar(scalechk);
+												if (scaleh != INVALID_HANDLE) inflictscale = GetConVarFloat(scaleh);
+												CloseHandle(scaleh);
+												damage = damage/inflictscale;
+												if (hitgroup == headgroup) damage = damage*2.0;
+											}
+											CloseHandle(cvar);
+											if ((!CheckNPCAlly(clsname,targ)) || ((targ < MaxClients+1) && (targ > 0) && (friendlyfire)))
+											{
+												SDKHooks_TakeDamage(targ,client,client,damage,DMG_ENERGYBEAM|DMG_SONIC,-1,NULL_VECTOR,endpos);
+											}
+										}
+										EnergyAmm[client]--;
+										WeapAttackSpeed[client] = Time+0.25;
 									}
 								}
-								int grenade = CreateEntityByName("prop_physics_override");
-								if (grenade != -1)
-								{
-									DispatchKeyValue(grenade,"classname","grenade_frag");
-									DispatchKeyValue(grenade,"model","models/items/357ammobox.mdl");
-									DispatchKeyValue(grenade,"solid","6");
-									DispatchKeyValue(grenade,"spawnflags","256");
-									TeleportEntity(grenade,plyfirepos,plyang,NULL_VECTOR);
-									DispatchSpawn(grenade);
-									ActivateEntity(grenade);
-									if (!IsModelPrecached("models/w_grenade.mdl")) PrecacheModel("models/w_grenade.mdl",true);
-									SetEntityModel(grenade,"models/w_grenade.mdl");
-									if (HasEntProp(grenade,Prop_Data,"m_CollisionGroup")) SetEntProp(grenade,Prop_Data,"m_CollisionGroup",5);
-									TeleportEntity(grenade,NULL_VECTOR,NULL_VECTOR,shootvel);
-									int endpoint = CreateEntityByName("env_explosion");
-									if (endpoint != -1)
-									{
-										char dmgmag[8] = "300";
-										char radius[8] = "150";
-										Handle cvar = FindConVar("sk_plr_dmg_handgrenade");
-										if (cvar != INVALID_HANDLE) GetConVarString(cvar,dmgmag,sizeof(dmgmag));
-										cvar = FindConVar("sk_grenade_radius");
-										if (cvar != INVALID_HANDLE) GetConVarString(cvar,radius,sizeof(radius));
-										CloseHandle(cvar);
-										DispatchKeyValue(endpoint,"imagnitude",dmgmag);
-										DispatchKeyValue(endpoint,"iRadiusOverride",radius);
-										DispatchKeyValue(endpoint,"rendermode","0");
-										DispatchKeyValue(endpoint,"OnUser4","!self,Explode,,4,-1");
-										plyfirepos[2]+=2.0;
-										TeleportEntity(endpoint,plyfirepos,plyang,NULL_VECTOR);
-										DispatchSpawn(endpoint);
-										ActivateEntity(endpoint);
-										SetVariantString("!activator");
-										AcceptEntityInput(endpoint,"SetParent",grenade);
-										AcceptEntityInput(endpoint,"FireUser4",grenade);
-										SetEntPropEnt(grenade,Prop_Data,"m_hOwnerEntity",endpoint);
-										SetEntPropEnt(endpoint,Prop_Data,"m_hOwnerEntity",client);
-										CreateTimer(4.0,GrenadeExpl,grenade,TIMER_FLAG_NO_MAPCHANGE);
-									}
-								}
 							}
 						}
 					}
 				}
-				else if (StrEqual(curweap,"weapon_oicw",false))
+				else if ((StrEqual(curweap,"weapon_tau",false)) || (StrEqual(curweap,"weapon_gauss",false)))
 				{
-					if (weap != -1)
-					{
-						SetEntProp(weap,Prop_Data,"m_nShotsFired",0);
-					}
-				}
-			}
-			if (!(buttons & IN_ATTACK2))
-			{
-				if (((StrEqual(curweap,"weapon_tau",false)) || (StrEqual(curweap,"weapon_gauss",false))) && (TauCharge[client] > 0))
-				{
+					setbuttons = false;
 					if (weap != -1)
 					{
 						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
 						if (viewmdl != -1)
 						{
 							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-							int mdlseq = 4;
-							int mdlseq2 = 4;
-							int mdlseqfire = 7;
-							int taubeammdl = taubeam;
-							int posside = 8;
-							float posz = 12.0;
-							char mdl[64];
-							char snd[64];
-							char stopsnd[64];
-							char beammdl[64];
-							GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-							Format(snd,sizeof(snd),"weapons\\tau\\gauss_overcharged.wav");
-							Format(stopsnd,sizeof(stopsnd),"weapons\\tau\\gauss_spinup.wav");
-							Format(beammdl,sizeof(beammdl),"effects/tau_beam.vmt");
-							if (StrEqual(mdl,"models/v_gauss.mdl",false))
+							float Time = GetTickedTime();
+							if ((EnergyAmm[client] > 0) && (WeapAttackSpeed[client] < Time) && (seq != 4))
 							{
-								Format(snd,sizeof(snd),"weapons\\gauss2.wav");
-								Format(stopsnd,sizeof(stopsnd),"ambience\\pulsemachine.wav");
-								mdlseq2 = 3;
-								mdlseq = 4;
-								mdlseqfire = 5;
-								taubeammdl = tauhl1beam;
-								Format(beammdl,sizeof(beammdl),"sprites/smoke.vmt");
-							}
-							else if (StrEqual(mdl,"models/weapons/v_gauss_suit.mdl",false))
-							{
-								Format(snd,sizeof(snd),"weapons\\gauss\\fire1.wav");
-								Format(stopsnd,sizeof(stopsnd),"weapons\\gauss\\chargeloop.wav");
-								taubeammdl = tauhl2beam;
-								Format(beammdl,sizeof(beammdl),"sprites/laserbeam.vmt");
-								posside = 5;
-								posz = 8.0;
-							}
-							if ((seq == mdlseq) || (seq == mdlseq2))
-							{
-								SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseqfire);
-								StopSound(weap,SNDCHAN_WEAPON,stopsnd);
-								EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_GUNFIRE);
+								EnergyAmm[client]--;
+								char mdl[64];
+								char snd[64];
+								char beammdl[64];
+								int taubeammdl = taubeam;
+								int posside = 8;
+								float posz = 12.0;
+								GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+								Format(beammdl,sizeof(beammdl),"effects/tau_beam.vmt");
+								if (StrEqual(mdl,"models/v_gauss.mdl",false))
+								{
+									Format(snd,sizeof(snd),"weapons\\gauss2.wav");
+									taubeammdl = tauhl1beam;
+									Format(beammdl,sizeof(beammdl),"sprites/smoke.vmt");
+									if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
+									posside = 5;
+								}
+								else if (StrEqual(mdl,"models/weapons/v_gauss_suit.mdl",false))
+								{
+									float cycle = GetEntPropFloat(viewmdl,Prop_Data,"m_flCycle");
+									if (seq != 4) SetEntProp(viewmdl,Prop_Send,"m_nSequence",4);
+									else if ((seq == 4) && (cycle > 0.2)) SetEntPropFloat(viewmdl,Prop_Data,"m_flCycle",0.0);
+									Format(snd,sizeof(snd),"weapons\\gauss\\fire1.wav");
+									taubeammdl = tauhl2beam;
+									Format(beammdl,sizeof(beammdl),"sprites/laserbeam.vmt");
+									posside = 5;
+									posz = 8.0;
+								}
+								else
+								{
+									int randsnd = GetRandomInt(1,5);
+									if (randsnd == 4) Format(snd,sizeof(snd),"weapons\\tau\\single.wav");
+									else if (randsnd == 5) Format(snd,sizeof(snd),"weapons\\tau\\single2.wav");
+									else Format(snd,sizeof(snd),"weapons\\tau\\single0%i.wav",randsnd);
+									if (seq == 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",6);
+									else SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
+								}
+								if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",EnergyAmm[client]);
+								if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",EnergyAmm[client]);
+								EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								CreateTimer(0.2,resetviewmdl,viewmdl);
+								WeapAttackSpeed[client] = Time+0.3;
+								SetEntPropFloat(weap,Prop_Data,"m_flTimeWeaponIdle",0.0);
 								float endpos[3];
 								float plyfirepos[3];
 								float plyang[3];
+								float traceNormal[3];
 								GetClientEyeAngles(client,plyang);
 								GetClientEyePosition(client,plyfirepos);
 								TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
 								TR_GetEndPosition(endpos);
-								float dmg = 20.0;
-								Handle cvar = FindConVar("sk_plr_dmg_tau");
-								if (cvar != INVALID_HANDLE) dmg = GetConVarFloat(cvar);
-								CloseHandle(cvar);
+								TR_GetPlaneNormal(INVALID_HANDLE,traceNormal);
+								/* from SDK vehicle_jeep
+									//Draw the main beam shaft
+									CBeam *pBeam = CBeam::BeamCreate( GAUSS_BEAM_SPRITE, 0.5 );
+									
+									pBeam->SetStartPos( startPos );
+									pBeam->PointEntInit( endPos, this );
+									pBeam->SetEndAttachment( LookupAttachment("Muzzle") );
+									//Value of width charged beam 9.6 regular 2.4
+									pBeam->SetWidth( width );
+									pBeam->SetEndWidth( 0.05f );
+									pBeam->SetBrightness( 255 );
+									pBeam->SetColor( 255, 185+random->RandomInt( -16, 16 ), 40 );
+									pBeam->RelinkBeam();
+									pBeam->LiveForTime( 0.1f );
+
+									//Draw electric bolts along shaft
+									pBeam = CBeam::BeamCreate( GAUSS_BEAM_SPRITE, 3.0f );
+									
+									pBeam->SetStartPos( startPos );
+									pBeam->PointEntInit( endPos, this );
+									pBeam->SetEndAttachment( LookupAttachment("Muzzle") );
+
+									pBeam->SetBrightness( random->RandomInt( 64, 255 ) );
+									pBeam->SetColor( 255, 255, 150+random->RandomInt( 0, 64 ) );
+									pBeam->RelinkBeam();
+									pBeam->LiveForTime( 0.1f );
+									pBeam->SetNoise( 1.6f );
+									pBeam->SetEndWidth( 0.1f );
+								*/
 								int beam = CreateEntityByName("beam");
 								if (beam != -1)
 								{
@@ -4033,7 +2571,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									TeleportEntity(beam,plyfirepos,plyang,NULL_VECTOR);
 									DispatchSpawn(beam);
 									ActivateEntity(beam);
-									SetEntityRenderColor(beam,255,255,GetRandomInt(150,220),255);
+									SetEntityRenderColor(beam,255,GetRandomInt(150,220),40,255);
 									SetEntProp(beam,Prop_Data,"m_nBeamType",1);
 									SetEntProp(beam,Prop_Data,"m_nBeamFlags",0);
 									SetEntProp(beam,Prop_Data,"m_nNumBeamEnts",2);
@@ -4044,9 +2582,9 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									//SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",EndTarg[client],1);
 									//SetEntPropEnt(beam,Prop_Data,"m_hEndEntity",EndTarg[client]);
 									SetEntPropVector(beam,Prop_Data,"m_vecEndPos",endpos);
-									SetEntPropFloat(beam,Prop_Data,"m_fAmplitude",2.0);
-									SetEntPropFloat(beam,Prop_Data,"m_fWidth",4.0);
-									SetEntPropFloat(beam,Prop_Data,"m_fEndWidth",8.0);
+									SetEntPropFloat(beam,Prop_Data,"m_fAmplitude",0.0);
+									SetEntPropFloat(beam,Prop_Data,"m_fWidth",2.4);
+									SetEntPropFloat(beam,Prop_Data,"m_fEndWidth",0.05);
 									SetEntPropFloat(beam,Prop_Data,"m_fSpeed",20.0);
 									SetEntPropFloat(beam,Prop_Data,"m_flFrameRate",20.0);
 									SetEntPropFloat(beam,Prop_Data,"m_flHDRColorScale",1.0);
@@ -4067,14 +2605,14 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 											SetVariantString("OnUser4 !self:kill::0.1:-1")
 											AcceptEntityInput(beam,"addoutput");
 											AcceptEntityInput(beam,"FireUser4");
-											SetEntityRenderColor(beam,255,255,GetRandomInt(150,220),255);
+											SetEntityRenderColor(beam,255,255,GetRandomInt(150,214),GetRandomInt(64,255));
 											SetEntProp(beam,Prop_Data,"m_nBeamType",1);
 											SetEntProp(beam,Prop_Data,"m_nBeamFlags",0);
 											SetEntProp(beam,Prop_Data,"m_nNumBeamEnts",2);
 											SetEntPropVector(beam,Prop_Data,"m_vecEndPos",endpos);
-											SetEntPropFloat(beam,Prop_Data,"m_fAmplitude",GetRandomFloat(8.0,15.0));
-											SetEntPropFloat(beam,Prop_Data,"m_fWidth",GetRandomFloat(1.0,6.0));
-											SetEntPropFloat(beam,Prop_Data,"m_fEndWidth",8.0);
+											SetEntPropFloat(beam,Prop_Data,"m_fAmplitude",2.6+i);
+											SetEntPropFloat(beam,Prop_Data,"m_fWidth",3.0+i);
+											SetEntPropFloat(beam,Prop_Data,"m_fEndWidth",0.1);
 											SetEntPropFloat(beam,Prop_Data,"m_fSpeed",20.0);
 											SetEntPropFloat(beam,Prop_Data,"m_flFrameRate",20.0);
 											SetEntPropFloat(beam,Prop_Data,"m_flHDRColorScale",1.0);
@@ -4085,9 +2623,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									int ent = CreateEntityByName("env_physexplosion");
 									if(ent != -1)
 									{
-										float magnitude = dmg*TauCharge[client];
-										DispatchKeyValueFloat(ent,"magnitude",magnitude);
-										DispatchKeyValue(ent,"radius","256");
+										DispatchKeyValueFloat(ent,"magnitude",20.0);
+										DispatchKeyValue(ent,"radius","0");
 										DispatchKeyValue(ent,"inner_radius","0");
 										DispatchKeyValue(ent,"spawnflags","10");
 										TeleportEntity(ent,endpos,NULL_VECTOR,NULL_VECTOR);
@@ -4106,12 +2643,117 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 										ActivateEntity(decal);
 										AcceptEntityInput(decal,"Activate");
 									}
+									//From weapon_gauss CustomGuns plugin:
+									float vecFwd[3], vecUp[3], vecRight[3];
+									GetAngleVectors(plyang, vecFwd, vecRight, vecUp);
+									float vecDir[3];
+									float x, y, z;
+									//Gassian spread
+									do {
+										x = GetRandomFloat(-0.5,0.5) + GetRandomFloat(-0.5,0.5);
+										y = GetRandomFloat(-0.5,0.5) + GetRandomFloat(-0.5,0.5);
+										z = x*x+y*y;
+									} while (z > 1);
+								 
+									vecDir[0] = vecFwd[0] + x * 0.00873 * vecRight[0] + y * 0.00873 * vecUp[0];
+									vecDir[1] = vecFwd[1] + x * 0.00873 * vecRight[1] + y * 0.00873 * vecUp[1];
+									vecDir[2] = vecFwd[2] + x * 0.00873 * vecRight[2] + y * 0.00873 * vecUp[2];
+									float hitAngle = -GetVectorDotProduct(traceNormal, vecDir);
+									if ( hitAngle < 0.5 )
+									{
+										float vReflection[3];
+										vReflection[0] = 2.0 * traceNormal[0] * hitAngle + vecDir[0];
+										vReflection[1] = 2.0 * traceNormal[1] * hitAngle + vecDir[1];
+										vReflection[2] = 2.0 * traceNormal[2] * hitAngle + vecDir[2];
+										GetVectorAngles(vReflection, plyang);
+										plyfirepos = endpos;
+										TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+										TR_GetEndPosition(endpos);
+										for (int i = 0;i<3;i++)
+										{
+											beam = CreateEntityByName("beam");
+											if (beam != -1)
+											{
+												DispatchKeyValue(beam,"model",beammdl);
+												DispatchKeyValue(beam,"texture",beammdl);
+												SetEntProp(beam,Prop_Data,"m_nModelIndex",taubeammdl);
+												SetEntProp(beam,Prop_Data,"m_nHaloIndex",taubeammdl);
+												TeleportEntity(beam,plyfirepos,plyang,NULL_VECTOR);
+												DispatchSpawn(beam);
+												ActivateEntity(beam);
+												SetVariantString("OnUser4 !self:kill::0.1:-1")
+												AcceptEntityInput(beam,"addoutput");
+												AcceptEntityInput(beam,"FireUser4");
+												if (i == 0)
+												{
+													SetEntPropFloat(beam,Prop_Data,"m_fWidth",2.4);
+													SetEntityRenderColor(beam,255,GetRandomInt(150,220),40,255);
+												}
+												else
+												{
+													SetEntPropFloat(beam,Prop_Data,"m_fWidth",3.0);
+													SetEntityRenderColor(beam,255,255,GetRandomInt(150,214),GetRandomInt(64,255));
+												}
+												SetEntProp(beam,Prop_Data,"m_nBeamType",1);
+												SetEntProp(beam,Prop_Data,"m_nBeamFlags",0);
+												SetEntProp(beam,Prop_Data,"m_nNumBeamEnts",2);
+												SetEntPropVector(beam,Prop_Data,"m_vecEndPos",endpos);
+												SetEntPropFloat(beam,Prop_Data,"m_fAmplitude",GetRandomFloat(1.0,1.7));
+												SetEntPropFloat(beam,Prop_Data,"m_fEndWidth",0.1);
+												SetEntPropFloat(beam,Prop_Data,"m_fSpeed",20.0);
+												SetEntPropFloat(beam,Prop_Data,"m_flFrameRate",20.0);
+												SetEntPropFloat(beam,Prop_Data,"m_flHDRColorScale",1.0);
+												SetEntProp(beam,Prop_Data,"m_nDissolveType",-1);
+												SetEntProp(beam,Prop_Data,"m_nRenderMode",2);
+											}
+										}
+										TE_Start("GaussExplosion");
+										TE_WriteFloat("m_vecOrigin[0]",endpos[0]);
+										TE_WriteFloat("m_vecOrigin[1]",endpos[1]);
+										TE_WriteFloat("m_vecOrigin[2]",endpos[2]);
+										TE_WriteNum("m_nType",0);
+										TE_WriteVector("m_vecDirection",traceNormal);
+										TE_SendToAll();
+										ent = CreateEntityByName("env_physexplosion");
+										if(ent != -1)
+										{
+											DispatchKeyValueFloat(ent,"magnitude",20.0);
+											DispatchKeyValue(ent,"radius","0");
+											DispatchKeyValue(ent,"inner_radius","0");
+											DispatchKeyValue(ent,"spawnflags","10");
+											TeleportEntity(ent,endpos,NULL_VECTOR,NULL_VECTOR);
+											DispatchSpawn(ent);
+											SetEntPropEnt(ent,Prop_Data,"m_hOwnerEntity",client);
+											AcceptEntityInput(ent,"Explode");
+											AcceptEntityInput(ent,"Kill");
+										}
+										decal = CreateEntityByName("infodecal");
+										if (decal != -1)
+										{
+											DispatchKeyValue(decal,"texture","decals/scorch2");//decals/redglowfade
+											DispatchKeyValue(decal,"LowPriority","1");
+											TeleportEntity(decal,endpos,NULL_VECTOR,NULL_VECTOR);
+											DispatchSpawn(decal);
+											ActivateEntity(decal);
+											AcceptEntityInput(decal,"Activate");
+										}
+									}
+									else
+									{
+										TE_Start("GaussExplosion");
+										TE_WriteFloat("m_vecOrigin[0]",endpos[0]);
+										TE_WriteFloat("m_vecOrigin[1]",endpos[1]);
+										TE_WriteFloat("m_vecOrigin[2]",endpos[2]);
+										TE_WriteNum("m_nType",0);
+										TE_WriteVector("m_vecDirection",traceNormal);
+										TE_SendToAll();
+									}
 									int effect = CreateEntityByName("env_sprite");
 									if (effect != -1)
 									{
 										DispatchKeyValue(effect,"model","sprites/glow01.spr");
 										DispatchKeyValue(effect,"scale","1.0");
-										DispatchKeyValue(effect,"GlowProxySize","9");
+										DispatchKeyValue(effect,"GlowProxySize","3");
 										DispatchKeyValue(effect,"rendermode","9");
 										DispatchKeyValue(effect,"rendercolor","200 200 0");
 										TeleportEntity(effect,endpos,plyang,NULL_VECTOR);
@@ -4123,132 +2765,198 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 										AcceptEntityInput(effect,"FireUser4");
 									}
 								}
-								if (tauknockback)
-								{
-									float launch[3];
-									GetAngleVectors(plyang, launch, NULL_VECTOR, NULL_VECTOR);
-									ScaleVector(launch,-(dmg*TauCharge[client]));
-									launch[2]+=(dmg/2)*TauCharge[client];
-									TeleportEntity(client,NULL_VECTOR,NULL_VECTOR,launch);
-								}
-								TauCharge[client] = 0;
-								WeapAttackSpeed[client] = GetTickedTime()+1.0;
 							}
 						}
 					}
 				}
-			}
-			if (buttons & IN_RELOAD)
-			{
-				if (!(g_LastButtons[client] & IN_RELOAD))
+				else if (StrEqual(curweap,"weapon_glock",false))
 				{
-					if (StrContains(curweap,"custom_",false) == 0)
+					if (weap != -1)
 					{
-						char custweap[64];
-						GetEntPropString(weap,Prop_Data,"m_iszResponseContext",custweap,sizeof(custweap));
-						ReloadCustomWeap(client,weap,custweap);
-					}
-					else if (StrEqual(curweap,"weapon_flaregun",false))
-					{
-						if (weap != -1)
+						setbuttons = false;
+						float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
+						float Time = GetTickedTime();
+						if ((nextatk < GetGameTime()+0.04) && (WeapSnd[client] < Time))
 						{
-							if ((GetEntProp(weap,Prop_Data,"m_iClip1") < 1) && (flareammo[client] > 0))
+							StopSound(client,SNDCHAN_WEAPON,"weapons/pistol/pistol_fire2.wav");
+							char snd[64];
+							char mdl[32];
+							GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+							if (StrEqual(mdl,"models/v_9mmhandgun.mdl",false))
+							{
+								if (CLAttachment[client] == 1)
+								{
+									Format(snd,sizeof(snd),"weapons\\pl_gun1.wav");
+									SetEntPropFloat(client,Prop_Data,"m_flFlashTime",0.0);
+								}
+								else Format(snd,sizeof(snd),"weapons\\pl_gun3.wav");
+							}
+							else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
+							{
+								Format(snd,sizeof(snd),"weapons\\pistol\\glock_fire.wav");
+							}
+							else
+							{
+								Format(snd,sizeof(snd),"weapons\\glock\\single.wav");
+							}
+							int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
+							int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
+							if ((amm > 0) && (!inreload))
 							{
 								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
 								if (viewmdl != -1)
 								{
 									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									int mdlseq = 1;
-									char mdl[64];
-									GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-									if (!StrEqual(mdl,"models/weapons/v_flaregun.mdl",false))
-										mdlseq = 2;
-									if (seq != mdlseq)
+									if (seq == 3)
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",4);
+									}
+									else
 									{
 										SetEntProp(viewmdl,Prop_Send,"m_nSequence",3);
-										ChangeEdictState(viewmdl);
-										CreateTimer(2.2,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
-										if (FileExists("sound/weapons/flaregun/flaregun_reload.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\flaregun\\flaregun_reload.wav", weap, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+									}
+									EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+									WeapSnd[client] = Time+0.05;
+								}
+							}
+							else if (inreload)
+							{
+								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+								if (viewmdl != -1)
+								{
+									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+									if (StrEqual(mdl,"models/v_9mmhandgun.mdl",false))
+									{
+										if ((seq != 5) && (seq != 6))
+										{
+											SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetRandomInt(5,6));
+											StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
+										}
+									}
+									else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
+									{
+										if (seq != 9)
+										{
+											SetEntProp(viewmdl,Prop_Send,"m_nSequence",9);
+											StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
+											Format(snd,sizeof(snd),"weapons\\pistol\\glock_reload.wav");
+											EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+										}
+									}
+									else if ((seq != 6) && (seq != 7))
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetRandomInt(6,7));
+										StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
+										Format(snd,sizeof(snd),"weapons\\glock\\reload.wav");
+										EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+									}
+								}
+							}
+							else
+							{
+								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+								if (viewmdl != -1)
+								{
+									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+									if (seq != 0)
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
 									}
 								}
 							}
 						}
 					}
-					else if (StrEqual(curweap,"weapon_glock",false))
+				}
+				else if ((StrEqual(curweap,"weapon_mp5",false)) || (StrEqual(curweap,"weapon_m4",false)) || (StrEqual(curweap,"weapon_g36c",false)))
+				{
+					if (weap != -1)
 					{
-						if (weap != -1)
+						StopSound(client,SNDCHAN_WEAPON,"weapons/smg1/smg1_fire1.wav");
+						int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
+						int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
+						if ((amm > 0) && (!inreload))
 						{
-							if (GetEntProp(client,Prop_Send,"m_iAmmo",_,3) > 0)
+							float Time = GetTickedTime();
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if ((viewmdl != -1) && (WeapAttackSpeed[client] < Time))
 							{
-								int maxclip = 17;
-								if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0)) maxclip = 15;
-								if (GetEntProp(weap,Prop_Data,"m_iClip1") < maxclip)
+								char snd[64];
+								if (FileExists("sound/weapons/mp5/single1.wav",true,NULL_STRING)) Format(snd,sizeof(snd),"weapons\\mp5\\single%i.wav",GetRandomInt(1,3));
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								char mdl[32];
+								GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+								if (StrEqual(mdl,"models/v_9mmAR.mdl",false))
 								{
-									int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-									if (viewmdl != -1)
+									Format(snd,sizeof(snd),"weapons\\hks%i.wav",GetRandomInt(1,3));
+									if (seq == 6)
 									{
-										int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-										char mdl[32];
-										GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-										if (StrEqual(mdl,"models/v_9mmhandgun.mdl",false))
-										{
-											if ((seq != 5) && (seq != 6))
-											{
-												SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetRandomInt(5,6));
-												StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
-											}
-										}
-										else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",9);
-											if (FileExists("sound/weapons/pistol/glock_reload1.wav",true,NULL_STRING))
-											{
-												StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
-												char snd[64];
-												Format(snd,sizeof(snd),"weapons\\pistol\\glock_reload1.wav");
-												EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
-											}
-										}
-										else if ((seq != 6) && (seq != 7))
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetRandomInt(6,7));
-											if (FileExists("sound/weapons/glock/reload.wav",true,NULL_STRING))
-											{
-												StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
-												char snd[64];
-												Format(snd,sizeof(snd),"weapons\\glock\\reload.wav");
-												EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
-											}
-										}
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",7);
 									}
+									else
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",6);
+									}
+								}
+								else if (StrEqual(mdl,"models/weapons/v_m4m203.mdl",false))
+								{
+									int rand = GetRandomInt(0,3);
+									if (seq == rand)
+									{
+										if (rand == 3) rand--;
+										else rand++;
+									}
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
+									Format(snd,sizeof(snd),"weapons\\m4\\m4_fire.wav");
+								}
+								else if (StrEqual(curweap,"weapon_g36c",false))
+								{
+									int rand = GetRandomInt(1,6);
+									if (seq == rand)
+									{
+										if (rand == 6) rand--;
+										else rand++;
+									}
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
+									Format(snd,sizeof(snd),"weapons\\g36c\\g36c_fire.wav");
+								}
+								else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
+								{
+									int rand = GetRandomInt(1,6);
+									if (seq == rand)
+									{
+										if (rand == 3) rand--;
+										else rand++;
+									}
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
+									Format(snd,sizeof(snd),"weapons\\mp5\\mp5_fire.wav");
 								}
 								else
 								{
-									StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
-									SetEntProp(weap,Prop_Data,"m_iClip1",maxclip);
-									SetEntProp(weap,Prop_Data,"m_bInReload",0);
-									CreateTimer(0.1,resetinreload,weap,TIMER_FLAG_NO_MAPCHANGE);
-									SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",0.0);
+									if (seq == 3)
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
+									}
+									else
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",3);
+									}
 								}
-								setbuttons = false;
+								EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								WeapAttackSpeed[client] = Time+0.1;
 							}
 						}
-					}
-					else if ((StrEqual(curweap,"weapon_mp5",false)) || (StrEqual(curweap,"weapon_m4",false)) || (StrEqual(curweap,"weapon_g36c",false)))
-					{
-						if (weap != -1)
+						else if (inreload)
 						{
-							if (GetEntProp(client,Prop_Send,"m_iAmmo",_,4) > 0)
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
 							{
 								int mdlseq = 2;
-								int maxclip = 30;
 								char snd[64];
 								char mdl[32];
 								GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 								if (StrEqual(mdl,"models/v_9mmAR.mdl",false))
 								{
 									mdlseq = 3;
-									maxclip = 50;
 									Format(snd,sizeof(snd),"weapons\\reload3.wav");
 								}
 								else if (StrEqual(mdl,"models/weapons/v_m4m203.mdl",false))
@@ -4256,162 +2964,343 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									mdlseq = 7;
 									Format(snd,sizeof(snd),"weapons\\m4\\m4_reload.wav");
 								}
-								else if (StrEqual(curweap,"weapon_g36c",false))
+								else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
 								{
 									mdlseq = 9;
 									Format(snd,sizeof(snd),"weapons\\g36c\\g36c_reload.wav");
 								}
-								else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								if (seq != mdlseq)
 								{
-									mdlseq = 9;
-									Format(snd,sizeof(snd),"weapons\\mp5\\mp5_reload.wav");
-								}
-								else if (FileExists("sound/weapons/mp5/reload.wav",true,NULL_STRING)) Format(snd,sizeof(snd),"weapons\\mp5\\reload.wav");
-								if (GetEntProp(weap,Prop_Data,"m_iClip1") < maxclip)
-								{
-									int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-									if (viewmdl != -1)
-									{
-										int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-										if (seq != mdlseq)
-										{
-											SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-											StopSound(client,SNDCHAN_ITEM,"weapons/smg1/smg1_reload.wav");
-											if (strlen(snd) > 0) EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
-										}
-									}
-								}
-								else
-								{
-									SetEntProp(weap,Prop_Data,"m_iClip1",maxclip);
-									SetEntProp(weap,Prop_Data,"m_bInReload",0);
-									CreateTimer(0.1,resetinreload,weap,TIMER_FLAG_NO_MAPCHANGE);
-									SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",0.0);
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+									if (strlen(snd) > 0) EmitSoundToAll(snd, client, SNDCHAN_ITEM, SNDLEVEL_DISHWASHER);
 								}
 							}
 						}
-					}
-					else if (StrEqual(curweap,"weapon_hivehand",false))
-					{
-						if (weap != -1)
+						else
 						{
 							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
 							if (viewmdl != -1)
 							{
 								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-								if (seq != 4)
+								if (seq != 0)
 								{
-									SetEntProp(viewmdl,Prop_Send,"m_nSequence",4);
-									CreateTimer(21.0,resetviewmdl,viewmdl);
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
 								}
 							}
 						}
-					}
-					else if (StrEqual(curweap,"weapon_colt",false))
-					{
-						if (GetEntProp(client,Prop_Send,"m_iAmmo",_,3) > 0)
-						{
-							if (weap != -1)
-							{
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if (viewmdl != -1)
-								{
-									int clip = GetEntProp(weap,Prop_Data,"m_iClip1");
-									int maxclip = 8;
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									if ((seq != 4) && (clip < maxclip))
-									{
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",4);
-										CreateTimer(2.0,resetviewmdl,viewmdl);
-									}
-									else if (seq != 4)
-									{
-										SetEntProp(weap,Prop_Data,"m_iClip1",maxclip);
-										SetEntProp(weap,Prop_Data,"m_bInReload",0);
-										CreateTimer(0.1,resetinreload,weap,TIMER_FLAG_NO_MAPCHANGE);
-										SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",0.0);
-										StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
-										setbuttons = false;
-									}
-									
-								}
-							}
-						}
-					}
-					else if (StrEqual(curweap,"weapon_dualmp5k",false))
-					{
-						if (GetEntProp(client,Prop_Send,"m_iAmmo",_,4) > 0)
-						{
-							if (weap != -1)
-							{
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if (viewmdl != -1)
-								{
-									int clip = GetEntProp(weap,Prop_Data,"m_iClip1");
-									int maxclip = 64;
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									if ((seq != 8) && (clip < maxclip))
-									{
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",8);
-									}
-									else if (seq != 8)
-									{
-										SetEntProp(weap,Prop_Data,"m_iClip1",maxclip);
-										SetEntProp(weap,Prop_Data,"m_bInReload",0);
-										CreateTimer(0.1,resetinreload,weap,TIMER_FLAG_NO_MAPCHANGE);
-										SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",0.0);
-										StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
-										setbuttons = false;
-									}
-								}
-							}
-						}
+						setbuttons = false;
 					}
 				}
-			}
-			if (buttons & IN_USE)
-			{
-				if (!(g_LastButtons[client] & IN_RELOAD))
+				else if (StrEqual(curweap,"weapon_sl8",false))
 				{
-					int targ = GetClientAimTarget(client,false);
-					if (targ != -1)
+					if (weap != -1)
 					{
-						char cls[32];
-						GetEntityClassname(targ,cls,sizeof(cls));
-						if (StrEqual(cls,"grenade_satchel",false))
+						StopSound(client,SNDCHAN_WEAPON,"weapons/smg1/smg1_fire1.wav");
+						int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
+						int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
+						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+						if ((amm > 0) && (!inreload))
 						{
-							int owner = -1;
-							int expl = GetEntPropEnt(targ,Prop_Data,"m_hOwnerEntity");
-							if (expl != -1) owner = GetEntPropEnt(expl,Prop_Data,"m_hOwnerEntity");
-							if (owner == client)
+							float Time = GetTickedTime();
+							if ((viewmdl != -1) && (WeapAttackSpeed[client] < Time))
 							{
-								float orgs[3];
-								float proporgs[3];
-								if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
-								else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
-								if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",proporgs);
-								else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",proporgs);
-								float chkdist = GetVectorDistance(orgs,proporgs,false);
-								if (chkdist < 80.0)
+								EmitSoundToAll("weapons\\SL8\\SL8-1.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								if (seq == 1)
 								{
-									//plays on same channel as USE EmitGameSoundToAll("HL2Player.PickupWeapon",client);
-									int sndlvl,pitch,channel;
-									float vol;
-									char snd[64];
-									if (GetGameSoundParams("HL2Player.PickupWeapon",channel,sndlvl,vol,pitch,snd,sizeof(snd),client))
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
+								}
+								else
+								{
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",1);
+								}
+								WeapAttackSpeed[client] = Time+0.2;
+								int shotsfired = GetEntProp(weap,Prop_Data,"m_nShotsFired");
+								SetEntProp(weap,Prop_Data,"m_nShotsFired",shotsfired+1);
+								float orgs[3];
+								float angs[3];
+								GetClientEyeAngles(client, angs);
+								if ((HandAttach[client] == 0) || (!IsValidEntity(HandAttach[client])))
+								{
+									HandAttach[client] = CreateEntityByName("info_target");
+									if (HandAttach[client] != -1)
 									{
-										EmitSoundToAll(snd, client, SNDCHAN_AUTO, sndlvl, _, vol, pitch);
+										float plyfirepos[3];
+										GetClientEyePosition(client,plyfirepos);
+										TeleportEntity(HandAttach[client],plyfirepos,angs,NULL_VECTOR);
+										DispatchSpawn(HandAttach[client]);
+										ActivateEntity(HandAttach[client]);
+										SetVariantString("!activator");
+										AcceptEntityInput(HandAttach[client],"SetParent",client);
+										SetVariantString("anim_attachment_RH");
+										AcceptEntityInput(HandAttach[client],"SetParentAttachment");
+										float orgoffs[3];
+										orgoffs[0] = 5.0;
+										orgoffs[1] = 0.0;
+										orgoffs[2] = 5.0;
+										SetEntPropVector(HandAttach[client],Prop_Data,"m_vecOrigin",orgoffs);
 									}
-									Handle pickuph = StartMessageOne("ItemPickup",client);
-									BfWriteString(pickuph,"weapon_pistol");
-									EndMessage();
-									AcceptEntityInput(targ,"kill");
-									SatchelAmm[client]++;
-									if (StrEqual(curweap,"weapon_satchel",false))
+								}
+								if (HasEntProp(HandAttach[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(HandAttach[client],Prop_Data,"m_vecAbsOrigin",orgs);
+								else if (HasEntProp(HandAttach[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(HandAttach[client],Prop_Send,"m_vecOrigin",orgs);
+								if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",amm-1);
+								float maxspread = 0.5+(shotsfired/2);
+								if (maxspread > 2.0) maxspread = 2.0;
+								int sideoffs = 5;
+								ShootBullet(client,weap,0,curweap,orgs,angs,sideoffs,maxspread);
+							}
+						}
+						else if ((amm <= 0) && (!inreload))
+						{
+							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+							int mdlseq = 2;
+							if (seq != mdlseq)
+							{
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+								StopSound(client,SNDCHAN_ITEM,"weapons/smg1/smg1_reload.wav");
+								if (FileExists("sound/weapons/sl8/sl8_magout.wav",true,NULL_STRING))
+								{
+									char snd[64];
+									Format(snd,sizeof(snd),"weapons\\sl8\\sl8_magout.wav");
+									EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+									CreateTimer(0.6,resetviewmdl,viewmdl);
+								}
+							}
+						}
+						setbuttons = false;
+					}
+				}
+				else if (StrEqual(curweap,"weapon_oicw",false))
+				{
+					if (weap != -1)
+					{
+						StopSound(client,SNDCHAN_WEAPON,"weapons/smg1/smg1_fire1.wav");
+						int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
+						int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
+						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+						if ((amm > 0) && (!inreload))
+						{
+							float Time = GetTickedTime();
+							if ((viewmdl != -1) && (WeapAttackSpeed[client] < Time))
+							{
+								if (FileExists("sound/weapons/oicw/oicw_fire1.wav",true,NULL_STRING))
+								{
+									char snd[64];
+									Format(snd,sizeof(snd),"weapons\\oicw\\oicw_fire%i.wav",GetRandomInt(1,3));
+									EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								}
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								int rand = GetRandomInt(1,3);
+								if (rand == seq)
+								{
+									if (rand+1 > 3) rand--;
+									else rand++;
+								}
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
+								WeapAttackSpeed[client] = Time+0.1;
+								float orgs[3];
+								float angs[3];
+								GetClientEyeAngles(client, angs);
+								if ((HandAttach[client] == 0) || (!IsValidEntity(HandAttach[client])))
+								{
+									HandAttach[client] = CreateEntityByName("info_target");
+									if (HandAttach[client] != -1)
 									{
-										if (weap != -1)
+										float plyfirepos[3];
+										GetClientEyePosition(client,plyfirepos);
+										TeleportEntity(HandAttach[client],plyfirepos,angs,NULL_VECTOR);
+										DispatchSpawn(HandAttach[client]);
+										ActivateEntity(HandAttach[client]);
+										SetVariantString("!activator");
+										AcceptEntityInput(HandAttach[client],"SetParent",client);
+										SetVariantString("anim_attachment_RH");
+										AcceptEntityInput(HandAttach[client],"SetParentAttachment");
+										float orgoffs[3];
+										orgoffs[0] = 5.0;
+										orgoffs[1] = 0.0;
+										orgoffs[2] = 5.0;
+										SetEntPropVector(HandAttach[client],Prop_Data,"m_vecOrigin",orgoffs);
+									}
+								}
+								if (HasEntProp(HandAttach[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(HandAttach[client],Prop_Data,"m_vecAbsOrigin",orgs);
+								else if (HasEntProp(HandAttach[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(HandAttach[client],Prop_Send,"m_vecOrigin",orgs);
+								if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",amm-1);
+								int shotsfired = GetEntProp(weap,Prop_Data,"m_nShotsFired");
+								SetEntProp(weap,Prop_Data,"m_nShotsFired",shotsfired+1);
+								int sideoffs = 5;
+								float maxspread = 0.5+(shotsfired/2);
+								if (maxspread > 2.0) maxspread = 2.0;
+								ShootBullet(client,weap,0,curweap,orgs,angs,sideoffs,maxspread);
+							}
+						}
+						else if ((amm <= 0) && (!inreload))
+						{
+							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+							int mdlseq = 5;
+							if (seq != mdlseq)
+							{
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+								StopSound(client,SNDCHAN_ITEM,"weapons/smg1/smg1_reload.wav");
+								if (FileExists("sound/weapons/oicw/oicw_reload.wav",true,NULL_STRING))
+								{
+									EmitSoundToAll("weapons\\oicw\\oicw_reload.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+									CreateTimer(2.3,resetviewmdl,viewmdl);
+									SetEntProp(weap,Prop_Data,"m_bInReload",1);
+								}
+							}
+						}
+						setbuttons = false;
+					}
+				}
+				else if ((StrEqual(curweap,"weapon_hivehand",false)) || (StrEqual(curweap,"weapon_hornetgun",false)))
+				{
+					if (weap != -1)
+					{
+						int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
+						if (amm > 0)
+						{
+							float Time = GetTickedTime();
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if ((viewmdl != -1) && (WeapAttackSpeed[client] < Time))
+							{
+								char snd[64];
+								Format(snd,sizeof(snd),"weapons\\hivehand\\single.wav");
+								EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								int rand = GetRandomInt(7,12);
+								if (seq == rand)
+								{
+									if (seq > 11) rand--;
+									else rand++;
+								}
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
+								SetEntPropFloat(client,Prop_Data,"m_flFlashTime",GetGameTime()+0.5);
+								WeapAttackSpeed[client] = Time+0.5;
+								CreateHornet(client,weap);
+							}
+							SetEntPropFloat(weap,Prop_Data,"m_flTimeWeaponIdle",0.0);
+						}
+						setbuttons = false;
+					}
+				}
+				else if ((StrEqual(curweap,"weapon_handgrenade",false)) || (StrEqual(curweap,"weapon_satchel",false)))
+				{
+					if (weap != -1)
+					{
+						float Time = GetTickedTime();
+						if (WeapAttackSpeed[client] < Time)
+						{
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
+							{
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								int hasammo = 0;
+								int mdlseq = 2;
+								char mdl[32];
+								GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+								if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
+								if ((seq != mdlseq) && (hasammo))
+								{
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+									if (!StrEqual(curweap,"weapon_handgrenade",false))
+									{
+										CreateTimer(0.75,resetviewmdl,viewmdl);
+										float targpos[3];
+										float shootvel[3];
+										float plyfirepos[3];
+										float plyang[3];
+										float maxscaler = 500.0;
+										float sideadj = 0.0;
+										char grenademdl[64];
+										GetClientEyeAngles(client,plyang);
+										if (StrEqual(curweap,"weapon_satchel",false))
 										{
-											SetEntProp(weap,Prop_Data,"m_iClip1",SatchelAmm[client]);
+											sideadj = 10.0;
+											Format(grenademdl,sizeof(grenademdl),"models/weapons/w_satchel.mdl");
+										}
+										else
+										{
+											sideadj = -10.0;
+											maxscaler = 800.0;
+											Format(grenademdl,sizeof(grenademdl),"models/items/boxmrounds.mdl");
+										}
+										plyang[1]+=sideadj;
+										GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",plyfirepos);
+										plyfirepos[0] = (plyfirepos[0] + (40 * Cosine(DegToRad(plyang[1]))));
+										plyfirepos[1] = (plyfirepos[1] + (40 * Sine(DegToRad(plyang[1]))));
+										if (GetEntProp(client,Prop_Data,"m_bDucked")) plyfirepos[2]+=28.0;
+										else plyfirepos[2]+=48.0;
+										plyang[1]-=sideadj;
+										TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+										TR_GetEndPosition(targpos);
+										MakeVectorFromPoints(plyfirepos,targpos,shootvel);
+										ScaleVector(shootvel,2.5);
+										if (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+										{
+											while (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+											{
+												ScaleVector(shootvel,0.95);
+											}
+										}
+										SatchelAmm[client]--;
+										if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",SatchelAmm[client]);
+										int satchel = CreateEntityByName("prop_physics_override");
+										if (satchel != -1)
+										{
+											DispatchKeyValue(satchel,"classname","grenade_satchel");
+											if (StrEqual(mdl,"models/v_satchel.mdl",false)) DispatchKeyValue(satchel,"model","models/items/boxmrounds.mdl");
+											else DispatchKeyValue(satchel,"model",grenademdl);
+											DispatchKeyValue(satchel,"solid","6");
+											DispatchKeyValue(satchel,"spawnflags","256");
+											TeleportEntity(satchel,plyfirepos,plyang,NULL_VECTOR);
+											DispatchSpawn(satchel);
+											ActivateEntity(satchel);
+											if (StrEqual(mdl,"models/v_satchel.mdl",false))
+											{
+												if (!IsModelPrecached("models/w_satchel.mdl")) PrecacheModel("models/w_satchel.mdl",true);
+												SetEntityModel(satchel,"models/w_satchel.mdl");
+												SetEntProp(satchel,Prop_Data,"m_usSolidFlags",1);
+											}
+											TeleportEntity(satchel,NULL_VECTOR,NULL_VECTOR,shootvel);
+											int endpoint = CreateEntityByName("env_explosion");
+											if (endpoint != -1)
+											{
+												char dmgmag[8] = "300";
+												char radius[8] = "150";
+												Handle cvar = FindConVar("sk_plr_dmg_satchel");
+												SDKHookEx(satchel,SDKHook_OnTakeDamage,grenademinetkdmg);
+												if (cvar != INVALID_HANDLE)
+												{
+													GetConVarString(cvar,dmgmag,sizeof(dmgmag));
+													if (StringToInt(dmgmag) < 1)
+													{
+														SetConVarString(cvar,"300",false,false);
+														Format(dmgmag,sizeof(dmgmag),"300");
+													}
+												}
+												cvar = FindConVar("sk_satchel_radius");
+												if (cvar != INVALID_HANDLE)
+												{
+													GetConVarString(cvar,radius,sizeof(radius));
+													if (StringToInt(radius) < 1)
+													{
+														SetConVarString(cvar,"150",false,false);
+														Format(radius,sizeof(radius),"150");
+													}
+												}
+												CloseHandle(cvar);
+												DispatchKeyValue(endpoint,"imagnitude",dmgmag);
+												DispatchKeyValue(endpoint,"iRadiusOverride",radius);
+												DispatchKeyValue(endpoint,"rendermode","0");
+												TeleportEntity(endpoint,plyfirepos,plyang,NULL_VECTOR);
+												DispatchSpawn(endpoint);
+												ActivateEntity(endpoint);
+												SetVariantString("!activator");
+												AcceptEntityInput(endpoint,"SetParent",satchel);
+												SetEntPropEnt(satchel,Prop_Data,"m_hOwnerEntity",endpoint);
+												SetEntPropEnt(endpoint,Prop_Data,"m_hOwnerEntity",client);
+											}
 										}
 									}
 								}
@@ -4419,68 +3308,402 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						}
 					}
 				}
-			}
-		}
-		else if (FindStringInArray(sweps,curweap) != -1)
-		{
-			int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-			if (viewmdl != -1)
-			{
-				int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-				if ((StrEqual(curweap,"weapon_flaregun",false)) || (StrEqual(curweap,"weapon_medkit",false)))
+				else if (StrEqual(curweap,"weapon_tripmine",false))
 				{
-					if (seq != 4) SetEntProp(viewmdl,Prop_Send,"m_nSequence",4);
-				}
-				else if (StrEqual(curweap,"weapon_manhack",false))
-				{
-					if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
-				}
-				else if (StrEqual(curweap,"weapon_manhackgun",false))
-				{
-					if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
-				}
-				else if (StrEqual(curweap,"weapon_manhacktoss",false))
-				{
-					int effects = GetEntProp(viewmdl,Prop_Send,"m_fEffects");
-					if (!(effects & 32))
+					if (weap != -1)
 					{
-						effects |= 32;
-						SetEntProp(viewmdl,Prop_Send,"m_fEffects",effects);
+						float Time = GetTickedTime();
+						if (WeapAttackSpeed[client] < Time)
+						{
+							float plyfirepos[3];
+							float angs[3];
+							float endpos[3];
+							GetClientEyePosition(client,plyfirepos);
+							GetClientEyeAngles(client,angs);
+							TR_TraceRayFilter(plyfirepos, angs, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+							TR_GetEndPosition(endpos);
+							float chkdist = GetVectorDistance(plyfirepos,endpos,false);
+							if (chkdist < 100.0)
+							{
+								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+								if (viewmdl != -1)
+								{
+									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+									int mdlseq = 6;
+									char mdl[32];
+									GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+									if (StrEqual(mdl,"models/v_tripmine.mdl",false)) mdlseq = 3;
+									int hasammo = 0;
+									if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
+									if ((seq != mdlseq) && (hasammo))
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+										CreateTimer(0.15,resetviewmdl,viewmdl);
+									}
+								}
+								WeapAttackSpeed[client] = Time+1.0;
+							}
+						}
 					}
 				}
-				else if (StrEqual(curweap,"weapon_immolator",false))
+				else if (StrEqual(curweap,"weapon_axe",false))
 				{
-					int effects = GetEntProp(viewmdl,Prop_Send,"m_fEffects");
-					if (!(effects & 32))
+					if (weap != -1)
 					{
-						effects |= 32;
-						SetEntProp(viewmdl,Prop_Send,"m_fEffects",effects);
+						float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
+						if (nextatk < GetGameTime())
+						{
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
+							{
+								float plyfirepos[3];
+								float angs[3];
+								float endpos[3];
+								GetClientEyePosition(client,plyfirepos);
+								GetClientEyeAngles(client,angs);
+								TR_TraceRayFilter(plyfirepos, angs, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+								TR_GetEndPosition(endpos);
+								float chkdist = GetVectorDistance(plyfirepos,endpos,false);
+								if (chkdist > 80.0)
+								{
+									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+									int randmiss = GetRandomInt(3,5);
+									if (seq == randmiss)
+									{
+										if (randmiss == 5) randmiss--;
+										else randmiss++;
+									}
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",randmiss);
+								}
+								else
+								{
+									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+									int randhit = GetRandomInt(6,7);
+									if (randhit == 5) randhit = 3;
+									if (seq == randhit)
+									{
+										if (randhit == 7) randhit--;
+										else if (randhit == 3) randhit = 6;
+										else randhit++;
+									}
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",randhit);
+								}
+							}
+						}
+						setbuttons = false;
 					}
 				}
 				else if (StrEqual(curweap,"weapon_snark",false))
 				{
-					if (seq != 6) SetEntProp(viewmdl,Prop_Send,"m_nSequence",6);
-				}
-				else if (StrEqual(curweap,"weapon_mp5",false))
-				{
-					if (seq != 7) SetEntProp(viewmdl,Prop_Send,"m_nSequence",7);
-				}
-				else if ((StrEqual(curweap,"weapon_sl8",false)) || (StrEqual(curweap,"weapon_cguard",false)) || (StrEqual(curweap,"weapon_g36c",false)))
-				{
-					int effects = GetEntProp(viewmdl,Prop_Send,"m_fEffects");
-					if (!(effects & 32))
+					if (weap != -1)
 					{
-						effects |= 32;
-						SetEntProp(viewmdl,Prop_Send,"m_fEffects",effects);
+						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+						if (viewmdl != -1)
+						{
+							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+							int mdlseq = 3;
+							int type = 1;
+							char mdl[32];
+							GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+							if (StrEqual(mdl,"models/v_squeak.mdl",false))
+							{
+								mdlseq = 5;
+								type = 0;
+							}
+							if ((seq != mdlseq) && (SnarkAmm[client] > 0))
+							{
+								SetEntPropFloat(weap,Prop_Data,"m_flTimeWeaponIdle",0.0);
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+								CreateTimer(0.5,resetviewmdl,viewmdl);
+								SnarkAmm[client]--;
+								if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",SnarkAmm[client]);
+								if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",SnarkAmm[client]);
+								CreateSnark(client,type);
+								ChangeEdictState(weap);
+							}
+							else
+							{
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",6);
+							}
+						}
 					}
 				}
-				else if (StrEqual(curweap,"weapon_m4",false))
+				else if (StrEqual(curweap,"weapon_colt",false))
 				{
-					SetEntProp(viewmdl,Prop_Send,"m_nSequence",9);
+					if (weap != -1)
+					{
+						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+						if (viewmdl != -1)
+						{
+							int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
+							int hasammo = 0;
+							if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
+							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+							float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
+							if (nextatk < GetGameTime()+0.05)
+							{
+								if (((seq != 1) || (seq != 2)) && (hasammo > 0) && (!inreload))
+								{
+									if (seq == 2) SetEntProp(viewmdl,Prop_Send,"m_nSequence",1);
+									else SetEntProp(viewmdl,Prop_Send,"m_nSequence",2);
+								}
+								else if (inreload)
+								{
+									if (seq != 4)
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",4);
+									}
+								}
+							}
+							setbuttons = false;
+						}
+					}
+				}
+				else if (StrEqual(curweap,"weapon_dualmp5k",false))
+				{
+					if (weap != -1)
+					{
+						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+						if (viewmdl != -1)
+						{
+							int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
+							int hasammo = 0;
+							if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
+							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+							if ((hasammo > 0) && (!inreload))
+							{
+								int rand = GetRandomInt(1,6);
+								if (seq == rand)
+								{
+									if (rand == 6) rand--;
+									else rand++;
+								}
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
+							}
+							else if (inreload)
+							{
+								if (seq != 8)
+								{
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",8);
+								}
+							}
+							setbuttons = false;
+						}
+					}
+				}
+			}
+		}
+		else if (buttons & IN_ATTACK2)
+		{
+			if (!(g_LastButtons[client] & IN_ATTACK2))
+			{
+				if (StrContains(curweap,"custom_",false) == 0)
+				{
+					if (centnextatk[weap] < GetGameTime())
+					{
+						char custweap[64];
+						GetEntPropString(weap,Prop_Data,"m_iszResponseContext",custweap,sizeof(custweap));
+						FireCustomWeap(client,weap,custweap,2);
+					}
+					setbuttons = false;
+				}
+				else if ((StrEqual(curweap,"weapon_mp5",false)) || (StrEqual(curweap,"weapon_m4",false)))
+				{
+					if (IsValidEntity(weap))
+					{
+						float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack");
+						if (nextatk < GetGameTime()+0.1)
+						{
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
+							{
+								int amm = GetEntProp(client,Prop_Send,"m_iAmmo",_,9);
+								if (amm > 0)
+								{
+									int mdlseq = 1;
+									char mdl[32];
+									GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+									if (StrEqual(mdl,"models/v_9mmAR.mdl",false)) mdlseq = 5;
+									else if (StrEqual(mdl,"models/weapons/v_m4m203.mdl",false))
+									{
+										mdlseq = 6;
+										EmitSoundToAll("weapons\\m4\\m4_altfire.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+									}
+									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+									if (seq != mdlseq)
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+									}
+									CreateTimer(0.5,resetinreload,weap,TIMER_FLAG_NO_MAPCHANGE);
+								}
+								else
+								{
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
+								}
+							}
+						}
+					}
+					setbuttons = false;
+				}
+				else if ((StrEqual(curweap,"weapon_hivehand",false)) || (StrEqual(curweap,"weapon_hornetgun",false)))
+				{
+					if (weap != -1)
+					{
+						int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
+						if (amm > 0)
+						{
+							float Time = GetTickedTime();
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if ((viewmdl != -1) && (WeapAttackSpeed[client] < Time))
+							{
+								CreateHornet(client,weap);
+								char snd[64];
+								Format(snd,sizeof(snd),"weapons\\hivehand\\single.wav");
+								EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								int rand = GetRandomInt(7,12);
+								if (seq == rand)
+								{
+									if (seq > 11) rand--;
+									else rand++;
+								}
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
+								SetEntPropFloat(client,Prop_Data,"m_flFlashTime",GetGameTime()+0.5);
+								WeapAttackSpeed[client] = Time+0.2;
+							}
+							SetEntPropFloat(weap,Prop_Data,"m_flTimeWeaponIdle",0.0);
+						}
+						setbuttons = false;
+					}
+				}
+				else if (StrEqual(curweap,"weapon_sl8",false))
+				{
+					int fov = GetEntProp(client,Prop_Send,"m_iFOV");
+					if ((fov > 60) || (fov == 0))
+					{
+						SetEntProp(client,Prop_Send,"m_iFOVStart",fov);
+						SetEntPropFloat(client,Prop_Send,"m_flFOVTime",GetGameTime());
+						SetEntProp(client,Prop_Send,"m_iFOV",30);
+						SetEntPropFloat(client,Prop_Send,"m_flFOVRate",0.4);
+						if ((SL8Scope != 0) && (IsValidEntity(SL8Scope)))
+						{
+							CLInScope[client] = SL8Scope;
+							AcceptEntityInput(SL8Scope,"StartOverlays",client);
+						}
+						else
+						{
+							SL8Scope = CreateEntityByName("env_screenoverlay");
+							if (SL8Scope != -1)
+							{
+								DispatchKeyValue(SL8Scope,"spawnflags","1");
+								DispatchKeyValue(SL8Scope,"OverlayName1","sprites/scope01");
+								DispatchSpawn(SL8Scope);
+								ActivateEntity(SL8Scope);
+								CLInScope[client] = SL8Scope;
+								AcceptEntityInput(SL8Scope,"StartOverlays",client);
+							}
+						}
+					}
+					else
+					{
+						SetEntProp(client,Prop_Send,"m_iFOVStart",fov);
+						SetEntPropFloat(client,Prop_Send,"m_flFOVTime",GetGameTime());
+						SetEntProp(client,Prop_Send,"m_iFOV",90);
+						SetEntPropFloat(client,Prop_Send,"m_flFOVRate",0.4);
+						if ((SL8Scope != 0) && (IsValidEntity(SL8Scope)))
+						{
+							AcceptEntityInput(SL8Scope,"StopOverlays",client);
+							CLInScope[client] = 0;
+						}
+					}
 				}
 				else if (StrEqual(curweap,"weapon_oicw",false))
 				{
-					if (seq != 9) SetEntProp(viewmdl,Prop_Send,"m_nSequence",9);
+					int fov = GetEntProp(client,Prop_Send,"m_iFOV");
+					if ((fov > 60) || (fov == 0))
+					{
+						SetEntProp(client,Prop_Send,"m_iFOVStart",fov);
+						SetEntPropFloat(client,Prop_Send,"m_flFOVTime",GetGameTime());
+						SetEntProp(client,Prop_Send,"m_iFOV",36);
+						SetEntPropFloat(client,Prop_Send,"m_flFOVRate",0.4);
+						if ((OICWScope != 0) && (IsValidEntity(OICWScope)))
+						{
+							CLInScope[client] = OICWScope;
+							AcceptEntityInput(OICWScope,"StartOverlays",client);
+						}
+						else
+						{
+							OICWScope = CreateEntityByName("env_screenoverlay");
+							if (OICWScope != -1)
+							{
+								DispatchKeyValue(OICWScope,"spawnflags","1");
+								DispatchKeyValue(OICWScope,"OverlayName1","overlays/weapons/oicw/scope_lens");
+								DispatchSpawn(OICWScope);
+								ActivateEntity(OICWScope);
+								CLInScope[client] = OICWScope;
+								AcceptEntityInput(OICWScope,"StartOverlays",client);
+							}
+						}
+					}
+					else
+					{
+						SetEntProp(client,Prop_Send,"m_iFOVStart",fov);
+						SetEntPropFloat(client,Prop_Send,"m_flFOVTime",GetGameTime());
+						SetEntProp(client,Prop_Send,"m_iFOV",90);
+						SetEntPropFloat(client,Prop_Send,"m_flFOVRate",0.4);
+						if ((OICWScope != 0) && (IsValidEntity(OICWScope)))
+						{
+							AcceptEntityInput(OICWScope,"StopOverlays",client);
+							CLInScope[client] = 0;
+						}
+					}
+				}
+				else if ((StrEqual(curweap,"weapon_tau",false)) || (StrEqual(curweap,"weapon_gauss",false)))
+				{
+					setbuttons = false;
+					if (weap != -1)
+					{
+						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+						if (viewmdl != -1)
+						{
+							float Time = GetTickedTime();
+							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+							int mdlseq = 4;
+							int pitch = 100;
+							int flags = SND_NOFLAGS;
+							char mdl[64];
+							GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+							char snd[64];
+							Format(snd,sizeof(snd),"weapons\\tau\\gauss_spinup.wav");
+							if (StrEqual(mdl,"models/v_gauss.mdl",false))
+							{
+								mdlseq = 3;
+								if ((seq == 3) && (TauCharge[client] > 3)) mdlseq = 4;
+								pitch+=TauCharge[client]*8;
+								if ((WeapAttackSpeed[client] < Time) && (TauCharge[client] < 20)) flags = SND_CHANGEPITCH;
+								Format(snd,sizeof(snd),"ambience\\pulsemachine.wav");
+							}
+							else if (StrEqual(mdl,"models/weapons/v_gauss_suit.mdl",false))
+							{
+								mdlseq = 2;
+								if ((seq == 2) || (TauCharge[client] > 3)) mdlseq = 3;
+								pitch+=TauCharge[client]*8;
+								if ((WeapAttackSpeed[client] < Time) && (TauCharge[client] < 20)) flags = SND_CHANGEPITCH;
+								Format(snd,sizeof(snd),"weapons\\gauss\\chargeloop.wav");
+							}
+							if ((EnergyAmm[client] > 0) && (WeapAttackSpeed[client] < Time) && (TauCharge[client] < 20))
+							{
+								EnergyAmm[client]--;
+								TauCharge[client]++;
+								//m_flPlaybackRate
+								if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",EnergyAmm[client]);
+								if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",EnergyAmm[client]);
+								if (seq != mdlseq) SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+								EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_TRAIN, flags, _, pitch);
+								WeapAttackSpeed[client] = Time+0.2;
+							}
+						}
+					}
 				}
 				else if (StrEqual(curweap,"weapon_glock",false))
 				{
@@ -4490,65 +3713,840 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 						if (StrEqual(mdl,"models/v_9mmhandgun.mdl",false))
 						{
-							if (seq != 8) SetEntProp(viewmdl,Prop_Send,"m_nSequence",8);
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
+							{
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								if (seq != 9) SetEntProp(viewmdl,Prop_Send,"m_nSequence",9);
+								CreateTimer(0.5,resetviewmdl,viewmdl);
+							}
 						}
-						else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
-						{
-							if (seq != 10) SetEntProp(viewmdl,Prop_Send,"m_nSequence",10);
-						}
-						else
-						{
-							if (seq != 9) SetEntProp(viewmdl,Prop_Send,"m_nSequence",9);
-						}
-					}
-				}
-				else if (StrEqual(curweap,"weapon_tripmine",false))
-				{
-					if (weap != -1)
-					{
-						int mdlseq = 7;
-						char mdl[32];
-						GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-						if (StrEqual(mdl,"models/v_tripmine.mdl",false)) mdlseq = 5;
-						if (seq != mdlseq) SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
 					}
 				}
 				else if (StrEqual(curweap,"weapon_satchel",false))
 				{
+					DetSatchels(-1,client);
+				}
+				else if (StrEqual(curweap,"weapon_colt",false))
+				{
 					if (weap != -1)
 					{
-						int mdlseq = 5;
-						char mdl[32];
-						GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-						if (StrEqual(mdl,"models/v_satchel.mdl",false)) mdlseq = 3;
-						if (seq != mdlseq) SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+						float nextsecondary = GetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack");
+						if (nextsecondary < GetGameTime())
+						{
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
+							{
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								if (seq != 8)
+								{
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",8);
+									SetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack",GetGameTime()+0.5);
+									ChangeEdictState(weap);
+									CreateTimer(0.2,resetviewmdl,viewmdl);
+									int targ = GetClientAimTarget(client,false)
+									if ((targ != 0) && (IsValidEntity(targ)))
+									{
+										char cls[32];
+										GetEntityClassname(targ,cls,sizeof(cls));
+										if (!CheckNPCAlly(cls,targ))
+										{
+											float curorgs[3];
+											float targorgs[3];
+											GetClientAbsOrigin(client,curorgs);
+											if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",targorgs);
+											else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",targorgs);
+											float chkdist = GetVectorDistance(curorgs,targorgs,false);
+											if (chkdist < 100.0)
+											{
+												float damageForce[3];
+												damageForce[0] = 5.0;
+												damageForce[1] = 5.0;
+												damageForce[2] = 5.0;
+												SDKHooks_TakeDamage(targ,client,client,15.0,DMG_CLUB,-1,damageForce,curorgs);
+												EmitSoundToAll("npc/zombie/zombie_hit.wav", weap, SNDCHAN_WEAPON, SNDLEVEL_TRAIN);
+											}
+										}
+									}
+								}
+							}
+						}
+						StopSound(client,SNDCHAN_WEAPON,"weapons/pistol/pistol_empty.wav");
 					}
 				}
-				else if (StrEqual(curweap,"weapon_handgrenade",false))
+			}
+		}
+		else if (!(buttons & IN_ATTACK))
+		{
+			if (StrEqual(curweap,"weapon_gluon",false))
+			{
+				setbuttons = false;
+				if (weap != -1)
 				{
-					int mdlseq = 6;
+					int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+					if (viewmdl != -1)
+					{
+						int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+						if (seq == 1)
+						{
+							float orgs[3];
+							if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
+							else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
+							SetEntProp(viewmdl,Prop_Send,"m_nSequence",2);
+							char snd[64];
+							Format(snd,sizeof(snd),"weapons\\gluon\\special1.wav");
+							StopSound(weap,SNDCHAN_WEAPON,snd);
+							if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+							Format(snd,sizeof(snd),"weapons\\gluon\\special2.wav");
+							EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+							CreateTimer(0.2,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
+							WeapSnd[client] = 0.0;
+							if ((EndTarg[client] != 0) && (IsValidEntity(EndTarg[client])))
+							{
+								int effect = CreateEntityByName("info_particle_system");
+								if (effect != -1)
+								{
+									float endorg[3];
+									if (HasEntProp(EndTarg[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(EndTarg[client],Prop_Data,"m_vecAbsOrigin",endorg);
+									else if (HasEntProp(EndTarg[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(EndTarg[client],Prop_Send,"m_vecOrigin",endorg);
+									float angs[3];
+									if (HasEntProp(EndTarg[client],Prop_Data,"m_angAbsRotation")) GetEntPropVector(EndTarg[client],Prop_Data,"m_angAbsRotation",angs);
+									DispatchKeyValue(effect,"effect_name","gluon_beam_burst");
+									DispatchKeyValue(effect,"start_active","1");
+									TeleportEntity(effect,endorg,angs,NULL_VECTOR);
+									DispatchSpawn(effect);
+									ActivateEntity(effect);
+									AcceptEntityInput(effect,"Start");
+									int entindx = EntIndexToEntRef(effect);
+									CreateTimer(0.5,cleanup,entindx,TIMER_FLAG_NO_MAPCHANGE);
+									int beam = GetEntPropEnt(EndTarg[client],Prop_Data,"m_hEffectEntity");
+									if ((beam != 0) && (IsValidEntity(beam)))
+									{
+										int beam2 = GetEntPropEnt(beam,Prop_Data,"m_hEffectEntity");
+										if ((beam2 != 0) && (IsValidEntity(beam2))) AcceptEntityInput(beam2,"kill");
+										AcceptEntityInput(beam,"kill");
+									}
+									if ((HandAttach[client] != 0) && (IsValidEntity(HandAttach[client])))
+									{
+										int sprite = GetEntPropEnt(HandAttach[client],Prop_Data,"m_hEffectEntity");
+										if ((sprite != 0) && (IsValidEntity(sprite)))
+										{
+											AcceptEntityInput(sprite,"kill");
+											AcceptEntityInput(HandAttach[client],"kill");
+											HandAttach[client] = 0;
+										}
+									}
+									AcceptEntityInput(EndTarg[client],"kill");
+								}
+								EndTarg[client] = 0;
+							}
+						}
+					}
+				}
+			}
+			else if ((StrEqual(curweap,"weapon_hivehand",false)) || (StrEqual(curweap,"weapon_hornetgun",false)))
+			{
+				if (weap != -1)
+				{
+					int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+					if (viewmdl != -1)
+					{
+						int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+						if ((seq != 0) && (seq != 4) && (seq != 3))
+							SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
+					}
+				}
+			}
+			else if (StrEqual(curweap,"weapon_handgrenade",false))
+			{
+				if (weap != -1)
+				{
+					int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+					if (viewmdl != -1)
+					{
+						int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+						int curamm = GetEntProp(client,Prop_Send,"m_iAmmo",_,12);
+						if (seq == 2)
+						{
+							SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetRandomInt(3,5));
+							SetEntProp(client,Prop_Data,"m_iAmmo",curamm-1,_,12);
+							WeapAttackSpeed[client] = GetTickedTime()+1.0;
+							CreateTimer(0.5,resetviewmdl,viewmdl);
+							CreateTimer(1.0,resetviewmdl,viewmdl);
+							float targpos[3];
+							float shootvel[3];
+							float plyfirepos[3];
+							float plyang[3];
+							float maxscaler = 800.0;
+							float sideadj = -10.0;
+							GetClientEyeAngles(client,plyang);
+							plyang[1]+=sideadj;
+							GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",plyfirepos);
+							plyfirepos[0] = (plyfirepos[0] + (40 * Cosine(DegToRad(plyang[1]))));
+							plyfirepos[1] = (plyfirepos[1] + (40 * Sine(DegToRad(plyang[1]))));
+							if (GetEntProp(client,Prop_Data,"m_bDucked")) plyfirepos[2]+=28.0;
+							else plyfirepos[2]+=48.0;
+							plyang[1]-=sideadj;
+							TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+							TR_GetEndPosition(targpos);
+							float chkdist = GetVectorDistance(plyfirepos,targpos,false);
+							if (chkdist < 200.0) targpos[2]+=60.0;
+							else targpos[2]+=20.0;
+							MakeVectorFromPoints(plyfirepos,targpos,shootvel);
+							ScaleVector(shootvel,2.5);
+							if (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+							{
+								while (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+								{
+									ScaleVector(shootvel,0.95);
+								}
+							}
+							int grenade = CreateEntityByName("prop_physics_override");
+							if (grenade != -1)
+							{
+								DispatchKeyValue(grenade,"classname","grenade_frag");
+								DispatchKeyValue(grenade,"model","models/items/357ammobox.mdl");
+								DispatchKeyValue(grenade,"solid","6");
+								DispatchKeyValue(grenade,"spawnflags","256");
+								TeleportEntity(grenade,plyfirepos,plyang,NULL_VECTOR);
+								DispatchSpawn(grenade);
+								ActivateEntity(grenade);
+								if (!IsModelPrecached("models/w_grenade.mdl")) PrecacheModel("models/w_grenade.mdl",true);
+								SetEntityModel(grenade,"models/w_grenade.mdl");
+								if (HasEntProp(grenade,Prop_Data,"m_CollisionGroup")) SetEntProp(grenade,Prop_Data,"m_CollisionGroup",5);
+								TeleportEntity(grenade,NULL_VECTOR,NULL_VECTOR,shootvel);
+								int endpoint = CreateEntityByName("env_explosion");
+								if (endpoint != -1)
+								{
+									char dmgmag[8] = "300";
+									char radius[8] = "150";
+									Handle cvar = FindConVar("sk_plr_dmg_handgrenade");
+									if (cvar != INVALID_HANDLE) GetConVarString(cvar,dmgmag,sizeof(dmgmag));
+									cvar = FindConVar("sk_grenade_radius");
+									if (cvar != INVALID_HANDLE) GetConVarString(cvar,radius,sizeof(radius));
+									CloseHandle(cvar);
+									DispatchKeyValue(endpoint,"imagnitude",dmgmag);
+									DispatchKeyValue(endpoint,"iRadiusOverride",radius);
+									DispatchKeyValue(endpoint,"rendermode","0");
+									DispatchKeyValue(endpoint,"OnUser4","!self,Explode,,4,-1");
+									plyfirepos[2]+=2.0;
+									TeleportEntity(endpoint,plyfirepos,plyang,NULL_VECTOR);
+									DispatchSpawn(endpoint);
+									ActivateEntity(endpoint);
+									SetVariantString("!activator");
+									AcceptEntityInput(endpoint,"SetParent",grenade);
+									AcceptEntityInput(endpoint,"FireUser4",grenade);
+									SetEntPropEnt(grenade,Prop_Data,"m_hOwnerEntity",endpoint);
+									SetEntPropEnt(endpoint,Prop_Data,"m_hOwnerEntity",client);
+									CreateTimer(4.0,GrenadeExpl,grenade,TIMER_FLAG_NO_MAPCHANGE);
+								}
+							}
+						}
+					}
+				}
+			}
+			else if (StrEqual(curweap,"weapon_oicw",false))
+			{
+				if (weap != -1)
+				{
+					SetEntProp(weap,Prop_Data,"m_nShotsFired",0);
+				}
+			}
+		}
+		if (!(buttons & IN_ATTACK2))
+		{
+			if (((StrEqual(curweap,"weapon_tau",false)) || (StrEqual(curweap,"weapon_gauss",false))) && (TauCharge[client] > 0))
+			{
+				if (weap != -1)
+				{
+					int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+					if (viewmdl != -1)
+					{
+						int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+						int mdlseq = 4;
+						int mdlseq2 = 4;
+						int mdlseqfire = 7;
+						int taubeammdl = taubeam;
+						int posside = 8;
+						float posz = 12.0;
+						char mdl[64];
+						char snd[64];
+						char stopsnd[64];
+						char beammdl[64];
+						GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+						Format(snd,sizeof(snd),"weapons\\tau\\gauss_overcharged.wav");
+						Format(stopsnd,sizeof(stopsnd),"weapons\\tau\\gauss_spinup.wav");
+						Format(beammdl,sizeof(beammdl),"effects/tau_beam.vmt");
+						if (StrEqual(mdl,"models/v_gauss.mdl",false))
+						{
+							Format(snd,sizeof(snd),"weapons\\gauss2.wav");
+							Format(stopsnd,sizeof(stopsnd),"ambience\\pulsemachine.wav");
+							mdlseq2 = 3;
+							mdlseq = 4;
+							mdlseqfire = 5;
+							taubeammdl = tauhl1beam;
+							Format(beammdl,sizeof(beammdl),"sprites/smoke.vmt");
+						}
+						else if (StrEqual(mdl,"models/weapons/v_gauss_suit.mdl",false))
+						{
+							Format(snd,sizeof(snd),"weapons\\gauss\\fire1.wav");
+							Format(stopsnd,sizeof(stopsnd),"weapons\\gauss\\chargeloop.wav");
+							taubeammdl = tauhl2beam;
+							Format(beammdl,sizeof(beammdl),"sprites/laserbeam.vmt");
+							posside = 5;
+							posz = 8.0;
+						}
+						if ((seq == mdlseq) || (seq == mdlseq2))
+						{
+							SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseqfire);
+							StopSound(weap,SNDCHAN_WEAPON,stopsnd);
+							EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_GUNFIRE);
+							float endpos[3];
+							float plyfirepos[3];
+							float plyang[3];
+							GetClientEyeAngles(client,plyang);
+							GetClientEyePosition(client,plyfirepos);
+							TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+							TR_GetEndPosition(endpos);
+							float dmg = 20.0;
+							Handle cvar = FindConVar("sk_plr_dmg_tau");
+							if (cvar != INVALID_HANDLE) dmg = GetConVarFloat(cvar);
+							CloseHandle(cvar);
+							int beam = CreateEntityByName("beam");
+							if (beam != -1)
+							{
+								DispatchKeyValue(beam,"model",beammdl);
+								DispatchKeyValue(beam,"texture",beammdl);
+								SetEntProp(beam,Prop_Data,"m_nModelIndex",taubeammdl);
+								SetEntProp(beam,Prop_Data,"m_nHaloIndex",taubeammdl);
+								SetVariantString("OnUser4 !self:kill::0.1:-1")
+								AcceptEntityInput(beam,"addoutput");
+								AcceptEntityInput(beam,"FireUser4");
+								plyang[1]-=90.0;
+								plyfirepos[0] = (plyfirepos[0] + (posside * Cosine(DegToRad(plyang[1]))));
+								plyfirepos[1] = (plyfirepos[1] + (posside * Sine(DegToRad(plyang[1]))));
+								plyang[1]+=90.0;
+								plyfirepos[0] = (plyfirepos[0] + (8 * Cosine(DegToRad(plyang[1]))));
+								plyfirepos[1] = (plyfirepos[1] + (8 * Sine(DegToRad(plyang[1]))));
+								plyfirepos[2]-=posz;
+								TeleportEntity(beam,plyfirepos,plyang,NULL_VECTOR);
+								DispatchSpawn(beam);
+								ActivateEntity(beam);
+								SetEntityRenderColor(beam,255,255,GetRandomInt(150,220),255);
+								SetEntProp(beam,Prop_Data,"m_nBeamType",1);
+								SetEntProp(beam,Prop_Data,"m_nBeamFlags",0);
+								SetEntProp(beam,Prop_Data,"m_nNumBeamEnts",2);
+								//SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",HandAttach[client],0);
+								//SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",client,0);
+								//int handatt = GetEntProp(weap,Prop_Data,"m_iParentAttachment");
+								//SetEntProp(beam,Prop_Data,"m_nAttachIndex",handatt,0);
+								//SetEntPropEnt(beam,Prop_Data,"m_hAttachEntity",EndTarg[client],1);
+								//SetEntPropEnt(beam,Prop_Data,"m_hEndEntity",EndTarg[client]);
+								SetEntPropVector(beam,Prop_Data,"m_vecEndPos",endpos);
+								SetEntPropFloat(beam,Prop_Data,"m_fAmplitude",2.0);
+								SetEntPropFloat(beam,Prop_Data,"m_fWidth",4.0);
+								SetEntPropFloat(beam,Prop_Data,"m_fEndWidth",8.0);
+								SetEntPropFloat(beam,Prop_Data,"m_fSpeed",20.0);
+								SetEntPropFloat(beam,Prop_Data,"m_flFrameRate",20.0);
+								SetEntPropFloat(beam,Prop_Data,"m_flHDRColorScale",1.0);
+								SetEntProp(beam,Prop_Data,"m_nDissolveType",-1);
+								SetEntProp(beam,Prop_Data,"m_nRenderMode",2);
+								for (int i = 0;i<3;i++)
+								{
+									beam = CreateEntityByName("beam");
+									if (beam != -1)
+									{
+										DispatchKeyValue(beam,"model",beammdl);
+										DispatchKeyValue(beam,"texture",beammdl);
+										SetEntProp(beam,Prop_Data,"m_nModelIndex",taubeammdl);
+										SetEntProp(beam,Prop_Data,"m_nHaloIndex",taubeammdl);
+										TeleportEntity(beam,plyfirepos,plyang,NULL_VECTOR);
+										DispatchSpawn(beam);
+										ActivateEntity(beam);
+										SetVariantString("OnUser4 !self:kill::0.1:-1")
+										AcceptEntityInput(beam,"addoutput");
+										AcceptEntityInput(beam,"FireUser4");
+										SetEntityRenderColor(beam,255,255,GetRandomInt(150,220),255);
+										SetEntProp(beam,Prop_Data,"m_nBeamType",1);
+										SetEntProp(beam,Prop_Data,"m_nBeamFlags",0);
+										SetEntProp(beam,Prop_Data,"m_nNumBeamEnts",2);
+										SetEntPropVector(beam,Prop_Data,"m_vecEndPos",endpos);
+										SetEntPropFloat(beam,Prop_Data,"m_fAmplitude",GetRandomFloat(8.0,15.0));
+										SetEntPropFloat(beam,Prop_Data,"m_fWidth",GetRandomFloat(1.0,6.0));
+										SetEntPropFloat(beam,Prop_Data,"m_fEndWidth",8.0);
+										SetEntPropFloat(beam,Prop_Data,"m_fSpeed",20.0);
+										SetEntPropFloat(beam,Prop_Data,"m_flFrameRate",20.0);
+										SetEntPropFloat(beam,Prop_Data,"m_flHDRColorScale",1.0);
+										SetEntProp(beam,Prop_Data,"m_nDissolveType",-1);
+										SetEntProp(beam,Prop_Data,"m_nRenderMode",2);
+									}
+								}
+								int ent = CreateEntityByName("env_physexplosion");
+								if(ent != -1)
+								{
+									float magnitude = dmg*TauCharge[client];
+									DispatchKeyValueFloat(ent,"magnitude",magnitude);
+									DispatchKeyValue(ent,"radius","256");
+									DispatchKeyValue(ent,"inner_radius","0");
+									DispatchKeyValue(ent,"spawnflags","10");
+									TeleportEntity(ent,endpos,NULL_VECTOR,NULL_VECTOR);
+									DispatchSpawn(ent);
+									SetEntPropEnt(ent,Prop_Data,"m_hOwnerEntity",client);
+									AcceptEntityInput(ent,"Explode");
+									AcceptEntityInput(ent,"Kill");
+								}
+								int decal = CreateEntityByName("infodecal");
+								if (decal != -1)
+								{
+									DispatchKeyValue(decal,"texture","decals/scorch2");
+									DispatchKeyValue(decal,"LowPriority","1");
+									TeleportEntity(decal,endpos,NULL_VECTOR,NULL_VECTOR);
+									DispatchSpawn(decal);
+									ActivateEntity(decal);
+									AcceptEntityInput(decal,"Activate");
+								}
+								int effect = CreateEntityByName("env_sprite");
+								if (effect != -1)
+								{
+									DispatchKeyValue(effect,"model","sprites/glow01.spr");
+									DispatchKeyValue(effect,"scale","1.0");
+									DispatchKeyValue(effect,"GlowProxySize","9");
+									DispatchKeyValue(effect,"rendermode","9");
+									DispatchKeyValue(effect,"rendercolor","200 200 0");
+									TeleportEntity(effect,endpos,plyang,NULL_VECTOR);
+									DispatchSpawn(effect);
+									ActivateEntity(effect);
+									AcceptEntityInput(effect,"Activate");
+									SetVariantString("OnUser4 !self:kill::0.1:-1")
+									AcceptEntityInput(effect,"addoutput");
+									AcceptEntityInput(effect,"FireUser4");
+								}
+							}
+							if (tauknockback)
+							{
+								float launch[3];
+								GetAngleVectors(plyang, launch, NULL_VECTOR, NULL_VECTOR);
+								ScaleVector(launch,-(dmg*TauCharge[client]));
+								launch[2]+=(dmg/2)*TauCharge[client];
+								TeleportEntity(client,NULL_VECTOR,NULL_VECTOR,launch);
+							}
+							TauCharge[client] = 0;
+							WeapAttackSpeed[client] = GetTickedTime()+1.0;
+						}
+					}
+				}
+			}
+		}
+		if (buttons & IN_RELOAD)
+		{
+			if (!(g_LastButtons[client] & IN_RELOAD))
+			{
+				if (StrContains(curweap,"custom_",false) == 0)
+				{
+					char custweap[64];
+					GetEntPropString(weap,Prop_Data,"m_iszResponseContext",custweap,sizeof(custweap));
+					ReloadCustomWeap(client,weap,custweap);
+				}
+				else if (StrEqual(curweap,"weapon_flaregun",false))
+				{
+					if (weap != -1)
+					{
+						if ((GetEntProp(weap,Prop_Data,"m_iClip1") < 1) && (flareammo[client] > 0))
+						{
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
+							{
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								int mdlseq = 1;
+								char mdl[64];
+								GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+								if (!StrEqual(mdl,"models/weapons/v_flaregun.mdl",false))
+									mdlseq = 2;
+								if (seq != mdlseq)
+								{
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",3);
+									ChangeEdictState(viewmdl);
+									CreateTimer(2.2,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
+									if (FileExists("sound/weapons/flaregun/flaregun_reload.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\flaregun\\flaregun_reload.wav", weap, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+								}
+							}
+						}
+					}
+				}
+				else if (StrEqual(curweap,"weapon_glock",false))
+				{
+					if (weap != -1)
+					{
+						if (GetEntProp(client,Prop_Send,"m_iAmmo",_,3) > 0)
+						{
+							int maxclip = 17;
+							if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0)) maxclip = 15;
+							if (GetEntProp(weap,Prop_Data,"m_iClip1") < maxclip)
+							{
+								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+								if (viewmdl != -1)
+								{
+									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+									char mdl[32];
+									GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+									if (StrEqual(mdl,"models/v_9mmhandgun.mdl",false))
+									{
+										if ((seq != 5) && (seq != 6))
+										{
+											SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetRandomInt(5,6));
+											StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
+										}
+									}
+									else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",9);
+										if (FileExists("sound/weapons/pistol/glock_reload1.wav",true,NULL_STRING))
+										{
+											StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
+											char snd[64];
+											Format(snd,sizeof(snd),"weapons\\pistol\\glock_reload1.wav");
+											EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+										}
+									}
+									else if ((seq != 6) && (seq != 7))
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetRandomInt(6,7));
+										if (FileExists("sound/weapons/glock/reload.wav",true,NULL_STRING))
+										{
+											StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
+											char snd[64];
+											Format(snd,sizeof(snd),"weapons\\glock\\reload.wav");
+											EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+										}
+									}
+								}
+							}
+							else
+							{
+								StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
+								SetEntProp(weap,Prop_Data,"m_iClip1",maxclip);
+								SetEntProp(weap,Prop_Data,"m_bInReload",0);
+								CreateTimer(0.1,resetinreload,weap,TIMER_FLAG_NO_MAPCHANGE);
+								SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",0.0);
+							}
+							setbuttons = false;
+						}
+					}
+				}
+				else if ((StrEqual(curweap,"weapon_mp5",false)) || (StrEqual(curweap,"weapon_m4",false)) || (StrEqual(curweap,"weapon_g36c",false)))
+				{
+					if (weap != -1)
+					{
+						if (GetEntProp(client,Prop_Send,"m_iAmmo",_,4) > 0)
+						{
+							int mdlseq = 2;
+							int maxclip = 30;
+							char snd[64];
+							char mdl[32];
+							GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+							if (StrEqual(mdl,"models/v_9mmAR.mdl",false))
+							{
+								mdlseq = 3;
+								maxclip = 50;
+								Format(snd,sizeof(snd),"weapons\\reload3.wav");
+							}
+							else if (StrEqual(mdl,"models/weapons/v_m4m203.mdl",false))
+							{
+								mdlseq = 7;
+								Format(snd,sizeof(snd),"weapons\\m4\\m4_reload.wav");
+							}
+							else if (StrEqual(curweap,"weapon_g36c",false))
+							{
+								mdlseq = 9;
+								Format(snd,sizeof(snd),"weapons\\g36c\\g36c_reload.wav");
+							}
+							else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
+							{
+								mdlseq = 9;
+								Format(snd,sizeof(snd),"weapons\\mp5\\mp5_reload.wav");
+							}
+							else if (FileExists("sound/weapons/mp5/reload.wav",true,NULL_STRING)) Format(snd,sizeof(snd),"weapons\\mp5\\reload.wav");
+							if (GetEntProp(weap,Prop_Data,"m_iClip1") < maxclip)
+							{
+								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+								if (viewmdl != -1)
+								{
+									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+									if (seq != mdlseq)
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+										StopSound(client,SNDCHAN_ITEM,"weapons/smg1/smg1_reload.wav");
+										if (strlen(snd) > 0) EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+									}
+								}
+							}
+							else
+							{
+								SetEntProp(weap,Prop_Data,"m_iClip1",maxclip);
+								SetEntProp(weap,Prop_Data,"m_bInReload",0);
+								CreateTimer(0.1,resetinreload,weap,TIMER_FLAG_NO_MAPCHANGE);
+								SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",0.0);
+							}
+						}
+					}
+				}
+				else if (StrEqual(curweap,"weapon_hivehand",false))
+				{
+					if (weap != -1)
+					{
+						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+						if (viewmdl != -1)
+						{
+							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+							if (seq != 4)
+							{
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",4);
+								CreateTimer(21.0,resetviewmdl,viewmdl);
+							}
+						}
+					}
+				}
+				else if (StrEqual(curweap,"weapon_colt",false))
+				{
+					if (GetEntProp(client,Prop_Send,"m_iAmmo",_,3) > 0)
+					{
+						if (weap != -1)
+						{
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
+							{
+								int clip = GetEntProp(weap,Prop_Data,"m_iClip1");
+								int maxclip = 8;
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								if ((seq != 4) && (clip < maxclip))
+								{
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",4);
+									CreateTimer(2.0,resetviewmdl,viewmdl);
+								}
+								else if (seq != 4)
+								{
+									SetEntProp(weap,Prop_Data,"m_iClip1",maxclip);
+									SetEntProp(weap,Prop_Data,"m_bInReload",0);
+									CreateTimer(0.1,resetinreload,weap,TIMER_FLAG_NO_MAPCHANGE);
+									SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",0.0);
+									StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
+									setbuttons = false;
+								}
+								
+							}
+						}
+					}
+				}
+				else if (StrEqual(curweap,"weapon_dualmp5k",false))
+				{
+					if (GetEntProp(client,Prop_Send,"m_iAmmo",_,4) > 0)
+					{
+						if (weap != -1)
+						{
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
+							{
+								int clip = GetEntProp(weap,Prop_Data,"m_iClip1");
+								int maxclip = 64;
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								if ((seq != 8) && (clip < maxclip))
+								{
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",8);
+								}
+								else if (seq != 8)
+								{
+									SetEntProp(weap,Prop_Data,"m_iClip1",maxclip);
+									SetEntProp(weap,Prop_Data,"m_bInReload",0);
+									CreateTimer(0.1,resetinreload,weap,TIMER_FLAG_NO_MAPCHANGE);
+									SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",0.0);
+									StopSound(client,SNDCHAN_ITEM,"weapons/pistol/pistol_reload1.wav");
+									setbuttons = false;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		if (buttons & IN_USE)
+		{
+			if (!(g_LastButtons[client] & IN_RELOAD))
+			{
+				int targ = GetClientAimTarget(client,false);
+				if (targ != -1)
+				{
+					char cls[32];
+					GetEntityClassname(targ,cls,sizeof(cls));
+					if (StrEqual(cls,"grenade_satchel",false))
+					{
+						int owner = -1;
+						int expl = GetEntPropEnt(targ,Prop_Data,"m_hOwnerEntity");
+						if (expl != -1) owner = GetEntPropEnt(expl,Prop_Data,"m_hOwnerEntity");
+						if (owner == client)
+						{
+							float orgs[3];
+							float proporgs[3];
+							if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
+							else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
+							if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",proporgs);
+							else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",proporgs);
+							float chkdist = GetVectorDistance(orgs,proporgs,false);
+							if (chkdist < 80.0)
+							{
+								//plays on same channel as USE EmitGameSoundToAll("HL2Player.PickupWeapon",client);
+								int sndlvl,pitch,channel;
+								float vol;
+								char snd[64];
+								if (GetGameSoundParams("HL2Player.PickupWeapon",channel,sndlvl,vol,pitch,snd,sizeof(snd),client))
+								{
+									EmitSoundToAll(snd, client, SNDCHAN_AUTO, sndlvl, _, vol, pitch);
+								}
+								Handle pickuph = StartMessageOne("ItemPickup",client);
+								BfWriteString(pickuph,"weapon_pistol");
+								EndMessage();
+								AcceptEntityInput(targ,"kill");
+								SatchelAmm[client]++;
+								if (StrEqual(curweap,"weapon_satchel",false))
+								{
+									if (weap != -1)
+									{
+										SetEntProp(weap,Prop_Data,"m_iClip1",SatchelAmm[client]);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	else if (FindStringInArray(sweps,curweap) != -1)
+	{
+		int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+		if (viewmdl != -1)
+		{
+			int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+			if ((StrEqual(curweap,"weapon_flaregun",false)) || (StrEqual(curweap,"weapon_medkit",false)))
+			{
+				if (seq != 4) SetEntProp(viewmdl,Prop_Send,"m_nSequence",4);
+			}
+			else if (StrEqual(curweap,"weapon_manhack",false))
+			{
+				if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
+			}
+			else if (StrEqual(curweap,"weapon_manhackgun",false))
+			{
+				if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
+			}
+			else if (StrEqual(curweap,"weapon_manhacktoss",false))
+			{
+				int effects = GetEntProp(viewmdl,Prop_Send,"m_fEffects");
+				if (!(effects & 32))
+				{
+					effects |= 32;
+					SetEntProp(viewmdl,Prop_Send,"m_fEffects",effects);
+				}
+			}
+			else if (StrEqual(curweap,"weapon_immolator",false))
+			{
+				int effects = GetEntProp(viewmdl,Prop_Send,"m_fEffects");
+				if (!(effects & 32))
+				{
+					effects |= 32;
+					SetEntProp(viewmdl,Prop_Send,"m_fEffects",effects);
+				}
+			}
+			else if (StrEqual(curweap,"weapon_snark",false))
+			{
+				if (seq != 6) SetEntProp(viewmdl,Prop_Send,"m_nSequence",6);
+			}
+			else if (StrEqual(curweap,"weapon_mp5",false))
+			{
+				if (seq != 7) SetEntProp(viewmdl,Prop_Send,"m_nSequence",7);
+			}
+			else if ((StrEqual(curweap,"weapon_sl8",false)) || (StrEqual(curweap,"weapon_cguard",false)) || (StrEqual(curweap,"weapon_g36c",false)))
+			{
+				int effects = GetEntProp(viewmdl,Prop_Send,"m_fEffects");
+				if (!(effects & 32))
+				{
+					effects |= 32;
+					SetEntProp(viewmdl,Prop_Send,"m_fEffects",effects);
+				}
+			}
+			else if (StrEqual(curweap,"weapon_m4",false))
+			{
+				SetEntProp(viewmdl,Prop_Send,"m_nSequence",9);
+			}
+			else if (StrEqual(curweap,"weapon_oicw",false))
+			{
+				if (seq != 9) SetEntProp(viewmdl,Prop_Send,"m_nSequence",9);
+			}
+			else if (StrEqual(curweap,"weapon_glock",false))
+			{
+				if (weap != -1)
+				{
+					char mdl[32];
+					GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+					if (StrEqual(mdl,"models/v_9mmhandgun.mdl",false))
+					{
+						if (seq != 8) SetEntProp(viewmdl,Prop_Send,"m_nSequence",8);
+					}
+					else if ((StrContains(mapbuf,"wc_0",false) == 0) || (StrContains(mapbuf,"wc_intro",false) == 0))
+					{
+						if (seq != 10) SetEntProp(viewmdl,Prop_Send,"m_nSequence",10);
+					}
+					else
+					{
+						if (seq != 9) SetEntProp(viewmdl,Prop_Send,"m_nSequence",9);
+					}
+				}
+			}
+			else if (StrEqual(curweap,"weapon_tripmine",false))
+			{
+				if (weap != -1)
+				{
+					int mdlseq = 7;
+					char mdl[32];
+					GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+					if (StrEqual(mdl,"models/v_tripmine.mdl",false)) mdlseq = 5;
 					if (seq != mdlseq) SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
 				}
-				else if (StrEqual(curweap,"weapon_gauss",false))
+			}
+			else if (StrEqual(curweap,"weapon_satchel",false))
+			{
+				if (weap != -1)
 				{
-					if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
+					int mdlseq = 5;
+					char mdl[32];
+					GetEntPropString(weap,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+					if (StrEqual(mdl,"models/v_satchel.mdl",false)) mdlseq = 3;
+					if (seq != mdlseq) SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
 				}
-				else if (StrEqual(curweap,"weapon_tau",false))
+			}
+			else if (StrEqual(curweap,"weapon_handgrenade",false))
+			{
+				int mdlseq = 6;
+				if (seq != mdlseq) SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+			}
+			else if (StrEqual(curweap,"weapon_gauss",false))
+			{
+				if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
+			}
+			else if (StrEqual(curweap,"weapon_tau",false))
+			{
+				if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
+			}
+			else if (StrEqual(curweap,"weapon_gluon",false))
+			{
+				if (seq != 3) SetEntProp(viewmdl,Prop_Send,"m_nSequence",3);
+			}
+			else if (StrContains(curweap,"custom_",false) == 0)
+			{
+				int effects = GetEntProp(viewmdl,Prop_Send,"m_fEffects");
+				if (!(effects & 32))
 				{
-					if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
-				}
-				else if (StrEqual(curweap,"weapon_gluon",false))
-				{
-					if (seq != 3) SetEntProp(viewmdl,Prop_Send,"m_nSequence",3);
-				}
-				else if (StrContains(curweap,"custom_",false) == 0)
-				{
-					int effects = GetEntProp(viewmdl,Prop_Send,"m_fEffects");
-					if (!(effects & 32))
-					{
-						effects |= 32;
-						SetEntProp(viewmdl,Prop_Send,"m_fEffects",effects);
-					}
+					effects |= 32;
+					SetEntProp(viewmdl,Prop_Send,"m_fEffects",effects);
 				}
 			}
 		}
