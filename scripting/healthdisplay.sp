@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.87"
+#define PLUGIN_VERSION "1.88"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -36,6 +36,7 @@ int bclcookie2[MAXPLAYERS+1];
 int bclcookie3[MAXPLAYERS+1];
 int bclcookie4[MAXPLAYERS+1][3];
 int bclcookie4f[MAXPLAYERS+1][3];
+int defaultmode = 0;
 float bclcookie5x[MAXPLAYERS+1];
 float bclcookie5y[MAXPLAYERS+1];
 int hChanged[MAXPLAYERS+1];
@@ -76,6 +77,10 @@ public void OnPluginStart()
 	HookConVarChange(targmodh, targmodech);
 	targmode = GetConVarInt(targmodh);
 	CloseHandle(targmodh);
+	Handle defmodeh = CreateConVar("healthdisplay_defaultmode", "0", "Set default healthdisplay mode for new clients.", _, true, 0.0, true, 3.0);
+	HookConVarChange(defmodeh, defaultmodech);
+	defaultmode = GetConVarInt(defmodeh);
+	CloseHandle(defmodeh);
 	//This is on a timer to call a function because when the function is called at this point,
 	//it can sometimes fail, so I found it was best to wait 1 second.
 	CreateTimer(1.0, reloadclientstime);
@@ -1184,7 +1189,7 @@ public OnClientDisconnectPost(int client)
 initcl(int client)
 {
 	antispamchk[client] = 0.0;
-	bclcookie[client] = 0;
+	bclcookie[client] = defaultmode;
 	bclcookie2[client] = 0;
 	bclcookie3[client] = 0;
 	bclcookie4[client][0] = 255;
@@ -2072,7 +2077,7 @@ public CLStoreInTable(int client)
 		Format(thistemp,sizeof(thistemp),"'%s'",SteamID[client]);
 		StrCat(Query,500,thistemp);
 		StrCat(Query,500,", ");
-		IntToString(bclcookie[client],Temp,100);
+		IntToString(defaultmode,Temp,100);
 		StrCat(Query,500,Temp);
 		StrCat(Query,500,", ");
 		IntToString(bclcookie2[client],Temp,100);
@@ -2122,4 +2127,9 @@ public CLStoreInTable(int client)
 public targmodech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	targmode = StringToInt(newValue);
+}
+
+public defaultmodech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	defaultmode = StringToInt(newValue);
 }

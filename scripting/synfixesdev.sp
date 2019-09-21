@@ -403,11 +403,11 @@ public void OnMapStart()
 		for (int i = 1;i<MaxClients+1;i++)
 		{
 			guiderocket[i] = true;
-			centnextatk[i] = 0.0;
 			PushArrayCell(entlist,i);
 		}
 		for (int i = 1;i<2048;i++)
 		{
+			centnextatk[i] = 0.0;
 			timesattacked[i] = 0;
 			isattacking[i] = 0;
 			centnextsndtime[i] = 0.0;
@@ -11916,6 +11916,13 @@ public void OnEntityCreated(int entity, const char[] classname)
 
 public void OnEntityDestroyed(int entity)
 {
+	if ((entity > 0) && (entity < 2048))
+	{
+		centnextatk[entity] = 0.0;
+		timesattacked[entity] = 0;
+		isattacking[entity] = 0;
+		centnextsndtime[entity] = 0.0;
+	}
 	int find = FindValueInArray(hounds,entity);
 	if (find != -1)
 	{
