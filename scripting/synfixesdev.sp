@@ -98,9 +98,9 @@ voteType g_voteType = question;
 
 public Plugin myinfo =
 {
-	name = "SynFixes",
+	name = "SynFixesDev",
 	author = "Balimbanana",
-	description = "Attempts to fix sequences by checking for missing actors, entities that have fallen out of the world, players not spawning with weapons, and vehicle pulling from side to side.",
+	description = "Attempts to fix sequences by checking for missing actors, entities that have fallen out of the world, players not spawning with weapons, and vehicle pulling from side to side. Plus custom entity support.",
 	version = PLUGIN_VERSION,
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
