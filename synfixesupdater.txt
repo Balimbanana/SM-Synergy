@@ -4,18 +4,16 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9982"
-			"Previous"	"1.9981"
+			"Latest"  	"1.9983"
+			"Previous"	"1.9982"
 		}
 		
-		"Notes"	"Reset delayed sounds to music only."
+		"Notes"	"Separated reversion."
 	}
 	
 	"Files"
 	{
 		"Plugin"	"Path_SM/plugins/synfixes.smx"
 		"Source"	"Path_SM/scripting/synfixes.sp"
-		"Source"	"Path_SM/scripting/include/synfixes.inc"
-		"Source"	"Path_SM/scripting/include/synfixes/synfixesglobals.inc"
 	}
 }
