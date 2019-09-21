@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.87"
-			"Previous"	"1.86"
+			"Latest"  	"1.88"
+			"Previous"	"1.87"
 		}
 		
-		"Notes"	"Added monster_snark to HT list. Added Natives GetLIList() and GetHTList() for checking lists for friend/foe."
+		"Notes"	"Added CVar healthdisplay_defaultmode which will set any new clients default display mode to this."
 	}
 	
 	"Files"
