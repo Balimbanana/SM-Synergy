@@ -100,6 +100,7 @@ public Action zomtkdmg(victim, &attacker, &inflictor, &Float:damage, &damagetype
 	{
 		if (HasEntProp(victim,Prop_Data,"m_iHealth"))
 		{
+			if (HasEntProp(victim,Prop_Data,"m_bForceServerRagdoll")) SetEntProp(victim,Prop_Data,"m_bForceServerRagdoll",1);
 			float Time = GetTickedTime();
 			if (centnextatk[victim] < Time)
 			{

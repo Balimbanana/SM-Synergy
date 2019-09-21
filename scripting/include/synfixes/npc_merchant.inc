@@ -92,7 +92,7 @@ void DisplayMerchMenu(int activator, int finddp)
 		}
 		CloseHandle(items);
 		menu.ExitButton = true;
-		menu.Display(activator, MENU_TIME_FOREVER);
+		menu.Display(activator, 15);
 	}
 }
 

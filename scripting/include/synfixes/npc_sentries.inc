@@ -5,6 +5,13 @@ void sentriesthink(int entity)
 		if (HasEntProp(entity,Prop_Data,"m_flPoseParameter"))
 		{
 			int disabled = 0;
+			if (HasEntProp(entity,Prop_Data,"m_iHealth"))
+			{
+				if (GetEntProp(entity,Prop_Data,"m_iHealth") < 1)
+				{
+					SDKUnhook(entity,SDKHook_Think,sentriesthink);
+				}
+			}
 			if (HasEntProp(entity,Prop_Data,"m_bDisabled")) disabled = GetEntProp(entity,Prop_Data,"m_bDisabled");
 			int targ = isattacking[entity];
 			if ((IsValidEntity(targ)) && (targ != 0) && (!disabled))
