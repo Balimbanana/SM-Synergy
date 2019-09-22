@@ -82,7 +82,7 @@ bool reloadaftersetup = false;
 bool weapmanagersplaced = false;
 bool mapchanging = false;
 
-#define PLUGIN_VERSION "1.9982"
+#define PLUGIN_VERSION "1.9983"
 //#define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -4635,7 +4635,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					}
 					else if (StrEqual(cls,"item_ammo_glock",false))
 					{
-						Format(cls,sizeof(cls),"item_ammo_smg1_grenade");
+						Format(cls,sizeof(cls),"item_ammo_smg1");
 						if (FileExists("models/weapons/w_9mmclip.mdl",true,NULL_STRING))
 						{
 							dp = CreateDataPack();
@@ -5380,6 +5380,11 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						fileorigin[1]+=offsetpos[1];
 						fileorigin[2]+=offsetpos[2];
 						TeleportEntity(ent,fileorigin,angs,NULL_VECTOR);
+					}
+					if (FindStringInArray(customentlist,oldcls) == -1)
+					{
+						//Attempting to create entity that is not on the list?
+						AcceptEntityInput(ent,"kill");
 					}
 					if (StrContains(oldcls,"item_weapon_",false) == 0)
 					{
