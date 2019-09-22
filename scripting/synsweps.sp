@@ -9,12 +9,13 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "0.94"
+#define PLUGIN_VERSION "0.95"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
 bool tauknockback = false;
 bool customcvarsset = false;
+bool loweredsprint = false;
 int g_LastButtons[MAXPLAYERS+1];
 int difficulty = 1;
 int WeapList = -1;
@@ -140,6 +141,12 @@ public void OnPluginStart()
 	{
 		difficulty = GetConVarInt(cvar);
 		HookConVarChange(cvar, difficultych);
+	}
+	cvar = FindConVar("sv_weapon_lower_sprint");
+	if (cvar != INVALID_HANDLE)
+	{
+		loweredsprint = GetConVarBool(cvar);
+		HookConVarChange(cvar, weploweredch);
 	}
 	CloseHandle(cvar);
 	CreateTimer(0.1, weaponticks, _, TIMER_REPEAT);
@@ -550,6 +557,12 @@ public ffhch(Handle convar, const char[] oldValue, const char[] newValue)
 public difficultych(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	difficulty = StringToInt(newValue);
+}
+
+public weploweredch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) loweredsprint = true;
+	else loweredsprint = false;
 }
 
 FindStrayWeaps(int ent, int client)
@@ -1578,6 +1591,7 @@ void GetSequencesFromAnim(Handle dp, Handle actmap, char[] mdl)
 					{
 						Format(acts,sizeof(acts),"%i %s",j,prevanim);
 						WritePackString(dp,acts);
+						//PrintToServer("PushVMActsub %s",acts);
 					}
 				}
 				Format(acts,sizeof(acts),"%i %s",seq,split[1]);
@@ -1891,6 +1905,10 @@ public OnClientDisconnect_Post(int client)
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
+	if (loweredsprint)
+	{
+		if (buttons & IN_SPEED) return Plugin_Continue;
+	}
 	bool setbuttons = true;
 	char curweap[24];
 	//GetClientWeapon(client,curweap,sizeof(curweap));
