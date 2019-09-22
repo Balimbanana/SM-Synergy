@@ -119,7 +119,7 @@ public void OnPluginStart()
 	cvar = FindConVar("sk_plr_dmg_satchel");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_satchel", "150", "Explosion damage of player satchels.", _, true, 1.0, true, 999.0);
 	cvar = FindConVar("sk_plr_dmg_glock");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_glock", "20", "Damage for the glock.", _, true, 1.0, true, 999.0);
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_glock", "8", "Damage for the glock.", _, true, 1.0, true, 999.0);
 	cvar = FindConVar("syn_tauknockback");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("syn_tauknockback", "0", "Enables knock back effect for players from Tau cannon charged shots.", _, true, 0.0, true, 1.0);
 	tauknockback = GetConVarBool(cvar);
