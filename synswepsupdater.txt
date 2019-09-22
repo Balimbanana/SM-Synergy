@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.94"
-			"Previous"	"0.93"
+			"Latest"  	"0.95"
+			"Previous"	"0.94"
 		}
 		
-		"Notes"	"Fixed release for certain weapon types."
+		"Notes"	"Cannot fire custom weapons while running if sv_weapon_lower_sprint is 1."
 	}
 	
 	"Files"
