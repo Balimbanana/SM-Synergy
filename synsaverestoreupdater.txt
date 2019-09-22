@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99994"
-			"Previous"	"1.99993"
+			"Latest"  	"1.99995"
+			"Previous"	"1.99994"
 		}
 		
-		"Notes"	"Ensure touchingents does not revert to start and will not include certain types of entities."
+		"Notes"	"Added a couple more static transitions. Added debug log for outofworld transitions."
 	}
 	
 	"Files"
