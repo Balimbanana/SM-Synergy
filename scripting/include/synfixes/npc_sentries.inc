@@ -181,6 +181,8 @@ void sentriesthink(int entity)
 					*/
 					if (angs[0] > toang[0]) posepitch-=0.03;
 					else posepitch+=0.03;
+					if (posepitch < 0.2) posepitch = 0.2;
+					if (posepitch > 0.8) posepitch = 0.8;
 					if (((toang[1]-angs[1] < 6.0) && (toang[1]-angs[1] > 0.0)) || (((angs[1]-toang[1] < 6.0)) && (angs[1]-toang[1] > 0.0)))
 					{
 						if (pose < prevpose) pose+=0.04;
