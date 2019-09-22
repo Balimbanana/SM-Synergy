@@ -17,6 +17,7 @@ bool enterfrom08 = false;
 bool enterfrom08pb = false;
 bool enterfromep1 = false;
 bool enterfromep2 = false;
+bool enterfrom4g = false;
 bool reloadingmap = false;
 bool IsVehicleMap = false;
 bool dbg = false;
@@ -53,7 +54,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.99994"
+#define PLUGIN_VERSION "1.99995"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -484,45 +485,6 @@ public Action savecurgamedp(Handle timer, any dp)
 		}
 	}
 	CloseHandle(plyinf);
-	if (DirExists(savedir,false))
-	{
-		Handle savedirh = OpenDirectory(savedir, false);
-		char subfilen[64];
-		while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
-		{
-			if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
-			{
-				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
-				{
-					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-					Handle subfile = OpenFile(subfilen,"rb");
-					if (subfile != INVALID_HANDLE)
-					{
-						char savepathsf[256];
-						Format(savepathsf,sizeof(savepathsf),subfilen);
-						ReplaceString(savepathsf,sizeof(savepathsf),savedir,"");
-						ReplaceString(savepathsf,sizeof(savepathsf),"\\","");
-						BuildPath(Path_SM,nullb,sizeof(nullb),"data/SynSaves/%s/%s/%s",mapbuf,ctimestamp,savepathsf);
-						Format(savepathsf,sizeof(savepathsf),"%s/%s/%s",savepath,ctimestamp,savepathsf);
-						ReplaceString(savepathsf,sizeof(savepathsf),"/","\\");
-						Handle subfiletarg = OpenFile(savepathsf,"wb");
-						if (subfiletarg != INVALID_HANDLE)
-						{
-							int itemarr[32];
-							while (!IsEndOfFile(subfile))
-							{
-								ReadFile(subfile,itemarr,32,1);
-								WriteFile(subfiletarg,itemarr,32,1);
-							}
-						}
-						CloseHandle(subfiletarg);
-					}
-					CloseHandle(subfile);
-				}
-			}
-		}
-		CloseHandle(savedirh);
-	}
 	char custentinffile[256];
 	Format(custentinffile,sizeof(custentinffile),"%s\\%s\\customentinf.txt",savepath,ctimestamp);
 	ReplaceString(custentinffile,sizeof(custentinffile),"/","\\");
@@ -534,6 +496,7 @@ public Action savecurgamedp(Handle timer, any dp)
 		FindAllByClassname(arr,-1,"logic_*");
 		int maxpass = GetMaxEntities();
 		bool usearr = false;
+		bool saveafter = false;
 		if (GetArraySize(arr) > 0) maxpass++;
 		for (int j = MaxClients+1;j<maxpass;j++)
 		{
@@ -553,6 +516,13 @@ public Action savecurgamedp(Handle timer, any dp)
 			{
 				char cls[64];
 				GetEntityClassname(i,cls,sizeof(cls));
+				if (StrEqual(cls,"logic_merchant_relay",false))
+				{
+					//Let default save system handle this entitiy for outputs.
+					Format(cls,sizeof(cls),"logic_relay");
+					SetEntPropString(i,Prop_Data,"m_iClassname",cls);
+					saveafter = true;
+				}
 				if (FindStringInArray(custentlist,cls) != -1)
 				{
 					WriteFileLine(custentinf,"{");
@@ -787,6 +757,62 @@ public Action savecurgamedp(Handle timer, any dp)
 		CloseHandle(arr);
 		CloseHandle(custentinf);
 		CloseHandle(custentlist);
+		if (saveafter)
+		{
+			if ((logsv != 0) && (logsv != -1) && (IsValidEntity(logsv)))
+			{
+				saveresetveh(false);
+			}
+			else
+			{
+				logsv = CreateEntityByName("logic_autosave");
+				if ((logsv != -1) && (IsValidEntity(logsv)))
+				{
+					DispatchSpawn(logsv);
+					ActivateEntity(logsv);
+					saveresetveh(false);
+				}
+			}
+		}
+	}
+	if (DirExists(savedir,false))
+	{
+		Handle savedirh = OpenDirectory(savedir, false);
+		char subfilen[64];
+		while (ReadDirEntry(savedirh, subfilen, sizeof(subfilen)))
+		{
+			if ((!(savedirh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+			{
+				if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+				{
+					Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+					Handle subfile = OpenFile(subfilen,"rb");
+					if (subfile != INVALID_HANDLE)
+					{
+						char savepathsf[256];
+						Format(savepathsf,sizeof(savepathsf),subfilen);
+						ReplaceString(savepathsf,sizeof(savepathsf),savedir,"");
+						ReplaceString(savepathsf,sizeof(savepathsf),"\\","");
+						BuildPath(Path_SM,nullb,sizeof(nullb),"data/SynSaves/%s/%s/%s",mapbuf,ctimestamp,savepathsf);
+						Format(savepathsf,sizeof(savepathsf),"%s/%s/%s",savepath,ctimestamp,savepathsf);
+						ReplaceString(savepathsf,sizeof(savepathsf),"/","\\");
+						Handle subfiletarg = OpenFile(savepathsf,"wb");
+						if (subfiletarg != INVALID_HANDLE)
+						{
+							int itemarr[32];
+							while (!IsEndOfFile(subfile))
+							{
+								ReadFile(subfile,itemarr,32,1);
+								WriteFile(subfiletarg,itemarr,32,1);
+							}
+						}
+						CloseHandle(subfiletarg);
+					}
+					CloseHandle(subfile);
+				}
+			}
+		}
+		CloseHandle(savedirh);
 	}
 	if (DirExists(fchk))
 	{
@@ -1734,6 +1760,17 @@ public void OnMapStart()
 			}
 			else if (enterfrom08pb)
 				enterfrom08pb = false;
+			if ((enterfrom4g) && (StrEqual(mapbuf,"bm_c2a4fedt",false)))
+			{
+				int loginp = CreateEntityByName("logic_auto");
+				DispatchKeyValue(loginp, "spawnflags","1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_stragglersfailsave,Enable,,0,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawnpoint2_00,0,-1");
+				DispatchSpawn(loginp);
+				ActivateEntity(loginp);
+			}
+			else if (enterfrom4g)
+				enterfrom4g = false;
 			if (GetArraySize(globalsarr) > 0)
 			{
 				int loginp;
@@ -1906,6 +1943,12 @@ public void OnMapStart()
 							porigin[1] = 112.0;
 							porigin[2] = 878.0;
 						}
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_11b",false)))
+						{
+							porigin[0] = 453.0;
+							porigin[1] = -9489.0;
+							porigin[2] = -283.0;
+						}
 						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_01",false)))
 						{
 							porigin[0] = -6208.0;
@@ -1960,6 +2003,17 @@ public void OnMapStart()
 							porigin[1] = -3885.0;
 							porigin[2] = -855.0;
 						}
+						else if ((StrEqual(clsname,"npc_barney",false)) && (StrEqual(targn,"barney",false)) && (StrEqual(mapbuf,"d3_c17_10a",false)))
+						{
+							porigin[0] = -4083.0;
+							porigin[1] = 6789.0;
+							porigin[2] = 48.0;
+						}
+						bool skipoow = false;
+						if (((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false))) || ((StrEqual(clsname,"npc_barney",false)) && (StrEqual(targn,"barney",false))) || ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false))))
+						{
+							skipoow = true;
+						}
 						if (StrEqual(clsname,"prop_physics",false)) Format(clsname,sizeof(clsname),"prop_physics_override",false);
 						else if (StrEqual(clsname,"prop_dynamic",false)) Format(clsname,sizeof(clsname),"prop_dynamic_override",false);
 						else if (StrEqual(clsname,"prop_ragdoll",false))
@@ -1968,8 +2022,9 @@ public void OnMapStart()
 							ragdoll = true;
 						}
 						int ent = CreateEntityByName(clsname);
-						if (TR_PointOutsideWorld(porigin))
+						if ((TR_PointOutsideWorld(porigin)) && (!skipoow))
 						{
+							if (dbg) LogMessage("Delete Transition Ent (OutOfWorld) %s info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\"",clsname,mdl,targn,StringToInt(solidity),StringToInt(spawnflags),mvtype);
 							AcceptEntityInput(ent,"kill");
 							ent = -1;
 						}
@@ -2342,6 +2397,10 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		else if ((StrEqual(prevmap,"ep2_outland_04",false)) && (StrEqual(maptochange,"ep2_outland_02",false)))
 		{
 			enterfrom04pb = true;
+		}
+		else if ((StrEqual(prevmap,"bm_c2a4g",false)) && (StrEqual(maptochange,"bm_c2a4fedt",false)))
+		{
+			enterfrom4g = true;
 		}
 		reloadingmap = true;
 		if (!nodel)
@@ -3054,6 +3113,13 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 	}
 	CloseHandle(custentlist);
 	CloseHandle(custentinf);
+	if (FileExists(custentinffile,false))
+	{
+		if (FileSize(custentinffile,false) < 1)
+		{
+			DeleteFile(custentinffile,false);
+		}
+	}
 	for (int i = 0;i<GetArraySize(ignoreent);i++)
 	{
 		int j = GetArrayCell(ignoreent,i);
@@ -3578,7 +3644,7 @@ public Action anotherdelay(Handle timer, int client)
 			plyorigin[1] = ReadPackFloat(dp);
 			plyorigin[2] = ReadPackFloat(dp);
 			if (((plyorigin[0] == 0.0) && (plyorigin[1] == 0.0) && (plyorigin[2] == 0.0)) || (TR_PointOutsideWorld(plyorigin))) teleport = false;
-			if (dbg) LogMessage("Restore CL %N Transition info %i health %i armor Offset \"%1.f %1.f %1.f\"",client,curh,cura,plyorigin[0],plyorigin[1],plyorigin[2]);
+			if (dbg) LogMessage("Restore CL %N Transition info %i health %i armor Offset \"%1.f %1.f %1.f\" moveto %i",client,curh,cura,plyorigin[0],plyorigin[1],plyorigin[2],teleport);
 			plyorigin[0]+=landmarkorigin[0];
 			plyorigin[1]+=landmarkorigin[1];
 			plyorigin[2]+=landmarkorigin[2];
@@ -3642,7 +3708,19 @@ public Action anotherdelay(Handle timer, int client)
 			}
 			CloseHandle(dp);
 			RemoveFromArray(transitiondp,arrindx);
-			if (teleport) TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
+			if (teleport)
+			{
+				Handle dpoffs = CreateDataPack();
+				WritePackCell(dpoffs,client);
+				WritePackFloat(dpoffs,plyorigin[0]);
+				WritePackFloat(dpoffs,plyorigin[1]);
+				WritePackFloat(dpoffs,plyorigin[2]);
+				WritePackFloat(dpoffs,angs[0]);
+				WritePackFloat(dpoffs,angs[1]);
+				WritePackFloat(dpoffs,angs[2]);
+				CreateTimer(0.1,tpcltooff,dpoffs,TIMER_FLAG_NO_MAPCHANGE);
+				TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
+			}
 			ClientCommand(client,"use %s",curweap);
 		}
 		else
@@ -3691,6 +3769,28 @@ public Action anotherdelay(Handle timer, int client)
 				}
 			}
 			if ((GetArraySize(equiparr) < 1) && (!StrEqual(mapbuf,"bm_c0a0c",false)) && (!StrEqual(mapbuf,"sp_intro",false)) && (!StrEqual(mapbuf,"d1_trainstation_05",false))) CreateTimer(0.1,delayequip,client);
+		}
+	}
+}
+
+public Action tpcltooff(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int client = ReadPackCell(dp);
+		float plyorigin[3];
+		float angs[3];
+		plyorigin[0] = ReadPackFloat(dp);
+		plyorigin[1] = ReadPackFloat(dp);
+		plyorigin[2] = ReadPackFloat(dp);
+		angs[0] = ReadPackFloat(dp);
+		angs[1] = ReadPackFloat(dp);
+		angs[2] = ReadPackFloat(dp);
+		CloseHandle(dp);
+		if (IsValidEntity(client))
+		{
+			TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
 		}
 	}
 }
