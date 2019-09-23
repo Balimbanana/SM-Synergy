@@ -295,7 +295,7 @@ void tentaclethink(int entity)
 							float toang[3];
 							MakeVectorFromPoints(chkorg,plyorg,shootvel);
 							GetVectorAngles(shootvel,toang);
-							TR_TraceRayFilter(chkorg,toang,MASK_PLAYERSOLID,RayType_Infinite,TraceEntityFilter,entmdl);
+							TR_TraceRayFilter(chkorg,toang,MASK_SHOT,RayType_Infinite,TraceEntityFilter,entmdl);
 							int trtarg = TR_GetEntityIndex();
 							if ((chkdist > 500.0) || (trtarg < 1))
 							{
