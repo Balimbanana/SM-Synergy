@@ -82,7 +82,7 @@ bool reloadaftersetup = false;
 bool weapmanagersplaced = false;
 bool mapchanging = false;
 
-#define PLUGIN_VERSION "1.9983"
+#define PLUGIN_VERSION "1.9984"
 //#define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -12187,7 +12187,6 @@ public Action custent(Handle timer, int entity)
 						setuprelations("npc_human_security");
 						relsetsec = true;
 					}
-					SDKHookEx(entity,SDKHook_OnTakeDamage,enttkdmgcust);
 					CloseHandle(dp);
 					dp = INVALID_HANDLE;
 					AcceptEntityInput(entity,"kill");
@@ -12213,8 +12212,9 @@ public Action custent(Handle timer, int entity)
 						if (sf & 1<<17)
 						{
 							SetVariantString("spawnflags 1064960");
-							AcceptEntityInput(entity,"AddOutput");
+							AcceptEntityInput(recreate,"AddOutput");
 						}
+						SDKHookEx(recreate,SDKHook_OnTakeDamage,enttkdmgcust);
 					}
 				}
 			}
@@ -12222,23 +12222,42 @@ public Action custent(Handle timer, int entity)
 			{
 				if (FileExists("models/humans/scientist.mdl",true,NULL_STRING))
 				{
-					DispatchKeyValue(entity,"classname","npc_human_scientist");
 					ReplaceString(cls,sizeof(cls),"npc_human_scientist","");
-					SetEntPropString(entity,Prop_Data,"m_iName",cls);
-					int rand = GetRandomInt(0,1);
-					if (rand == 0)
+					int sf = GetEntProp(entity,Prop_Data,"m_spawnflags");
+					float angs[3];
+					GetEntPropVector(entity,Prop_Data,"m_angRotation",angs);
+					CloseHandle(dp);
+					dp = INVALID_HANDLE;
+					AcceptEntityInput(entity,"kill");
+					int recreate = CreateEntityByName("generic_actor");
+					if (recreate != -1)
 					{
-						DispatchKeyValue(entity,"model","models/humans/scientist.mdl");
-						WritePackString(dp,"models/humans/scientist.mdl");
+						char sfch[16];
+						Format(sfch,sizeof(sfch),"%i",sf);
+						DispatchKeyValue(recreate,"spawnflags",sfch);
+						DispatchKeyValue(recreate,"classname","npc_human_scientist");
+						DispatchKeyValue(recreate,"targetname",cls);
+						DispatchKeyValue(recreate,"CitizenType","4");
+						char randsk[8];
+						Format(randsk,sizeof(randsk),"%i",GetRandomInt(0,14));
+						DispatchKeyValue(recreate,"Skin",randsk);
+						Format(randsk,sizeof(randsk),"%i",GetRandomInt(0,14));
+						DispatchKeyValue(recreate,"Body",randsk);
+						TeleportEntity(recreate,origin,angs,NULL_VECTOR);
+						if (sf & 1<<17)
+						{
+							SetVariantString("spawnflags 1064960");
+							AcceptEntityInput(recreate,"AddOutput");
+						}
+						int rand = GetRandomInt(0,1);
+						if (rand == 0) DispatchKeyValue(recreate,"model","models/humans/scientist.mdl");
+						else DispatchKeyValue(recreate,"model","models/humans/scientist_02.mdl");
+						DispatchSpawn(recreate);
+						ActivateEntity(recreate);
+						SDKHook(recreate, SDKHook_OnTakeDamage, OnTakeDamage);
+						SDKHook(recreate, SDKHook_OnTakeDamage, enttkdmgcust);
+						setuprelations("npc_human_scientist");
 					}
-					else
-					{
-						DispatchKeyValue(entity,"model","models/humans/scientist_02.mdl");
-						WritePackString(dp,"models/humans/scientist_02.mdl");
-					}
-					SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
-					SDKHook(entity, SDKHook_OnTakeDamage, enttkdmgcust);
-					setuprelations("npc_human_scientist");
 				}
 			}
 			else if (StrContains(cls,"npc_human_scientist_female",false) == 0)
