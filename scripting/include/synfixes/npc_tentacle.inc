@@ -1,3 +1,5 @@
+int istargeted[2048];
+
 void tentaclethink(int entity)
 {
 	if ((IsValidEntity(entity)) && (IsEntNetworkable(entity)))
@@ -20,6 +22,7 @@ void tentaclethink(int entity)
 					int targ = GetEntPropEnt(entity,Prop_Data,"m_hTargetEnt");
 					if (!IsValidEntity(targ))
 					{
+						if ((targ > 0) && (targ < 2048)) istargeted[targ] = 0;
 						SetEntPropEnt(entity,Prop_Data,"m_hTargetEnt",-1);
 						targ = -1;
 					}
@@ -27,6 +30,7 @@ void tentaclethink(int entity)
 					{
 						if (GetEntProp(targ,Prop_Data,"m_iHealth") < 1)
 						{
+							istargeted[targ] = 0;
 							SetEntPropEnt(entity,Prop_Data,"m_hTargetEnt",-1);
 							targ = -1;
 						}
@@ -85,7 +89,7 @@ void tentaclethink(int entity)
 									else if (HasEntProp(j,Prop_Send,"m_vecOrigin")) GetEntPropVector(j,Prop_Send,"m_vecOrigin",atkorg);
 									atkorg[2] = plyorg[2];
 									float chkdist = GetVectorDistance(atkorg,plyorg,false);
-									if (chkdist < 600.0)
+									if (chkdist < 500.0)
 									{
 										if ((chkdist < closest) || (closest == 0.0))
 										{
@@ -96,25 +100,25 @@ void tentaclethink(int entity)
 								}
 								if ((closest != 0.0) && (closestt != 0))
 								{
-									if (FindValueInArray(tents,isattacking[i]) == -1) isattacking[i] = 0;
-									if ((isattacking[i] != 0) && (IsValidEntity(isattacking[i])))
+									if (FindValueInArray(tents,istargeted[i]) == -1) istargeted[i] = 0;
+									if ((istargeted[i] != 0) && (IsValidEntity(istargeted[i])))
 									{
 										float atkorg[3];
-										if (HasEntProp(isattacking[i],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(isattacking[i],Prop_Data,"m_vecAbsOrigin",atkorg);
-										else if (HasEntProp(isattacking[i],Prop_Send,"m_vecOrigin")) GetEntPropVector(isattacking[i],Prop_Send,"m_vecOrigin",atkorg);
+										if (HasEntProp(istargeted[i],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(istargeted[i],Prop_Data,"m_vecAbsOrigin",atkorg);
+										else if (HasEntProp(istargeted[i],Prop_Send,"m_vecOrigin")) GetEntPropVector(istargeted[i],Prop_Send,"m_vecOrigin",atkorg);
 										atkorg[2] = plyorg[2];
 										float chkdist = GetVectorDistance(origin,atkorg,false);
 										chkdist+=10.0;
 										if (chkdist < closest)
 										{
-											SetEntPropEnt(isattacking[i],Prop_Data,"m_hTargetEnt",-1);
-											isattacking[i] = 0;
+											SetEntPropEnt(istargeted[i],Prop_Data,"m_hTargetEnt",-1);
+											istargeted[i] = 0;
 										}
 									}
-									if (isattacking[i] == 0)
+									if (istargeted[i] == 0)
 									{
 										SetEntPropEnt(closestt,Prop_Data,"m_hTargetEnt",i);
-										isattacking[i] = closestt;
+										istargeted[i] = closestt;
 										break;
 									}
 								}
@@ -169,7 +173,7 @@ void tentaclethink(int entity)
 										else if (HasEntProp(j,Prop_Send,"m_vecOrigin")) GetEntPropVector(j,Prop_Send,"m_vecOrigin",atkorg);
 										atkorg[2] = plyorg[2];
 										float chkdist = GetVectorDistance(atkorg,plyorg,false);
-										if (chkdist < 600.0)
+										if (chkdist < 500.0)
 										{
 											if ((chkdist < closest) || (closest == 0.0))
 											{
@@ -180,26 +184,25 @@ void tentaclethink(int entity)
 									}
 									if ((closest != 0.0) && (closestt != 0))
 									{
-										if (FindValueInArray(tents,isattacking[i]) == -1) isattacking[i] = 0;
-										if ((isattacking[i] != 0) && (IsValidEntity(isattacking[i])))
+										if (FindValueInArray(tents,istargeted[i]) == -1) istargeted[i] = 0;
+										if ((istargeted[i] != 0) && (IsValidEntity(istargeted[i])))
 										{
 											float atkorg[3];
-											if (HasEntProp(isattacking[i],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(isattacking[i],Prop_Data,"m_vecAbsOrigin",atkorg);
-											else if (HasEntProp(isattacking[i],Prop_Send,"m_vecOrigin")) GetEntPropVector(isattacking[i],Prop_Send,"m_vecOrigin",atkorg);
+											if (HasEntProp(istargeted[i],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(istargeted[i],Prop_Data,"m_vecAbsOrigin",atkorg);
+											else if (HasEntProp(istargeted[i],Prop_Send,"m_vecOrigin")) GetEntPropVector(istargeted[i],Prop_Send,"m_vecOrigin",atkorg);
 											atkorg[2] = origin[2];
 											float chkdist = GetVectorDistance(origin,atkorg,false);
 											chkdist+=10.0;
 											if (chkdist < closest)
 											{
 												SetEntPropEnt(closestt,Prop_Data,"m_hTargetEnt",-1);
-												isattacking[i] = 0;
+												istargeted[i] = 0;
 											}
 										}
-										if (isattacking[i] == 0)
+										if (istargeted[i] == 0)
 										{
 											SetEntPropEnt(closestt,Prop_Data,"m_hTargetEnt",i);
-											isattacking[i] = closestt;
-											break;
+											istargeted[i] = closestt;
 										}
 									}
 								}
@@ -211,6 +214,8 @@ void tentaclethink(int entity)
 					//Attachments Tip Eye
 					if (centnextatk[entity] < Time)
 					{
+						if (targ != -1)
+							if (istargeted[targ] != entity) targ = -1;
 						if (targ == -1)
 						{
 							if (IsValidEntity(sndtarg))
@@ -233,7 +238,7 @@ void tentaclethink(int entity)
 									float plyorg[3];
 									GetClientAbsOrigin(i,plyorg);
 									float chkdist = GetVectorDistance(tiporg,plyorg,false);
-									if (((chkdist < lowestdist) || (lowestdist == 0.0)) && (isattacking[clpass] != 0))
+									if (((chkdist < lowestdist) || (lowestdist == 0.0)) && (istargeted[clpass] != 0))
 									{
 										lowestdist = chkdist;
 										clpass = i;
@@ -243,7 +248,7 @@ void tentaclethink(int entity)
 							if ((lowestdist < 600.0) && (lowestdist != 0.0))
 							{
 								SetEntPropEnt(entity,Prop_Data,"m_hTargetEnt",clpass);
-								isattacking[clpass] = 0;
+								istargeted[clpass] = 0;
 								SetEntProp(entity,Prop_Data,"m_nSequence",seq);
 							}
 						}
@@ -281,11 +286,21 @@ void tentaclethink(int entity)
 							float plyorg[3];
 							if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",plyorg);
 							else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",plyorg);
-							float chkdist = GetVectorDistance(origin,plyorg,false);
-							if (chkdist > 600.0)
+							float chkorg[3];
+							chkorg[0] = origin[0];
+							chkorg[1] = origin[1];
+							chkorg[2] = plyorg[2];
+							float chkdist = GetVectorDistance(chkorg,plyorg,false);
+							float shootvel[3];
+							float toang[3];
+							MakeVectorFromPoints(chkorg,plyorg,shootvel);
+							GetVectorAngles(shootvel,toang);
+							TR_TraceRayFilter(chkorg,toang,MASK_PLAYERSOLID,RayType_Infinite,TraceEntityFilter,entmdl);
+							int trtarg = TR_GetEntityIndex();
+							if ((chkdist > 500.0) || (trtarg < 1))
 							{
 								SetEntPropEnt(entity,Prop_Data,"m_hTargetEnt",-1);
-								isattacking[targ] = 0;
+								if (istargeted[targ] == entity) istargeted[targ] = 0;
 								targ = -1;
 							}
 							else if (origin[2] > plyorg[2])
@@ -333,6 +348,7 @@ void tentaclethink(int entity)
 							centnextatk[entity] = Time+2.0;
 						}
 					}
+					/*
 					float cyclechk = GetEntPropFloat(entmdl,Prop_Data,"m_flCycle");
 					if (cyclechk == centlasttouch[entmdl])
 					{
@@ -387,10 +403,10 @@ void tentaclethink(int entity)
 						if (cyclechk > 1.0) cyclechk = 0.0;
 						SetEntPropFloat(entmdl,Prop_Data,"m_flCycle",cyclechk);
 						int animset = GetEntProp(entmdl,Prop_Data,"m_bClientSideAnimation");
-						if (animset == 0) SetEntProp(entmdl,Prop_Data,"m_bClientSideAnimation",1);
+						if (animset == 0) SetEntProp(entmdl,Prop_Data,"m_bClientSideAnimation",0);
 						else if (timesattacked[entity] > 1)
 						{
-							SetEntProp(entmdl,Prop_Data,"m_bClientSideAnimation",0);
+							SetEntProp(entmdl,Prop_Data,"m_bClientSideAnimation",1);
 							timesattacked[entity] = 0;
 						}
 						timesattacked[entity]++;
@@ -398,6 +414,7 @@ void tentaclethink(int entity)
 						targ = -1;
 					}
 					centlasttouch[entmdl] = cyclechk;
+					*/
 					if ((seqmdl != seq) && (seq != 0))
 					{
 						bool contseqset = true;
