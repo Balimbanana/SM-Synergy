@@ -54,7 +54,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.99995"
+#define PLUGIN_VERSION "1.99996"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3190,6 +3190,7 @@ void transitionthisent(int i)
 			{
 				CloseHandle(dp);
 				AcceptEntityInput(i,"kill");
+				return;
 			}
 		}
 	}
