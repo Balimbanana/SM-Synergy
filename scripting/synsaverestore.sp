@@ -54,7 +54,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.99997"
+#define PLUGIN_VERSION "1.99998"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2031,7 +2031,7 @@ public void OnMapStart()
 						}
 						if (ent != -1)
 						{
-							if (dbg) LogMessage("Restore Ent %s Transition info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\"",clsname,mdl,targn,StringToInt(solidity),StringToInt(spawnflags),mvtype);
+							if (dbg) LogMessage("Restore Ent %s Transition info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\" to origin \"%1.f %1.f %1.f\"",clsname,mdl,targn,StringToInt(solidity),StringToInt(spawnflags),mvtype,porigin[0],porigin[1],porigin[2]);
 							bool beginseq = false;
 							bool applypropafter = false;
 							if (StrEqual(clsname,"npc_alyx",false))
@@ -2194,6 +2194,7 @@ public void OnMapStart()
 					{
 						SetVariantString("jeep");
 						AcceptEntityInput(alyxtransition,"EnterVehicleImmediately");
+						if (dbg) LogMessage("Alyx entered jalopy on transition at %1.f %1.f %1.f",aljeepchkj[0],aljeepchkj[1],aljeepchkj[2]);
 					}
 				}
 			}
