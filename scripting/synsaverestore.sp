@@ -54,7 +54,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.99996"
+#define PLUGIN_VERSION "1.99997"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1866,6 +1866,7 @@ public void OnMapStart()
 						DeleteFile(custentinffile,false);
 					}
 				}
+				if (dbg) LogMessage("%i entities to restore over map change.",GetArraySize(transitionents));
 				if (GetArraySize(transitionents) > 0)
 				{
 					for (int i = 0;i<GetArraySize(transitionents);i++)
@@ -2175,6 +2176,7 @@ public void OnMapStart()
 					}
 				}
 			}
+			if (dbg) LogMessage("ClearTransitionEnts Array after restore of %i ents",GetArraySize(transitionents));
 			ClearArray(transitionents);
 			if ((alyxenter) && (IsValidEntity(alyxtransition)) && (alyxtransition > MaxClients))
 			{
@@ -2294,6 +2296,7 @@ public void OnMapEnd()
 		ClearArray(transitionid);
 		ClearArray(transitiondp);
 		ClearArray(transitionplyorigin);
+		if (dbg) LogMessage("ClearTransitionEnts Array");
 		ClearArray(transitionents);
 		ClearArray(equiparr);
 		prevmap = "";
@@ -3154,6 +3157,7 @@ void transitionthisent(int i)
 	char target[32];
 	char npctype[4];
 	char solidity[4];
+	char response[64];
 	char scriptinf[512];
 	char scrtmp[64];
 	char defanim[32];
@@ -3330,6 +3334,7 @@ void transitionthisent(int i)
 	if (HasEntProp(i,Prop_Data,"m_takedamage")) tkdmg = GetEntProp(i,Prop_Data,"m_takedamage");
 	if (HasEntProp(i,Prop_Data,"movetype")) mvtype = GetEntProp(i,Prop_Data,"movetype");
 	if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
+	if (HasEntProp(i,Prop_Data,"m_iszResponseContext")) GetEntPropString(i,Prop_Data,"m_iszResponseContext",response,sizeof(response));
 	TrimString(scriptinf);
 	WritePackString(dp,clsname);
 	WritePackString(dp,targn);
@@ -3357,6 +3362,7 @@ void transitionthisent(int i)
 	WritePackCell(dp,tkdmg);
 	WritePackCell(dp,mvtype);
 	WritePackString(dp,defanim);
+	WritePackString(dp,response);
 	WritePackString(dp,scriptinf);
 	PushArrayCell(transitionents,dp);
 	PushArrayCell(ignoreent,i);
