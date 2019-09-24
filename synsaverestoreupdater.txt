@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99997"
-			"Previous"	"1.99996"
+			"Latest"  	"1.99998"
+			"Previous"	"1.99997"
 		}
 		
-		"Notes"	"Added another debug message for how many entities are transitioned and when the array is cleared."
+		"Notes"	"Additional debug info."
 	}
 	
 	"Files"
