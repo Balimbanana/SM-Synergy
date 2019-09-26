@@ -54,7 +54,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.99998"
+#define PLUGIN_VERSION "1.99999"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2014,6 +2014,7 @@ public void OnMapStart()
 						if (((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false))) || ((StrEqual(clsname,"npc_barney",false)) && (StrEqual(targn,"barney",false))) || ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false))))
 						{
 							skipoow = true;
+							if (OutOfWorldBounds(porigin,2.0)) skipoow = false;
 						}
 						if (StrEqual(clsname,"prop_physics",false)) Format(clsname,sizeof(clsname),"prop_physics_override",false);
 						else if (StrEqual(clsname,"prop_dynamic",false)) Format(clsname,sizeof(clsname),"prop_dynamic_override",false);
@@ -2232,6 +2233,22 @@ public void OnMapStart()
 			}
 		}
 	}
+}
+
+public bool OutOfWorldBounds(float origin[3], float scale)
+{
+	float vMins[3];
+	float vMaxs[3];
+	GetEntPropVector(0,Prop_Data,"m_WorldMins",vMins);
+	GetEntPropVector(0,Prop_Data,"m_WorldMaxs",vMaxs);
+	ScaleVector(vMins,scale);
+	ScaleVector(vMaxs,scale);
+	if ((origin[0] < vMins[0]) || (origin[1] < vMins[1]) || (origin[2] < vMins[2]) || (origin[0] > vMaxs[0]) || (origin[1] > vMaxs[1]) || (origin[2] > vMaxs[2]))
+	{
+		if (TR_PointOutsideWorld(origin))
+			return true;
+	}
+	return false;
 }
 
 public Action redel(Handle timer)
