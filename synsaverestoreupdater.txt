@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99998"
-			"Previous"	"1.99997"
+			"Latest"  	"1.99999"
+			"Previous"	"1.99998"
 		}
 		
-		"Notes"	"Additional debug info."
+		"Notes"	"Transition out of world additional world bounds checks."
 	}
 	
 	"Files"
