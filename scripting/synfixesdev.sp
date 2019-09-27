@@ -83,7 +83,7 @@ bool weapmanagersplaced = false;
 bool mapchanging = false;
 
 #define PLUGIN_VERSION "1.9985"
-//#define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
+#define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
 #define VOTE_NO "###no###"
@@ -923,7 +923,7 @@ public void OnLibraryAdded(const char[] name)
 {
 	if (StrEqual(name,"updater",false))
 	{
-		//Updater_AddPlugin(UPDATE_URL);
+		Updater_AddPlugin(UPDATE_URL);
 	}
 	if (StrEqual(name,"mapchooser",false))
 	{
