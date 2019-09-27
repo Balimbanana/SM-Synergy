@@ -82,7 +82,7 @@ bool reloadaftersetup = false;
 bool weapmanagersplaced = false;
 bool mapchanging = false;
 
-#define PLUGIN_VERSION "1.9984"
+#define PLUGIN_VERSION "1.9985"
 //#define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -216,7 +216,7 @@ public void OnPluginStart()
 	customentlist = CreateArray(128);
 	conveyors = CreateArray(128);
 	delayedsounds = CreateArray(64);
-	delayedspeech = CreateArray(16);
+	delayedspeech = CreateArray(6);
 	passedstrings = CreateArray(128);
 	restorecustoments = CreateArray(256);
 	inputsarrorigincls = CreateArray(768);
@@ -1608,7 +1608,7 @@ public Action restoresound(Handle timer, int client)
 				}
 				if (GetArraySize(delayedspeech) > 0)
 				{
-					Handle removal = CreateArray(16);
+					Handle removal = CreateArray(6);
 					float Time = GetTickedTime();
 					char snd[64];
 					for (int j = 0;j<GetArraySize(delayedspeech);j++)
@@ -16120,6 +16120,12 @@ void findentlist(int ent, char[] clsname)
 	}
 }
 
+public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
+{
+	ClientCommand(client,"alias sv_shutdown \"echo nope\"");
+	return true;
+}
+
 int g_LastButtons[MAXPLAYERS+1];
 
 public void OnClientDisconnect_Post(int client)
@@ -16559,6 +16565,7 @@ public void OnButtonPressUse(int client)
 							{
 								orgs[2]+=20.0;
 								TeleportEntity(targ,orgs,NULL_VECTOR,NULL_VECTOR);
+								trigtp("OnPlayerPickup",targ,client,0.0);
 							}
 						}
 					}
@@ -16875,6 +16882,7 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 		}
 		if (addsnd)
 		{
+			if (GetArraySize(delayedspeech) > 5) ClearArray(delayedspeech);
 			Handle dp = CreateDataPack();
 			centnextsndtime[entity] = GetTickedTime();
 			WritePackString(dp,sample);
