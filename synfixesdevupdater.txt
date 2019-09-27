@@ -1,0 +1,20 @@
+"Updater"
+{
+	"Information"
+	{
+		"Version"
+		{
+			"Latest"  	"1.9985"
+			"Previous"	"1.9984"
+		}
+		
+		"Notes"	"Fix ceiling turret aiming system."
+	}
+	
+	"Files"
+	{
+		"Plugin"	"Path_SM/plugins/synfixesdev.smx"
+		"Source"	"Path_SM/scripting/synfixesdev.sp"
+    "Source"	"Path_SM/scripting/include/synfixesglobals.inc"
+	}
+}
