@@ -40,7 +40,7 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 
-#define PLUGIN_VERSION "1.9983"
+#define PLUGIN_VERSION "1.9984"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1606,6 +1606,12 @@ public Action cleanup(Handle timer, Handle data)
 		if (StrEqual(tmpcls,clsname,false))
 			AcceptEntityInput(cleanupent,"kill");
 	}
+}
+
+public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
+{
+	ClientCommand(client,"alias sv_shutdown \"echo nope\"");
+	return true;
 }
 
 public OnClientDisconnect(int client)
