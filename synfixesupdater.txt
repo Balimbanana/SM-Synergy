@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9983"
-			"Previous"	"1.9982"
+			"Latest"  	"1.9984"
+			"Previous"	"1.9983"
 		}
 		
-		"Notes"	"Separated reversion."
+		"Notes"	"Add block."
 	}
 	
 	"Files"
