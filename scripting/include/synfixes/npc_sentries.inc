@@ -142,6 +142,7 @@ void sentriesthink(int entity)
 				float pose = GetEntPropFloat(entity,Prop_Data,"m_flPoseParameter",0);
 				float prevpose = pose;
 				float posepitch = GetEntPropFloat(entity,Prop_Data,"m_flPoseParameter",1);
+				/*
 				if (StrEqual(cls,"npc_sentry_ceiling",false))
 				{
 					angs[1]+=sentryang[1];
@@ -165,20 +166,6 @@ void sentriesthink(int entity)
 						else if (angs[1]-toang[1] < -180) pose-=0.06;
 						else pose+=0.06;
 					}
-					/*
-					if (angs[0] > toang[0])
-					{
-						if (angs[0]-toang[0] > 90) posepitch+=0.03;
-						else if (toang[0]-angs[0] < -90) posepitch+=0.03;
-						else posepitch-=0.03;
-					}
-					else if (toang[0] > angs[0])
-					{
-						if (toang[0]-angs[0] > 90) posepitch-=0.03;
-						else if (angs[0]-toang[0] < -90) posepitch-=0.03;
-						else posepitch+=0.03;
-					}
-					*/
 					if (angs[0] > toang[0]) posepitch-=0.03;
 					else posepitch+=0.03;
 					if (posepitch < 0.2) posepitch = 0.2;
@@ -196,67 +183,72 @@ void sentriesthink(int entity)
 				}
 				else
 				{
-					if (sentryang[1] < 0.0) sentryang[1]+=360.0;
-					if (angs[0] < 0.0) angs[0] = angs[0]-angs[0]+angs[0];
-					if (toang[0] > 90.0) toang[0]-=360.0;
-					if (angs[0] > 90.0) angs[0]-=360.0;
-					angs[0] = (180.0*posepitch)-70.0;
-					float chkdist = GetVectorDistance(orgs,enorg,false);
-					if (chkdist > 200.0)
+				*/
+				if (sentryang[1] < 0.0) sentryang[1]+=360.0;
+				if (angs[0] < 0.0) angs[0] = angs[0]-angs[0]+angs[0];
+				if (toang[0] > 90.0) toang[0]-=360.0;
+				if (angs[0] > 90.0) angs[0]-=360.0;
+				angs[0] = (180.0*posepitch)-70.0;
+				float chkdist = GetVectorDistance(orgs,enorg,false);
+				if (chkdist > 200.0)
+				{
+					toang[0]+=toang[0]/10;
+				}
+				if (angs[0] > toang[0]) posepitch-=0.03;
+				else posepitch+=0.03;
+				if (StrEqual(cls,"npc_sentry_ceiling",false))
+				{
+					if (sentryang[1] < 180.0) angs[1] -= sentryang[1];
+					else angs[1] += sentryang[1];
+				}
+				else angs[1] = -90.0+sentryang[1]+(180.0*pose);
+				if (angs[1] > 360.0) angs[1]-=360.0;
+				if (angs[1] > 360.0) angs[1]-=360.0;
+				if (angs[1] < 0.0) angs[1]+=360.0;
+				if (angs[1] < 0.0) angs[1]+=360.0;
+				if (sentryang[1] > toang[1])
+				{
+					if ((sentryang[1]-toang[1] > 0) && (sentryang[1]-toang[1] < 90)) withinradius++;
+					else if ((toang[1]-sentryang[1] < -1) && (toang[1]-sentryang[1] < -270)) withinradius++;
+					else withinradius--;
+				}
+				else if (toang[1] > sentryang[1])
+				{
+					if ((toang[1]-sentryang[1] > 0) && (toang[1]-sentryang[1] < 90)) withinradius++;
+					else if ((sentryang[1]-toang[1] < -1) && (sentryang[1]-toang[1] < -270)) withinradius++;
+					else withinradius--;
+				}
+				if (withinradius > 0)
+				{
+					if (angs[1] > toang[1])
 					{
-						toang[0]+=toang[0]/10;
+						if (angs[1]-toang[1] > 90) pose+=0.08;
+						else if (toang[1]-angs[1] < -90) pose+=0.08;
+						else pose-=0.08;
 					}
-					if (angs[0] > toang[0]) posepitch-=0.03;
-					else posepitch+=0.03;
-					angs[1] = -90.0+sentryang[1]+(180.0*pose);
-					if (angs[1] > 360.0) angs[1]-=360.0;
-					if (angs[1] > 360.0) angs[1]-=360.0;
+					else if (toang[1] > angs[1])
+					{
+						if (toang[1]-angs[1] > 90) pose-=0.08;
+						else if (angs[1]-toang[1] < -90) pose-=0.08;
+						else pose+=0.08;
+					}
+					if (toang[1] < 0.0) toang[1]+=180.0;
+					if (toang[1] < 0.0) toang[1]+=180.0;
+					if (toang[1] < 0.0) toang[1]+=180.0;
+					if (toang[1] > 180.0) toang[1]-=180.0;
+					if (toang[1] > 180.0) toang[1]-=180.0;
+					if (toang[1] > 180.0) toang[1]-=180.0;
 					if (angs[1] < 0.0) angs[1]+=360.0;
-					if (angs[1] < 0.0) angs[1]+=360.0;
-					if (sentryang[1] > toang[1])
+					if (angs[1] > 180.0) angs[1]-=360.0;
+					if (((toang[1]-angs[1] < 6.0) && (toang[1]-angs[1] > 0.0)) || (((angs[1]-toang[1] < 6.0)) && (angs[1]-toang[1] > 0.0)) || (((angs[1]-toang[1] < 183.0) && (angs[1]-toang[1] > 177.0)) && (angs[1]-toang[1] > 0.0)) || (((toang[1]-angs[1] < 182.0) && (toang[1]-angs[1] > 178.0)) && (toang[1]-angs[1] > 0.0)))
 					{
-						if ((sentryang[1]-toang[1] > 0) && (sentryang[1]-toang[1] < 90)) withinradius++;
-						else if ((toang[1]-sentryang[1] < -1) && (toang[1]-sentryang[1] < -270)) withinradius++;
-						else withinradius--;
+						if (pose < prevpose) pose+=0.07;
+						else pose-=0.07;
 					}
-					else if (toang[1] > sentryang[1])
+					else if (((toang[1]-angs[1] < 15.0) && (toang[1]-angs[1] > 0.0)) || (((angs[1]-toang[1] < 15.0)) && (angs[1]-toang[1] > 0.0)) || (((angs[1]-toang[1] < 186.0) && (angs[1]-toang[1] > 174.0)) && (angs[1]-toang[1] > 0.0)) || (((toang[1]-angs[1] < 186.0) && (toang[1]-angs[1] > 174.0)) && (toang[1]-angs[1] > 0.0)))
 					{
-						if ((toang[1]-sentryang[1] > 0) && (toang[1]-sentryang[1] < 90)) withinradius++;
-						else if ((sentryang[1]-toang[1] < -1) && (sentryang[1]-toang[1] < -270)) withinradius++;
-						else withinradius--;
-					}
-					if (withinradius > 0)
-					{
-						if (angs[1] > toang[1])
-						{
-							if (angs[1]-toang[1] > 90) pose+=0.08;
-							else if (toang[1]-angs[1] < -90) pose+=0.08;
-							else pose-=0.08;
-						}
-						else if (toang[1] > angs[1])
-						{
-							if (toang[1]-angs[1] > 90) pose-=0.08;
-							else if (angs[1]-toang[1] < -90) pose-=0.08;
-							else pose+=0.08;
-						}
-						if (toang[1] < 0.0) toang[1]+=180.0;
-						if (toang[1] < 0.0) toang[1]+=180.0;
-						if (toang[1] < 0.0) toang[1]+=180.0;
-						if (toang[1] > 180.0) toang[1]-=180.0;
-						if (toang[1] > 180.0) toang[1]-=180.0;
-						if (toang[1] > 180.0) toang[1]-=180.0;
-						if (angs[1] < 0.0) angs[1]+=360.0;
-						if (angs[1] > 180.0) angs[1]-=360.0;
-						if (((toang[1]-angs[1] < 6.0) && (toang[1]-angs[1] > 0.0)) || (((angs[1]-toang[1] < 6.0)) && (angs[1]-toang[1] > 0.0)) || (((angs[1]-toang[1] < 183.0) && (angs[1]-toang[1] > 177.0)) && (angs[1]-toang[1] > 0.0)) || (((toang[1]-angs[1] < 182.0) && (toang[1]-angs[1] > 178.0)) && (toang[1]-angs[1] > 0.0)))
-						{
-							if (pose < prevpose) pose+=0.07;
-							else pose-=0.07;
-						}
-						else if (((toang[1]-angs[1] < 15.0) && (toang[1]-angs[1] > 0.0)) || (((angs[1]-toang[1] < 15.0)) && (angs[1]-toang[1] > 0.0)) || (((angs[1]-toang[1] < 186.0) && (angs[1]-toang[1] > 174.0)) && (angs[1]-toang[1] > 0.0)) || (((toang[1]-angs[1] < 186.0) && (toang[1]-angs[1] > 174.0)) && (toang[1]-angs[1] > 0.0)))
-						{
-							if (pose < prevpose) pose+=0.05;
-							else pose-=0.05;
-						}
+						if (pose < prevpose) pose+=0.05;
+						else pose-=0.05;
 					}
 				}
 				if ((toang[1]-angs[1] < 6.0) || (angs[1]-toang[1] < 6.0))
@@ -269,16 +261,19 @@ void sentriesthink(int entity)
 					if (pose < 0.00)
 					{
 						pose = 0.0;
+						if (StrEqual(cls,"npc_sentry_ceiling",false)) pose = 1.0;
 						if (StrEqual(cls,"npc_sentry_ground",false)) withinradius--;
 					}
 					else if (pose > 1.00)
 					{
 						pose = 1.0;
+						if (StrEqual(cls,"npc_sentry_ceiling",false)) pose = 0.0;
 						if (StrEqual(cls,"npc_sentry_ground",false)) withinradius--;
 					}
 					SetEntPropFloat(entity,Prop_Data,"m_flPoseParameter",pose,0);
 				}
 				else withinradius++;
+				//PrintToServer("%1.f To %1.f from %1.f var %1.f targ %i",sentryang[1],toang[1],angs[1],toang[1]-angs[1],targ);
 				if ((toang[0]-angs[0] > 3.0) || (angs[0]-toang[0] > 3.0))
 				{
 					if (posepitch < 0.00)
@@ -433,7 +428,7 @@ void sentriesthink(int entity)
 						{
 							char cls[64];
 							GetEntityClassname(i,cls,sizeof(cls));
-							if ((!StrEqual(cls,"npc_human_grunt",false)) && (!StrEqual(cls,"npc_human_medic",false)) && (!StrEqual(cls,"npc_human_grenadier",false)) && (!StrEqual(cls,"npc_human_commander",false)) && (!StrEqual(cls,"npc_sentry_ground",false)) && (!StrEqual(cls,"npc_sentry_ceiling",false)) && (!StrEqual(cls,"npc_abrams",false)) && (!StrEqual(cls,"npc_bullseye",false)) && (!StrEqual(cls,"npc_maker",false)) && (!StrEqual(cls,"npc_template_maker",false)) && (!StrEqual(cls,"env_xen_portal",false)) && (!StrEqual(cls,"env_xen_portal_template",false)) && (StrContains(cls,"info",false) == -1) && (StrContains(cls,"game",false) == -1) && (StrContains(cls,"env",false) == -1) && (StrContains(cls,"trigger",false) == -1) && (StrContains(cls,"logic",false) == -1))
+							if ((!StrEqual(cls,"npc_human_grunt",false)) && (!StrEqual(cls,"npc_human_medic",false)) && (!StrEqual(cls,"npc_human_grenadier",false)) && (!StrEqual(cls,"npc_human_commander",false)) && (!StrEqual(cls,"npc_sentry_ground",false)) && (!StrEqual(cls,"npc_sentry_ceiling",false)) && (!StrEqual(cls,"npc_abrams",false)) && (!StrEqual(cls,"npc_bullseye",false)) && (!StrEqual(cls,"npc_maker",false)) && (!StrEqual(cls,"npc_template_maker",false)) && (!StrEqual(cls,"env_xen_portal",false)) && (!StrEqual(cls,"env_xen_portal_template",false)) && (StrContains(cls,"item",false) == -1) && (StrContains(cls,"info",false) == -1) && (StrContains(cls,"game",false) == -1) && (StrContains(cls,"env",false) == -1) && (StrContains(cls,"trigger",false) == -1) && (StrContains(cls,"logic",false) == -1))
 							{
 								float enorg[3];
 								if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",enorg);

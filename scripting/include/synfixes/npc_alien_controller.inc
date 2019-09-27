@@ -60,9 +60,12 @@ void controllerthink(int entity)
 							float chkdist = GetVectorDistance(orgs,otherorg,false);
 							if (chkdist < 50.0)
 							{
+								float randfl = GetRandomFloat(-90.0,90.0);
+								angs[1]+=randfl;
 								loc[0] = (orgs[0] + (50 * Cosine(DegToRad(angs[1]))));
 								loc[1] = (orgs[1] + (50 * Sine(DegToRad(angs[1]))));
 								loc[2] = orgs[2];
+								angs[1]-=randfl;
 								MakeVectorFromPoints(loc,otherorg,shootvel);
 								ScaleVector(shootvel,3.0);
 								TeleportEntity(entity,NULL_VECTOR,NULL_VECTOR,shootvel);
