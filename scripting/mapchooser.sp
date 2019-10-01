@@ -1524,6 +1524,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "The Sewer");
 	}
+	else if (StrContains(map,"az_c",false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Entropy: Zero");
+	}
 	else if ((StrContains(map,"Uh_Prologue_",false) == 0) || (StrContains(map,"Uh_Chapter1_",false) == 0) || (StrContains(map,"Uh_Chapter2_",false) == 0) || (StrContains(map,"Uh_House_",false) == 0) || (StrContains(map,"Uh_Dreams_",false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Underhell");
