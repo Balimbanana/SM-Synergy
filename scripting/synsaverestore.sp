@@ -54,7 +54,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.01"
+#define PLUGIN_VERSION "2.02"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2193,7 +2193,7 @@ public void OnMapStart()
 			}
 			if (dbg) LogMessage("ClearTransitionEnts Array after restore of %i ents",GetArraySize(transitionents));
 			ClearArray(transitionents);
-			if ((alyxenter) && (IsValidEntity(alyxtransition)) && (alyxtransition > MaxClients))
+			if ((alyxtransition != -1) && (IsValidEntity(alyxtransition)))
 			{
 				int aldouble = FindEntityByClassname(-1,"npc_alyx");
 				if (aldouble != -1)
@@ -2215,6 +2215,9 @@ public void OnMapStart()
 					GetEntPropString(aldouble,Prop_Data,"m_iName",targn,sizeof(targn));
 					if (StrEqual(targn,"alyx",false)) AcceptEntityInput(aldouble,"kill");
 				}
+			}
+			if ((alyxenter) && (IsValidEntity(alyxtransition)) && (alyxtransition > MaxClients))
+			{
 				if (!StrEqual(mapbuf,"ep2_outland_12",false))
 				{
 					float chkdist = GetVectorDistance(aljeepchk,aljeepchkj,false);
