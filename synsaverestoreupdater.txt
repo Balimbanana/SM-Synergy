@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.02"
-			"Previous"	"2.01"
+			"Latest"  	"2.03"
+			"Previous"	"2.02"
 		}
 		
 		"Notes"	"Enabled Alyx Double checks to any map."
