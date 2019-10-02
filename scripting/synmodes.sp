@@ -11,7 +11,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.20"
+#define PLUGIN_VERSION "1.21"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin:myinfo = 
@@ -1681,7 +1681,7 @@ public Action findglobals(int ent, char[] clsname)
 
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs)
 {
-	if (!IsValidEntity(client)) return Plugin_Continue;
+	if ((!IsValidEntity(client)) || (client == 0)) return Plugin_Continue;
 	if (!IsClientInGame(client)) return Plugin_Continue;
 	if (StrEqual(sArgs,"!timeleft",false))
 	{
