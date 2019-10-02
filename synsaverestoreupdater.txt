@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.01"
-			"Previous"	"2.0"
+			"Latest"  	"2.02"
+			"Previous"	"2.01"
 		}
 		
 		"Notes"	"Added fallback to Alyx transition to d3_c17_01."
