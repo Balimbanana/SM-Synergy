@@ -54,7 +54,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "1.99999"
+#define PLUGIN_VERSION "2.0"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2773,7 +2773,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 									{
 										char targentcls[24];
 										GetEntityClassname(targent,targentcls,sizeof(targentcls));
-										if (StrEqual(targentcls,"scripted_sequence",false))
+										if ((StrEqual(targentcls,"scripted_sequence",false)) && (!StrEqual(mapbuf,"d2_prison_08",false)))
 											transitionthisent(targent);
 									}
 								}
