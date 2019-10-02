@@ -54,7 +54,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.0"
+#define PLUGIN_VERSION "2.01"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1589,6 +1589,14 @@ public void OnMapStart()
 			ActivateEntity(syn_reltohl2);
 			enterfromep2 = false;
 		}
+		else if (StrEqual(mapbuf,"d3_c17_01",false))
+		{
+			int loginp = CreateEntityByName("logic_auto");
+			DispatchKeyValue(loginp, "spawnflags","1");
+			DispatchKeyValue(loginp, "OnMapSpawn","alyx,StartScripting,,1,-1");
+			DispatchSpawn(loginp);
+			ActivateEntity(loginp);
+		}
 		else if (StrEqual(mapbuf,"d3_breen_01",false))
 		{
 			int loginp = CreateEntityByName("logic_auto");
@@ -1932,6 +1940,12 @@ public void OnMapStart()
 							porigin[1] = 2997.0;
 							porigin[2] = 999.0;
 						}
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"d3_c17_01",false)))
+						{
+							porigin[0] = -7180.0;
+							porigin[1] = -1200.0;
+							porigin[2] = 48.0;
+						}
 						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_05",false)))
 						{
 							porigin[0] = -2952.0;
@@ -2182,6 +2196,19 @@ public void OnMapStart()
 			if ((alyxenter) && (IsValidEntity(alyxtransition)) && (alyxtransition > MaxClients))
 			{
 				int aldouble = FindEntityByClassname(-1,"npc_alyx");
+				if (aldouble != -1)
+				{
+					int aldouble2 = FindEntityByClassname(aldouble+1,"npc_alyx");
+					if ((aldouble2 != -1) && (IsValidEntity(aldouble2)) && (aldouble2 != alyxtransition))
+					{
+						if (HasEntProp(aldouble2,Prop_Data,"m_iName"))
+						{
+							char targn[16];
+							GetEntPropString(aldouble2,Prop_Data,"m_iName",targn,sizeof(targn));
+							if (StrEqual(targn,"alyx",false)) AcceptEntityInput(aldouble2,"kill");
+						}
+					}
+				}
 				if ((aldouble != -1) && (IsValidEntity(aldouble)) && (aldouble != alyxtransition))
 				{
 					char targn[16];
