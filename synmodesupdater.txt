@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20"
-			"Previous"	"1.19"
+			"Latest"  	"1.21"
+			"Previous"	"1.20"
 		}
 		
-		"Notes"	"Re-worked teams setup for less chance of crash. Fixed round time 0. Added syn_extraaggro cvar (experimental)."
+		"Notes"	"Added worldspawn skip to say command hook."
 	}
 	
 	"Files"
