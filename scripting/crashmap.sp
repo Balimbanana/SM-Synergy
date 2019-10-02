@@ -39,7 +39,7 @@
 
 #include <sourcemod>
 #include <sdktools>
-#define PLUGIN_VERSION "1.6"
+#define PLUGIN_VERSION "1.61"
 #pragma semicolon 1;
 #pragma newdecls required;
 
@@ -81,6 +81,9 @@ public void OnPluginStart()
 	AutoExecConfig(true, "plugin.crashmap");
 	HookConVarChange(sm_crashmap_recovertime, TimerState);
 	HookConVarChange(sm_crashmap_interval, IntervalChange);
+	Handle cvar = FindConVar("hostname");
+	if (cvar != INVALID_HANDLE) HookConVarChange(cvar, HostNameChange);
+	CloseHandle(cvar);
 	
 	if (GetConVarInt(sm_crashmap_recovertime) == 1)
 	{
@@ -354,4 +357,15 @@ public void IntervalChange(Handle convar, const char[] oldValue, const char[] ne
 		TimeleftHandle = INVALID_HANDLE;
 		TimeleftHandle = CreateTimer(newTime, SaveTimeleft, _, TIMER_REPEAT);
 	}
+}
+
+public void HostNameChange(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (!SQL_FastQuery(Handle_Database,"CREATE TABLE IF NOT EXISTS srvcm('srvname' VARCHAR(32) NOT NULL PRIMARY KEY,'mapname' VARCHAR(32) NOT NULL,'restarts' INT NOT NULL);"))
+	{
+		char Err[100];
+		SQL_GetError(Handle_Database,Err,100);
+		LogError("SQLite error: %s",Err);
+	}
+	Format(srvname,sizeof(srvname),"%s",newValue);
 }
