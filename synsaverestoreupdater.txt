@@ -8,7 +8,7 @@
 			"Previous"	"2.01"
 		}
 		
-		"Notes"	"Added fallback to Alyx transition to d3_c17_01."
+		"Notes"	"Enabled Alyx Double checks to any map."
 	}
 	
 	"Files"
