@@ -54,7 +54,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.02"
+#define PLUGIN_VERSION "2.03"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2196,7 +2196,7 @@ public void OnMapStart()
 			if ((alyxtransition != -1) && (IsValidEntity(alyxtransition)))
 			{
 				int aldouble = FindEntityByClassname(-1,"npc_alyx");
-				if (aldouble != -1)
+				if ((aldouble != -1) && (!StrEqual(mapbuf,"d1_trainstation_05",false)))
 				{
 					int aldouble2 = FindEntityByClassname(aldouble+1,"npc_alyx");
 					if ((aldouble2 != -1) && (IsValidEntity(aldouble2)) && (aldouble2 != alyxtransition))
