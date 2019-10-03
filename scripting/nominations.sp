@@ -1018,7 +1018,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "The Sewer");
 	}
-	else if (StrContains(map,"az_c",false) == 0)
+	else if ((StrContains(map,"az_c",false) == 0) || (StrEqual(map,"az_intro",false)))
 	{
 		Format(modname, sizeof(modname), "Entropy: Zero");
 	}
