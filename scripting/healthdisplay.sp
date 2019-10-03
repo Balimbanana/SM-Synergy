@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.88"
+#define PLUGIN_VERSION "1.89"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -1193,9 +1193,9 @@ initcl(int client)
 	bclcookie2[client] = 0;
 	bclcookie3[client] = 0;
 	bclcookie4[client][0] = 255;
-	bclcookie4[client][1] = 255;
+	bclcookie4[client][1] = 0;
 	bclcookie4[client][2] = 0;
-	bclcookie4f[client][0] = 255;
+	bclcookie4f[client][0] = 0;
 	bclcookie4f[client][1] = 255;
 	bclcookie4f[client][2] = 0;
 	bclcookie5x[client] = -1.0;
@@ -2089,13 +2089,13 @@ public CLStoreInTable(int client)
 		IntToString(255,Temp,100);
 		StrCat(Query,500,Temp);
 		StrCat(Query,500,", ");
-		IntToString(255,Temp,100);
+		IntToString(0,Temp,100);
 		StrCat(Query,500,Temp);
 		StrCat(Query,500,", ");
 		IntToString(0,Temp,100);
 		StrCat(Query,500,Temp);
 		StrCat(Query,500,", ");
-		IntToString(255,Temp,100);
+		IntToString(0,Temp,100);
 		StrCat(Query,500,Temp);
 		StrCat(Query,500,", ");
 		IntToString(255,Temp,100);
