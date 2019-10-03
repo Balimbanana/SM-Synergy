@@ -1524,7 +1524,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "The Sewer");
 	}
-	else if (StrContains(map,"az_c",false) == 0)
+	else if ((StrContains(map,"az_c",false) == 0) || (StrEqual(map,"az_intro",false)))
 	{
 		Format(maptag, sizeof(maptag), "Entropy: Zero");
 	}
