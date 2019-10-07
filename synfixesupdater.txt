@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9985"
-			"Previous"	"1.9984"
+			"Latest"  	"1.9986"
+			"Previous"	"1.9985"
 		}
 		
 		"Notes"	"Added messages for when game end ally dies and chapter titles."
