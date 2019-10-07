@@ -42,7 +42,7 @@ bool playerteleports = false;
 bool hasread = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9985"
+#define PLUGIN_VERSION "1.9986"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -693,7 +693,7 @@ public Action everyspawnpost(Handle timer, int client)
 		{
 			findent(MaxClients+1,"info_player_equip");
 		}
-		if ((strlen(ChapterTitle) > 0) && (!DisplayedChapterTitle[client])) CreateTimer(1.0,DisplayChapterTitle,client,TIMER_FLAG_NO_MAPCHANGE);
+		if ((strlen(ChapterTitle) > 0) && (!DisplayedChapterTitle[client])) CreateTimer(5.0,DisplayChapterTitle,client,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	else if (IsClientConnected(client)) CreateTimer(0.1,everyspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
 }
@@ -1584,8 +1584,9 @@ readoutputsforinputs()
 				ExplodeString(line," ",tmpexpl,64,64,true);
 				if (StrContains(mapbuf,"hl2_",false) != -1)
 					Format(ChapterTitle,sizeof(ChapterTitle),"HL2_%s",tmpexpl[1]);
-				else
-					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
+				//Currently only works for titles.txt of HL2
+				//else
+				//	Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
 			}
 			else if (StrContains(line,"\"targetname\"",false) == 0)
 			{
@@ -1796,6 +1797,7 @@ public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 public OnClientDisconnect(int client)
 {
 	votetime[client] = 0.0;
+	DisplayedChapterTitle[client] = false;
 }
 
 public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype)
