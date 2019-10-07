@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9986"
-			"Previous"	"1.9985"
+			"Latest"  	"1.9987"
+			"Previous"	"1.9986"
 		}
 		
-		"Notes"	"Added messages for when game end ally dies and chapter titles."
+		"Notes"	"Fixup to episodic chapter titles."
 	}
 	
 	"Files"
