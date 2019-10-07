@@ -4,17 +4,17 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9985"
-			"Previous"	"1.9984"
+			"Latest"  	"1.9986"
+			"Previous"	"1.9985"
 		}
 		
-		"Notes"	"Fix ceiling turret aiming system."
+		"Notes"	"Re-wrote npc_tentacle aiming system. Added chapter titles and game end ally messages."
 	}
 	
 	"Files"
 	{
 		"Plugin"	"Path_SM/plugins/synfixesdev.smx"
 		"Source"	"Path_SM/scripting/synfixesdev.sp"
-    "Source"	"Path_SM/scripting/include/synfixesglobals.inc"
+    		"Source"	"Path_SM/scripting/include/synfixesglobals.inc"
 	}
 }
