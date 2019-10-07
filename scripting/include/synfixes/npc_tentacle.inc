@@ -125,6 +125,27 @@ void tentaclethink(int entity)
 							}
 						}
 					}
+					int neartents = 1;
+					float curang[3];
+					float entorg[3];
+					GetEntPropVector(entity,Prop_Data,"m_angRotation",curang);
+					if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",entorg);
+					else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",entorg);
+					for (int l = 0;l<GetArraySize(tents);l++)
+					{
+						int j = GetArrayCell(tents,l);
+						if (j != entity)
+						{
+							float orgtmp[3];
+							if (HasEntProp(j,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(j,Prop_Data,"m_vecAbsOrigin",orgtmp);
+							else if (HasEntProp(j,Prop_Send,"m_vecOrigin")) GetEntPropVector(j,Prop_Send,"m_vecOrigin",orgtmp);
+							orgtmp[2] = entorg[2];
+							if (GetVectorDistance(orgtmp,entorg,false) < 250.0)
+							{
+								neartents++;
+							}
+						}
+					}
 					if (!IsValidEntity(targ))
 					{
 						for (int k = 0;k<GetArraySize(entlist);k++)
@@ -139,70 +160,99 @@ void tentaclethink(int entity)
 									float plyorg[3];
 									if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",plyorg);
 									else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",plyorg);
-									if ((seqmdl > 3) && (seqmdl < 11))
+									bool withinradius = true;
+									//Radius = (360/neartents)-10 = +/- radius
+									if (neartents > 0)
 									{
-										//atfloor0
-										origin[2]+=100.0;
-										mvfloor = 0;
-									}
-									else if ((seqmdl > 10) && (seqmdl < 18))
-									{
-										//atfloor1
-										origin[2]+=292.0;
-										mvfloor = 1;
-									}
-									else if ((seqmdl > 17) && (seqmdl < 25))
-									{
-										//atfloor2
-										origin[2]+=484.0;
-										mvfloor = 2;
-									}
-									else if ((seqmdl > 24) && (seqmdl < 32))
-									{
-										//atfloor3
-										origin[2]+=675.0;
-										mvfloor = 3;
-									}
-									float closest;
-									int closestt;
-									for (int h = 0;h<GetArraySize(tents);h++)
-									{
-										int j = GetArrayCell(tents,h);
-										float atkorg[3];
-										if (HasEntProp(j,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(j,Prop_Data,"m_vecAbsOrigin",atkorg);
-										else if (HasEntProp(j,Prop_Send,"m_vecOrigin")) GetEntPropVector(j,Prop_Send,"m_vecOrigin",atkorg);
-										atkorg[2] = plyorg[2];
-										float chkdist = GetVectorDistance(atkorg,plyorg,false);
-										if (chkdist < 500.0)
+										float shootvel[3];
+										float toang[3];
+										MakeVectorFromPoints(entorg,plyorg,shootvel);
+										GetVectorAngles(shootvel,toang);
+										float maxradius = (360.0/neartents);
+										float negradius = maxradius-360.0;
+										if (curang[1] > toang[1])
 										{
-											if ((chkdist < closest) || (closest == 0.0))
-											{
-												closest = chkdist;
-												closestt = j;
-											}
+											if ((curang[1]-toang[1] > 0) && (curang[1]-toang[1] < maxradius)) withinradius = true;
+											else if ((toang[1]-curang[1] < -1) && (toang[1]-curang[1] < negradius)) withinradius = true;
+											else withinradius = false;
+										}
+										else if (toang[1] > curang[1])
+										{
+											if ((toang[1]-curang[1] > 0) && (toang[1]-curang[1] < maxradius)) withinradius = true;
+											else if ((curang[1]-toang[1] < -1) && (curang[1]-toang[1] < negradius)) withinradius = true;
+											else withinradius = false;
 										}
 									}
-									if ((closest != 0.0) && (closestt != 0))
+									if (withinradius)
 									{
-										if (FindValueInArray(tents,istargeted[i]) == -1) istargeted[i] = 0;
-										if ((istargeted[i] != 0) && (IsValidEntity(istargeted[i])))
+										if ((seqmdl > 3) && (seqmdl < 11))
 										{
+											//atfloor0
+											origin[2]+=100.0;
+											mvfloor = 0;
+										}
+										else if ((seqmdl > 10) && (seqmdl < 18))
+										{
+											//atfloor1
+											origin[2]+=292.0;
+											mvfloor = 1;
+										}
+										else if ((seqmdl > 17) && (seqmdl < 25))
+										{
+											//atfloor2
+											origin[2]+=484.0;
+											mvfloor = 2;
+										}
+										else if ((seqmdl > 24) && (seqmdl < 32))
+										{
+											//atfloor3
+											origin[2]+=675.0;
+											mvfloor = 3;
+										}
+										float closest;
+										int closestt;
+										for (int h = 0;h<GetArraySize(tents);h++)
+										{
+											int j = GetArrayCell(tents,h);
 											float atkorg[3];
-											if (HasEntProp(istargeted[i],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(istargeted[i],Prop_Data,"m_vecAbsOrigin",atkorg);
-											else if (HasEntProp(istargeted[i],Prop_Send,"m_vecOrigin")) GetEntPropVector(istargeted[i],Prop_Send,"m_vecOrigin",atkorg);
-											atkorg[2] = origin[2];
-											float chkdist = GetVectorDistance(origin,atkorg,false);
-											chkdist+=10.0;
-											if (chkdist < closest)
+											if (HasEntProp(j,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(j,Prop_Data,"m_vecAbsOrigin",atkorg);
+											else if (HasEntProp(j,Prop_Send,"m_vecOrigin")) GetEntPropVector(j,Prop_Send,"m_vecOrigin",atkorg);
+											atkorg[2] = plyorg[2];
+											float chkdist = GetVectorDistance(atkorg,plyorg,false);
+											float maxdist;
+											if (i < MaxClients+1) maxdist = 480.0;
+											else maxdist = 400.0;
+											if (chkdist < maxdist)
 											{
-												SetEntPropEnt(closestt,Prop_Data,"m_hTargetEnt",-1);
-												istargeted[i] = 0;
+												if ((chkdist < closest) || (closest == 0.0))
+												{
+													closest = chkdist;
+													closestt = j;
+												}
 											}
 										}
-										if (istargeted[i] == 0)
+										if ((closest != 0.0) && (closestt != 0))
 										{
-											SetEntPropEnt(closestt,Prop_Data,"m_hTargetEnt",i);
-											istargeted[i] = closestt;
+											if (FindValueInArray(tents,istargeted[i]) == -1) istargeted[i] = 0;
+											if ((istargeted[i] != 0) && (IsValidEntity(istargeted[i])))
+											{
+												float atkorg[3];
+												if (HasEntProp(istargeted[i],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(istargeted[i],Prop_Data,"m_vecAbsOrigin",atkorg);
+												else if (HasEntProp(istargeted[i],Prop_Send,"m_vecOrigin")) GetEntPropVector(istargeted[i],Prop_Send,"m_vecOrigin",atkorg);
+												atkorg[2] = origin[2];
+												float chkdist = GetVectorDistance(origin,atkorg,false);
+												chkdist+=10.0;
+												if (chkdist < closest)
+												{
+													SetEntPropEnt(closestt,Prop_Data,"m_hTargetEnt",-1);
+													istargeted[i] = 0;
+												}
+											}
+											if (istargeted[i] == 0)
+											{
+												SetEntPropEnt(closestt,Prop_Data,"m_hTargetEnt",i);
+												istargeted[i] = closestt;
+											}
 										}
 									}
 								}
@@ -295,7 +345,7 @@ void tentaclethink(int entity)
 							float toang[3];
 							MakeVectorFromPoints(chkorg,plyorg,shootvel);
 							GetVectorAngles(shootvel,toang);
-							TR_TraceRayFilter(chkorg,toang,MASK_SHOT,RayType_Infinite,TraceEntityFilter,entmdl);
+							TR_TraceRayFilter(chkorg,toang,MASK_SHOT_HULL,RayType_Infinite,TraceEntityFilter,entmdl);
 							int trtarg = TR_GetEntityIndex();
 							if ((chkdist > 500.0) || (trtarg < 1))
 							{
@@ -305,7 +355,7 @@ void tentaclethink(int entity)
 							}
 							else if (origin[2] > plyorg[2])
 							{
-								if (origin[2]-plyorg[2] > 120.0)
+								if (origin[2]-plyorg[2] > 110.0)
 								{
 									if (mvfloor == 3)
 									{
@@ -328,7 +378,7 @@ void tentaclethink(int entity)
 							}
 							else if (origin[2] < plyorg[2])
 							{
-								if (plyorg[2]-origin[2] > 120.0)
+								if (plyorg[2]-origin[2] > 110.0)
 								{
 									if (mvfloor == 2)
 									{
@@ -725,6 +775,25 @@ void tentaclethink(int entity)
 						{
 							toang[1] = centlastang[entmdl];
 						}
+						bool withinradius = true;
+						//Radius = (360/neartents)-10 = +/- radius
+						if (neartents > 0)
+						{
+							float maxradius = (360.0/neartents);
+							float negradius = maxradius-360.0;
+							if (curang[1] > toang[1])
+							{
+								if ((curang[1]-toang[1] > 0) && (curang[1]-toang[1] < maxradius)) withinradius = true;
+								else if ((toang[1]-curang[1] < -1) && (toang[1]-curang[1] < negradius)) withinradius = true;
+								else withinradius = false;
+							}
+							else if (toang[1] > curang[1])
+							{
+								if ((toang[1]-curang[1] > 0) && (toang[1]-curang[1] < maxradius)) withinradius = true;
+								else if ((curang[1]-toang[1] < -1) && (curang[1]-toang[1] < negradius)) withinradius = true;
+								else withinradius = false;
+							}
+						}
 						if (angs[1] > toang[1])
 						{
 							if (angs[1]-toang[1] > 180) angs[1]+=2.5;
@@ -739,67 +808,15 @@ void tentaclethink(int entity)
 						}
 						if (angs[1] < 0.0) angs[1]+=360.0;
 						if (angs[1] > 360) angs[1]-=360.0;
-						TeleportEntity(entmdl,NULL_VECTOR,angs,NULL_VECTOR);
-						//}
-						if (centnextatk[targ] < Time)
+						if (withinradius)
 						{
-							float chkdist = GetVectorDistance(tiporg,enorg,false);
-							if ((chkdist < 250.0) && (tiporg[2] > enorg[2]))
+							TeleportEntity(entmdl,NULL_VECTOR,angs,NULL_VECTOR);
+							if (centnextatk[targ] < Time)
 							{
-								centnextatk[targ] = Time+0.7;
-								char atk[64];
-								int randatk = GetRandomInt(1,3);
-								if ((seqmdl > 3) && (seqmdl < 11))
+								float chkdist = GetVectorDistance(tiporg,enorg,false);
+								if ((chkdist < 250.0) && (tiporg[2] > enorg[2]))
 								{
-									//atfloor0
-									Format(atk,sizeof(atk),"floor_strike%i",randatk);
-								}
-								else if ((seqmdl > 10) && (seqmdl < 18))
-								{
-									//atfloor1
-									Format(atk,sizeof(atk),"level1_strike%i",randatk);
-								}
-								else if ((seqmdl > 17) && (seqmdl < 25))
-								{
-									//atfloor2
-									Format(atk,sizeof(atk),"level2_strike%i",randatk);
-								}
-								else if ((seqmdl > 24) && (seqmdl < 32))
-								{
-									//atfloor3
-									Format(atk,sizeof(atk),"level3_strike%i",randatk);
-								}
-								if (strlen(atk) > 4)
-								{
-									SetVariantString(atk);
-									AcceptEntityInput(entmdl,"SetAnimation");
-									//seq = GetEntProp(entmdl,Prop_Data,"m_nSequence");
-									isattacking[entmdl] = seqmdl;
-									SetEntProp(entity,Prop_Data,"m_nSequence",seqmdl);
-									CreateTimer(0.8,resetatk,entity,TIMER_FLAG_NO_MAPCHANGE);
-								}
-							}
-							else
-							{
-								float lowestdist;
-								int clpass;
-								for (int i = 1;i<MaxClients+1;i++)
-								{
-									if ((IsValidEntity(i)) && (IsClientInGame(i)))
-									{
-										float plyorg[3];
-										GetClientAbsOrigin(i,plyorg);
-										chkdist = GetVectorDistance(tiporg,plyorg,false);
-										if ((chkdist < lowestdist) || (lowestdist == 0.0))
-										{
-											lowestdist = chkdist;
-											clpass = i;
-										}
-									}
-								}
-								if ((lowestdist < 200.0) && (lowestdist != 0.0))
-								{
-									centnextatk[clpass] = Time+0.7;
+									centnextatk[targ] = Time+0.7;
 									char atk[64];
 									int randatk = GetRandomInt(1,3);
 									if ((seqmdl > 3) && (seqmdl < 11))
@@ -822,19 +839,79 @@ void tentaclethink(int entity)
 										//atfloor3
 										Format(atk,sizeof(atk),"level3_strike%i",randatk);
 									}
-									if (strlen(atk) > 1)
+									if (strlen(atk) > 4)
 									{
-										SetEntPropEnt(entity,Prop_Data,"m_hTargetEnt",clpass);
 										SetVariantString(atk);
 										AcceptEntityInput(entmdl,"SetAnimation");
 										//seq = GetEntProp(entmdl,Prop_Data,"m_nSequence");
 										isattacking[entmdl] = seqmdl;
-										isattacking[clpass] = 0;
 										SetEntProp(entity,Prop_Data,"m_nSequence",seqmdl);
 										CreateTimer(0.8,resetatk,entity,TIMER_FLAG_NO_MAPCHANGE);
 									}
 								}
+								else
+								{
+									float lowestdist;
+									int clpass;
+									for (int i = 1;i<MaxClients+1;i++)
+									{
+										if ((IsValidEntity(i)) && (IsClientInGame(i)))
+										{
+											float plyorg[3];
+											GetClientAbsOrigin(i,plyorg);
+											chkdist = GetVectorDistance(tiporg,plyorg,false);
+											if ((chkdist < lowestdist) || (lowestdist == 0.0))
+											{
+												lowestdist = chkdist;
+												clpass = i;
+											}
+										}
+									}
+									if ((lowestdist < 200.0) && (lowestdist != 0.0))
+									{
+										centnextatk[clpass] = Time+0.7;
+										char atk[64];
+										int randatk = GetRandomInt(1,3);
+										if ((seqmdl > 3) && (seqmdl < 11))
+										{
+											//atfloor0
+											Format(atk,sizeof(atk),"floor_strike%i",randatk);
+										}
+										else if ((seqmdl > 10) && (seqmdl < 18))
+										{
+											//atfloor1
+											Format(atk,sizeof(atk),"level1_strike%i",randatk);
+										}
+										else if ((seqmdl > 17) && (seqmdl < 25))
+										{
+											//atfloor2
+											Format(atk,sizeof(atk),"level2_strike%i",randatk);
+										}
+										else if ((seqmdl > 24) && (seqmdl < 32))
+										{
+											//atfloor3
+											Format(atk,sizeof(atk),"level3_strike%i",randatk);
+										}
+										if (strlen(atk) > 1)
+										{
+											SetEntPropEnt(entity,Prop_Data,"m_hTargetEnt",clpass);
+											SetVariantString(atk);
+											AcceptEntityInput(entmdl,"SetAnimation");
+											//seq = GetEntProp(entmdl,Prop_Data,"m_nSequence");
+											isattacking[entmdl] = seqmdl;
+											isattacking[clpass] = 0;
+											SetEntProp(entity,Prop_Data,"m_nSequence",seqmdl);
+											CreateTimer(0.8,resetatk,entity,TIMER_FLAG_NO_MAPCHANGE);
+										}
+									}
+								}
 							}
+						}
+						else
+						{
+							if ((targ > 0) && (targ < 2048)) istargeted[targ] = 0;
+							SetEntPropEnt(entity,Prop_Data,"m_hTargetEnt",-1);
+							targ = -1;
 						}
 					}
 					SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
