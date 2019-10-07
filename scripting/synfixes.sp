@@ -12,6 +12,7 @@
 int debuglvl = 0;
 int collisiongroup = -1;
 char mapbuf[64];
+char ChapterTitle[64];
 Handle equiparr = INVALID_HANDLE;
 Handle entlist = INVALID_HANDLE;
 Handle entnames = INVALID_HANDLE;
@@ -39,8 +40,9 @@ bool syn56act = false;
 bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
+bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9984"
+#define PLUGIN_VERSION "1.9985"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -129,6 +131,8 @@ public void OnPluginStart()
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
+	HookEventEx("player_spawn",OnPlayerSpawn,EventHookMode_Post);
+	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
 	equiparr = CreateArray(32);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	entlist = CreateArray(1024);
@@ -588,6 +592,140 @@ public OnClientPutInServer(int client)
 {
 	CreateTimer(0.5,clspawnpost,client);
 	if (forcehdr) QueryClientConVar(client,"mat_hdr_level",hdrchk,0);
+}
+
+public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
+{
+	int client = GetClientOfUserId(GetEventInt(event,"userid"));
+	CreateTimer(0.1,everyspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
+	return Plugin_Continue;
+}
+
+public Action everyspawnpost(Handle timer, int client)
+{
+	if (IsValidEntity(client) && IsPlayerAlive(client))
+	{
+		if (longjumpactive)
+		{
+			int hudhint = CreateEntityByName("env_hudhint");
+			if (hudhint != -1)
+			{
+				char msg[64];
+				Format(msg,sizeof(msg),"Ctrl + Jump LONG JUMP");
+				DispatchKeyValue(hudhint,"spawnflags","0");
+				DispatchKeyValue(hudhint,"message",msg);
+				DispatchSpawn(hudhint);
+				ActivateEntity(hudhint);
+				AcceptEntityInput(hudhint,"ShowHudHint",client);
+				Handle dp = CreateDataPack();
+				WritePackCell(dp,hudhint);
+				WritePackString(dp,"env_hudhint");
+				CreateTimer(0.5,cleanup,dp);
+			}
+		}
+		if (GetArraySize(equiparr) > 0)
+		{
+			float clorigin[3];
+			GetClientAbsOrigin(client,clorigin);
+			clorigin[2]+=10.0;
+			for (int j; j<GetArraySize(equiparr); j++)
+			{
+				int jtmp = GetArrayCell(equiparr, j);
+				if (IsValidEntity(jtmp))
+				{
+					if (HasEntProp(jtmp,Prop_Data,"m_iszResponseContext"))
+					{
+						char additionalweaps[256];
+						GetEntPropString(jtmp,Prop_Data,"m_iszResponseContext",additionalweaps,sizeof(additionalweaps));
+						if (strlen(additionalweaps) > 0)
+						{
+							char additionalweap[64][64];
+							char basecls[64];
+							ExplodeString(additionalweaps," ",additionalweap,64,64,true);
+							for (int k = 0;k<64;k++)
+							{
+								if (strlen(additionalweap[k]) > 0)
+								{
+									TrimString(additionalweap[k]);
+									bool addweap = true;
+									if (WeapList == -1) WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
+									if (WeapList != -1)
+									{
+										char clschk[32];
+										for (int l; l<104; l += 4)
+										{
+											int tmpi = GetEntDataEnt2(client,WeapList + l);
+											if ((tmpi != 0) && (IsValidEntity(tmpi)))
+											{
+												GetEntityClassname(tmpi,clschk,sizeof(clschk));
+												if (StrEqual(clschk,additionalweap[k],false)) addweap = false;
+											}
+										}
+									}
+									if (addweap)
+									{
+										Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
+										if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
+										else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
+										else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+										else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+										else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+										else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+										else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
+										else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
+										int ent = CreateEntityByName(basecls);
+										if (ent != -1)
+										{
+											TeleportEntity(ent,clorigin,NULL_VECTOR,NULL_VECTOR);
+											DispatchKeyValue(ent,"classname",additionalweap[k]);
+											DispatchSpawn(ent);
+											ActivateEntity(ent);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			findent(MaxClients+1,"info_player_equip");
+		}
+		if ((strlen(ChapterTitle) > 0) && (!DisplayedChapterTitle[client])) CreateTimer(1.0,DisplayChapterTitle,client,TIMER_FLAG_NO_MAPCHANGE);
+	}
+	else if (IsClientConnected(client)) CreateTimer(0.1,everyspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public Action DisplayChapterTitle(Handle timer, int client)
+{
+	if (IsValidEntity(client))
+	{
+		DisplayedChapterTitle[client] = true;
+		//SetHudTextParams(-1.0, 0.6, 1.0, 200, 200, 200, 255, 1, 1.0, 1.0, 1.0);
+		//ShowHudText(client,3,"%s",ChapterTitle);
+		int gametext = CreateEntityByName("game_text");
+		if (gametext != -1)
+		{
+			DispatchKeyValue(gametext,"x","-1");
+			DispatchKeyValue(gametext,"y","0.6");
+			DispatchKeyValue(gametext,"message",ChapterTitle);
+			DispatchKeyValue(gametext,"channel","1");
+			DispatchKeyValue(gametext,"color","150 150 150");
+			DispatchKeyValue(gametext,"fadein","0.1");
+			DispatchKeyValue(gametext,"fadeout","1.0");
+			DispatchKeyValue(gametext,"holdtime","1.5");
+			DispatchKeyValue(gametext,"effect","2");
+			DispatchSpawn(gametext);
+			ActivateEntity(gametext);
+			AcceptEntityInput(gametext,"Display",client);
+			Handle dp = CreateDataPack();
+			WritePackCell(dp,gametext);
+			WritePackString(dp,"game_text");
+			CreateTimer(1.0,cleanup,dp);
+		}
+	}
 }
 
 public Action clspawnpost(Handle timer, int client)
@@ -1080,6 +1218,37 @@ public Action createelev(const char[] output, int caller, int activator, float d
 	}
 }
 
+public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast)
+{
+	int killed = GetEventInt(event, "entindex_killed");
+	if (IsValidEntity(killed))
+	{
+		if (HasEntProp(killed,Prop_Data,"m_bGameEndAlly"))
+		{
+			if (GetEntProp(killed,Prop_Data,"m_bGameEndAlly") > 0)
+			{
+				int gametext = CreateEntityByName("game_text");
+				if (gametext != -1)
+				{
+					DispatchKeyValue(gametext,"x","-1");
+					DispatchKeyValue(gametext,"y","-1");
+					DispatchKeyValue(gametext,"message","#HL2_GameOver_Ally");
+					DispatchKeyValue(gametext,"channel","1");
+					DispatchKeyValue(gametext,"color","150 150 150");
+					DispatchKeyValue(gametext,"fadein","0.035");
+					DispatchKeyValue(gametext,"fadeout","1.5");
+					DispatchKeyValue(gametext,"holdtime","3.0");
+					DispatchKeyValue(gametext,"effect","2");
+					DispatchKeyValue(gametext,"spawnflags","1");
+					DispatchSpawn(gametext);
+					ActivateEntity(gametext);
+					AcceptEntityInput(gametext,"Display");
+				}
+			}
+		}
+	}
+}
+
 readoutputs(int scriptent, char[] targn)
 {
 	if (debuglvl == 3) PrintToServer("Read outputs for script ents");
@@ -1407,6 +1576,16 @@ readoutputsforinputs()
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				ExplodeString(tmpchar, " ", lineorgresexpl, 4, 16);
 				Format(lineoriginfixup,sizeof(lineoriginfixup),"%i %i %i\"",RoundFloat(StringToFloat(lineorgresexpl[0])),RoundFloat(StringToFloat(lineorgresexpl[1])),RoundFloat(StringToFloat(lineorgresexpl[2])))
+			}
+			if (StrContains(line,"\"chaptertitle\"",false) == 0)
+			{
+				char tmpexpl[64][64];
+				ReplaceString(line,sizeof(line),"\"","",false);
+				ExplodeString(line," ",tmpexpl,64,64,true);
+				if (StrContains(mapbuf,"hl2_",false) != -1)
+					Format(ChapterTitle,sizeof(ChapterTitle),"HL2_%s",tmpexpl[1]);
+				else
+					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
 			}
 			else if (StrContains(line,"\"targetname\"",false) == 0)
 			{
