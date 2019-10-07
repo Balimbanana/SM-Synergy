@@ -36,6 +36,7 @@
 #pragma newdecls required;
 
 char restorelang[65];
+char ChapterTitle[64];
 Handle equiparr = INVALID_HANDLE;
 Handle physboxarr = INVALID_HANDLE;
 Handle physboxharr = INVALID_HANDLE;
@@ -81,8 +82,9 @@ bool hasreadscriptents = false;
 bool reloadaftersetup = false;
 bool weapmanagersplaced = false;
 bool mapchanging = false;
+bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9985"
+#define PLUGIN_VERSION "1.9986"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -331,6 +333,7 @@ public void OnMapStart()
 {
 	mapchanging = false;
 	customents = false;
+	ChapterTitle = "";
 	if (reloadaftersetup)
 	{
 		reloadaftersetup = false;
@@ -403,6 +406,7 @@ public void OnMapStart()
 		for (int i = 1;i<MaxClients+1;i++)
 		{
 			guiderocket[i] = true;
+			DisplayedChapterTitle[i] = false;
 			PushArrayCell(entlist,i);
 		}
 		for (int i = 1;i<2048;i++)
@@ -1357,8 +1361,39 @@ public Action everyspawnpost(Handle timer, int client)
 		{
 			findent(MaxClients+1,"info_player_equip");
 		}
+		if ((strlen(ChapterTitle) > 0) && (!DisplayedChapterTitle[client])) CreateTimer(5.0,DisplayChapterTitle,client,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	else if (IsClientConnected(client)) CreateTimer(0.1,everyspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public Action DisplayChapterTitle(Handle timer, int client)
+{
+	if (IsValidEntity(client))
+	{
+		DisplayedChapterTitle[client] = true;
+		//SetHudTextParams(-1.0, 0.6, 1.0, 200, 200, 200, 255, 1, 1.0, 1.0, 1.0);
+		//ShowHudText(client,3,"%s",ChapterTitle);
+		int gametext = CreateEntityByName("game_text");
+		if (gametext != -1)
+		{
+			DispatchKeyValue(gametext,"x","-1");
+			DispatchKeyValue(gametext,"y","0.6");
+			DispatchKeyValue(gametext,"message",ChapterTitle);
+			DispatchKeyValue(gametext,"channel","1");
+			DispatchKeyValue(gametext,"color","150 150 150");
+			DispatchKeyValue(gametext,"fadein","0.1");
+			DispatchKeyValue(gametext,"fadeout","1.0");
+			DispatchKeyValue(gametext,"holdtime","1.5");
+			DispatchKeyValue(gametext,"effect","2");
+			DispatchSpawn(gametext);
+			ActivateEntity(gametext);
+			AcceptEntityInput(gametext,"Display",client);
+			Handle dp = CreateDataPack();
+			WritePackCell(dp,gametext);
+			WritePackString(dp,"game_text");
+			CreateTimer(1.0,cleanup,dp);
+		}
+	}
 }
 
 public Action clspawnpost(Handle timer, int client)
@@ -9277,6 +9312,32 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	}
 	GetEntityClassname(killed, clsname, sizeof(clsname));
 	GetEntityClassname(inflictor, clsname2, sizeof(clsname2));
+	if (IsValidEntity(killed))
+	{
+		if (HasEntProp(killed,Prop_Data,"m_bGameEndAlly"))
+		{
+			if (GetEntProp(killed,Prop_Data,"m_bGameEndAlly") > 0)
+			{
+				int gametext = CreateEntityByName("game_text");
+				if (gametext != -1)
+				{
+					DispatchKeyValue(gametext,"x","-1");
+					DispatchKeyValue(gametext,"y","-1");
+					DispatchKeyValue(gametext,"message","#HL2_GameOver_Ally");
+					DispatchKeyValue(gametext,"channel","1");
+					DispatchKeyValue(gametext,"color","150 150 150");
+					DispatchKeyValue(gametext,"fadein","0.035");
+					DispatchKeyValue(gametext,"fadeout","1.5");
+					DispatchKeyValue(gametext,"holdtime","3.0");
+					DispatchKeyValue(gametext,"effect","2");
+					DispatchKeyValue(gametext,"spawnflags","1");
+					DispatchSpawn(gametext);
+					ActivateEntity(gametext);
+					AcceptEntityInput(gametext,"Display");
+				}
+			}
+		}
+	}
 	if (StrEqual(atk,"npc_human_security",false))
 	{
 		if (FileExists("sound/vo/npc/barneys/gotone01.wav",true,NULL_STRING))
@@ -10399,6 +10460,21 @@ void readoutputsforinputs()
 				hastargn = false;
 				hasorigin = false;
 			}
+			if (StrContains(line,"\"chaptertitle\"",false) == 0)
+			{
+				char tmpexpl[64][64];
+				ReplaceString(line,sizeof(line),"\"","",false);
+				ExplodeString(line," ",tmpexpl,64,64,true);
+				if (StrContains(mapbuf,"hl2_",false) != -1)
+					Format(ChapterTitle,sizeof(ChapterTitle),"HL2_%s",tmpexpl[1]);
+				else if (StrContains(mapbuf,"EP1_",false) != -1)
+				{
+					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
+					ReplaceStringEx(ChapterTitle,sizeof(ChapterTitle),"EP1_","episodic_",-1,-1,false);
+				}
+				else
+					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
+			}
 			if ((StrContains(line,"\"origin\"",false) == 0) && (!hasorigin))
 			{
 				char tmpchar[64];
@@ -11341,6 +11417,7 @@ public void OnClientDisconnect(int client)
 	votetime[client] = 0.0;
 	fadingtime[client] = 0.0;
 	showcc[client] = false;
+	DisplayedChapterTitle[client] = false;
 }
 
 public Action TakeDamageCustom(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
@@ -16582,7 +16659,7 @@ bool GetStateOf(char[] globalstate)
 		for (int i = 0;i<GetArraySize(globalsarr);i++)
 		{
 			int j = GetArrayCell(globalsarr,i);
-			if (j != -1)
+			if ((j != 0) && (IsValidEntity(j)))
 			{
 				if (HasEntProp(j,Prop_Data,"m_globalstate"))
 				{
