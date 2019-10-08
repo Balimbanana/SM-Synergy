@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9988"
-			"Previous"	"1.9987"
+			"Latest"  	"1.9989"
+			"Previous"	"1.9988"
 		}
 		
-		"Notes"	"Added PreviousTitle check to prevent showing same title over multiple maps."
+		"Notes"	"Added PreviousTitle check to prevent showing same title over multiple maps. Changed case sensitivity."
 	}
 	
 	"Files"
