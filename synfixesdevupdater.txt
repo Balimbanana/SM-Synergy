@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9986"
-			"Previous"	"1.9985"
+			"Latest"  	"1.9987"
+			"Previous"	"1.9986"
 		}
 		
-		"Notes"	"Re-wrote npc_tentacle aiming system. Added chapter titles and game end ally messages."
+		"Notes"	"Fixed return on fade intercept for base fades. Added cost message to logic_merchant_relay."
 	}
 	
 	"Files"
