@@ -37,6 +37,7 @@
 
 char restorelang[65];
 char ChapterTitle[64];
+char PreviousTitle[64];
 Handle equiparr = INVALID_HANDLE;
 Handle physboxarr = INVALID_HANDLE;
 Handle physboxharr = INVALID_HANDLE;
@@ -84,7 +85,7 @@ bool weapmanagersplaced = false;
 bool mapchanging = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9987"
+#define PLUGIN_VERSION "1.9988"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1377,7 +1378,7 @@ public Action DisplayChapterTitle(Handle timer, int client)
 		if (gametext != -1)
 		{
 			DispatchKeyValue(gametext,"x","-1");
-			DispatchKeyValue(gametext,"y","0.6");
+			DispatchKeyValue(gametext,"y","0.58");
 			DispatchKeyValue(gametext,"message",ChapterTitle);
 			DispatchKeyValue(gametext,"channel","1");
 			DispatchKeyValue(gametext,"color","150 150 150");
@@ -10467,13 +10468,15 @@ void readoutputsforinputs()
 				ExplodeString(line," ",tmpexpl,64,64,true);
 				if (StrContains(mapbuf,"hl2_",false) != -1)
 					Format(ChapterTitle,sizeof(ChapterTitle),"HL2_%s",tmpexpl[1]);
-				else if (StrContains(mapbuf,"EP1_",false) != -1)
+				else if (StrContains(mapbuf,"ep1_",false) != -1)
 				{
 					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
 					ReplaceStringEx(ChapterTitle,sizeof(ChapterTitle),"EP1_","episodic_",-1,-1,false);
 				}
 				else
 					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
+				if (StrEqual(ChapterTitle,PreviousTitle,false)) ChapterTitle = "";
+				else Format(PreviousTitle,sizeof(PreviousTitle),"%s",ChapterTitle);
 			}
 			if ((StrContains(line,"\"origin\"",false) == 0) && (!hasorigin))
 			{
