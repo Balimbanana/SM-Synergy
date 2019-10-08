@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "0.95"
+#define PLUGIN_VERSION "0.96"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -5564,6 +5564,29 @@ public Action resetvmspec(Handle timer, Handle dp)
 	}
 }
 
+public Action resetvmtoidle(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int viewmdl = ReadPackCell(dp);
+		int seq = ReadPackCell(dp);
+		int weap = ReadPackCell(dp);
+		char passedweap[64];
+		ReadPackString(dp,passedweap,sizeof(passedweap));
+		CloseHandle(dp);
+		if ((IsValidEntity(viewmdl)) && (IsValidEntity(weap)))
+		{
+			char curweap[64];
+			GetEntPropString(weap,Prop_Data,"m_iszResponseContext",curweap,sizeof(curweap));
+			if (StrEqual(curweap,passedweap,false))
+			{
+				SetEntProp(viewmdl,Prop_Send,"m_nSequence",seq);
+			}
+		}
+	}
+}
+
 public Action resetviewindex(Handle timer, int weapon)
 {
 	if (IsValidEntity(weapon))
@@ -6665,7 +6688,7 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 				{
 					bool fastfire = false;
 					int atkanim[10];
-					int bullettype,lefthanded;
+					int bullettype,lefthanded,resetanim;
 					int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
 					int maxburst = 3;
 					float firerate,startspread,maxspread;
@@ -6870,6 +6893,25 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 								ExplodeString(weapdata," ",tmp,16,16);
 								lefthanded = StringToInt(tmp[1]);
 							}
+							else if (StrContains(weapdata,"ACT_VM_IDLE",false) != -1)
+							{
+								char tmp[32][32];
+								ExplodeString(weapdata," ",tmp,32,32);
+								if (!CLAttachment[client])
+								{
+									if (!StrEqual(tmp[1],"ACT_VM_IDLE_SILENCED",false))
+									{
+										resetanim = StringToInt(tmp[0]);
+									}
+								}
+								else if (CLAttachment[client])
+								{
+									if (StrEqual(tmp[1],"ACT_VM_IDLE_SILENCED",false))
+									{
+										resetanim = StringToInt(tmp[0]);
+									}
+								}
+							}
 							ReadPackString(dp,weapdata,sizeof(weapdata));
 						}
 					}
@@ -6909,10 +6951,19 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 								else break;
 							}
 							int rand = GetRandomInt(atkanim[0],randanim);
-							if (seq == rand)
+							if (atkanim[0] == randanim)
 							{
-								if (rand == randanim) rand--;
-								else rand++;
+								Handle vmdp = CreateDataPack();
+								WritePackCell(vmdp,viewmdl);
+								WritePackCell(vmdp,resetanim);
+								WritePackCell(vmdp,weap);
+								WritePackString(vmdp,curweap);
+								CreateTimer(firerate-0.01,resetvmtoidle,vmdp,TIMER_FLAG_NO_MAPCHANGE);
+							}
+							else if (seq == rand)
+							{
+								if ((rand > atkanim[0]) && (rand-1 >= atkanim[0])) rand--;
+								else if (rand < randanim) rand++;
 							}
 							SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
 						}
@@ -6955,6 +7006,15 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 								else break;
 							}
 							int rand = GetRandomInt(atkanim[0],randanim);
+							if (atkanim[0] == randanim)
+							{
+								Handle vmdp = CreateDataPack();
+								WritePackCell(vmdp,viewmdl);
+								WritePackCell(vmdp,resetanim);
+								WritePackCell(vmdp,weap);
+								WritePackString(vmdp,curweap);
+								CreateTimer(firerate-0.01,resetvmtoidle,vmdp,TIMER_FLAG_NO_MAPCHANGE);
+							}
 							if (seq == rand)
 							{
 								if (rand == randanim) rand--;
@@ -7002,6 +7062,15 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 								else break;
 							}
 							int rand = GetRandomInt(atkanim[0],randanim);
+							if (atkanim[0] == randanim)
+							{
+								Handle vmdp = CreateDataPack();
+								WritePackCell(vmdp,viewmdl);
+								WritePackCell(vmdp,resetanim);
+								WritePackCell(vmdp,weap);
+								WritePackString(vmdp,curweap);
+								CreateTimer(firerate-0.01,resetvmtoidle,vmdp,TIMER_FLAG_NO_MAPCHANGE);
+							}
 							if (seq == rand)
 							{
 								if (rand == randanim) rand--;
