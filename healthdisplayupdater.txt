@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.89"
-			"Previous"	"1.88"
+			"Latest"  	"1.90"
+			"Previous"	"1.89"
 		}
 		
-		"Notes"	"Changed default enemy color to red and default friend color to green."
+		"Notes"	"Added name sets for Laura, Richard, and Floor Turret."
 	}
 	
 	"Files"
