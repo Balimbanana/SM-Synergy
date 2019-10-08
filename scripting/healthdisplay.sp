@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.89"
+#define PLUGIN_VERSION "1.90"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -683,8 +683,14 @@ public Action ShowTimer(Handle timer)
 										else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Mitch");
 										else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
 										else if (StrContains(targn,"oleg",false) != -1) Format(clsname,sizeof(clsname),"Oleg");
+										else if (StrEqual(targn,"Richard",false)) Format(clsname,sizeof(clsname),"Richard");
+										else if (StrEqual(targn,"laura",false)) Format(clsname,sizeof(clsname),"Laura");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
+									}
+									else if (StrEqual(clsname,"turret_floor",false))
+									{
+										Format(clsname,sizeof(clsname),"Floor Turret");
 									}
 									else if (StrEqual(clsname,"cscanner",false))
 									{
@@ -787,8 +793,14 @@ public Action ShowTimer(Handle timer)
 									else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Mina");
 									else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
 									else if (StrEqual(targn,"oleg",false)) Format(clsname,sizeof(clsname),"Oleg");
+									else if (StrEqual(targn,"Richard",false)) Format(clsname,sizeof(clsname),"Richard");
+									else if (StrEqual(targn,"laura",false)) Format(clsname,sizeof(clsname),"Laura");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
+								}
+								else if (StrEqual(clsname,"turret_floor",false))
+								{
+									Format(clsname,sizeof(clsname),"Floor Turret");
 								}
 								else if (StrEqual(clsname,"cscanner",false))
 								{
@@ -890,6 +902,7 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32], bool friend
 	else if (StrEqual(clsname,"eli",false)) Format(clsname,sizeof(clsname),"Eli Vance");
 	else if (StrEqual(clsname,"antlionworker",false)) Format(clsname,sizeof(clsname),"Antlion Worker");
 	else if (StrEqual(clsname,"cscanner",false)) Format(clsname,sizeof(clsname),"City Scanner");
+	else if (StrEqual(clsname,"turret_floor",false)) Format(clsname,sizeof(clsname),"Floor Turret");
 	else if (StrEqual(clsname,"combinegunship",false)) Format(clsname,sizeof(clsname),"Combine Gunship");
 	else if (StrEqual(clsname,"prop_vehicle_apc",false)) Format(clsname,sizeof(clsname),"Combine APC");
 	else if (StrEqual(clsname,"npc_fastzombie",false)) Format(clsname,sizeof(clsname),"Fast Zombie");
@@ -983,6 +996,8 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 		else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Friend: Mitch");
 		else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Friend: Argento");
 		else if (StrContains(targn,"oleg",false) != -1) Format(clsname,sizeof(clsname),"Friend: Oleg");
+		else if (StrEqual(targn,"Richard",false)) Format(clsname,sizeof(clsname),"Friend: Richard");
+		else if (StrEqual(targn,"laura",false)) Format(clsname,sizeof(clsname),"Friend: Laura");
 		else if (StrEqual(clsname,"npc_citizen",false))
 		{
 			char cmodel[64];
@@ -1013,6 +1028,7 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 			Format(clsname,sizeof(clsname),"Friend: Antlion Guard");
 			if (GetEntProp(targ,Prop_Data,"m_bCavernBreed") == 1) Format(clsname,sizeof(clsname),"Friend: Antlion Guardian");
 		}
+		else if (StrEqual(clsname,"npc_turret_floor",false)) Format(clsname,sizeof(clsname),"Friend: Floor Turret");
 		else if (StrEqual(clsname,"npc_cscanner",false))
 		{
 			Format(clsname,sizeof(clsname),"Friend: City Scanner");
@@ -1099,6 +1115,7 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 			Format(clsname,sizeof(clsname),"Enemy: Antlion Guard");
 			if (GetEntProp(targ,Prop_Data,"m_bCavernBreed") == 1) Format(clsname,sizeof(clsname),"Enemy: Antlion Guardian");
 		}
+		else if (StrEqual(clsname,"npc_turret_floor",false)) Format(clsname,sizeof(clsname),"Enemy: Floor Turret");
 		else if (StrEqual(clsname,"npc_cscanner",false))
 		{
 			Format(clsname,sizeof(clsname),"Enemy: City Scanner");
