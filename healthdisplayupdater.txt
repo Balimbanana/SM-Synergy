@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.90"
-			"Previous"	"1.89"
+			"Latest"  	"1.91"
+			"Previous"	"1.90"
 		}
 		
-		"Notes"	"Added name sets for Laura, Richard, and Floor Turret."
+		"Notes"	"Added setup for npcname keys."
 	}
 	
 	"Files"
