@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.90"
+#define PLUGIN_VERSION "1.91"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin:myinfo = 
@@ -595,6 +595,19 @@ public Action ShowTimer(Handle timer)
 										targ = parchk;
 										GetEntityClassname(targ,clsname,sizeof(clsname));
 									}
+								}
+							}
+						}
+						if ((StrEqual(clsname,"npc_zombie",false)) || (StrEqual(clsname,"npc_metropolice",false)) || (StrEqual(clsname,"npc_combine_s",false)))
+						{
+							char targn[64];
+							if (HasEntProp(targ,Prop_Data,"m_iszResponseContext"))
+							{
+								GetEntPropString(targ,Prop_Data,"m_iszResponseContext",targn,sizeof(targn));
+								if (strlen(targn) > 0)
+								{
+									Format(clsname,sizeof(clsname),"npc_%s",targn);
+									addht(clsname);
 								}
 							}
 						}
