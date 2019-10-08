@@ -43,7 +43,7 @@ bool playerteleports = false;
 bool hasread = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9989"
+#define PLUGIN_VERSION "1.9990"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1589,6 +1589,7 @@ readoutputsforinputs()
 				{
 					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
 					ReplaceStringEx(ChapterTitle,sizeof(ChapterTitle),"EP1_","episodic_",-1,-1,false);
+					if ((StrContains(ChapterTitle,"episodic_",false) == -1) && (StrContains(ChapterTitle,"Chapter",false) != -1)) Format(ChapterTitle,sizeof(ChapterTitle),"episodic_%s",ChapterTitle);
 				}
 				else
 					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
