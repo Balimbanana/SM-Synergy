@@ -84,7 +84,7 @@ bool weapmanagersplaced = false;
 bool mapchanging = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9986"
+#define PLUGIN_VERSION "1.9987"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2191,7 +2191,7 @@ public Action blockfade(UserMsg msg_id, BfRead msg, const int[] players, int pla
 			}
 		}
 	}
-	return Plugin_Handled;
+	return Plugin_Continue;
 }
 
 public Action resetclanim(Handle timer)
