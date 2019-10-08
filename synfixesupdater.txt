@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9987"
-			"Previous"	"1.9986"
+			"Latest"  	"1.9988"
+			"Previous"	"1.9987"
 		}
 		
-		"Notes"	"Fixup to episodic chapter titles."
+		"Notes"	"Added PreviousTitle check to prevent showing same title over multiple maps."
 	}
 	
 	"Files"
