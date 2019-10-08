@@ -10472,6 +10472,7 @@ void readoutputsforinputs()
 				{
 					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
 					ReplaceStringEx(ChapterTitle,sizeof(ChapterTitle),"EP1_","episodic_",-1,-1,false);
+					if ((StrContains(ChapterTitle,"episodic_",false) == -1) && (StrContains(ChapterTitle,"Chapter",false) != -1)) Format(ChapterTitle,sizeof(ChapterTitle),"episodic_%s",ChapterTitle);
 				}
 				else
 					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
