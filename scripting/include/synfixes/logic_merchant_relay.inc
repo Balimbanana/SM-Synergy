@@ -76,6 +76,10 @@ public void LogMerchInputs(int ent, int activator, char[] input, char[] parampas
 				}
 				else
 				{
+					char costdiff[32];
+					Format(costdiff,sizeof(costdiff),"This costs %i you have %i",cost,points);
+					SetHudTextParams(-1.0, 0.7, 1.0, 200, 200, 200, 255, 1, 1.0, 1.0, 1.0);
+					ShowHudText(activator,3,"%s",costdiff);
 					AcceptEntityInput(ent,"FireUser2",activator);
 				}
 			}
