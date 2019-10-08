@@ -9,7 +9,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "0.96"
+#define PLUGIN_VERSION "0.97"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -6689,6 +6689,7 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 					bool fastfire = false;
 					int atkanim[10];
 					int bullettype,lefthanded,resetanim;
+					int emptyanim = -1;
 					int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
 					int maxburst = 3;
 					float firerate,startspread,maxspread;
@@ -6708,6 +6709,15 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 									char tmp[4][64];
 									ExplodeString(weapdata," ",tmp,4,64);
 									EmitGameSoundToAll(tmp[1],client);
+									if (emptyanim != -1)
+									{
+										int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+										if (viewmdl != -1)
+										{
+											int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+											if (seq != emptyanim) SetEntProp(viewmdl,Prop_Send,"m_nSequence",emptyanim);
+										}
+									}
 									return;
 								}
 							}
@@ -6772,7 +6782,7 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 									ExplodeString(weapdata," ",tmp,32,32);
 									if (!CLAttachment[client])
 									{
-										if (!StrEqual(tmp[1],"ACT_VM_PRIMARYATTACK_SILENCED",false))
+										if ((!StrEqual(tmp[1],"ACT_VM_PRIMARYATTACK_SILENCED",false)) && (!StrEqual(tmp[1],"ACT_VM_PRIMARYATTACK_EMPTY",false)) && (!StrEqual(tmp[1],"ACT_VM_PRIMARYATTACK_DEPLOYED",false)))
 										{
 											int prev;
 											for (int i = 0;i<10;i++)
@@ -6799,6 +6809,10 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 												}
 											}
 										}
+									}
+									else if (StrEqual(tmp[1],"ACT_VM_PRIMARYATTACK_EMPTY",false))
+									{
+										emptyanim = StringToInt(tmp[0]);
 									}
 								}
 							}
@@ -6857,7 +6871,7 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 									ExplodeString(weapdata," ",tmp,32,32);
 									if (!CLAttachment[client])
 									{
-										if (!StrEqual(tmp[1],"ACT_VM_SECONDARYATTACK_SILENCED",false))
+										if ((!StrEqual(tmp[1],"ACT_VM_SECONDARYATTACK_SILENCED",false)) && (!StrEqual(tmp[1],"ACT_VM_SECONDARYATTACK_EMPTY",false)) && (!StrEqual(tmp[1],"ACT_VM_SECONDARYATTACK_DEPLOYED",false)))
 										{
 											int prev;
 											for (int i = 0;i<10;i++)
