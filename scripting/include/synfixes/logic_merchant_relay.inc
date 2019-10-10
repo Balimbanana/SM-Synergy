@@ -52,7 +52,6 @@ public void LogMerchInputs(int ent, int activator, char[] input, char[] parampas
 			if (StrEqual(input,"Purchase",false))
 			{
 				int cost = GetEntProp(ent,Prop_Data,"m_iHealth");
-				//PrintToServer("Activator %i has %i cost is %i",activator,points,cost);
 				if (points >= cost)
 				{
 					SetEntProp(activator,Prop_Data,"m_iPoints",points-cost);
@@ -69,7 +68,12 @@ public void LogMerchInputs(int ent, int activator, char[] input, char[] parampas
 						if (StrContains(purchasesnd,"#",false) == 0) ReplaceString(purchasesnd,sizeof(purchasesnd),"#","");
 						if (strlen(purchasesnd) > 0)
 						{
-							EmitSoundToAll(purchasesnd, ent, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+							if (FindStringInArray(precachedarr,purchasesnd) == -1)
+							{
+								PrecacheSound(purchasesnd,true);
+								PushArrayString(precachedarr,purchasesnd);
+							}
+							EmitSoundToAll(purchasesnd, activator, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 						}
 					}
 					AcceptEntityInput(ent,"FireUser1",activator);
@@ -78,8 +82,9 @@ public void LogMerchInputs(int ent, int activator, char[] input, char[] parampas
 				{
 					char costdiff[32];
 					Format(costdiff,sizeof(costdiff),"This costs %i you have %i",cost,points);
-					SetHudTextParams(-1.0, 0.7, 1.0, 200, 200, 200, 255, 1, 1.0, 1.0, 1.0);
-					ShowHudText(activator,3,"%s",costdiff);
+					PrintToChat(activator,"%s",costdiff);
+					//SetHudTextParams(-1.0, 0.7, 1.0, 200, 200, 200, 255, 1, 1.0, 1.0, 1.0);
+					//ShowHudText(activator,3,"%s",costdiff);
 					AcceptEntityInput(ent,"FireUser2",activator);
 				}
 			}
