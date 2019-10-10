@@ -85,7 +85,7 @@ bool weapmanagersplaced = false;
 bool mapchanging = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9988"
+#define PLUGIN_VERSION "1.9989"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -265,6 +265,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_rebuildents",rebuildents,ADMFLAG_ROOT,".");
 	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
 	CreateTimer(0.5,resetclanim,_,TIMER_REPEAT);
+	CreateTimer(0.1,clticks,_,TIMER_REPEAT);
 	AutoExecConfig(true, "synfixes");
 	CreateTimer(0.1,bmcvars);
 	AddAmbientSoundHook(customsoundchecks);
@@ -2216,6 +2217,85 @@ public Action resetclanim(Handle timer)
 				}
 			}
 		}
+	}
+}
+
+public Action clticks(Handle timer)
+{
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if ((IsValidEntity(i)) && (i != 0))
+		{
+			if (IsClientConnected(i))
+			{
+				if (IsClientInGame(i))
+				{
+					if (IsPlayerAlive(i))
+					{
+						if (FindEntityByClassname(-1,"point_message") != -1)
+						{
+							float plypos[3];
+							GetClientEyePosition(i,plypos);
+							float angs[3];
+							float trpos[3];
+							GetClientEyeAngles(i,angs);
+							TR_TraceRayFilter(plypos,angs,MASK_SHOT,RayType_Infinite,TraceEntityFilter,i);
+							TR_GetEndPosition(trpos);
+							ShowPointMessages(-1,i,plypos,trpos,-1,999.0,-1);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void ShowPointMessages(int ent, int client, float plypos[3], float trpos[3], int closestmsg, float closestdist, int nextmsg)
+{
+	int thisent = FindEntityByClassname(ent,"point_message");
+	if ((IsValidEntity(thisent)) && (thisent != 0))
+	{
+		if (HasEntProp(thisent,Prop_Data,"m_drawText"))
+		{
+			if (GetEntProp(thisent,Prop_Data,"m_drawText") > 0)
+			{
+				float entpos[3];
+				if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",entpos);
+				else if (HasEntProp(thisent,Prop_Send,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Send,"m_vecOrigin",entpos);
+				float chkdist = GetVectorDistance(trpos,entpos,false);
+				if (chkdist < 60.0)
+				{
+					float plydist = GetVectorDistance(plypos,entpos,false);
+					float displaydist = GetEntProp(thisent,Prop_Data,"m_radius")*0.8;
+					if ((chkdist < closestdist) && (plydist < displaydist))
+					{
+						if (closestdist-chkdist < 3.1)
+							nextmsg = closestmsg;
+						else
+							nextmsg = -1;
+						closestmsg = thisent;
+						closestdist = chkdist;
+					}
+				}
+			}
+		}
+		ShowPointMessages(thisent++,client,plypos,trpos,closestmsg,closestdist,nextmsg);
+	}
+	else if (IsValidEntity(closestmsg))
+	{
+		char msg[64];
+		if (IsValidEntity(nextmsg))
+		{
+			char msgnext[64];
+			GetEntPropString(closestmsg,Prop_Data,"m_messageText",msg,sizeof(msg));
+			GetEntPropString(nextmsg,Prop_Data,"m_messageText",msgnext,sizeof(msgnext));
+			if (strlen(msg) > strlen(msgnext)) Format(msg,sizeof(msg),"%s\n%s",msg,msgnext);
+			else Format(msg,sizeof(msg),"%s\n%s",msgnext,msg);
+		}
+		else
+			GetEntPropString(closestmsg,Prop_Data,"m_messageText",msg,sizeof(msg));
+		SetHudTextParams(-1.0, 0.3, 0.1, 200, 200, 200, 255, 1, 0.5, 0.5, 0.5);
+		ShowHudText(client,1,"%s",msg);
 	}
 }
 
