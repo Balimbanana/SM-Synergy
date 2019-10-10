@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9988"
-			"Previous"	"1.9987"
+			"Latest"  	"1.9989"
+			"Previous"	"1.9988"
 		}
 		
-		"Notes"	"Fixed return on fade intercept for base fades. Added cost message to logic_merchant_relay."
+		"Notes"	"Added msg display for point_message as a work around."
 	}
 	
 	"Files"
