@@ -237,6 +237,7 @@ public void OnMapStart()
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
 	{
+		DisplayedChapterTitle[i] = false;
 		if (IsClientConnected(i) && !IsFakeClient(i))
 		{
 			CreateTimer(1.0,clspawnpost,i);
