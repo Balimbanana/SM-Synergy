@@ -43,7 +43,7 @@ bool playerteleports = false;
 bool hasread = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9990"
+#define PLUGIN_VERSION "1.9991"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -173,6 +173,7 @@ public void OnMapStart()
 	hasread = false;
 	playerteleports = false;
 	entrefresh = 0.0;
+	ChapterTitle = "";
 	ClearArray(entlist);
 	ClearArray(equiparr);
 	ClearArray(entnames);
