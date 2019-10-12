@@ -8,11 +8,13 @@
 #tryinclude <updater>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
+#pragma semicolon 1;
+#pragma newdecls required;
 
-#define PLUGIN_VERSION "1.91"
+#define PLUGIN_VERSION "1.92"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name = "HealthDisplay",
 	author = "Balimbanana",
@@ -105,10 +107,10 @@ public void OnMapStart()
 	ClearArray(liarr);
 	ClearArray(globalsarr);
 	bugbaitpicked = false;
-	HookEntityOutput("weapon_bugbait", "OnPlayerPickup", EntityOutput:onbugbaitpickup);
+	HookEntityOutput("weapon_bugbait", "OnPlayerPickup", onbugbaitpickup);
 }
 
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	RegPluginLibrary("HealthDisplay");
 	CreateNative("CheckNPCAlly", Native_GetNPCAlly);
@@ -117,7 +119,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
 	return APLRes_Success;
 }
 
-public Native_GetNPCAlly(Handle plugin, numParams)
+public int Native_GetNPCAlly(Handle plugin, int numParams)
 {
 	if (numParams > 1)
 	{
@@ -130,24 +132,26 @@ public Native_GetNPCAlly(Handle plugin, numParams)
 	return false;
 }
 
-public Native_GetLIList(Handle plugin, int numParams)
+public int Native_GetLIList(Handle plugin, int numParams)
 {
-	return _:liarr;
+	return view_as<int>(liarr);
+	//return _:liarr;
 }
 
-public Native_GetHTList(Handle plugin, int numParams)
+public int Native_GetHTList(Handle plugin, int numParams)
 {
-	return _:htarr;
+	return view_as<int>(htarr);
+	//return _:htarr;
 }
 
-public OnClientAuthorized(int client, const char[] szAuth)
+public void OnClientAuthorized(int client, const char[] szAuth)
 {
 	GetClientAuthId(client,AuthId_Steam2,SteamID[client],32-1);
 	ReplaceString(SteamID[client],sizeof(SteamID[]),"STEAM_1","STEAM_0");
 	LoadClient(client);
 }
 
-public OnClientPutInServer(int client)
+public void OnClientPutInServer(int client)
 {
 	GetClientAuthId(client,AuthId_Steam2,SteamID[client],32-1);
 	ReplaceString(SteamID[client],sizeof(SteamID[]),"STEAM_1","STEAM_0");
@@ -166,7 +170,7 @@ public Action clspawnpost(Handle timer, int client)
 	}
 }
 
-public OnLibraryAdded(const char[] name)
+public void OnLibraryAdded(const char[] name)
 {
 	if (StrEqual(name,"updater",false))
 	{
@@ -174,7 +178,7 @@ public OnLibraryAdded(const char[] name)
 	}
 }
 
-public Updater_OnPluginUpdated()
+public int Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
@@ -903,7 +907,7 @@ public Action ShowTimer(Handle timer)
 	return Plugin_Handled;
 }
 
-public PrintTheMsg(int client, int curh, int maxh, char clsname[32], bool friendly)
+public void PrintTheMsg(int client, int curh, int maxh, char clsname[32], bool friendly)
 {
 	char hudbuf[40];
 	if (StrEqual(clsname,"monk",false)) Format(clsname,sizeof(clsname),"Father Grigori");
@@ -969,7 +973,7 @@ public PrintTheMsg(int client, int curh, int maxh, char clsname[32], bool friend
 	}
 }
 
-public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
+public void PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 {
 	bool targetally = false;
 	if (StrEqual(clsname,"npc_metropolice",false))
@@ -1206,17 +1210,17 @@ public PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
 	}
 }
 
-public OnClientDisconnect(int client)
+public void OnClientDisconnect(int client)
 {
 	CLStoreInTable(client);
 }
 
-public OnClientDisconnectPost(int client)
+public void OnClientDisconnectPost(int client)
 {
 	initcl(client);
 }
 
-initcl(int client)
+void initcl(int client)
 {
 	antispamchk[client] = 0.0;
 	bclcookie[client] = defaultmode;
@@ -1442,7 +1446,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 	return true;
 }
 
-addht(char[] addht)
+void addht(char[] addht)
 {
 	if (FindStringInArray(htarr,addht) == -1)
 		PushArrayString(htarr,addht);
@@ -1712,7 +1716,7 @@ public Action sethealthhudpos(int client, int args)
 	return Plugin_Handled;
 }
 
-public PanelHandlerDisplayFull(Menu menu, MenuAction action, int param1, int param2)
+public int PanelHandlerDisplayFull(Menu menu, MenuAction action, int param1, int param2)
 {
 	char info[128];
 	menu.GetItem(param2, info, sizeof(info));
@@ -1823,7 +1827,7 @@ public PanelHandlerDisplayFull(Menu menu, MenuAction action, int param1, int par
 	return 0;
 }
 
-public PanelHandlerDisplayt(Menu menu, MenuAction action, int param1, int param2)
+public int PanelHandlerDisplayt(Menu menu, MenuAction action, int param1, int param2)
 {
 	char info[128];
 	menu.GetItem(param2, info, sizeof(info));
@@ -1852,7 +1856,7 @@ public PanelHandlerDisplayt(Menu menu, MenuAction action, int param1, int param2
 	}
 }
 
-public PanelHandlerDisplay(Menu menu, MenuAction action, int param1, int param2)
+public int PanelHandlerDisplay(Menu menu, MenuAction action, int param1, int param2)
 {
 	char info[128];
 	menu.GetItem(param2, info, sizeof(info));
@@ -1979,7 +1983,7 @@ public bool IsCLStored(int client)
 	return false;
 }
 
-public LoadClient(int client)
+public void LoadClient(int client)
 {
 	if (!IsCLStored(client))
 	{
@@ -2057,7 +2061,7 @@ public Action reloadclientstime(Handle timer)
 	reloadclients(0);
 }
 
-public CLStoreInTable(int client)
+public void CLStoreInTable(int client)
 {
 	char Query[500];
 	char Temp[100];
@@ -2154,12 +2158,12 @@ public CLStoreInTable(int client)
 	hChanged[client] = 0;
 }
 
-public targmodech(Handle convar, const char[] oldValue, const char[] newValue)
+public void targmodech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	targmode = StringToInt(newValue);
 }
 
-public defaultmodech(Handle convar, const char[] oldValue, const char[] newValue)
+public void defaultmodech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	defaultmode = StringToInt(newValue);
 }
