@@ -7,14 +7,16 @@
 #tryinclude <updater>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
+#pragma semicolon 1;
+#pragma newdecls required;
 
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.21"
+#define PLUGIN_VERSION "1.22"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name = "SynModes",
 	author = "Balimbanana",
@@ -71,7 +73,7 @@ int resetmode = 0;
 bool resetvehpass = false;
 bool aggro = false;
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	HookEvent("round_start",roundstart,EventHookMode_Post);
 	HookEvent("round_end",roundintermission,EventHookMode_Post);
@@ -171,7 +173,7 @@ public OnPluginStart()
 	AutoExecConfig(true, "synmodes");
 }
 
-public OnLibraryAdded(const char[] name)
+public void OnLibraryAdded(const char[] name)
 {
 	if (StrEqual(name,"updater",false))
 	{
@@ -179,7 +181,7 @@ public OnLibraryAdded(const char[] name)
 	}
 }
 
-public Updater_OnPluginUpdated()
+public int Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
@@ -192,7 +194,7 @@ public void OnAllPluginsLoaded()
 	else resetvehpass = false;
 }
 
-public OnEntityCreated(int entity, const char[] classname)
+public void OnEntityCreated(int entity, const char[] classname)
 {
 	if (aggro)
 	{
@@ -248,33 +250,33 @@ public Action recheck(Handle timer, int entity)
 	}
 }
 
-public instspawnch(Handle convar, const char[] oldValue, const char[] newValue)
+public void instspawnch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1)
 	{
 		instspawnuse = false;
 		instspawnb = true;
 		int cvarflag = GetCommandFlags("mp_respawndelay");
-		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_REPLICATED))
-		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY))
+		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY));
 		Handle resdelay = INVALID_HANDLE;
 		resdelay = FindConVar("mp_respawndelay");
 		SetConVarInt(resdelay,0,false,false);
 		cvarflag = GetCommandFlags("mp_reset");
-		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED))
-		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_NOTIFY))
+		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_NOTIFY));
 		resdelay = FindConVar("mp_reset");
 		SetConVarInt(resdelay,0,false,false);
 		CloseHandle(resdelay);
 		Handle resforce = FindConVar("mp_forcerespawn");
 		cvarflag = GetCommandFlags("mp_forcerespawn");
-		SetCommandFlags("mp_forcerespawn", (cvarflag & ~FCVAR_REPLICATED))
-		SetCommandFlags("mp_forcerespawn", (cvarflag & ~FCVAR_NOTIFY))
+		SetCommandFlags("mp_forcerespawn", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_forcerespawn", (cvarflag & ~FCVAR_NOTIFY));
 		SetConVarInt(resforce,0,false,false);
 		resforce = FindConVar("mp_spawntime");
 		cvarflag = GetCommandFlags("mp_spawntime");
-		SetCommandFlags("mp_spawntime", (cvarflag & ~FCVAR_REPLICATED))
-		SetCommandFlags("mp_spawntime", (cvarflag & ~FCVAR_NOTIFY))
+		SetCommandFlags("mp_spawntime", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_spawntime", (cvarflag & ~FCVAR_NOTIFY));
 		SetConVarInt(resforce,0,false,false);
 		CloseHandle(resforce);
 		for (int i = 1; i<MaxClients+1; i++)
@@ -297,40 +299,40 @@ public instspawnch(Handle convar, const char[] oldValue, const char[] newValue)
 		instspawnuse = true;
 		instspawnb = false;
 		int cvarflag = GetCommandFlags("mp_respawndelay");
-		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_REPLICATED))
-		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY))
+		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY));
 		Handle resdelay = INVALID_HANDLE;
 		resdelay = FindConVar("mp_respawndelay");
 		SetConVarInt(resdelay,0,false,false);
 		cvarflag = GetCommandFlags("mp_reset");
-		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED))
-		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_NOTIFY))
+		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_NOTIFY));
 		resdelay = FindConVar("mp_reset");
 		SetConVarInt(resdelay,0,false,false);
 		CloseHandle(resdelay);
 		Handle resforce = FindConVar("mp_forcerespawn");
 		cvarflag = GetCommandFlags("mp_forcerespawn");
-		SetCommandFlags("mp_forcerespawn", (cvarflag & ~FCVAR_REPLICATED))
-		SetCommandFlags("mp_forcerespawn", (cvarflag & ~FCVAR_NOTIFY))
+		SetCommandFlags("mp_forcerespawn", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_forcerespawn", (cvarflag & ~FCVAR_NOTIFY));
 		SetConVarInt(resforce,0,false,false);
 		resforce = FindConVar("mp_spawntime");
 		cvarflag = GetCommandFlags("mp_spawntime");
-		SetCommandFlags("mp_spawntime", (cvarflag & ~FCVAR_REPLICATED))
-		SetCommandFlags("mp_spawntime", (cvarflag & ~FCVAR_NOTIFY))
+		SetCommandFlags("mp_spawntime", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_spawntime", (cvarflag & ~FCVAR_NOTIFY));
 		SetConVarInt(resforce,0,false,false);
 		CloseHandle(resforce);
 	}
 	else
 	{
 		int cvarflag = GetCommandFlags("mp_respawndelay");
-		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_REPLICATED))
-		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY))
+		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY));
 		Handle resdelay = INVALID_HANDLE;
 		resdelay = FindConVar("mp_respawndelay");
 		SetConVarInt(resdelay,1,false,false);
 		cvarflag = GetCommandFlags("mp_reset");
-		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED))
-		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_NOTIFY))
+		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_NOTIFY));
 		resdelay = FindConVar("mp_reset");
 		SetConVarInt(resdelay,0,false,false);
 		CloseHandle(resdelay);
@@ -340,18 +342,18 @@ public instspawnch(Handle convar, const char[] oldValue, const char[] newValue)
 	}
 }
 
-public instspawntimech(Handle convar, const char[] oldValue, const char[] newValue)
+public void instspawntimech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	clspawntimemax = StringToInt(newValue);
 }
 
-public instspawnforcech(Handle convar, const char[] oldValue, const char[] newValue)
+public void instspawnforcech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) clspawnforce = true;
 	else clspawnforce = false;
 }
 
-public teambalancech(Handle convar, const char[] oldValue, const char[] newValue)
+public void teambalancech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1)
 	{
@@ -361,43 +363,43 @@ public teambalancech(Handle convar, const char[] oldValue, const char[] newValue
 	else teambalance = false;
 }
 
-public teambalancelimitch(Handle convar, const char[] oldValue, const char[] newValue)
+public void teambalancelimitch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	teambalancelimit = StringToInt(newValue);
 }
 
-public freezetimech(Handle convar, const char[] oldValue, const char[] newValue)
+public void freezetimech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	endfreezetime = StringToFloat(newValue);
 }
 
-public roundtimech(Handle convar, const char[] oldValue, const char[] newValue)
+public void roundtimech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	roundtime = StringToFloat(newValue)*60;
 }
 
-public restartdelch(Handle convar, const char[] oldValue, const char[] newValue)
+public void restartdelch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	roundstarttime = StringToFloat(newValue);
 }
 
-public falldmgch(Handle convar, const char[] oldValue, const char[] newValue)
+public void falldmgch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) falldamagedis = true;
 	else falldamagedis = false;
 }
 
-public fraglimch(Handle convar, const char[] oldValue, const char[] newValue)
+public void fraglimch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	fraglimit = StringToInt(newValue);
 }
 
-public resetmodech(Handle convar, const char[] oldValue, const char[] newValue)
+public void resetmodech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	resetmode = StringToInt(newValue);
 }
 
-public aggroch(Handle convar, const char[] oldValue, const char[] newValue)
+public void aggroch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1)
 	{
@@ -482,7 +484,7 @@ public aggroch(Handle convar, const char[] oldValue, const char[] newValue)
 	else aggro = false;
 }
 
-public gmch(Handle convar, const char[] oldValue, const char[] newValue)
+public void gmch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StrEqual(newValue,"dm",false)) setupdmfor("dm");
 	else if (StrEqual(newValue,"tdm",false)) setupdmfor("tdm");
@@ -1228,7 +1230,7 @@ public Action scoreboardsh(int client, int args)
 int buttonscoreboard = (1 << 16);
 int g_LastButtons[MAXPLAYERS+1];
 
-public OnButtonPressscoreboard(int client, int button)
+public void OnButtonPressscoreboard(int client, int button)
 {
 	if ((dmact) && (!dmset))
 	{
@@ -1544,7 +1546,7 @@ public Action tpclspawnnew(Handle timer, any i)
 								{
 									float plypos[3];
 									GetClientAbsOrigin(k,plypos);
-									float chkdist = GetVectorDistance(spawnpos,plypos,false)
+									float chkdist = GetVectorDistance(spawnpos,plypos,false);
 									if ((chkdist < 200) && (teamnum[i] != teamnum[k])) rangechk = false;
 								}
 							}
@@ -1632,7 +1634,7 @@ public void EquipCustom(int equip, int client)
 	}
 }
 
-findent(int ent, char[] clsname)
+void findent(int ent, char[] clsname)
 {
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
@@ -1655,7 +1657,7 @@ findent(int ent, char[] clsname)
 	}
 }
 
-findentwdis(int ent, char[] clsname)
+void findentwdis(int ent, char[] clsname)
 {
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
@@ -2581,7 +2583,7 @@ public Action spawnallply(int client, int args)
 	}
 }
 
-public Action OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(GetEventInt(event,"userid"));
 	clspawntimeallow[client] = false;
@@ -2660,7 +2662,7 @@ public Action roundstart(Handle event, const char[] name, bool dontBroadcast)
 									{
 										float plypos[3];
 										GetClientAbsOrigin(k,pos);
-										float chkdist = GetVectorDistance(spawnpos,plypos,false)
+										float chkdist = GetVectorDistance(spawnpos,plypos,false);
 										if ((chkdist < 200) && (teamnum[i] != teamnum[k])) rangechk = false;
 									}
 								}
@@ -2784,7 +2786,7 @@ public Action roundintermission(Handle event, const char[] name, bool dontBroadc
 									{
 										float plypos[3];
 										GetClientAbsOrigin(k,pos);
-										float chkdist = GetVectorDistance(spawnpos,plypos,false)
+										float chkdist = GetVectorDistance(spawnpos,plypos,false);
 										if ((chkdist < 200) && (teamnum[i] != teamnum[k])) rangechk = false;
 									}
 								}
@@ -2947,7 +2949,7 @@ bool cltouchend(int client)
 	return false;
 }
 
-findtrigs(int ent, char[] clsname)
+void findtrigs(int ent, char[] clsname)
 {
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent != -1))
@@ -2960,13 +2962,13 @@ findtrigs(int ent, char[] clsname)
 	}
 }
 
-public OnClientPutInServer(int client)
+public void OnClientPutInServer(int client)
 {
 	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 	CreateTimer(1.0,joincfg,client);
 }
 
-public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype)
+public Action OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
 {
 	//int cl1team = GetEntProp(attacker,Prop_Data,"m_iTeamNum");
 	//int cl2team = GetEntProp(victim,Prop_Data,"m_iTeamNum");
@@ -2995,7 +2997,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	}
 }
 
-public Action joincfg(Handle timer, any:client)
+public Action joincfg(Handle timer, int client)
 {
 	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && !IsFakeClient(client))
 	{
@@ -3088,7 +3090,7 @@ public OnClientAuthorized(int client, const char[] szAuth)
 	CreateTimer(2.0, joincfg, client);
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
 	hasread = false;
 	activecheckpoint = "";
@@ -3172,7 +3174,7 @@ public Action findsavetrigs(int ent, char[] clsname)
 	return Plugin_Handled;
 }
 
-CreateTrig(float origins[3], char[] mdlnum)
+void CreateTrig(float origins[3], char[] mdlnum)
 {
 	int autostrig = CreateEntityByName("trigger_once");
 	DispatchKeyValue(autostrig,"model",mdlnum);
@@ -3224,7 +3226,7 @@ public Action trigsaves(const char[] output, int caller, int activator, float de
 	}
 }
 
-readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int activator)
+void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int activator)
 {
 	if (GetArraySize(inputsarrorigincls) < 1) readoutputsforinputs();
 	else
@@ -3292,7 +3294,7 @@ readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int ac
 	return;
 }
 
-readoutputsforinputs()
+void readoutputsforinputs()
 {
 	if (hasread) return;
 	hasread = true;
@@ -3328,7 +3330,7 @@ readoutputsforinputs()
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				ExplodeString(tmpchar, " ", lineorgresexpl, 4, 16);
-				Format(lineoriginfixup,sizeof(lineoriginfixup),"%i %i %i\"",RoundFloat(StringToFloat(lineorgresexpl[0])),RoundFloat(StringToFloat(lineorgresexpl[1])),RoundFloat(StringToFloat(lineorgresexpl[2])))
+				Format(lineoriginfixup,sizeof(lineoriginfixup),"%i %i %i\"",RoundFloat(StringToFloat(lineorgresexpl[0])),RoundFloat(StringToFloat(lineorgresexpl[1])),RoundFloat(StringToFloat(lineorgresexpl[2])));
 			}
 			else if (StrContains(line,"\"targetname\"",false) == 0)
 			{
@@ -3408,7 +3410,7 @@ public Action recallreset(Handle timer)
 	resetvehicles(0.0,0);
 }
 
-public OnClientDisconnect(int client)
+public void OnClientDisconnect(int client)
 {
 	dmkills[client] = 0;
 	changeteamcd[client] = 0.0;
