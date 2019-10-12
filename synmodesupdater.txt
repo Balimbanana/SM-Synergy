@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.21"
-			"Previous"	"1.20"
+			"Latest"  	"1.22"
+			"Previous"	"1.21"
 		}
 		
-		"Notes"	"Added worldspawn skip to say command hook."
+		"Notes"	"Decl fix."
 	}
 	
 	"Files"
