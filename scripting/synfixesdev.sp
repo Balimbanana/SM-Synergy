@@ -85,7 +85,7 @@ bool weapmanagersplaced = false;
 bool mapchanging = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9989"
+#define PLUGIN_VERSION "1.9990"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -582,35 +582,53 @@ public void OnMapStart()
 		HookEntityOutput("func_physbox","OnPhysGunPunt",physpunt);
 		HookUserMessage(GetUserMessageId("Fade"),blockfade,true);
 		Format(mapbuf,sizeof(mapbuf),"_%s.ent",mapbuf);
-		Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
-		if (mdirlisting != INVALID_HANDLE)
+		char contentdata[64];
+		Handle cvar = FindConVar("content_metadata");
+		if (cvar != INVALID_HANDLE)
 		{
-			char buff[64];
-			while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
+			GetConVarString(cvar,contentdata,sizeof(contentdata));
+			char fixuptmp[16][16];
+			ExplodeString(contentdata," ",fixuptmp,16,16,true);
+			Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+		}
+		CloseHandle(cvar);
+		if (strlen(contentdata) > 1)
+		{
+			Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s%s",contentdata,mapbuf);
+		}
+		if (!FileExists(mapbuf,true,NULL_STRING))
+		{
+			Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
+			if (mdirlisting != INVALID_HANDLE)
 			{
-				if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
+				char buff[64];
+				while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
 				{
-					if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
+					if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
 					{
-						if (StrContains(buff,mapbuf,false) != -1)
+						if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
 						{
-							char tmp[64];
-							Format(tmp,sizeof(tmp),"%s",buff);
-							ReplaceStringEx(tmp,sizeof(tmp),mapbuf,"");
-							// Fix for maps with similar names such as
-							// bms_bm_c0a0a and hl1_c0a0a HL1 c0a0a will come up as BMS first without this check
-							if (StrContains(tmp,"_",false) == -1)
+							if (StrContains(buff,mapbuf,false) != -1)
 							{
-								Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s",buff);
-								if (debuglvl > 1) PrintToServer("Found ent cache %s",mapbuf);
-								break;
+								char tmp[64];
+								Format(tmp,sizeof(tmp),"%s",buff);
+								ReplaceStringEx(tmp,sizeof(tmp),mapbuf,"");
+								// Fix for maps with similar names such as
+								// bms_bm_c0a0a and hl1_c0a0a HL1 c0a0a will come up as BMS first without this check
+								if (StrContains(tmp,"_",false) == -1)
+								{
+									Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s",buff);
+									if (debuglvl > 1) PrintToServer("Found ent cache %s",mapbuf);
+									break;
+								}
 							}
 						}
 					}
 				}
 			}
+			CloseHandle(mdirlisting);
 		}
-		CloseHandle(mdirlisting);
+		else if (debuglvl > 1) PrintToServer("Found ent cache %s",mapbuf);
 		
 		collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 		for (int i = 1;i<MaxClients+1;i++)
@@ -779,6 +797,7 @@ public void OnMapStart()
 		PushArrayString(customentlist,"info_player_rebel");
 		PushArrayString(customentlist,"info_player_combine");
 		PushArrayString(customentlist,"info_player_deathmatch");
+		PushArrayString(customentlist,"game_player_equip");
 		PushArrayString(customentlist,"trigger_once_oc");
 		PushArrayString(customentlist,"trigger_multiple_oc");
 		PushArrayString(customentlist,"game_text_quick");
@@ -1343,6 +1362,36 @@ public Action everyspawnpost(Handle timer, int client)
 										else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 										else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 										else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
+										else if (StrContains(basecls,"customweapons",false) != -1)
+										{
+											char findpath[64];
+											Format(findpath,sizeof(findpath),"scripts/%s.txt",basecls);
+											if (FileExists(findpath,true,NULL_STRING))
+											{
+												Handle filehandlesub = OpenFile(findpath,"r",true,NULL_STRING);
+												if (filehandlesub != INVALID_HANDLE)
+												{
+													char scrline[128];
+													while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
+													{
+														TrimString(scrline);
+														if (StrContains(scrline,"\"anim_prefix\"",false) != -1)
+														{
+															ReplaceStringEx(scrline,sizeof(scrline),"\"anim_prefix\"","",_,_,false);
+															ReplaceString(scrline,sizeof(scrline),"\"","");
+															TrimString(scrline);
+															if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
+															else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
+															else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
+															Format(scrline,sizeof(scrline),"weapon_%s",scrline);
+															Format(basecls,sizeof(basecls),"%s",scrline);
+															break;
+														}
+													}
+												}
+												CloseHandle(filehandlesub);
+											}
+										}
 										int ent = CreateEntityByName(basecls);
 										if (ent != -1)
 										{
@@ -3385,7 +3434,7 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			}
 			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"logic_relay",false)) || (StrEqual(clsname,"func_door",false)) || (StrEqual(clsname,"trigger_coop",false)) || (StrEqual(clsname,"hud_timer",false)))
 			{
-				UnhookSingleEntityOutput(caller,tmpout,trigtp);
+				UnhookSingleEntityOutput(caller,output,trigtp);
 				PushArrayCell(ignoretrigs,caller);
 			}
 			if ((StrContains(clsname,"env_xen_portal",false) == 0) && (StrEqual(tmpout,"OnUser2",false)))
@@ -3402,27 +3451,28 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
 			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
 			if (StrEqual(clsname,"env_xen_portal",false)) origin[2]-=20.0;
-			if (playerteleports) readoutputstp(targn,tmpout,"Teleport",origin,actmod);
-			if (vehiclemaphook) readoutputstp(targn,tmpout,"Save",origin,actmod);
+			if (playerteleports) readoutputstp(caller,targn,tmpout,"Teleport",origin,actmod);
+			if (vehiclemaphook) readoutputstp(caller,targn,tmpout,"Save",origin,actmod);
 			if (customents)
 			{
-				readoutputstp(targn,tmpout,"StartPortal",origin,actmod);
-				readoutputstp(targn,tmpout,"Deploy",origin,actmod);
-				readoutputstp(targn,tmpout,"Retire",origin,actmod);
-				readoutputstp(targn,tmpout,"Spawn",origin,actmod);
-				readoutputstp(targn,tmpout,"SpawnNPCInLine",origin,actmod);
-				readoutputstp(targn,tmpout,"ForceSpawn",origin,actmod);
-				readoutputstp(targn,tmpout,"BeginRappellingGrunts",origin,actmod);
-				readoutputstp(targn,tmpout,"DisplayText",origin,actmod);
-				readoutputstp(targn,tmpout,"Purchase",origin,actmod);
-				readoutputstp(targn,tmpout,"SetPurchaseName",origin,actmod);
-				readoutputstp(targn,tmpout,"SetPurchaseCost",origin,actmod);
-				readoutputstp(targn,tmpout,"Disable",origin,actmod);
-				readoutputstp(targn,tmpout,"CounterEntity",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"StartPortal",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"Deploy",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"Retire",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"Spawn",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"SpawnNPCInLine",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"ForceSpawn",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"BeginRappellingGrunts",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"DisplayText",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"Purchase",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"SetPurchaseName",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"SetPurchaseCost",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"Disable",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"CounterEntity",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"ApplyScore",origin,actmod);
 			}
-			readoutputstp(targn,tmpout,"SetMass",origin,actmod);
-			readoutputstp(targn,tmpout,"Fade",origin,actmod);
-			readoutputstp(targn,tmpout,"EquipAllPlayers",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"SetMass",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"EquipAllPlayers",origin,actmod);
 		}
 		else
 		{
@@ -3433,27 +3483,28 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
 			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
 			if (StrEqual(clsname,"env_xen_portal",false)) origin[2]-=20.0;
-			if (playerteleports) readoutputstp(targn,tmpout,"Teleport",origin,actmod);
-			if (vehiclemaphook) readoutputstp(targn,tmpout,"Save",origin,actmod);
+			if (playerteleports) readoutputstp(caller,targn,tmpout,"Teleport",origin,actmod);
+			if (vehiclemaphook) readoutputstp(caller,targn,tmpout,"Save",origin,actmod);
 			if (customents)
 			{
-				readoutputstp(targn,tmpout,"StartPortal",origin,actmod);
-				readoutputstp(targn,tmpout,"Deploy",origin,actmod);
-				readoutputstp(targn,tmpout,"Retire",origin,actmod);
-				readoutputstp(targn,tmpout,"Spawn",origin,actmod);
-				readoutputstp(targn,tmpout,"SpawnNPCInLine",origin,actmod);
-				readoutputstp(targn,tmpout,"ForceSpawn",origin,actmod);
-				readoutputstp(targn,tmpout,"BeginRappellingGrunts",origin,actmod);
-				readoutputstp(targn,tmpout,"DisplayText",origin,actmod);
-				readoutputstp(targn,tmpout,"Purchase",origin,actmod);
-				readoutputstp(targn,tmpout,"SetPurchaseName",origin,actmod);
-				readoutputstp(targn,tmpout,"SetPurchaseCost",origin,actmod);
-				readoutputstp(targn,tmpout,"Disable",origin,actmod);
-				readoutputstp(targn,tmpout,"CounterEntity",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"StartPortal",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"Deploy",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"Retire",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"Spawn",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"SpawnNPCInLine",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"ForceSpawn",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"BeginRappellingGrunts",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"DisplayText",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"Purchase",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"SetPurchaseName",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"SetPurchaseCost",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"Disable",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"CounterEntity",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"ApplyScore",origin,actmod);
 			}
-			readoutputstp(targn,tmpout,"SetMass",origin,actmod);
-			readoutputstp(targn,tmpout,"Fade",origin,actmod);
-			readoutputstp(targn,tmpout,"EquipAllPlayers",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"SetMass",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"EquipAllPlayers",origin,actmod);
 		}
 	}
 }
@@ -3473,7 +3524,7 @@ public Action trigpicker(const char[] output, int caller, int activator, float d
 				GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
 				if (strlen(targn) < 1) Format(targn,sizeof(targn),"notargn");
 				float origin[3];
-				readoutputstp(targn,tmpout,"!picker",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"!picker",origin,actmod);
 			}
 		}
 		return Plugin_Stop;
@@ -5079,6 +5130,17 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					{
 						Format(cls,sizeof(cls),"info_player_coop");
 					}
+					else if (StrEqual(cls,"game_player_equip",false))
+					{
+						int find = FindStringInArray(passedarr,"classname");
+						if (find != -1)
+						{
+							RemoveFromArray(passedarr,find);
+							find++;
+							RemoveFromArray(passedarr,find);
+						}
+						Format(cls,sizeof(cls),"info_player_equip");
+					}
 					else if ((StrEqual(cls,"trigger_once_oc",false)) || (StrEqual(cls,"trigger_multiple_oc",false)))
 					{
 						ReplaceString(cls,sizeof(cls),"_oc","");
@@ -5413,26 +5475,75 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						DispatchKeyValue(ent,"citizentype","4");
 						SetEntProp(ent,Prop_Data,"m_bInvulnerable",1);
 						if (HasEntProp(ent,Prop_Data,"m_takedamage")) SetEntProp(ent,Prop_Data,"m_takedamage",0);
-						int sprite = CreateEntityByName("env_sprite");
-						if (sprite != -1)
+						char merchiconfull[72];
+						Format(merchiconfull,sizeof(merchiconfull),"materials/%s",merchicon);
+						if (FileExists(merchiconfull,true,NULL_STRING))
 						{
-							DispatchKeyValue(sprite,"model",merchicon);
-							DispatchKeyValue(sprite,"framerate","1");
-							DispatchKeyValue(sprite,"RenderMode","5");
-							DispatchKeyValue(sprite,"scale","0.5");
-							if (starticonon) DispatchKeyValue(sprite,"spawnflags","1");
-							else DispatchKeyValue(sprite,"spawnflags","0");
-							float startpos[3];
-							startpos[0] = fileorigin[0];
-							startpos[1] = fileorigin[1];
-							startpos[2] = fileorigin[2]+posabove;
-							TeleportEntity(sprite,startpos,NULL_VECTOR,NULL_VECTOR);
-							DispatchSpawn(sprite);
-							ActivateEntity(sprite);
-							SetVariantString("!activator");
-							AcceptEntityInput(sprite,"SetParent",ent);
+							int sprite = CreateEntityByName("env_sprite");
+							if (sprite != -1)
+							{
+								DispatchKeyValue(sprite,"model",merchicon);
+								DispatchKeyValue(sprite,"framerate","1");
+								DispatchKeyValue(sprite,"RenderMode","5");
+								DispatchKeyValue(sprite,"scale","0.5");
+								if (starticonon) DispatchKeyValue(sprite,"spawnflags","1");
+								else DispatchKeyValue(sprite,"spawnflags","0");
+								float startpos[3];
+								startpos[0] = fileorigin[0];
+								startpos[1] = fileorigin[1];
+								startpos[2] = fileorigin[2]+posabove;
+								TeleportEntity(sprite,startpos,NULL_VECTOR,NULL_VECTOR);
+								DispatchSpawn(sprite);
+								ActivateEntity(sprite);
+								SetVariantString("!activator");
+								AcceptEntityInput(sprite,"SetParent",ent);
+							}
 						}
+						else PrintToServer("Merchant Icon \"%s\" not found",merchiconfull);
 						HookSingleEntityOutput(ent,"OnUser1",MerchantUse);
+					}
+					else if (StrEqual(oldcls,"game_player_equip",false))
+					{
+						AcceptEntityInput(ent,"kill");
+						ent = CreateEntityByName("info_player_equip");
+						if (ent != -1)
+						{
+							char response[128];
+							for (int i = 0;i<GetArraySize(passedarr);i++)
+							{
+								bool nodispatch = false;
+								char arrstart[64];
+								char arrnext[128];
+								GetArrayString(passedarr,i,arrstart,sizeof(arrstart));
+								i++;
+								GetArrayString(passedarr,i,arrnext,sizeof(arrnext));
+								if (StrContains(arrstart,"item_ammo_",false) == 0)
+								{
+									ReplaceStringEx(arrstart,sizeof(arrstart),"item_ammo_","ammo_",-1,-1,false);
+									if (StrContains(arrstart,"_large",false) == 0)
+									{
+										ReplaceStringEx(arrstart,sizeof(arrstart),"_large","",-1,-1,false);
+										Format(arrnext,sizeof(arrnext),"90");
+									}
+								}
+								else if (StrEqual(arrstart,"item_box_buckshot",false))
+								{
+									Format(arrstart,sizeof(arrstart),"ammo_buckshot");
+									Format(arrnext,sizeof(arrnext),"6");
+								}
+								else if (StrContains(arrstart,"custom_",false) == 0)
+								{
+									Format(response,sizeof(response),"customweapons/%s ",arrstart);
+									nodispatch = true;
+								}
+								if (!nodispatch) DispatchKeyValue(ent,arrstart,arrnext);
+							}
+							if (strlen(response) > 0)
+							{
+								TrimString(response);
+								DispatchKeyValue(ent,"ResponseContext",response);
+							}
+						}
 					}
 					DispatchSpawn(ent);
 					ActivateEntity(ent);
@@ -10242,7 +10353,7 @@ void readoutputs(int scriptent, char[] targn)
 	return;
 }
 
-void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int activator)
+void readoutputstp(int caller, char[] targn, char[] output, char[] input, float origin[3], int activator)
 {
 	if (GetArraySize(inputsarrorigincls) < 1) readoutputsforinputs();
 	else
@@ -10334,9 +10445,35 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 							{
 								finddisplays(-1,input,lineorgrescom[0],lineorgrescom[2],delay);
 							}
+							else if (StrEqual(input,"ApplyScore",false))
+							{
+								if ((IsValidEntity(activator)) && (activator > 0) && (activator <= MaxClients))
+								{
+									if (HasEntProp(activator,Prop_Data,"m_iPoints"))
+									{
+										int scoreadd = GetEntProp(activator,Prop_Data,"m_iPoints");
+										int targ = FindByTargetName(lineorgrescom[0]);
+										if ((IsValidEntity(targ)) && (targ != 0))
+										{
+											scoreadd+=GetEntProp(targ,Prop_Data,"m_Score");
+										}
+										SetEntProp(activator,Prop_Data,"m_iPoints",scoreadd);
+									}
+								}
+							}
 							else if ((StrEqual(input,"Purchase",false)) || (StrEqual(input,"SetPurchaseName",false)) || (StrEqual(input,"SetPurchaseCost",false)) || (StrEqual(input,"Disable",false)))
 							{
 								logmerches(-1,activator,input,lineorgrescom[0],lineorgrescom[2],delay);
+							}
+							int findignore = FindValueInArray(ignoretrigs,caller);
+							if (findignore != -1)
+							{
+								RemoveFromArray(ignoretrigs,findignore);
+								Handle dp = CreateDataPack();
+								WritePackCell(dp,caller);
+								WritePackString(dp,output);
+								CreateTimer(delay,ReHookTrigTP,dp,TIMER_FLAG_NO_MAPCHANGE);
+								//HookSingleEntityOutput(caller,output,trigtp);
 							}
 						}
 					}
@@ -10396,9 +10533,35 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 							{
 								finddisplays(-1,input,lineorgrescom[0],lineorgrescom[2],delay);
 							}
+							else if (StrEqual(input,"ApplyScore",false))
+							{
+								if ((IsValidEntity(activator)) && (activator > 0) && (activator <= MaxClients))
+								{
+									if (HasEntProp(activator,Prop_Data,"m_iPoints"))
+									{
+										int scoreadd = GetEntProp(activator,Prop_Data,"m_iPoints");
+										int targ = FindByTargetName(lineorgrescom[0]);
+										if ((IsValidEntity(targ)) && (targ != 0))
+										{
+											scoreadd+=GetEntProp(targ,Prop_Data,"m_Score");
+										}
+										SetEntProp(activator,Prop_Data,"m_iPoints",scoreadd);
+									}
+								}
+							}
 							else if ((StrEqual(input,"Purchase",false)) || (StrEqual(input,"SetPurchaseName",false)) || (StrEqual(input,"SetPurchaseCost",false)) || (StrEqual(input,"Disable",false)))
 							{
 								logmerches(-1,activator,input,lineorgrescom[0],lineorgrescom[2],delay);
+							}
+							int findignore = FindValueInArray(ignoretrigs,caller);
+							if (findignore != -1)
+							{
+								RemoveFromArray(ignoretrigs,findignore);
+								Handle dp = CreateDataPack();
+								WritePackCell(dp,caller);
+								WritePackString(dp,output);
+								CreateTimer(delay,ReHookTrigTP,dp,TIMER_FLAG_NO_MAPCHANGE);
+								//HookSingleEntityOutput(caller,output,trigtp);
 							}
 						}
 					}
@@ -10411,11 +10574,28 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 			{
 				int j = GetArrayCell(tmpremove,i);
 				RemoveFromArray(inputsarrorigincls,j);
+				UnhookSingleEntityOutput(caller,output,trigtp);
 			}
 		}
 		CloseHandle(tmpremove);
 	}
 	return;
+}
+
+public Action ReHookTrigTP(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int caller = ReadPackCell(dp);
+		char output[64];
+		ReadPackString(dp,output,sizeof(output));
+		CloseHandle(dp);
+		if (IsValidEntity(caller))
+		{
+			HookSingleEntityOutput(caller,output,trigtp);
+		}
+	}
 }
 
 void readoutputsforinputs()
@@ -10448,6 +10628,7 @@ void readoutputsforinputs()
 			PushArrayString(inputs,",SetPurchaseName,,");
 			PushArrayString(inputs,",SetPurchaseCost,,");
 			PushArrayString(inputs,",CounterEntity,");
+			PushArrayString(inputs,",ApplyScore,,");
 		}
 		if (syn56act)
 		{
@@ -11063,6 +11244,36 @@ public void EquipCustom(int equip, int client)
 							else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false))) Format(basecls,sizeof(basecls),"weapon_slam");
 							else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
 							else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+							else if (StrContains(basecls,"customweapons",false) != -1)
+							{
+								char findpath[64];
+								Format(findpath,sizeof(findpath),"scripts/%s.txt",basecls);
+								if (FileExists(findpath,true,NULL_STRING))
+								{
+									Handle filehandlesub = OpenFile(findpath,"r",true,NULL_STRING);
+									if (filehandlesub != INVALID_HANDLE)
+									{
+										char scrline[128];
+										while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
+										{
+											TrimString(scrline);
+											if (StrContains(scrline,"\"anim_prefix\"",false) != -1)
+											{
+												ReplaceStringEx(scrline,sizeof(scrline),"\"anim_prefix\"","",_,_,false);
+												ReplaceString(scrline,sizeof(scrline),"\"","");
+												TrimString(scrline);
+												if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
+												else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
+												else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
+												Format(scrline,sizeof(scrline),"weapon_%s",scrline);
+												Format(basecls,sizeof(basecls),"%s",scrline);
+												break;
+											}
+										}
+									}
+									CloseHandle(filehandlesub);
+								}
+							}
 							int ent = CreateEntityByName(basecls);
 							if (ent != -1)
 							{
