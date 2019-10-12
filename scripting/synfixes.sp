@@ -8,6 +8,8 @@
 #tryinclude <mapchooser>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
+#pragma semicolon 1;
+#pragma newdecls required;
 
 int debuglvl = 0;
 int collisiongroup = -1;
@@ -43,7 +45,7 @@ bool playerteleports = false;
 bool hasread = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9991"
+#define PLUGIN_VERSION "1.9992"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -57,7 +59,7 @@ enum voteType
 
 voteType g_voteType = question;
 
-public Plugin:myinfo =
+public Plugin myinfo =
 {
 	name = "SynFixes",
 	author = "Balimbanana",
@@ -200,18 +202,18 @@ public void OnMapStart()
 	}
 	if ((StrContains(mapbuf,"d1_",false) == -1) && (StrContains(mapbuf,"d2_",false) == -1) && (!StrEqual(mapbuf,"d3_breen_01",false)) && (StrContains(mapbuf,"ep1_",false) == -1))
 	{
-		HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigout);
-		HookEntityOutput("scripted_scene","OnStart",EntityOutput:trigout);
-		HookEntityOutput("logic_choreographed_scene","OnStart",EntityOutput:trigout);
-		HookEntityOutput("instanced_scripted_scene","OnStart",EntityOutput:trigout);
+		HookEntityOutput("scripted_sequence","OnBeginSequence",trigout);
+		HookEntityOutput("scripted_scene","OnStart",trigout);
+		HookEntityOutput("logic_choreographed_scene","OnStart",trigout);
+		HookEntityOutput("instanced_scripted_scene","OnStart",trigout);
 		if (StrContains(mapbuf,"bm_c",false) == -1)
-			HookEntityOutput("func_tracktrain","OnStart",EntityOutput:elevatorstart);
-		HookEntityOutput("func_door","OnOpen",EntityOutput:createelev);
-		HookEntityOutput("func_door","OnClose",EntityOutput:createelev);
+			HookEntityOutput("func_tracktrain","OnStart",elevatorstart);
+		HookEntityOutput("func_door","OnOpen",createelev);
+		HookEntityOutput("func_door","OnClose",createelev);
 	}
-	HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:mapendchg);
-	HookEntityOutput("npc_citizen","OnDeath",EntityOutput:entdeath);
-	HookEntityOutput("func_physbox","OnPhysGunPunt",EntityOutput:physpunt);
+	HookEntityOutput("trigger_changelevel","OnChangeLevel",mapendchg);
+	HookEntityOutput("npc_citizen","OnDeath",entdeath);
+	HookEntityOutput("func_physbox","OnPhysGunPunt",physpunt);
 	Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
 	char buff[64];
 	while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
@@ -286,7 +288,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	}
 }
 
-public OnLibraryAdded(const char[] name)
+public void OnLibraryAdded(const char[] name)
 {
 	if (StrEqual(name,"updater",false))
 	{
@@ -298,7 +300,7 @@ public OnLibraryAdded(const char[] name)
 	}
 }
 
-public Updater_OnPluginUpdated()
+public int Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
@@ -436,7 +438,7 @@ public Action cmdblock(int client, int args)
 	return Plugin_Handled;
 }
 
-public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
+public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 {
 	if (action == MenuAction_Select)
 	{
@@ -464,8 +466,8 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 		if (StrEqual(info,"tptocl",false))
 		{
 			clused = param1;
-			g_voteType = voteType:question;
-			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MenuAction:MENU_ACTIONS_ALL);
+			g_voteType = question;
+			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MENU_ACTIONS_ALL);
 			char buff[64];
 			Format(buff,sizeof(buff),"Teleport Alyx to %N?",param1);
 			g_hVoteMenu.SetTitle(buff);
@@ -479,8 +481,8 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 		if (StrEqual(info,"tpbarntocl",false))
 		{
 			clused = param1;
-			g_voteType = voteType:question;
-			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MenuAction:MENU_ACTIONS_ALL);
+			g_voteType = question;
+			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MENU_ACTIONS_ALL);
 			char buff[64];
 			Format(buff,sizeof(buff),"Teleport Barney to %N?",param1);
 			g_hVoteMenu.SetTitle(buff);
@@ -499,7 +501,7 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 	return 0;
 }
 
-public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
+public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int param2)
 {
 	if (action == MenuAction_End)
 	{
@@ -507,7 +509,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 	}
 	else if (action == MenuAction_Display)
 	{
-	 	if (g_voteType != voteType:question)
+	 	if (g_voteType != question)
 	 	{
 			char title[64];
 			menu.GetTitle(title, sizeof(title));
@@ -515,18 +517,18 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 	 		char buffer[255];
 			Format(buffer, sizeof(buffer), "%s", param1);
 
-			Panel panel = Panel:param2;
-			panel.SetTitle(buffer);
+			//Panel panel = param2;
+			//panel.SetTitle(buffer);
 		}
 	}
 	else if (action == MenuAction_DisplayItem)
 	{
-		decl String:display[64];
+		char display[64];
 		menu.GetItem(param2, "", 0, _, display, sizeof(display));
 	 
 	 	if (strcmp(display, "No") == 0 || strcmp(display, "Yes") == 0)
 	 	{
-			decl String:buffer[255];
+			char buffer[255];
 			Format(buffer, sizeof(buffer), "%s", display);
 
 			return RedrawMenuItem(buffer);
@@ -591,7 +593,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 	return 0;
 }
 
-public OnClientPutInServer(int client)
+public void OnClientPutInServer(int client)
 {
 	CreateTimer(0.5,clspawnpost,client);
 	if (forcehdr) QueryClientConVar(client,"mat_hdr_level",hdrchk,0);
@@ -825,12 +827,12 @@ public void hdrchk(QueryCookie cookie, int client, ConVarQueryResult result, con
 		ClientCommand(client,"mat_hdr_level 2");
 }
 
-public dbghch(Handle convar, const char[] oldValue, const char[] newValue)
+public void dbghch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	debuglvl = StringToInt(newValue);
 }
 
-public dbgallowhch(Handle convar, const char[] oldValue, const char[] newValue)
+public void dbgallowhch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) seqenablecheck = true;
 	else seqenablecheck = false;
@@ -973,7 +975,7 @@ public Action physpunt(const char[] output, int caller, int activator, float del
 		int parentent = GetEntPropEnt(caller,Prop_Data,"m_hParent");
 		if (parentent > 0) return Plugin_Continue;
 	}
-	int arrindx = FindValueInArray(physboxarr,caller)
+	int arrindx = FindValueInArray(physboxarr,caller);
 	if (arrindx == -1)
 	{
 		PushArrayCell(physboxarr,caller);
@@ -1168,7 +1170,7 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			Format(tmpout,sizeof(tmpout),output);
 			char clsname[32];
 			GetEntityClassname(caller,clsname,sizeof(clsname));
-			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"logic_relay",false)) || (StrEqual(clsname,"func_door",false)) || (StrEqual(clsname,"trigger_coop",false))) UnhookSingleEntityOutput(caller,tmpout,EntityOutput:trigtp);
+			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"logic_relay",false)) || (StrEqual(clsname,"func_door",false)) || (StrEqual(clsname,"trigger_coop",false))) UnhookSingleEntityOutput(caller,tmpout,trigtp);
 			if (playerteleports) readoutputstp(targn,tmpout,"Teleport",origin,activator);
 			if (vehiclemaphook) readoutputstp(targn,tmpout,"Save",origin,activator);
 		}
@@ -1252,7 +1254,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	}
 }
 
-readoutputs(int scriptent, char[] targn)
+void readoutputs(int scriptent, char[] targn)
 {
 	if (debuglvl == 3) PrintToServer("Read outputs for script ents");
 	Handle filehandle = OpenFile(mapbuf,"r");
@@ -1463,7 +1465,7 @@ readoutputs(int scriptent, char[] targn)
 	CloseHandle(filehandle);
 }
 
-readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int activator)
+void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int activator)
 {
 	if (GetArraySize(inputsarrorigincls) < 1) readoutputsforinputs();
 	else
@@ -1541,7 +1543,7 @@ readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int ac
 	return;
 }
 
-readoutputsforinputs()
+void readoutputsforinputs()
 {
 	if (hasread) return;
 	if (debuglvl == 3) PrintToServer("Read outputs for save/teleport inputs");
@@ -1578,7 +1580,7 @@ readoutputsforinputs()
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				ExplodeString(tmpchar, " ", lineorgresexpl, 4, 16);
-				Format(lineoriginfixup,sizeof(lineoriginfixup),"%i %i %i\"",RoundFloat(StringToFloat(lineorgresexpl[0])),RoundFloat(StringToFloat(lineorgresexpl[1])),RoundFloat(StringToFloat(lineorgresexpl[2])))
+				Format(lineoriginfixup,sizeof(lineoriginfixup),"%i %i %i\"",RoundFloat(StringToFloat(lineorgresexpl[0])),RoundFloat(StringToFloat(lineorgresexpl[1])),RoundFloat(StringToFloat(lineorgresexpl[2])));
 			}
 			if (StrContains(line,"\"chaptertitle\"",false) == 0)
 			{
@@ -1629,7 +1631,7 @@ readoutputsforinputs()
 	return;
 }
 
-findpointtp(int ent, char[] targn, int cl, float delay)
+void findpointtp(int ent, char[] targn, int cl, float delay)
 {
 	int thisent = FindEntityByClassname(ent,"point_teleport");
 	if ((IsValidEntity(thisent)) && (thisent != -1))
@@ -1692,6 +1694,7 @@ findpointtp(int ent, char[] targn, int cl, float delay)
 		}
 		else findpointtp(thisent,targn,cl,delay);
 	}
+	return;
 }
 
 public Action teleportdelay(Handle timer, Handle dp)
@@ -1754,7 +1757,7 @@ public Action teleportdelayallply(Handle timer, Handle dp)
 	}
 }
 
-findgfollow(int ent, char[] targn)
+void findgfollow(int ent, char[] targn)
 {
 	int thisent = FindEntityByClassname(ent,"ai_goal_follow");
 	if ((IsValidEntity(thisent)) && (thisent != -1))
@@ -1804,13 +1807,13 @@ public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 	return true;
 }
 
-public OnClientDisconnect(int client)
+public void OnClientDisconnect(int client)
 {
 	votetime[client] = 0.0;
 	DisplayedChapterTitle[client] = false;
 }
 
-public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype)
+public Action OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
 {
 	if (HasEntProp(attacker,Prop_Data,"m_hPhysicsAttacker"))
 	{
@@ -1955,30 +1958,30 @@ void FindSaveTPHooks()
 			}
 			else if (StrEqual(clsname,"logic_relay",false))
 			{
-				HookSingleEntityOutput(i,"OnTrigger",EntityOutput:trigtp);
+				HookSingleEntityOutput(i,"OnTrigger",trigtp);
 			}
 			else if (StrEqual(clsname,"func_door",false))
 			{
-				HookSingleEntityOutput(i,"OnOpen",EntityOutput:trigtp);
-				HookSingleEntityOutput(i,"OnFullyOpen",EntityOutput:trigtp);
-				HookSingleEntityOutput(i,"OnClose",EntityOutput:trigtp);
-				HookSingleEntityOutput(i,"OnFullyClosed",EntityOutput:trigtp);
+				HookSingleEntityOutput(i,"OnOpen",trigtp);
+				HookSingleEntityOutput(i,"OnFullyOpen",trigtp);
+				HookSingleEntityOutput(i,"OnClose",trigtp);
+				HookSingleEntityOutput(i,"OnFullyClosed",trigtp);
 			}
 		}
 	}
-	HookEntityOutput("trigger_coop","OnPlayersIn",EntityOutput:trigtp);
-	HookEntityOutput("trigger_coop","OnStartTouch",EntityOutput:trigtp);
-	HookEntityOutput("trigger_multiple","OnTrigger",EntityOutput:trigtp);
-	HookEntityOutput("trigger_multiple","OnStartTouch",EntityOutput:trigtp);
-	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigtp);
-	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigtp);
-	HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigtp);
-	HookEntityOutput("func_button","OnPressed",EntityOutput:trigtp);
-	HookEntityOutput("func_button","OnUseLocked",EntityOutput:trigtp);
-	//HookEntityOutput("prop_door_rotating","OnOpen",EntityOutput:trigtp);
-	//HookEntityOutput("prop_door_rotating","OnFullyOpen",EntityOutput:trigtp);
-	//HookEntityOutput("prop_door_rotating","OnClose",EntityOutput:trigtp);
-	//HookEntityOutput("prop_door_rotating","OnFullyClosed",EntityOutput:trigtp);
+	HookEntityOutput("trigger_coop","OnPlayersIn",trigtp);
+	HookEntityOutput("trigger_coop","OnStartTouch",trigtp);
+	HookEntityOutput("trigger_multiple","OnTrigger",trigtp);
+	HookEntityOutput("trigger_multiple","OnStartTouch",trigtp);
+	HookEntityOutput("trigger_once","OnTrigger",trigtp);
+	HookEntityOutput("trigger_once","OnStartTouch",trigtp);
+	HookEntityOutput("point_viewcontrol","OnEndFollow",trigtp);
+	HookEntityOutput("func_button","OnPressed",trigtp);
+	HookEntityOutput("func_button","OnUseLocked",trigtp);
+	//HookEntityOutput("prop_door_rotating","OnOpen",trigtp);
+	//HookEntityOutput("prop_door_rotating","OnFullyOpen",trigtp);
+	//HookEntityOutput("prop_door_rotating","OnClose",trigtp);
+	//HookEntityOutput("prop_door_rotating","OnFullyClosed",trigtp);
 }
 
 public Action rehooksaves(Handle timer)
@@ -2098,7 +2101,7 @@ public Action findsavetrigs(int ent, char[] clsname)
 	return Plugin_Handled;
 }
 
-CreateTrig(float origins[3], char[] mdlnum)
+void CreateTrig(float origins[3], char[] mdlnum)
 {
 	int autostrig = CreateEntityByName("trigger_once");
 	DispatchKeyValue(autostrig,"model",mdlnum);
@@ -2106,7 +2109,8 @@ CreateTrig(float origins[3], char[] mdlnum)
 	TeleportEntity(autostrig,origins,NULL_VECTOR,NULL_VECTOR);
 	DispatchSpawn(autostrig);
 	ActivateEntity(autostrig);
-	HookSingleEntityOutput(autostrig,"OnStartTouch",EntityOutput:autostrigout,true);
+	HookSingleEntityOutput(autostrig,"OnStartTouch",autostrigout,true);
+	return;
 }
 
 public Action autostrigout(const char[] output, int caller, int activator, float delay)
@@ -2156,12 +2160,20 @@ public Action recallreset(Handle timer)
 	resetvehicles(0.0);
 }
 
-public OnEntityCreated(int entity, const char[] classname)
+public void OnEntityCreated(int entity, const char[] classname)
 {
 	if ((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false)) && (!StrEqual(classname,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(classname,"npc_bullseye",false)) && (FindValueInArray(entlist,entity) == -1))
 	{
 		PushArrayCell(entlist,entity);
 		if ((StrEqual(classname,"npc_citizen",false)) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
+		if ((StrEqual(classname,"npc_vortigaunt",false)) || (StrEqual(classname,"npc_dog",false)) || (StrEqual(classname,"npc_gman",false)) || (StrEqual(classname,"npc_monk",false)))
+		{
+			int flageffects = GetEntProp(entity,Prop_Data,"m_iEFlags");
+			if (!(flageffects & 1<<30))
+			{
+				SetEntProp(entity,Prop_Data,"m_iEFlags",flageffects+1073741824);
+			}
+		}
 	}
 	if ((StrEqual(classname,"item_health_drop",false)) || (StrEqual(classname,"item_ammo_drop",false)) || (StrEqual(classname,"item_ammo_pack",false)))
 	{
@@ -2319,7 +2331,7 @@ public Action OnWeaponUse(int client, int weapon)
 	return Plugin_Continue;
 }
 
-public Action resetinst(Handle timer, any:data)
+public Action resetinst(Handle timer, Handle data)
 {
 	ResetPack(data);
 	int client = ReadPackCell(data);
@@ -2401,7 +2413,7 @@ bool findtargn(char[] targn)
 	return false;
 }
 
-findent(int ent, char[] clsname)
+void findent(int ent, char[] clsname)
 {
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
@@ -2413,7 +2425,7 @@ findent(int ent, char[] clsname)
 	}
 }
 
-findentlist(int ent, char[] clsname)
+void findentlist(int ent, char[] clsname)
 {
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
@@ -2443,7 +2455,7 @@ findentlist(int ent, char[] clsname)
 
 int g_LastButtons[MAXPLAYERS+1];
 
-public OnClientDisconnect_Post(int client)
+public void OnClientDisconnect_Post(int client)
 {
 	g_LastButtons[client] = 0;
 	clrocket[client] = 0;
@@ -2483,7 +2495,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	g_LastButtons[client] = buttons;
 }
 
-public OnButtonPress(int client, int button)
+public void OnButtonPress(int client, int button)
 {
 	if (allownoguide)
 	{
@@ -2530,7 +2542,7 @@ void findrockets(int ent, int client)
 	return;
 }
 
-public pushch(Handle convar, const char[] oldValue, const char[] newValue)
+public void pushch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1)
 	{
@@ -2555,25 +2567,25 @@ public pushch(Handle convar, const char[] oldValue, const char[] newValue)
 	}
 }
 
-public ffhch(Handle convar, const char[] oldValue, const char[] newValue)
+public void ffhch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) friendlyfire = true;
 	else friendlyfire = false;
 }
 
-public instphych(Handle convar, const char[] oldValue, const char[] newValue)
+public void instphych(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) instswitch = true;
 	else instswitch = false;
 }
 
-public forcehdrch(Handle convar, const char[] oldValue, const char[] newValue)
+public void forcehdrch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) forcehdr = true;
 	else forcehdr = false;
 }
 
-public removertimerch(Handle convar, const char[] oldValue, const char[] newValue)
+public void removertimerch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToFloat(newValue) > 0.0)
 		removertimer = StringToFloat(newValue);
@@ -2581,22 +2593,22 @@ public removertimerch(Handle convar, const char[] oldValue, const char[] newValu
 		removertimer = 30.0;
 }
 
-public restrictpercch(Handle convar, const char[] oldValue, const char[] newValue)
+public void restrictpercch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	perclimit = StringToFloat(newValue);
 }
 
-public restrictvotech(Handle convar, const char[] oldValue, const char[] newValue)
+public void restrictvotech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	delaylimit = StringToFloat(newValue);
 }
 
-public spawneramtch(Handle convar, const char[] oldValue, const char[] newValue)
+public void spawneramtch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	spawneramt = StringToInt(newValue);
 }
 
-public spawneramtresch(Handle convar, const char[] oldValue, const char[] newValue)
+public void spawneramtresch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	restrictmode = StringToInt(newValue);
 	if (restrictmode == 0)
@@ -2635,7 +2647,7 @@ public spawneramtresch(Handle convar, const char[] oldValue, const char[] newVal
 	}
 }
 
-public noguidech(Handle convar, const char[] oldValue, const char[] newValue)
+public void noguidech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) allownoguide = true;
 	else
