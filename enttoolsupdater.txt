@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.21"
-			"Previous"	"1.20"
+			"Latest"  	"1.22"
+			"Previous"	"1.21"
 		}
 		
-		"Notes"	"Added element info for certain properties."
+		"Notes"	"Added sm_showall_normsounds and sm_showall_ambientsounds. Added more property type sets."
 	}
 	
 	"Files"
