@@ -13,9 +13,11 @@
 #define PLUGIN_VERSION "0.1"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
+bool AutoBuild = false;
 bool hasreadcache = false;
 bool WriteCache = false;
 char mapbuf[64];
+char curmap[64];
 
 public Plugin myinfo =
 {
@@ -28,7 +30,12 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	
+	Handle cvar = FindConVar("autobuildcache");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("autobuildcache", "0", "Enable automatic entity cache build on map start if none is found.", _, true, 0.0, true, 1.0);
+	AutoBuild = GetConVarBool(cvar);
+	HookConVarChange(cvar, autobuildch);
+	CloseHandle(cvar);
+	RegAdminCmd("buildcache",BuildCacheFor,ADMFLAG_ROOT,"Build the entity cache for specified map. No arguments will do current map.");
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -45,10 +52,57 @@ public int Updater_OnPluginUpdated()
 	ReloadPlugin(nullpl);
 }
 
+public void autobuildch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) AutoBuild = true;
+	else AutoBuild = false;
+}
+
+public Action BuildCacheFor(int client, int args)
+{
+	if (!IsValidEntity(client)) return Plugin_Handled;
+	if (args == 0)
+	{
+		GetCurrentMap(curmap,sizeof(curmap));
+		PrintToConsole(client,"Building cache for %s",curmap);
+		Format(curmap,sizeof(curmap),"maps/%s.bsp",curmap);
+		buildcache(0);
+	}
+	else
+	{
+		char specmap[64];
+		if (args == 2)
+		{
+			char tag[16];
+			GetCmdArg(1,tag,sizeof(tag));
+			GetCmdArg(2,specmap,sizeof(specmap));
+			Format(specmap,sizeof(specmap),"%s_%s",tag,specmap);
+		}
+		else GetCmdArg(1,specmap,sizeof(specmap));
+		Format(curmap,sizeof(curmap),"maps/%s.bsp",specmap);
+		Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s.ent",specmap);
+		if (FileExists(mapbuf,true,NULL_STRING))
+		{
+			PrintToConsole(client,"Entity cache for map %s already exists.",specmap);
+			return Plugin_Handled;
+		}
+		else if (FileExists(curmap,true,NULL_STRING)) PrintToConsole(client,"Building cache for %s",specmap);
+		else
+		{
+			PrintToConsole(client,"Could not find map: %s",specmap);
+			return Plugin_Handled;
+		}
+		buildcache(0);
+	}
+	return Plugin_Handled;
+}
+
 public void OnMapStart()
 {
 	if (GetMapHistorySize() > 0)
 	{
+		GetCurrentMap(curmap,sizeof(curmap));
+		Format(curmap,sizeof(curmap),"maps/%s.bsp",curmap);
 		GetCurrentMap(mapbuf,sizeof(mapbuf));
 		char contentdata[64];
 		Handle cvar = FindConVar("content_metadata");
@@ -69,7 +123,10 @@ public void OnMapStart()
 		}
 		CloseHandle(mdirlisting);
 		hasreadcache = false;
-		CreateTimer(1.0,buildinfodelay,_,TIMER_FLAG_NO_MAPCHANGE);
+		if (AutoBuild)
+		{
+			CreateTimer(1.0,buildinfodelay,_,TIMER_FLAG_NO_MAPCHANGE);
+		}
 	}
 }
 
@@ -86,9 +143,6 @@ public Action buildinfodelay(Handle timer)
 void buildcache(int startline)
 {
 	if (hasreadcache) return;
-	char curmap[64];
-	GetCurrentMap(curmap,sizeof(curmap));
-	Format(curmap,sizeof(curmap),"maps/%s.bsp",curmap);
 	Handle cachefile = INVALID_HANDLE;
 	if (startline == 0) cachefile = OpenFile(mapbuf,"w");
 	else cachefile = OpenFile(mapbuf,"a");
@@ -107,7 +161,7 @@ void buildcache(int startline)
 				break;
 			}
 			nextline++;
-			if (((strlen(line) > 2) && (StrContains(line,"\"",false) != -1)) || (StrContains(line,"{",false) != -1) || ((StrContains(line,"}",false) != -1) && (strlen(line) < 3)))
+			if (((strlen(line) > 2) && (StrContains(line,"\"",false) != -1)) || ((StrContains(line,"{",false) != -1) && (strlen(line) < 3)) || ((StrContains(line,"}",false) != -1) && (strlen(line) < 3)))
 			{
 				if ((StrContains(line,"\"world_maxs\"",false) == 0) && (!WriteCache))
 				{
