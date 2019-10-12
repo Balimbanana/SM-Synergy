@@ -8,6 +8,8 @@
 #tryinclude <synfixes>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
+#pragma semicolon 1;
+#pragma newdecls required;
 
 bool enterfrom04 = false;
 bool enterfrom04pb = false;
@@ -66,9 +68,9 @@ enum voteType
 	question
 }
 
-new voteType:g_voteType = voteType:question;
+voteType g_voteType = question;
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name = "SynSaveRestore",
 	author = "Balimbanana",
@@ -163,7 +165,7 @@ public void OnPluginStart()
 	AutoExecConfig(true, "synsaverestore");
 }
 
-public OnLibraryAdded(const char[] name)
+public void OnLibraryAdded(const char[] name)
 {
 	if (StrEqual(name,"updater",false))
 	{
@@ -175,13 +177,13 @@ public OnLibraryAdded(const char[] name)
 	}
 }
 
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	MarkNativeAsOptional("GetCustomEntList");
 	MarkNativeAsOptional("SynFixesReadCache");
 }
 
-public Updater_OnPluginUpdated()
+public int Updater_OnPluginUpdated()
 {
 	if (timouthndl == INVALID_HANDLE)
 	{
@@ -194,29 +196,29 @@ public Updater_OnPluginUpdated()
 	}
 }
 
-public votereloadcvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void votereloadcvar(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 0) allowvotereloadsaves = false;
 	else allowvotereloadsaves = true;
 }
 
-public votesavecvar(Handle convar, const char[] oldValue, const char[] newValue)
+public void votesavecvar(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 0) allowvotecreatesaves = false;
 	else allowvotecreatesaves = true;
 }
 
-public restrictvotepercch(Handle convar, const char[] oldValue, const char[] newValue)
+public void restrictvotepercch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	perclimit = StringToFloat(newValue);
 }
 
-public restrictvotepercsch(Handle convar, const char[] oldValue, const char[] newValue)
+public void restrictvotepercsch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	perclimitsave = StringToFloat(newValue);
 }
 
-public disabletransitionch(Handle convar, const char[] oldValue, const char[] newValue)
+public void disabletransitionch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) >= 2)
 	{
@@ -249,13 +251,13 @@ public disabletransitionch(Handle convar, const char[] oldValue, const char[] ne
 	}
 }
 
-public equipfallbch(Handle convar, const char[] oldValue, const char[] newValue)
+public void equipfallbch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) fallbackequip = false;
 	else fallbackequip = true;
 }
 
-public transitiondbgch(Handle convar, const char[] oldValue, const char[] newValue)
+public void transitiondbgch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) dbg = true;
 	else dbg = false;
@@ -906,7 +908,7 @@ public Action loadgame(int client, int args)
 	return Plugin_Handled;
 }
 
-public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
+public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 {
 	if (action == MenuAction_Select)
 	{
@@ -921,7 +923,7 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 	return 0;
 }
 
-public MenuHandlerDelSaves(Menu menu, MenuAction action, int param1, int param2)
+public int MenuHandlerDelSaves(Menu menu, MenuAction action, int param1, int param2)
 {
 	if (action == MenuAction_Select)
 	{
@@ -936,7 +938,7 @@ public MenuHandlerDelSaves(Menu menu, MenuAction action, int param1, int param2)
 	return 0;
 }
 
-loadthissave(char[] info)
+void loadthissave(char[] info)
 {
 	char savepath[256];
 	BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves/%s/%s",mapbuf,info);
@@ -1035,7 +1037,7 @@ loadthissave(char[] info)
 	}
 }
 
-delthissave(char[] info, int client)
+void delthissave(char[] info, int client)
 {
 	char saverm[256];
 	BuildPath(Path_SM,saverm,sizeof(saverm),"data/SynSaves/%s/%s",mapbuf,info);
@@ -1077,7 +1079,7 @@ delthissave(char[] info, int client)
 
 public Action reloadtimer(Handle timer, Handle savepathdp)
 {
-	new thereload = CreateEntityByName("player_loadsaved");
+	int thereload = CreateEntityByName("player_loadsaved");
 	DispatchSpawn(thereload);
 	ActivateEntity(thereload);
 	AcceptEntityInput(thereload, "Reload");
@@ -1286,7 +1288,7 @@ public Action delsave(int client, int args)
 	return Plugin_Handled;
 }
 
-public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
+public int MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 {
 	if (action == MenuAction_Select)
 	{
@@ -1305,9 +1307,9 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 		}
 		else if ((StrEqual(info,"map",false)) && (votetime <= Time))
 		{
-			new String:buff[32];
-			g_voteType = voteType:question;
-			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MenuAction:MENU_ACTIONS_ALL);
+			char buff[32];
+			g_voteType = question;
+			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MENU_ACTIONS_ALL);
 			Format(buff,sizeof(buff),"Reload Current Map?");
 			g_hVoteMenu.SetTitle(buff);
 			g_hVoteMenu.AddItem(VOTE_YES, "Yes");
@@ -1319,9 +1321,9 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 		}
 		else if ((StrEqual(info,"createsave",false)) && (votetime <= Time))
 		{
-			new String:buff[32];
-			g_voteType = voteType:question;
-			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MenuAction:MENU_ACTIONS_ALL);
+			char buff[32];
+			g_voteType = question;
+			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MENU_ACTIONS_ALL);
 			Format(buff,sizeof(buff),"Create Save Point?");
 			g_hVoteMenu.SetTitle(buff);
 			g_hVoteMenu.AddItem(VOTE_YES, "Yes");
@@ -1333,9 +1335,9 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 		}
 		else if ((StrEqual(info,"checkpoint",false)) && (votetime <= Time))
 		{
-			new String:buff[32];
-			g_voteType = voteType:question;
-			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MenuAction:MENU_ACTIONS_ALL);
+			char buff[32];
+			g_voteType = question;
+			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MENU_ACTIONS_ALL);
 			Format(buff,sizeof(buff),"Reload Last Checkpoint?");
 			g_hVoteMenu.SetTitle(buff);
 			g_hVoteMenu.AddItem(VOTE_YES, "Yes");
@@ -1347,9 +1349,9 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 		}
 		else if ((strlen(info) > 1) && (strlen(reloadthissave) < 1) && (votetime <= Time))
 		{
-			new String:buff[64];
-			g_voteType = voteType:question;
-			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MenuAction:MENU_ACTIONS_ALL);
+			char buff[64];
+			g_voteType = question;
+			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MENU_ACTIONS_ALL);
 			Format(buff,sizeof(buff),"Reload the %s Save?",info);
 			g_hVoteMenu.SetTitle(buff);
 			g_hVoteMenu.AddItem(VOTE_YES, "Yes");
@@ -1372,7 +1374,7 @@ public MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 	return 0;
 }
 
-public PanelHandlervotetype(Handle:menu, MenuAction:action, int client, int param1)
+public int PanelHandlervotetype(Handle menu, MenuAction action, int client, int param1)
 {
 	if (param1 == 1)
 	{
@@ -1394,9 +1396,10 @@ public PanelHandlervotetype(Handle:menu, MenuAction:action, int client, int para
 	{
 		CloseHandle(menu);
 	}
+	return 0;
 }
 
-public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
+public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int param2)
 {
 	if (action == MenuAction_End)
 	{
@@ -1404,26 +1407,19 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 	}
 	else if (action == MenuAction_Display)
 	{
-	 	if (g_voteType != voteType:question)
+	 	if (g_voteType != question)
 	 	{
-			char title[64];
-			menu.GetTitle(title, sizeof(title));
-			
-	 		char buffer[255];
-			Format(buffer, sizeof(buffer), "%s", param1);
-
-			Panel panel = Panel:param2;
-			panel.SetTitle(buffer);
+			//an error occurred somewhere.
 		}
 	}
 	else if (action == MenuAction_DisplayItem)
 	{
-		decl String:display[64];
+		char display[64];
 		menu.GetItem(param2, "", 0, _, display, sizeof(display));
 	 
 	 	if (strcmp(display, "No") == 0 || strcmp(display, "Yes") == 0)
 	 	{
-			decl String:buffer[255];
+			char buffer[255];
 			Format(buffer, sizeof(buffer), "%s", display);
 
 			return RedrawMenuItem(buffer);
@@ -1812,7 +1808,7 @@ public void OnMapStart()
 		ClearArray(ignoreent);
 		IsVehicleMap = findvmap(-1);
 		Format(reloadthissave,sizeof(reloadthissave),"");
-		HookEntityOutput("trigger_changelevel","OnChangeLevel",EntityOutput:onchangelevel);
+		HookEntityOutput("trigger_changelevel","OnChangeLevel",onchangelevel);
 		if (rmsaves)
 		{
 			/*
@@ -1925,6 +1921,7 @@ public void OnMapStart()
 						int gunenable = ReadPackCell(dp);
 						int tkdmg = ReadPackCell(dp);
 						int mvtype = ReadPackCell(dp);
+						int gameend = ReadPackCell(dp);
 						char gunenablech[4];
 						Format(gunenablech,sizeof(gunenablech),"%i",gunenable);
 						char defanim[32];
@@ -2134,6 +2131,7 @@ public void OnMapStart()
 							if (HasEntProp(ent,Prop_Data,"m_SleepState")) SetEntProp(ent,Prop_Data,"m_SleepState",sleepstate);
 							if (HasEntProp(ent,Prop_Data,"m_takedamage")) SetEntProp(ent,Prop_Data,"m_takedamage",tkdmg);
 							if (HasEntProp(ent,Prop_Data,"movetype")) SetEntProp(ent,Prop_Data,"movetype",mvtype);
+							if (HasEntProp(ent,Prop_Data,"m_bGameEndAlly")) SetEntProp(ent,Prop_Data,"m_bGameEndAlly",gameend);
 							if (beginseq) CreateTimer(0.2,beginseqd,ent);
 							if (applypropafter)
 							{
@@ -2589,7 +2587,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 	}
 }
 
-findlandmark(int ent,char[] classname)
+void findlandmark(int ent,char[] classname)
 {
 	int thisent = FindEntityByClassname(ent,classname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
@@ -2612,7 +2610,7 @@ findlandmark(int ent,char[] classname)
 	}
 }
 
-findtransitionback(int ent)
+void findtransitionback(int ent)
 {
 	int thisent = FindEntityByClassname(ent,"trigger_transition");
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
@@ -2631,7 +2629,7 @@ findtransitionback(int ent)
 	}
 }
 
-findprevlvls(int ent)
+void findprevlvls(int ent)
 {
 	int thisent = FindEntityByClassname(ent,"trigger_changelevel");
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
@@ -2643,7 +2641,7 @@ findprevlvls(int ent)
 	}
 }
 
-resetareaportals(int ent)
+void resetareaportals(int ent)
 {
 	int thisent = FindEntityByClassname(ent,"func_areaportal");
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
@@ -2659,7 +2657,7 @@ resetareaportals(int ent)
 	}
 }
 
-findtouchingents(float mins[3], float maxs[3], bool remove)
+void findtouchingents(float mins[3], float maxs[3], bool remove)
 {
 	char targn[32];
 	char mdl[64];
@@ -2829,7 +2827,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 								char defanim[32];
 								char response[64];
 								char scriptinf[512];
-								int doorstate, sleepstate, gunenable, tkdmg, mvtype;
+								int doorstate, sleepstate, gunenable, tkdmg, mvtype, gameend;
 								if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 								if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
 								if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
@@ -2923,6 +2921,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 								if (HasEntProp(i,Prop_Data,"m_bHasGun")) gunenable = GetEntProp(i,Prop_Data,"m_bHasGun");
 								if (HasEntProp(i,Prop_Data,"m_takedamage")) tkdmg = GetEntProp(i,Prop_Data,"m_takedamage");
 								if (HasEntProp(i,Prop_Data,"movetype")) mvtype = GetEntProp(i,Prop_Data,"movetype");
+								if (HasEntProp(i,Prop_Data,"m_bGameEndAlly")) gameend = GetEntProp(i,Prop_Data,"m_bGameEndAlly");
 								if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
 								if (HasEntProp(i,Prop_Data,"m_vecAxis"))
 								{
@@ -3140,6 +3139,7 @@ findtouchingents(float mins[3], float maxs[3], bool remove)
 										WritePackCell(dp,gunenable);
 										WritePackCell(dp,tkdmg);
 										WritePackCell(dp,mvtype);
+										WritePackCell(dp,gameend);
 										WritePackString(dp,defanim);
 										WritePackString(dp,response);
 										if (strlen(scriptinf) > 0) WritePackString(dp,scriptinf);
@@ -3209,7 +3209,7 @@ void transitionthisent(int i)
 	char scriptinf[512];
 	char scrtmp[64];
 	char defanim[32];
-	int doorstate, sleepstate, gunenable, tkdmg, mvtype;
+	int doorstate, sleepstate, gunenable, tkdmg, mvtype, gameend;
 	if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 	if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 	if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
@@ -3381,6 +3381,7 @@ void transitionthisent(int i)
 	if (HasEntProp(i,Prop_Data,"m_bHasGun")) gunenable = GetEntProp(i,Prop_Data,"m_bHasGun");
 	if (HasEntProp(i,Prop_Data,"m_takedamage")) tkdmg = GetEntProp(i,Prop_Data,"m_takedamage");
 	if (HasEntProp(i,Prop_Data,"movetype")) mvtype = GetEntProp(i,Prop_Data,"movetype");
+	if (HasEntProp(i,Prop_Data,"m_bGameEndAlly")) gameend = GetEntProp(i,Prop_Data,"m_bGameEndAlly");
 	if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
 	if (HasEntProp(i,Prop_Data,"m_iszResponseContext")) GetEntPropString(i,Prop_Data,"m_iszResponseContext",response,sizeof(response));
 	TrimString(scriptinf);
@@ -3409,6 +3410,7 @@ void transitionthisent(int i)
 	WritePackCell(dp,gunenable);
 	WritePackCell(dp,tkdmg);
 	WritePackCell(dp,mvtype);
+	WritePackCell(dp,gameend);
 	WritePackString(dp,defanim);
 	WritePackString(dp,response);
 	WritePackString(dp,scriptinf);
@@ -3444,7 +3446,7 @@ public Action restoreaim(Handle timer, Handle dp)
 	return Plugin_Handled;
 }
 */
-public OnClientAuthorized(int client, const char[] szAuth)
+public void OnClientAuthorized(int client, const char[] szAuth)
 {
 	if (rmsaves)
 	{
@@ -3823,7 +3825,7 @@ public Action anotherdelay(Handle timer, int client)
 					}
 				}
 			}
-			if ((GetArraySize(equiparr) < 1) && (!StrEqual(mapbuf,"bm_c0a0c",false)) && (!StrEqual(mapbuf,"sp_intro",false)) && (!StrEqual(mapbuf,"d1_trainstation_05",false))) CreateTimer(0.1,delayequip,client);
+			if ((GetArraySize(equiparr) < 1) && (!StrEqual(mapbuf,"bm_c0a0c",false)) && (!StrEqual(mapbuf,"sp_intro",false)) && (!StrEqual(mapbuf,"d1_trainstation_05",false)) && (!StrEqual(mapbuf,"ce_01",false))) CreateTimer(0.1,delayequip,client);
 		}
 	}
 }
@@ -3934,7 +3936,7 @@ public void EquipCustom(int equip, int client)
 	}
 }
 
-findent(int ent, char[] clsname)
+void findent(int ent, char[] clsname)
 {
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
@@ -3959,7 +3961,7 @@ bool findvmap(int ent)
 	return false;
 }
 
-findentwdis(int ent, char[] clsname)
+void findentwdis(int ent, char[] clsname)
 {
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
@@ -3979,7 +3981,7 @@ public Action changelevel(Handle timer)
 	ServerCommand("changelevel %s",mapbuf);
 }
 
-findrmstarts(int start, char[] type)
+void findrmstarts(int start, char[] type)
 {
 	int thisent = FindEntityByClassname(start,type);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
@@ -3988,7 +3990,7 @@ findrmstarts(int start, char[] type)
 	}
 }
 
-findtrigs(int start, char[] type)
+void findtrigs(int start, char[] type)
 {
 	int thisent = FindEntityByClassname(start,type);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
@@ -4064,12 +4066,12 @@ public Action loginpwait(Handle timer, any thisent)
 	}
 }
 
-Float:GetVotePercent(votes, totalVotes)
+float GetVotePercent(int votes, int totalVotes)
 {
 	return FloatDiv(float(votes),float(totalVotes));
 }
 
-VoteMenuClose()
+void VoteMenuClose()
 {
 	delete g_hVoteMenu;
 	g_hVoteMenu = null;
