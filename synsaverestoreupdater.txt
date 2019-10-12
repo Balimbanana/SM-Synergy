@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.03"
-			"Previous"	"2.02"
+			"Latest"  	"2.04"
+			"Previous"	"2.03"
 		}
 		
-		"Notes"	"Enabled Alyx Double checks to any map."
+		"Notes"	"Added m_bGameEndAlly to transition. Change decl."
 	}
 	
 	"Files"
