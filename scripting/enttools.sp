@@ -6,11 +6,13 @@
 #tryinclude <updater>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
+#pragma semicolon 1;
+#pragma newdecls required;
 
-#define PLUGIN_VERSION "1.21"
+#define PLUGIN_VERSION "1.22"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name = "EntTools",
 	author = "Balimbanana",
@@ -20,8 +22,10 @@ public Plugin:myinfo =
 }
 
 bool showallcreated = false;
+bool showallnormsounds = false;
+bool showallambsounds = false;
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	RegAdminCmd("createhere",CreateStuff,ADMFLAG_BAN,"cc");
 	RegAdminCmd("createthere",CreateStuffThere,ADMFLAG_BAN,"cct");
@@ -37,13 +41,21 @@ public OnPluginStart()
 	RegAdminCmd("listents",listents,ADMFLAG_KICK,".");
 	RegAdminCmd("findents",listents,ADMFLAG_KICK,".");
 	RegAdminCmd("moveent",moveentity,ADMFLAG_KICK,".");
-	Handle dbgcreate = CreateConVar("sm_showallcreated", "0", "Shows all entities created in server console.", _, true, 0.0, true, 1.0);
+	Handle dbgcreate = CreateConVar("sm_showall_created", "0", "Shows all entities created in server console.", _, true, 0.0, true, 1.0);
 	HookConVarChange(dbgcreate, dbghch);
 	showallcreated = GetConVarBool(dbgcreate);
+	dbgcreate = CreateConVar("sm_showall_normsounds", "0", "Shows all normal sounds played in server console (skips stop flags).", _, true, 0.0, true, 1.0);
+	HookConVarChange(dbgcreate, dbgnormsch);
+	showallnormsounds = GetConVarBool(dbgcreate);
+	dbgcreate = CreateConVar("sm_showall_ambientsounds", "0", "Shows all ambient sounds played in server console (skips stop flags).", _, true, 0.0, true, 1.0);
+	HookConVarChange(dbgcreate, dbgambsch);
+	showallambsounds = GetConVarBool(dbgcreate);
 	CloseHandle(dbgcreate);
+	AddNormalSoundHook(listnormsounds);
+	AddAmbientSoundHook(listambientsounds);
 }
 
-public OnLibraryAdded(const char[] name)
+public void OnLibraryAdded(const char[] name)
 {
     if (StrEqual(name,"updater",false))
     {
@@ -327,6 +339,8 @@ public Action CreateStuffThere(int client, int args)
 		fhitpos[2] = (fhitpos[2] + 15);
 		if (StrEqual(ent,"npc_strider",false))
 			fhitpos[2] = (fhitpos[2] + 165);
+		else if ((StrEqual(ent,"npc_houndeye",false)) || (StrEqual(ent,"npc_bullsquid",false)))
+			fhitpos[2] = (fhitpos[2] + 10);
 		CloseHandle(hhitpos);
 		int stuff = CreateEntityByName(ent);
 		if (StrEqual(ent,"jalopy",false))
@@ -673,7 +687,7 @@ public Action cinp(int client, int args)
 			if (args == 2+addarg)
 			{
 				char secondintchk[16];
-				GetCmdArg(2+addarg, secondintchk, sizeof(secondintchk))
+				GetCmdArg(2+addarg, secondintchk, sizeof(secondintchk));
 				float secondfl = StringToFloat(secondintchk);
 				int secondint = StringToInt(secondintchk);
 				if (StrEqual(secondintchk,"0",false) && (secondint == 0))
@@ -688,7 +702,7 @@ public Action cinp(int client, int args)
 			else if (args == 3+addarg)
 			{
 				char secondintchk[16];
-				GetCmdArg(3+addarg, secondintchk, sizeof(secondintchk))
+				GetCmdArg(3+addarg, secondintchk, sizeof(secondintchk));
 				float secondfl = StringToFloat(secondintchk);
 				int secondint = StringToInt(secondintchk);
 				if (StrEqual(secondintchk,"0",false) && (secondint == 0))
@@ -2532,7 +2546,7 @@ public Action setprops(int client, int args)
 				}
 				else
 				{
-					if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
+					if (HasEntProp(targ,Prop_Send,propname))
 					{
 						if (getpropinf)
 						{
@@ -2561,7 +2575,7 @@ public Action setprops(int client, int args)
 							}
 						}
 					}
-					else if ((pdata) && (HasEntProp(targ,Prop_Data,propname)))
+					if (HasEntProp(targ,Prop_Data,propname))
 					{
 						if (getpropinf)
 						{
@@ -2612,8 +2626,43 @@ public void OnEntityCreated(int entity, char[] classname)
 	}
 }
 
-public dbghch(Handle convar, const char[] oldValue, const char[] newValue)
+public Action listnormsounds(int clients[64], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags)
+{
+	if ((showallnormsounds) && (flags != SND_STOP) && (flags != SND_STOPLOOPING))
+	{
+		if ((StrContains(sample,"ambient/energy/zap",false) == -1) && (StrContains(sample,"shotgun_fire",false) == -1) && (StrContains(sample,"smg1_fire1.wav",false) == -1) && (!StrEqual(sample,"common/null.wav",false)))
+		{
+			char cls[32];
+			if (IsValidEntity(entity)) GetEntityClassname(entity,cls,sizeof(cls));
+			PrintToServer("NormalSound %s From %i %s Channel %i Vol %f Level %i Pitch %i Flags %i",sample,entity,cls,channel,volume,level,pitch,flags);
+		}
+	}
+}
+
+public Action listambientsounds(char sample[PLATFORM_MAX_PATH], int& entity, float& volume, int& level, int& pitch, float pos[3], int& flags, float& delay)
+{
+	if ((showallambsounds) && (flags != SND_STOP) && (flags != SND_STOPLOOPING))
+	{
+		char cls[32];
+		if (IsValidEntity(entity)) GetEntityClassname(entity,cls,sizeof(cls));
+		PrintToServer("AmbientSound %s From %i %s Vol %f Level %i Pitch %i Flags %i",sample,entity,cls,volume,level,pitch,flags);
+	}
+}
+
+public void dbghch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) showallcreated = true;
 	else showallcreated = false;
+}
+
+public void dbgnormsch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) showallnormsounds = true;
+	else showallnormsounds = false;
+}
+
+public void dbgambsch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) showallambsounds = true;
+	else showallambsounds = false;
 }
