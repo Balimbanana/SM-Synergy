@@ -8,7 +8,7 @@
 			"Previous"	"2.03"
 		}
 		
-		"Notes"	"Added m_bGameEndAlly to transition. Change decl."
+		"Notes"	"Added customweapons check on spawn."
 	}
 	
 	"Files"
