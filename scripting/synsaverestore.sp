@@ -56,7 +56,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.03"
+#define PLUGIN_VERSION "2.04"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3740,6 +3740,36 @@ public Action anotherdelay(Handle timer, int client)
 					else if ((StrEqual(ammosettype,"weapon_gauss",false)) || (StrEqual(ammosettype,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 					else if (StrEqual(ammosettype,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 					else if (StrEqual(ammosettype,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
+					else if (StrContains(ammosettype,"customweapons",false) != -1)
+					{
+						char findpath[64];
+						Format(findpath,sizeof(findpath),"scripts/%s.txt",ammosettype);
+						if (FileExists(findpath,true,NULL_STRING))
+						{
+							Handle filehandlesub = OpenFile(findpath,"r",true,NULL_STRING);
+							if (filehandlesub != INVALID_HANDLE)
+							{
+								char scrline[128];
+								while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
+								{
+									TrimString(scrline);
+									if (StrContains(scrline,"\"anim_prefix\"",false) != -1)
+									{
+										ReplaceStringEx(scrline,sizeof(scrline),"\"anim_prefix\"","",_,_,false);
+										ReplaceString(scrline,sizeof(scrline),"\"","");
+										TrimString(scrline);
+										if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
+										else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
+										else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
+										Format(scrline,sizeof(scrline),"weapon_%s",scrline);
+										Format(basecls,sizeof(basecls),"%s",scrline);
+										break;
+									}
+								}
+							}
+							CloseHandle(filehandlesub);
+						}
+					}
 					if (strlen(basecls) > 0)
 					{
 						weapindx = CreateEntityByName(basecls);
@@ -3921,6 +3951,36 @@ public void EquipCustom(int equip, int client)
 						else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 						else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 						else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
+						else if (StrContains(basecls,"customweapons",false) != -1)
+						{
+							char findpath[64];
+							Format(findpath,sizeof(findpath),"scripts/%s.txt",basecls);
+							if (FileExists(findpath,true,NULL_STRING))
+							{
+								Handle filehandlesub = OpenFile(findpath,"r",true,NULL_STRING);
+								if (filehandlesub != INVALID_HANDLE)
+								{
+									char scrline[128];
+									while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
+									{
+										TrimString(scrline);
+										if (StrContains(scrline,"\"anim_prefix\"",false) != -1)
+										{
+											ReplaceStringEx(scrline,sizeof(scrline),"\"anim_prefix\"","",_,_,false);
+											ReplaceString(scrline,sizeof(scrline),"\"","");
+											TrimString(scrline);
+											if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
+											else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
+											else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
+											Format(scrline,sizeof(scrline),"weapon_%s",scrline);
+											Format(basecls,sizeof(basecls),"%s",scrline);
+											break;
+										}
+									}
+								}
+								CloseHandle(filehandlesub);
+							}
+						}
 						int ent = CreateEntityByName(basecls);
 						if (ent != -1)
 						{
