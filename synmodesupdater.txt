@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.22"
-			"Previous"	"1.21"
+			"Latest"  	"1.23"
+			"Previous"	"1.22"
 		}
 		
-		"Notes"	"Decl fix."
+		"Notes"	"Added recheck to gamemode on map start."
 	}
 	
 	"Files"
