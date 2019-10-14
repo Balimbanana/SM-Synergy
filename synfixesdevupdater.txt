@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9991"
-			"Previous"	"1.9990"
+			"Latest"  	"1.9992"
+			"Previous"	"1.9991"
 		}
 		
-		"Notes"	"Added grenade class to weapon_scripted creation."
+		"Notes"	"Added grenade class to weapon_scripted creation. Added check to include equips that have no names."
 	}
 	
 	"Files"
