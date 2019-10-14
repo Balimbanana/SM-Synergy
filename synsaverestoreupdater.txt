@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.04"
-			"Previous"	"2.03"
+			"Latest"  	"2.05"
+			"Previous"	"2.04"
 		}
 		
 		"Notes"	"Added customweapons check on spawn."
