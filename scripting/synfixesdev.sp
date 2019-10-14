@@ -85,7 +85,7 @@ bool weapmanagersplaced = false;
 bool mapchanging = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9991"
+#define PLUGIN_VERSION "1.9992"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -16186,7 +16186,9 @@ void findent(int ent, char[] clsname)
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
 		int bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
-		if (bdisabled == 0)
+		char targn[4];
+		GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
+		if ((bdisabled == 0) || (strlen(targn) < 2))
 			PushArrayCell(equiparr,thisent);
 		findent(thisent++,clsname);
 	}
