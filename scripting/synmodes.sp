@@ -13,7 +13,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.22"
+#define PLUGIN_VERSION "1.23"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -1322,7 +1322,7 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 	return Plugin_Continue;
 }
 
-public Action tpclspawnnew(Handle timer, any i)
+public Action tpclspawnnew(Handle timer, int i)
 {
 	ClearArray(respawnids);
 	if ((!IsValidEntity(i)) || (clinspectate[i])) return Plugin_Handled;
@@ -3156,6 +3156,14 @@ public void OnMapStart()
 public Action rehooksaves(Handle timer)
 {
 	findsavetrigs(-1,"trigger_autosave");
+	char curgamemode[16];
+	Handle cvar = FindConVar("sm_gamemodeset");
+	if (cvar != INVALID_HANDLE) GetConVarString(cvar,curgamemode,sizeof(curgamemode));
+	CloseHandle(cvar);
+	if (StrEqual(curgamemode,"dm",false)) setupdmfor("dm");
+	else if (StrEqual(curgamemode,"tdm",false)) setupdmfor("tdm");
+	else if (StrEqual(curgamemode,"survival",false)) setupdmfor("survival");
+	else setupdmfor("coop");
 	readoutputsforinputs();
 }
 
