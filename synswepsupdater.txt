@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.98"
-			"Previous"	"0.97"
+			"Latest"  	"0.981"
+			"Previous"	"0.98"
 		}
 		
-		"Notes"	"Fixed inreload check for custom weapons. Added more ammotypes to custom weapons."
+		"Notes"	"Added reload animations to weapon_scripted shotguns. Added weapon_scripted grenades. Added revive system to weapon_medkit."
 	}
 	
 	"Files"
