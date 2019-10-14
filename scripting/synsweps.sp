@@ -11,13 +11,14 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.98"
+#define PLUGIN_VERSION "0.981"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
 bool tauknockback = false;
 bool customcvarsset = false;
 bool loweredsprint = false;
+bool InChargeUp[2048];
 int g_LastButtons[MAXPLAYERS+1];
 int difficulty = 1;
 int WeapList = -1;
@@ -52,6 +53,8 @@ int HandAttach[MAXPLAYERS+1];
 int TauCharge[MAXPLAYERS+1];
 int CLInScope[MAXPLAYERS+1];
 int CLAttachment[MAXPLAYERS+1];
+int Reviving[MAXPLAYERS+1];
+float ReviveTime[MAXPLAYERS+1];
 float Healchk[MAXPLAYERS+1];
 float MedkitAmm[MAXPLAYERS+1];
 float centnextatk[2048];
@@ -222,6 +225,8 @@ public void OnMapStart()
 		TauCharge[i] = 0;
 		CLInScope[i] = 0;
 		CLAttachment[i] = 0;
+		Reviving[i] = -1;
+		ReviveTime[i] = 0.0;
 		HiveAmm[i] = 0;
 		SnarkAmm[i] = 0;
 		SatchelAmm[i] = 0;
@@ -238,6 +243,7 @@ public void OnMapStart()
 	{
 		centnextatk[i] = 0.0;
 		centnextatk2[i] = 0.0;
+		InChargeUp[i] = false;
 		Format(custammtype[i],sizeof(custammtype[]),"");
 		Format(custammtype2[i],sizeof(custammtype2[]),"");
 	}
@@ -328,6 +334,10 @@ public void OnMapStart()
 	if (FileExists("scripts/weapon_medkit.txt",true,NULL_STRING)) AddFileToDownloadsTable("scripts/weapon_medkit.txt");
 	if (FileExists("scripts/weapon_sl8.txt",true,NULL_STRING)) AddFileToDownloadsTable("scripts/weapon_sl8.txt");
 	if (FileExists("scripts/weapon_oicw.txt",true,NULL_STRING)) AddFileToDownloadsTable("scripts/weapon_oicw.txt");
+	PrecacheSound("items/suitchargeno1.wav",true);
+	PrecacheSound("items/suitchargeok1.wav",true);
+	PrecacheSound("items/medshot4.wav",true);
+	PrecacheSound("weapons/gauss/fire1.wav",true);
 	findentlist(-1,"npc_*");
 	findentlist(-1,"monster_*");
 	findentlist(-1,"generic_actor");
@@ -612,6 +622,7 @@ public void OnEntityDestroyed(int entity)
 	SDKUnhook(entity, SDKHook_OnTakeDamage, OnNPCTakeDamage);
 	if (entity > 0)
 	{
+		InChargeUp[entity] = false;
 		Format(custammtype[entity],sizeof(custammtype[]),"");
 		Format(custammtype2[entity],sizeof(custammtype2[]),"");
 	}
@@ -723,6 +734,7 @@ public int MenuHandlerSweps(Menu menu, MenuAction action, int param1, int param2
 									if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
 									else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
 									else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
+									else if (StrEqual(scrline,"grenade",false)) Format(scrline,sizeof(scrline),"crowbar");
 									Format(scrline,sizeof(scrline),"weapon_%s",scrline);
 									Format(basecls,sizeof(basecls),"%s",scrline);
 									nouse = true;
@@ -795,6 +807,7 @@ public Action dropcustweap(int client, int args)
 			if (HasEntProp(weapdrop,Prop_Data,"m_nViewModelIndex")) SetEntProp(weapdrop,Prop_Data,"m_nViewModelIndex",0);
 			if (HasEntProp(weapdrop,Prop_Data,"m_usSolidFlags")) SetEntProp(weapdrop,Prop_Data,"m_usSolidFlags",136);
 			SetEntityMoveType(weapdrop,MOVETYPE_VPHYSICS);
+			ChangeEdictState(weapdrop);
 			AcceptEntityInput(weapdrop,"ClearParent");
 		}
 	}
@@ -1433,6 +1446,7 @@ public Action waititem(Handle timer, int entity)
 												{
 													if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",12);
 												}
+												Format(tmp,sizeof(tmp),"%s %s",fixuptmp[0],fixuptmp[1]);
 												WritePackString(dp,tmp);
 											}
 											else if (StrContains(scrline,"secondary_ammo",false) != -1)
@@ -1454,12 +1468,13 @@ public Action waititem(Handle timer, int entity)
 												}
 												if (StrEqual(fixuptmp[1],"SniperRound",false))
 												{
-													if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",10);
+													if (HasEntProp(entity,Prop_Data,"m_iSecondaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iSecondaryAmmoType",10);
 												}
 												else if ((!StrEqual(fixuptmp[1],"None",false)) && (!StrEqual(fixuptmp[1],"Buckshot",false)) && (!StrEqual(fixuptmp[1],"357",false)) && (!StrEqual(fixuptmp[1],"Pistol",false)) && (!StrEqual(fixuptmp[1],"XBowBolt",false)) && (!StrEqual(fixuptmp[1],"AR2",false)) && (!StrEqual(fixuptmp[1],"AR2AltFire",false)) && (!StrEqual(fixuptmp[1],"grenade",false)) && (!StrEqual(fixuptmp[1],"SMG1",false)) && (!StrEqual(fixuptmp[1],"SMG1_Grenade",false)) && (!StrEqual(fixuptmp[1],"rpg_round",false)) && (!StrEqual(fixuptmp[1],"slam",false)))
 												{
 													if (HasEntProp(entity,Prop_Data,"m_iSecondaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iSecondaryAmmoType",24);
 												}
+												Format(tmp,sizeof(tmp),"%s %s",fixuptmp[0],fixuptmp[1]);
 												WritePackString(dp,tmp);
 											}
 											else if ((StrContains(scrline,"viewmodel",false) != -1) && (StrContains(scrline,"csviewmodel",false) == -1))
@@ -1480,6 +1495,26 @@ public Action waititem(Handle timer, int entity)
 													}
 												}
 												Format(weapmdl,sizeof(weapmdl),"%s",fixuptmp[1]);
+											}
+											else if ((StrContains(scrline,"playermodel",false) != -1) || (StrContains(scrline,"damage",false) != -1))
+											{
+												char tmp[64];
+												Format(tmp,sizeof(tmp),"%s",scrline);
+												ReplaceString(tmp,sizeof(tmp),"\"","");
+												ReplaceString(tmp,sizeof(tmp),"	"," ");
+												TrimString(tmp);
+												char fixuptmp[32][128];
+												ExplodeString(tmp," ",fixuptmp,32,128,true);
+												for (int i = 0;i<5;i++)
+												{
+													TrimString(fixuptmp[i]);
+													if ((strlen(fixuptmp[i]) > 0) && (i > 1))
+													{
+														Format(fixuptmp[1],sizeof(fixuptmp[]),"%s",fixuptmp[i]);
+													}
+												}
+												Format(tmp,sizeof(tmp),"%s %s",fixuptmp[0],fixuptmp[1]);
+												WritePackString(dp,tmp);
 											}
 											if (StrContains(scrline,"}",false) != -1)
 											{
@@ -1911,6 +1946,8 @@ public void OnClientDisconnect_Post(int client)
 	TauCharge[client] = 0;
 	CLInScope[client] = 0;
 	CLAttachment[client] = 0;
+	Reviving[client] = -1;
+	ReviveTime[client] = 0.0;
 	clsummoncdc[client] = 0.0;
 	WeapSnd[client] = 0.0;
 	WeapAttackSpeed[client] = 0.0;
@@ -3539,6 +3576,109 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					}
 					setbuttons = false;
 				}
+				else if (StrEqual(curweap,"weapon_medkit",false))
+				{
+					if ((!IsValidEntity(Reviving[client])) && (Reviving[client] != -1)) Reviving[client] = -1;
+					if ((IsValidEntity(Reviving[client])) && (Reviving[client] != 0))
+					{
+						if (IsPlayerAlive(Reviving[client]))
+						{
+							Reviving[client] = -1;
+							ReviveTime[client] = 0.0;
+						}
+						else
+						{
+							setbuttons = false;
+							if (ReviveTime[client] == 0.0)
+							{
+								ReviveTime[client] = GetGameTime()+4.0;
+							}
+							int ragdoll = GetEntPropEnt(Reviving[client],Prop_Send,"m_hRagdoll");
+							float ragpos[3];
+							if (IsValidEntity(ragdoll))
+							{
+								float curorgs[3];
+								GetClientEyePosition(client,curorgs);
+								if (HasEntProp(ragdoll,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ragdoll,Prop_Data,"m_vecAbsOrigin",ragpos);
+								else if (HasEntProp(ragdoll,Prop_Send,"m_vecOrigin")) GetEntPropVector(ragdoll,Prop_Send,"m_vecOrigin",ragpos);
+								if (GetVectorDistance(curorgs,ragpos,false) > 100.0)
+								{
+									Reviving[client] = -1;
+									ReviveTime[client] = 0.0;
+									return Plugin_Continue;
+								}
+							}
+							float time = GetGameTime();
+							if (time >= ReviveTime[client])
+							{
+								int medkitammo = GetEntProp(client,Prop_Data,"m_iHealthPack");
+								SetEntProp(client,Prop_Data,"m_iHealthPack",medkitammo-80);
+								EmitSoundToAll("weapons/gauss/fire1.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN, _, _, 150);
+								if (IsValidEntity(ragdoll))
+								{
+									float ragang[3];
+									GetEntPropVector(ragdoll,Prop_Data,"m_angRotation",ragang);
+									ragang[0] = 0.0;
+									ragang[2] = 0.0;
+									DispatchSpawn(Reviving[client]);
+									ActivateEntity(Reviving[client]);
+									TeleportEntity(Reviving[client],ragpos,ragang,NULL_VECTOR);
+									AcceptEntityInput(ragdoll,"kill");
+								}
+							}
+						}
+					}
+					else
+					{
+						//m_hRagdoll
+						int medkitammo = GetEntProp(client,Prop_Data,"m_iHealthPack");
+						if (medkitammo >= 80)
+						{
+							float curorgs[3];
+							GetClientEyePosition(client,curorgs);
+							for (int i = 1;i<MaxClients+1;i++)
+							{
+								if ((IsValidEntity(i)) && (i != client))
+								{
+									if (IsClientInGame(i))
+									{
+										if (!IsPlayerAlive(i))
+										{
+											int ragdoll = GetEntPropEnt(i,Prop_Send,"m_hRagdoll");
+											if (IsValidEntity(ragdoll))
+											{
+												float targorgs[3];
+												if (HasEntProp(ragdoll,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ragdoll,Prop_Data,"m_vecAbsOrigin",targorgs);
+												else if (HasEntProp(ragdoll,Prop_Send,"m_vecOrigin")) GetEntPropVector(ragdoll,Prop_Send,"m_vecOrigin",targorgs);
+												float chkdist = GetVectorDistance(curorgs,targorgs,false);
+												if (chkdist < 100.0)
+												{
+													float angs[3];
+													float endpos[3];
+													GetEntPropVector(client,Prop_Data,"m_angRotation",angs);
+													TR_TraceRayFilter(curorgs,angs,MASK_SHOT,RayType_Infinite,TraceEntityFilter,client);
+													TR_GetEndPosition(endpos);
+													chkdist = GetVectorDistance(endpos,targorgs,false);
+													if (chkdist < 100.0)
+													{
+														Reviving[client] = i;
+														EmitSoundToAll("items/suitchargeok1.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+														setbuttons = false;
+														break;
+													}
+												}
+											}
+										}
+									}
+								}
+							}//asfasf
+							if ((!IsValidEntity(Reviving[client])) || (Reviving[client] == 0))
+							{
+								EmitSoundToAll("items/suitchargeno1.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+							}
+						}
+					}
+				}
 				else if ((StrEqual(curweap,"weapon_mp5",false)) || (StrEqual(curweap,"weapon_m4",false)))
 				{
 					if (IsValidEntity(weap))
@@ -3810,7 +3950,17 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		}
 		else if (!(buttons & IN_ATTACK))
 		{
-			if (StrEqual(curweap,"weapon_gluon",false))
+			if ((StrContains(curweap,"custom_",false) == 0) && (weap > MaxClients))
+			{
+				if (InChargeUp[weap])
+				{
+					InChargeUp[weap] = false;
+					char custweap[64];
+					GetEntPropString(weap,Prop_Data,"m_iszResponseContext",custweap,sizeof(custweap));
+					ReleaseCustomWeapon(client,weap,custweap,1);
+				}
+			}
+			else if (StrEqual(curweap,"weapon_gluon",false))
 			{
 				setbuttons = false;
 				if (weap != -1)
@@ -3987,7 +4137,15 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		}
 		if (!(buttons & IN_ATTACK2))
 		{
-			if (((StrEqual(curweap,"weapon_tau",false)) || (StrEqual(curweap,"weapon_gauss",false))) && (TauCharge[client] > 0))
+			if (StrEqual(curweap,"weapon_medkit",false))
+			{
+				if ((IsValidEntity(Reviving[client])) && (Reviving[client] != 0))
+				{
+					Reviving[client] = -1;
+					ReviveTime[client] = 0.0;
+				}
+			}
+			else if (((StrEqual(curweap,"weapon_tau",false)) || (StrEqual(curweap,"weapon_gauss",false))) && (TauCharge[client] > 0))
 			{
 				if (weap != -1)
 				{
@@ -4181,7 +4339,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					{
 						char custweap[64];
 						GetEntPropString(weap,Prop_Data,"m_iszResponseContext",custweap,sizeof(custweap));
-						ReloadCustomWeap(client,weap,custweap);
+						ReloadCustomWeap(client,weap,custweap,false);
 					}
 				}
 				else if (StrEqual(curweap,"weapon_flaregun",false))
@@ -5275,7 +5433,7 @@ public Action OnWeaponUse(int client, int weapon)
 								}
 								if (StrEqual(fixuptmp[1],"SniperRound",false))
 								{
-									if (HasEntProp(weapon,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(weapon,Prop_Data,"m_iPrimaryAmmoType",10);
+									if (HasEntProp(weapon,Prop_Data,"m_iSecondaryAmmoType")) SetEntProp(weapon,Prop_Data,"m_iSecondaryAmmoType",10);
 								}
 								else if ((!StrEqual(fixuptmp[1],"None",false)) && (!StrEqual(fixuptmp[1],"Buckshot",false)) && (!StrEqual(fixuptmp[1],"357",false)) && (!StrEqual(fixuptmp[1],"Pistol",false)) && (!StrEqual(fixuptmp[1],"XBowBolt",false)) && (!StrEqual(fixuptmp[1],"AR2",false)) && (!StrEqual(fixuptmp[1],"AR2AltFire",false)) && (!StrEqual(fixuptmp[1],"grenade",false)) && (!StrEqual(fixuptmp[1],"SMG1",false)) && (!StrEqual(fixuptmp[1],"SMG1_Grenade",false)) && (!StrEqual(fixuptmp[1],"rpg_round",false)) && (!StrEqual(fixuptmp[1],"slam",false)))
 								{
@@ -5564,6 +5722,7 @@ public Action resetvmspec(Handle timer, Handle dp)
 		int maxclip = ReadPackCell(dp);
 		char passedweap[64];
 		ReadPackString(dp,passedweap,sizeof(passedweap));
+		int singlereload = ReadPackCell(dp);
 		CloseHandle(dp);
 		if ((IsValidEntity(viewmdl)) && (IsValidEntity(weap)))
 		{
@@ -5586,6 +5745,7 @@ public Action resetvmspec(Handle timer, Handle dp)
 					SetEntProp(weap,Prop_Data,"m_iClip1",maxclip);
 					if (HasEntProp(weap,Prop_Data,"m_bInReload")) SetEntProp(weap,Prop_Data,"m_bInReload",0);
 					SetEntProp(client,Prop_Data,"m_iAmmo",ammset,_,ammtype);
+					if (singlereload) ReloadCustomWeap(client,weap,curweap,true);
 				}
 			}
 		}
@@ -5628,6 +5788,7 @@ public Action resetviewindex(Handle timer, int weapon)
 			{
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
 			}
+			ChangeEdictState(weapon);
 		}
 	}
 }
@@ -6389,6 +6550,13 @@ public Action explodedelay(Handle timer, int expl)
 {
 	if ((IsValidEntity(expl)) && (expl != 0))
 	{
+		if (HasEntProp(expl,Prop_Data,"m_hParent"))
+		{
+			if (GetEntPropEnt(expl,Prop_Data,"m_hParent") != -1)
+			{
+				AcceptEntityInput(expl,"ClearParent");
+			}
+		}
 		float orgs[3];
 		if (HasEntProp(expl,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(expl,Prop_Data,"m_vecAbsOrigin",orgs);
 		else if (HasEntProp(expl,Prop_Send,"m_vecOrigin")) GetEntPropVector(expl,Prop_Send,"m_vecOrigin",orgs);
@@ -6693,6 +6861,81 @@ void ShootBullet(int client, int weap, int atktype, char[] curweap, float orgs[3
 	}
 }
 
+void ReleaseFire(int client, int atktype, float orgs[3], float angs[3], int sideoffs, float maxspread, char[] weapworldmdl, int dmgpass)
+{
+	if (IsValidEntity(client))
+	{
+		float endpos[3];
+		float shootvel[3];
+		float originalorgs[3];
+		originalorgs[0] = orgs[0];
+		originalorgs[1] = orgs[1];
+		originalorgs[2] = orgs[2];
+		orgs[2]+=13.0;
+		if (GetEntProp(client,Prop_Data,"m_bDucked")) orgs[2]-=28.0;
+		if (atktype == 7)
+		{
+			orgs[0] = (orgs[0] + (sideoffs * Cosine(DegToRad(angs[1]))));
+			orgs[1] = (orgs[1] + (sideoffs * Sine(DegToRad(angs[1]))));
+		}
+		angs[1]+=90.0;
+		orgs[0] = (orgs[0] + (sideoffs * Cosine(DegToRad(angs[1]))));
+		orgs[1] = (orgs[1] + (sideoffs * Sine(DegToRad(angs[1]))));
+		angs[1]-=90.0;
+		float spread = GetRandomFloat(-maxspread,maxspread);
+		angs[0] = angs[0]+spread;
+		spread = GetRandomFloat(-maxspread,maxspread);
+		angs[1] = angs[1]+spread;
+		spread = GetRandomFloat(-maxspread,maxspread);
+		angs[2] = angs[2]+spread;
+		endpos[0] = (originalorgs[0] + (500 * Cosine(DegToRad(angs[1]))));
+		endpos[1] = (originalorgs[1] + (500 * Sine(DegToRad(angs[1]))));
+		endpos[2] = (originalorgs[2] - (500 * Sine(DegToRad(angs[0]))));
+		MakeVectorFromPoints(originalorgs,endpos,shootvel);
+		SetEntPropFloat(client,Prop_Data,"m_flFlashTime",GetGameTime()+0.5);
+		if (atktype == 7)
+		{
+			if (strlen(weapworldmdl) > 0)
+			{
+				int grenade = CreateEntityByName("prop_physics_override");
+				if (grenade != -1)
+				{
+					DispatchKeyValue(grenade,"classname","grenade_satchel");
+					DispatchKeyValue(grenade,"model",weapworldmdl);
+					DispatchKeyValue(grenade,"solid","6");
+					DispatchKeyValue(grenade,"spawnflags","256");
+					angs[0]+=GetRandomFloat(-10.0,10.0);
+					angs[2]+=GetRandomFloat(-10.0,10.0);
+					TeleportEntity(grenade,orgs,angs,NULL_VECTOR);
+					DispatchSpawn(grenade);
+					ActivateEntity(grenade);
+					if (HasEntProp(grenade,Prop_Data,"m_CollisionGroup")) SetEntProp(grenade,Prop_Data,"m_CollisionGroup",5);
+					TeleportEntity(grenade,NULL_VECTOR,NULL_VECTOR,shootvel);
+					int endpoint = CreateEntityByName("env_explosion");
+					if (endpoint != -1)
+					{
+						char dmgmag[8];
+						Format(dmgmag,sizeof(dmgmag),"%i",dmgpass);
+						DispatchKeyValue(endpoint,"imagnitude",dmgmag);
+						DispatchKeyValue(endpoint,"iRadiusOverride","150");
+						DispatchKeyValue(endpoint,"rendermode","0");
+						TeleportEntity(endpoint,orgs,angs,NULL_VECTOR);
+						DispatchSpawn(endpoint);
+						ActivateEntity(endpoint);
+						SetVariantString("!activator");
+						AcceptEntityInput(endpoint,"SetParent",grenade);
+						SetEntPropEnt(grenade,Prop_Data,"m_hOwnerEntity",endpoint);
+						SetEntPropEnt(endpoint,Prop_Data,"m_hOwnerEntity",client);
+						int entindx = EntIndexToEntRef(grenade);
+						CreateTimer(4.0,cleanup,entindx,TIMER_FLAG_NO_MAPCHANGE);
+						CreateTimer(4.0,explodedelay,endpoint,TIMER_FLAG_NO_MAPCHANGE);
+					}
+				}
+			}
+		}
+	}
+}
+
 void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 {
 	if (IsValidEntity(client))
@@ -6723,6 +6966,14 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 					int bullettype,lefthanded,resetanim;
 					int emptyanim = -1;
 					int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
+					if (HasEntProp(weap,Prop_Data,"m_iPrimaryAmmoType"))
+					{
+						if (GetEntProp(weap,Prop_Data,"m_iPrimaryAmmoType") == 12)
+						{
+							curclip = GetEntProp(client,Prop_Send,"m_iAmmo",_,12);
+						}
+					}
+					if (curclip < 1) return;
 					int maxburst = 3;
 					float firerate,startspread,maxspread;
 					float bursttime = 0.2;
@@ -6769,6 +7020,12 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 									ExplodeString(weapdata," ",tmp,16,16);
 									bullettype = StringToInt(tmp[1]);
 								}
+								else if (StrContains(weapdata,"primary_ammo",false) == 0)
+								{
+									char tmp[16][16];
+									ExplodeString(weapdata," ",tmp,16,16);
+									if (StrEqual(tmp[1],"grenade",false)) bullettype = 7;
+								}
 								else if (StrContains(weapdata,"FireRate1",false) == 0)
 								{
 									char tmp[16][16];
@@ -6810,7 +7067,7 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 									ExplodeString(weapdata," ",tmp,16,16);
 									bursttime = StringToFloat(tmp[1]);
 								}
-								else if ((StrContains(weapdata,"ACT_VM_PRIMARYATTACK",false) == 2) || (StrContains(weapdata,"ACT_VM_RECOIL",false) == 2))
+								else if ((StrContains(weapdata,"ACT_VM_PRIMARYATTACK",false) == 2) || (StrContains(weapdata,"ACT_VM_PULLBACK",false) == 2) || (StrContains(weapdata,"ACT_VM_RECOIL",false) == 2))
 								{
 									char tmp[32][32];
 									ExplodeString(weapdata," ",tmp,32,32);
@@ -7130,12 +7387,288 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 							SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
 						}
 					}
+					else if (bullettype == 7)
+					{
+						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+						if (viewmdl != -1)
+						{
+							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+							int randanim;
+							for (int i = 0;i<10;i++)
+							{
+								if (atkanim[i] != 0) randanim = atkanim[i];
+								else break;
+							}
+							int rand = GetRandomInt(atkanim[0],randanim);
+							if ((seq >= atkanim[0]) && (seq <= randanim))
+							{
+								//In Pullback
+								InChargeUp[weap] = true;
+							}
+							else
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
+						}
+					}
 				}
 			}
 			else
 			{
 				EmitGameSoundToAll("Weapon_Pistol.Empty",client);
 				return;
+			}
+		}
+	}
+	return;
+}
+
+void ReleaseCustomWeapon(int client, int weap, char[] curweap, int mode)
+{
+	if (IsValidEntity(client))
+	{
+		if (HasEntProp(weap,Prop_Data,"m_flNextPrimaryAttack"))
+		{
+			if (HasEntProp(weap,Prop_Data,"m_bInReload"))
+			{
+				if (GetEntProp(weap,Prop_Data,"m_bInReload") > 0) return;
+			}
+			int fireunderwater = 1;
+			if (HasEntProp(client,Prop_Data,"m_nWaterLevel"))
+			{
+				int waterlv = GetEntProp(client,Prop_Data,"m_nWaterLevel");
+				if (waterlv > 2)
+				{
+					if (HasEntProp(weap,Prop_Data,"m_bFiresUnderwater")) fireunderwater = GetEntProp(weap,Prop_Data,"m_bFiresUnderwater");
+				}
+			}
+			//if (HasEntProp(client,Prop_Data,"m_szAnimExtension"))
+			if (fireunderwater)
+			{
+				int findweap = FindStringInArray(swepsweap,curweap);
+				if (findweap != -1)
+				{
+					bool fastfire = false;
+					char weapworldmdl[64];
+					int atkanim[10];
+					int bullettype,lefthanded,resetanim,dmgpass;
+					int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
+					if (HasEntProp(weap,Prop_Data,"m_iPrimaryAmmoType"))
+					{
+						if (GetEntProp(weap,Prop_Data,"m_iPrimaryAmmoType") == 12)
+						{
+							curclip = GetEntProp(client,Prop_Send,"m_iAmmo",_,12);
+						}
+					}
+					//int maxburst = 3;
+					float firerate,startspread,maxspread;
+					//float bursttime = 0.2;
+					Handle dp = GetArrayCell(swepsinfo,findweap);
+					if (dp != INVALID_HANDLE)
+					{
+						char weapdata[64];
+						ResetPack(dp);
+						ReadPackString(dp,weapdata,sizeof(weapdata));
+						while (!StrEqual(weapdata,"endofpack",false))
+						{
+							if ((StrContains(weapdata,"single_shot",false) == 0) || (StrContains(weapdata,"special1",false) == 0))
+							{
+								char tmp[4][64];
+								ExplodeString(weapdata," ",tmp,4,64);
+								EmitGameSoundToAll(tmp[1],client);
+							}
+							if (mode == 1)
+							{
+								if (StrContains(weapdata,"FireType1",false) == 0)
+								{
+									char tmp[16][16];
+									ExplodeString(weapdata," ",tmp,16,16);
+									bullettype = StringToInt(tmp[1]);
+								}
+								else if (StrContains(weapdata,"primary_ammo",false) == 0)
+								{
+									char tmp[16][16];
+									ExplodeString(weapdata," ",tmp,16,16);
+									if (StrEqual(tmp[1],"grenade",false)) bullettype = 7;
+								}
+								else if (StrContains(weapdata,"damage",false) == 0)
+								{
+									char tmp[16][16];
+									ExplodeString(weapdata," ",tmp,16,16);
+									dmgpass = StringToInt(tmp[1]);
+								}
+								else if (StrContains(weapdata,"playermodel",false) == 0)
+								{
+									char tmp[16][64];
+									ExplodeString(weapdata," ",tmp,16,64);
+									Format(weapworldmdl,sizeof(weapworldmdl),"%s",tmp[1]);
+								}
+								else if (StrContains(weapdata,"FireRate1",false) == 0)
+								{
+									char tmp[16][16];
+									ExplodeString(weapdata," ",tmp,16,16);
+									firerate = StringToFloat(tmp[1]);
+								}
+								else if (StrContains(weapdata,"FastFire1",false) == 0)
+								{
+									char tmp[16][16];
+									ExplodeString(weapdata," ",tmp,16,16);
+									if (StringToInt(tmp[1]) == 0)
+									{
+										fastfire = false;
+										//g_LastButtons[client] = IN_ATTACK;
+									}
+									else fastfire = true;
+								}
+								else if (StrContains(weapdata,"FireCone1",false) == 0)
+								{
+									char tmp[16][16];
+									ExplodeString(weapdata," ",tmp,16,16);
+									startspread = StringToFloat(tmp[1]);
+								}
+								else if (StrContains(weapdata,"FireConeLerpto1",false) == 0)
+								{
+									char tmp[16][16];
+									ExplodeString(weapdata," ",tmp,16,16);
+									maxspread = StringToFloat(tmp[1]);
+								}
+								else if ((StrContains(weapdata,"ACT_VM_THROW",false) == 2) || (StrContains(weapdata,"ACT_VM_RECOIL",false) == 2))
+								{
+									char tmp[32][32];
+									ExplodeString(weapdata," ",tmp,32,32);
+									if (!CLAttachment[client])
+									{
+										if ((!StrEqual(tmp[1],"ACT_VM_THROW_SILENCED",false)) && (!StrEqual(tmp[1],"ACT_VM_THROW_EMPTY",false)) && (!StrEqual(tmp[1],"ACT_VM_PRIMARYATTACK_DEPLOYED",false)))
+										{
+											int prev;
+											for (int i = 0;i<10;i++)
+											{
+												if ((atkanim[i] == 0) && (StringToInt(tmp[0]) != prev))
+												{
+													atkanim[i] = StringToInt(tmp[0]);
+													prev = atkanim[i];
+												}
+											}
+										}
+									}
+									else if (CLAttachment[client])
+									{
+										if (StrEqual(tmp[1],"ACT_VM_THROW_SILENCED",false))
+										{
+											int prev;
+											for (int i = 0;i<10;i++)
+											{
+												if ((atkanim[i] == 0) && (StringToInt(tmp[0]) != prev))
+												{
+													atkanim[i] = StringToInt(tmp[0]);
+													prev = atkanim[i];
+												}
+											}
+										}
+									}
+								}
+								else if (StrContains(weapdata,"ACT_VM_IDLE",false) != -1)
+								{
+									char tmp[32][32];
+									ExplodeString(weapdata," ",tmp,32,32);
+									if (!CLAttachment[client])
+									{
+										if (!StrEqual(tmp[1],"ACT_VM_IDLE_SILENCED",false))
+										{
+											resetanim = StringToInt(tmp[0]);
+										}
+									}
+									else if (CLAttachment[client])
+									{
+										if (StrEqual(tmp[1],"ACT_VM_IDLE_SILENCED",false))
+										{
+											resetanim = StringToInt(tmp[0]);
+										}
+									}
+								}
+							}
+							ReadPackString(dp,weapdata,sizeof(weapdata));
+						}
+					}
+					if (bullettype == 7)
+					{
+						int shotsfired = 0;
+						curclip--;
+						SetEntProp(client,Prop_Data,"m_iAmmo",curclip,_,12);
+						if (HasEntProp(weap,Prop_Data,"m_nShotsFired")) shotsfired = GetEntProp(weap,Prop_Data,"m_nShotsFired");
+						float spread = startspread+(shotsfired/2);
+						if (spread > maxspread) spread = maxspread;
+						if (startspread > maxspread) spread = startspread;
+						int sideoffs = 0;
+						if (lefthanded) sideoffs = -4;
+						if (HasEntProp(weap,Prop_Data,"m_nShotsFired")) SetEntProp(weap,Prop_Data,"m_nShotsFired",shotsfired+1);
+						float orgs[3];
+						float angs[3];
+						GetClientEyePosition(client,orgs);
+						orgs[2]-=12.0;
+						GetClientEyeAngles(client,angs);
+						ReleaseFire(client,bullettype,orgs,angs,sideoffs,spread,weapworldmdl,dmgpass);
+						if (fastfire)
+						{
+							CreateTimer(firerate,clearlast,client,TIMER_FLAG_NO_MAPCHANGE);
+							firerate = 0.1;
+							if (mode == 1) g_LastButtons[client] = IN_ATTACK;
+							else g_LastButtons[client] = IN_ATTACK2;
+						}
+						if (mode == 1) centnextatk[weap] = GetGameTime()+firerate;
+						else centnextatk2[weap] = GetGameTime()+firerate;
+						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+						if (viewmdl != -1)
+						{
+							//int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+							if ((firerate+0.01 > 0.1) && (curclip > 0))
+							{
+								Handle vmdp = CreateDataPack();
+								WritePackCell(vmdp,viewmdl);
+								WritePackCell(vmdp,resetanim);
+								WritePackCell(vmdp,weap);
+								WritePackString(vmdp,curweap);
+								CreateTimer(firerate+0.01,resetvmtoidle,vmdp,TIMER_FLAG_NO_MAPCHANGE);
+							}
+							else if (curclip <= 0)
+							{
+								if (WeapList == -1) WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
+								if (WeapList != -1)
+								{
+									for (int j; j<104; j += 4)
+									{
+										int tmpi = GetEntDataEnt2(client,WeapList + j);
+										if (tmpi != -1)
+										{
+											char weapcls[64];
+											GetEntityClassname(tmpi,weapcls,sizeof(weapcls));
+											if (strlen(weapcls) > 0)
+											{
+												if (HasEntProp(tmpi,Prop_Data,"m_iClip1"))
+												{
+													if ((GetEntProp(tmpi,Prop_Data,"m_iClip1") > 0) || (GetEntProp(tmpi,Prop_Data,"m_iClip1") == -1))
+													{
+														Handle changedp = CreateDataPack();
+														WritePackCell(changedp,client);
+														WritePackString(changedp,weapcls);
+														CreateTimer(0.15,useweap,changedp,TIMER_FLAG_NO_MAPCHANGE);
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+							int randanim;
+							for (int i = 0;i<10;i++)
+							{
+								if (atkanim[i] != 0) randanim = atkanim[i];
+								else break;
+							}
+							int rand = GetRandomInt(atkanim[0],randanim);
+							//PrintToServer("SetRand %i from %i",rand,seq);
+							SetEntProp(viewmdl,Prop_Send,"m_nSequence",rand);
+						}
+					}
+				}
 			}
 		}
 	}
@@ -7189,7 +7722,7 @@ public Action clearlast(Handle timer, int client)
 	}
 }
 
-void ReloadCustomWeap(int client, int weap, char[] curweap)
+void ReloadCustomWeap(int client, int weap, char[] curweap, bool passedreload)
 {
 	if (IsValidEntity(client))
 	{
@@ -7200,9 +7733,10 @@ void ReloadCustomWeap(int client, int weap, char[] curweap)
 			Handle dp = GetArrayCell(swepsinfo,findweap);
 			if (dp != INVALID_HANDLE)
 			{
+				bool singlereload = false;
 				char weapdata[64];
 				char snd[64];
-				int relanim, resetanim;
+				int relanim, resetanim, endanim;
 				int maxclip = curclip;
 				ResetPack(dp);
 				ReadPackString(dp,weapdata,sizeof(weapdata));
@@ -7239,7 +7773,30 @@ void ReloadCustomWeap(int client, int weap, char[] curweap)
 							}
 						}
 					}
-					else if (StrContains(weapdata,"ACT_VM_IDLE",false) != -1)
+					else if (StrContains(weapdata,"ACT_SHOTGUN_",false) != -1)
+					{
+						char tmp[32][32];
+						ExplodeString(weapdata," ",tmp,32,32);
+						if (!CLAttachment[client])
+						{
+							if (!StrEqual(tmp[1],"ACT_SHOTGUN_RELOAD_SILENCED",false))
+							{
+								if (StrEqual(tmp[1],"ACT_SHOTGUN_RELOAD_START",false)) resetanim = StringToInt(tmp[0]);
+								else if (StrEqual(tmp[1],"ACT_SHOTGUN_RELOAD_FINISH",false)) endanim = StringToInt(tmp[0]);
+								singlereload = true;
+							}
+						}
+						else if (CLAttachment[client])
+						{
+							if (StrContains(tmp[1],"ACT_SHOTGUN_RELOAD_SILENCED",false) == 0)
+							{
+								if (StrEqual(tmp[1],"ACT_SHOTGUN_RELOAD_SILENCED_START",false)) resetanim = StringToInt(tmp[0]);
+								else if (StrEqual(tmp[1],"ACT_SHOTGUN_RELOAD_SILENCED_FINISH",false)) endanim = StringToInt(tmp[0]);
+								singlereload = true;
+							}
+						}
+					}
+					else if ((StrContains(weapdata,"ACT_VM_IDLE",false) != -1) && (resetanim == 0))
 					{
 						char tmp[32][32];
 						ExplodeString(weapdata," ",tmp,32,32);
@@ -7260,7 +7817,7 @@ void ReloadCustomWeap(int client, int weap, char[] curweap)
 					}
 					ReadPackString(dp,weapdata,sizeof(weapdata));
 				}
-				if ((strlen(snd) > 0) && (curclip < maxclip))
+				if ((strlen(snd) > 0) && ((curclip < maxclip) || (passedreload)))
 				{
 					int ammtype = 0;
 					if (HasEntProp(weap,Prop_Send,"m_iPrimaryAmmoType")) ammtype = GetEntProp(weap,Prop_Send,"m_iPrimaryAmmoType");
@@ -7271,6 +7828,27 @@ void ReloadCustomWeap(int client, int weap, char[] curweap)
 						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
 						if (viewmdl != -1)
 						{
+							float reloadtime = 2.6;
+							if (singlereload)
+							{
+								if (curclip < maxclip) maxclip = curclip+1;
+								else
+								{
+									relanim = endanim;
+									resetanim = endanim;
+									singlereload = false;
+								}
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								if (seq == resetanim)
+								{
+									int tmp = relanim;
+									relanim = resetanim;
+									resetanim = tmp;
+									reloadtime = 0.1;
+									maxclip = curclip;
+								}
+								else reloadtime = 0.6;
+							}
 							SetEntProp(viewmdl,Prop_Send,"m_nSequence",relanim);
 							Handle vmdp = CreateDataPack();
 							WritePackCell(vmdp,viewmdl);
@@ -7278,7 +7856,8 @@ void ReloadCustomWeap(int client, int weap, char[] curweap)
 							WritePackCell(vmdp,weap);
 							WritePackCell(vmdp,maxclip);
 							WritePackString(vmdp,curweap);
-							CreateTimer(2.6,resetvmspec,vmdp,TIMER_FLAG_NO_MAPCHANGE);
+							WritePackCell(vmdp,singlereload);
+							CreateTimer(reloadtime,resetvmspec,vmdp,TIMER_FLAG_NO_MAPCHANGE);
 						}
 						EmitGameSoundToAll(snd,client);
 						if (HasEntProp(weap,Prop_Data,"m_bInReload")) SetEntProp(weap,Prop_Data,"m_bInReload",1);
@@ -7286,6 +7865,11 @@ void ReloadCustomWeap(int client, int weap, char[] curweap)
 					}
 					else
 					{
+						int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+						if (viewmdl != -1)
+						{
+							SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
+						}
 						g_LastButtons[client] |= IN_RELOAD;
 					}
 				}
