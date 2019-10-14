@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9990"
-			"Previous"	"1.9989"
+			"Latest"  	"1.9991"
+			"Previous"	"1.9990"
 		}
 		
-		"Notes"	"Added metadata check to entity cache detection. Added merchant icon exist check. Added customweapons to info_player_equip and game_player_equip rebuilds."
+		"Notes"	"Added grenade class to weapon_scripted creation."
 	}
 	
 	"Files"
