@@ -11,6 +11,7 @@ public void OnPluginStart()
 {
 	Handle cvar = FindConVar("synsweps_spawnwith");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("synsweps_spawnwith", "weapon_medkit", "Change what custom weapons you can spawn with. Separate each with a space.");
+	GetConVarString(cvar,equipper,sizeof(equipper));
 	HookConVarChange(cvar,spawnwithch);
 	CloseHandle(cvar);
 }
