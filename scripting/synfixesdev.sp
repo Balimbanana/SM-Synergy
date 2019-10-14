@@ -85,7 +85,7 @@ bool weapmanagersplaced = false;
 bool mapchanging = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9990"
+#define PLUGIN_VERSION "1.9991"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -328,6 +328,14 @@ public Action bmcvars(Handle timer)
 	}
 	HookConVarChange(cvarchk,vortzapch);
 	CloseHandle(cvarchk);
+	char savepath[256];
+	BuildPath(Path_SM,savepath,sizeof(savepath),"plugins");
+	Format(savepath,sizeof(savepath),"%s/synfixes.smx",savepath);
+	if (FileExists(savepath))
+	{
+		PrintToServer("Cannot run both SynFixesDev and SynFixes at the same time.\nSynFixes default removed...");
+		DeleteFile(savepath);
+	}
 	return Plugin_Handled;
 }
 
@@ -1383,6 +1391,7 @@ public Action everyspawnpost(Handle timer, int client)
 															if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
 															else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
 															else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
+															else if (StrEqual(scrline,"grenade",false)) Format(scrline,sizeof(scrline),"crowbar");
 															Format(scrline,sizeof(scrline),"weapon_%s",scrline);
 															Format(basecls,sizeof(basecls),"%s",scrline);
 															break;
@@ -5219,6 +5228,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 												if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
 												else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
 												else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
+												else if (StrEqual(scrline,"grenade",false)) Format(scrline,sizeof(scrline),"crowbar");
 												Format(scrline,sizeof(scrline),"weapon_%s",scrline);
 												//PrintToServer("AnimPrefix %s",scrline);
 												Format(cls,sizeof(cls),"%s",scrline);
@@ -5455,6 +5465,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					}
 					else if (StrEqual(oldcls,"npc_merchant",false))
 					{
+						bool foundmdl = false;
 						char merchicon[64];
 						Format(merchicon,sizeof(merchicon),"sprites/merchant_buy.vmt");
 						int starticonon = 1;
@@ -5464,6 +5475,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							char arrstart[64];
 							char arrnext[128];
 							GetArrayString(passedarr,i,arrstart,sizeof(arrstart));
+							if (StrEqual(arrstart,"model",false)) foundmdl = true;
 							i++;
 							GetArrayString(passedarr,i,arrnext,sizeof(arrnext));
 							if (StrEqual(arrstart,"MerchantScript",false)) DispatchKeyValue(ent,"ResponseContext",arrnext);
@@ -5471,6 +5483,10 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							else if (StrEqual(arrstart,"ShowIcon",false)) starticonon = StringToInt(arrnext);
 							else if (StrEqual(arrstart,"IconHeight",false)) posabove = StringToFloat(arrnext);
 							else if (StrEqual(arrstart,"OnPlayerUse",false)) DispatchKeyValue(ent,"OnUser1",arrnext);
+						}
+						if (!foundmdl)
+						{
+							DispatchKeyValue(ent,"model","models/humans/group01/male_01.mdl");
 						}
 						DispatchKeyValue(ent,"citizentype","4");
 						SetEntProp(ent,Prop_Data,"m_bInvulnerable",1);
@@ -11265,6 +11281,7 @@ public void EquipCustom(int equip, int client)
 												if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
 												else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
 												else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
+												else if (StrEqual(scrline,"grenade",false)) Format(scrline,sizeof(scrline),"crowbar");
 												Format(scrline,sizeof(scrline),"weapon_%s",scrline);
 												Format(basecls,sizeof(basecls),"%s",scrline);
 												break;
