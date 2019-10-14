@@ -56,7 +56,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.04"
+#define PLUGIN_VERSION "2.05"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -4002,7 +4002,9 @@ void findent(int ent, char[] clsname)
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
 		int bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
-		if ((bdisabled == 0) && (FindValueInArray(equiparr,thisent) == -1))
+		char targn[4];
+		GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
+		if (((bdisabled == 0) && (FindValueInArray(equiparr,thisent) == -1)) || (strlen(targn) < 2))
 			PushArrayCell(equiparr,thisent);
 		findent(thisent++,clsname);
 	}
