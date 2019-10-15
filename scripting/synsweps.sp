@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.981"
+#define PLUGIN_VERSION "0.982"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -35,6 +35,7 @@ int taubeam = -1;
 int tauhl1beam = -1;
 int tauhl2beam = -1;
 int headgroup = 2;
+int equip = -1;
 int flareammo[MAXPLAYERS+1];
 int ManHackAmmo[MAXPLAYERS+1];
 int CGuardAmm[MAXPLAYERS+1];
@@ -63,6 +64,7 @@ float clsummoncdc[MAXPLAYERS+1];
 float antispamchk[MAXPLAYERS+1];
 float WeapSnd[MAXPLAYERS+1];
 float WeapAttackSpeed[MAXPLAYERS+1];
+char equipper[128];
 char SteamID[MAXPLAYERS+1][32];
 char custammtype[2048][32];
 char custammtype2[2048][32];
@@ -153,6 +155,10 @@ public void OnPluginStart()
 		loweredsprint = GetConVarBool(cvar);
 		HookConVarChange(cvar, weploweredch);
 	}
+	cvar = FindConVar("synsweps_spawnwith");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("synsweps_spawnwith", "", "Change what custom weapons you can spawn with. Separate each with a space.");
+	GetConVarString(cvar,equipper,sizeof(equipper));
+	HookConVarChange(cvar,spawnwithch);
 	CloseHandle(cvar);
 	CreateTimer(0.1, weaponticks, _, TIMER_REPEAT);
 	CreateTimer(1.0, chkdisttargs, _, TIMER_REPEAT);
@@ -211,6 +217,16 @@ public void OnMapStart()
 	taubeam = PrecacheModel("effects/tau_beam.vmt");
 	tauhl1beam = PrecacheModel("sprites/smoke.vmt");
 	tauhl2beam = PrecacheModel("sprites/laserbeam.vmt");
+	if ((GetMapHistorySize() > 0) && (strlen(equipper) > 0))
+	{
+		equip = CreateEntityByName("info_player_equip");
+		if (equip != -1)
+		{
+			DispatchKeyValue(equip,"ResponseContext",equipper);
+			DispatchSpawn(equip);
+			ActivateEntity(equip);
+		}
+	}
 	for (int i = 1;i<MaxClients+1;i++)
 	{
 		MedkitAmm[i] = 0.0;
@@ -575,6 +591,15 @@ public void weploweredch(Handle convar, const char[] oldValue, const char[] newV
 {
 	if (StringToInt(newValue) == 1) loweredsprint = true;
 	else loweredsprint = false;
+}
+
+public void spawnwithch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	Format(equipper,sizeof(equipper),"%s",newValue);
+	if (IsValidEntity(equip))
+	{
+		SetEntPropString(equip,Prop_Data,"m_iszResponseContext",newValue);
+	}
 }
 
 void FindStrayWeaps(int ent, int client)
