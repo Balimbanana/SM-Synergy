@@ -85,7 +85,7 @@ bool weapmanagersplaced = false;
 bool mapchanging = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9992"
+#define PLUGIN_VERSION "1.9993"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1285,6 +1285,7 @@ public void OnClientPutInServer(int client)
 {
 	centnextatk[client] = 0.0;
 	CreateTimer(0.5,clspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(1.0,ReBuildClientCustoms,_,TIMER_FLAG_NO_MAPCHANGE);
 	if (forcehdr) QueryClientConVar(client,"mat_hdr_level",hdrchk,0);
 	QueryClientConVar(client,"cc_lang",langchk,0);
 	showcc[client] = false;
@@ -1296,6 +1297,115 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 	int client = GetClientOfUserId(GetEventInt(event,"userid"));
 	CreateTimer(0.1,everyspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
 	return Plugin_Continue;
+}
+
+public Action ReBuildClientCustoms(Handle timer)
+{
+	Handle arrayofents = CreateArray(128);
+	if (GetArraySize(restorecustoments) > 0)
+	{
+		for (int i = 0;i<GetArraySize(restorecustoments);i++)
+		{
+			Handle dp = GetArrayCell(restorecustoments,i);
+			if (dp != INVALID_HANDLE)
+			{
+				ResetPack(dp);
+				char clsname[32];
+				char targn[64];
+				char mdl[64];
+				ReadPackString(dp,clsname,sizeof(clsname));
+				ReadPackString(dp,targn,sizeof(targn));
+				ReadPackString(dp,mdl,sizeof(mdl));
+				ReadPackCell(dp);
+				float porigin[3];
+				porigin[0] = ReadPackFloat(dp);
+				porigin[1] = ReadPackFloat(dp);
+				porigin[2] = ReadPackFloat(dp);
+				if ((StrContains(clsname,"weapon_",false) == 0) || (StrContains(clsname,"custom_",false) == 0))
+				{
+					Handle dpsmall = CreateDataPack();
+					WritePackString(dpsmall,clsname);
+					WritePackString(dpsmall,targn);
+					WritePackString(dpsmall,mdl);
+					WritePackFloat(dpsmall,porigin[0]);
+					WritePackFloat(dpsmall,porigin[1]);
+					WritePackFloat(dpsmall,porigin[2]);
+					PushArrayCell(arrayofents,dpsmall);
+				}
+			}
+		}
+	}
+	findcustomweaps(-1,"weapon_*",arrayofents);
+	findcustomweaps(-1,"custom_*",arrayofents);
+	CloseHandle(arrayofents);
+}
+
+void findcustomweaps(int ent, char[] customtype, Handle arrayofents)
+{
+	int thisent = FindEntityByClassname(ent,customtype);
+	if (IsValidEntity(thisent) && IsEntNetworkable(thisent))
+	{
+		char clsname[32];
+		GetEntityClassname(thisent,clsname,sizeof(clsname));
+		char globalname[64];
+		GetEntPropString(thisent,Prop_Data,"m_iGlobalname",globalname,sizeof(globalname));
+		bool saveent = false;
+		if ((FindValueInArray(hounds,thisent) != -1) || (FindValueInArray(houndsmdl,thisent) != -1) || (FindValueInArray(squids,thisent) != -1) || (FindValueInArray(squidsmdl,thisent) != -1) || (FindValueInArray(tents,thisent) != -1) || (FindValueInArray(tentsmdl,thisent) != -1) || (FindValueInArray(tentssnd,thisent) != -1) || (FindStringInArray(customentlist,clsname) != -1)) saveent = true;
+		if (saveent)
+		{
+			if (GetArraySize(arrayofents) > 0)
+			{
+				float orgs[3];
+				char mdl[64];
+				char targn[64];
+				if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",orgs);
+				else if (HasEntProp(thisent,Prop_Send,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Send,"m_vecOrigin",orgs);
+				if (HasEntProp(thisent,Prop_Data,"m_iName")) GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
+				if (HasEntProp(thisent,Prop_Data,"m_ModelName")) GetEntPropString(thisent,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+				for (int i = 0;i<GetArraySize(arrayofents);i++)
+				{
+					Handle dp = GetArrayCell(arrayofents,i);
+					if (dp != INVALID_HANDLE)
+					{
+						float porigin[3];
+						char tmpcls[32];
+						char tmptarg[64];
+						char tmpmdl[64];
+						ResetPack(dp);
+						ReadPackString(dp,tmpcls,sizeof(tmpcls));
+						ReadPackString(dp,tmptarg,sizeof(tmptarg));
+						ReadPackString(dp,tmpmdl,sizeof(tmpmdl));
+						porigin[0] = ReadPackFloat(dp);
+						porigin[1] = ReadPackFloat(dp);
+						porigin[2] = ReadPackFloat(dp);
+						if ((StrEqual(clsname,tmpcls,false)) && (StrEqual(targn,tmptarg,false)) && (StrEqual(mdl,tmpmdl,false)) && (orgs[0] == porigin[0]) && (orgs[1] == porigin[1]) && (orgs[2] == porigin[2]))
+						{
+							saveent = false;
+						}
+					}
+				}
+			}
+			if (saveent)
+			{
+				char targent[8];
+				if (StrContains(clsname,"weapon_",false) == 0)
+				{
+					if (HasEntProp(thisent,Prop_Data,"m_hOwner"))
+					{
+						int ownerent = GetEntPropEnt(thisent,Prop_Data,"m_hOwner");
+						if (ownerent != -1)
+						{
+							Format(targent,sizeof(targent),"%i",ownerent);
+						}
+					}
+				}
+				Handle dp = packent(thisent,targent);
+				if (dp != INVALID_HANDLE)
+					PushArrayCell(restorecustoments,dp);
+			}
+		}
+		findcustomweaps(thisent++,customtype,arrayofents);
+	}
 }
 
 public Action everyspawnpost(Handle timer, int client)
@@ -14057,7 +14167,29 @@ public Action onreload(const char[] output, int caller, int activator, float del
 			for (int i = 1;i<GetMaxEntities();i++)
 			{
 				isattacking[i] = 0;
-				if (i < MaxClients+1) fadingtime[i] = 0.0;
+				if (i < MaxClients+1)
+				{
+					fadingtime[i] = 0.0;
+					if (IsValidEntity(i))
+					{
+						if (IsClientConnected(i))
+						{
+							if (IsClientInGame(i))
+							{
+								if (IsPlayerAlive(i))
+								{
+									if (HasEntProp(i,Prop_Data,"m_bWearingSuit"))
+									{
+										if (GetEntProp(i,Prop_Data,"m_bWearingSuit") < 1)
+										{
+											RecheckEquips(-1,i,false);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 			findstraymdl(-1,"prop_dynamic");
 			findstraymdl(-1,"point_template");
@@ -14082,6 +14214,38 @@ public Action onreload(const char[] output, int caller, int activator, float del
 		}
 	}
 	return Plugin_Continue;
+}
+
+void RecheckEquips(int ent, int client, bool equipping)
+{
+	int findequip = FindEntityByClassname(ent,"info_player_equip");
+	if ((findequip != 0) && (IsValidEntity(findequip)))
+	{
+		if (HasEntProp(findequip,Prop_Data,"m_ItemNames"))
+		{
+			if (equipping)
+			{
+				AcceptEntityInput(findequip,"EquipPlayer",client);
+			}
+			else
+			{
+				for (int j = 0;j<8;j++)
+				{
+					char itemname[24];
+					GetEntPropString(findequip,Prop_Data,"m_ItemNames",itemname,sizeof(itemname),j);
+					if (StrEqual(itemname,"item_suit",false))
+					{
+						if (GetEntProp(findequip,Prop_Data,"m_ItemValues",_,j) > 0)
+						{
+							AcceptEntityInput(findequip,"EquipPlayer",client);
+							equipping = true;
+						}
+					}
+				}
+			}
+		}
+		RecheckEquips(findequip++,client,equipping);
+	}
 }
 
 Handle packent(int i, char[] targpass)
