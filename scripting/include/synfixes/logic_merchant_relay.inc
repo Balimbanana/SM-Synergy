@@ -113,7 +113,7 @@ public Action LogMerchPurchased(const char[] output, int caller, int activator, 
 	float origin[3];
 	if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
 	else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
-	readoutputstp(targn,"OnPurchased","ForceSpawn",origin,activator);
+	readoutputstp(caller,targn,"OnPurchased","ForceSpawn",origin,activator);
 }
 
 public Action LogMerchNotEnough(const char[] output, int caller, int activator, float delay)
