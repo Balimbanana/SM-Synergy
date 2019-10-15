@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.982"
+#define PLUGIN_VERSION "0.983"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -599,6 +599,16 @@ public void spawnwithch(Handle convar, const char[] oldValue, const char[] newVa
 	if (IsValidEntity(equip))
 	{
 		SetEntPropString(equip,Prop_Data,"m_iszResponseContext",newValue);
+	}
+	else if ((GetMapHistorySize() > 0) && (strlen(newValue) > 0))
+	{
+		equip = CreateEntityByName("info_player_equip");
+		if (equip != -1)
+		{
+			DispatchKeyValue(equip,"ResponseContext",newValue);
+			DispatchSpawn(equip);
+			ActivateEntity(equip);
+		}
 	}
 }
 
