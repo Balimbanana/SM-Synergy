@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.981"
-			"Previous"	"0.98"
+			"Latest"  	"0.982"
+			"Previous"	"0.981"
 		}
 		
-		"Notes"	"Added reload animations to weapon_scripted shotguns. Added weapon_scripted grenades. Added revive system to weapon_medkit."
+		"Notes"	"Added cvar synsweps_spawnwith."
 	}
 	
 	"Files"
