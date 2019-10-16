@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.32"
+#define PLUGIN_VERSION "0.33"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -149,6 +149,14 @@ public Action BuildAntirush(int client, int args)
 			Handle filehandle = OpenFile(mapname,"r",true,NULL_STRING);
 			while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
 			{
+				if (StrContains(line,"\"syn_antirush_",false) != -1)
+				{
+					PrintToConsole(client,"Antirush already exists in EDT, you may need to restart the map for it to take effect.");
+					CloseHandle(changelevels);
+					CloseHandle(filecontentsarray);
+					CloseHandle(filehandle);
+					return Plugin_Handled;
+				}
 				//TrimString will remove blank spaces and tabs.
 				//But without it, newlines are also appended.
 				int numtabs = 0;
