@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.3"
+#define PLUGIN_VERSION "0.31"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -450,7 +450,6 @@ void ReadCache(char[] cache, char[] mapedt)
 		WriteFileLine(edtfile,"{");
 		WriteFileLine(edtfile,"	entity");
 		WriteFileLine(edtfile,"	{");
-		WriteFileLine(edtfile,"		delete {classname \"logic_auto\"}");
 		WriteFileLine(edtfile,"		delete {classname \"info_player_start\"}");
 		WriteFileLine(edtfile,"		edit {classname \"game_text\" values {spawnflags \"1\"} }");
 		WriteFileLine(edtfile,"		edit {classname \"func_areaportal\" values {targetname \"disabledPortal\" StartOpen \"1\"} }");
@@ -472,6 +471,7 @@ void ReadCache(char[] cache, char[] mapedt)
 		bool WriteEnt = false;
 		Handle itemsarr = CreateArray(64);
 		Handle logicautos = CreateArray(64);
+		Handle hudtimer = CreateArray(64);
 		Handle mainspawn = CreateArray(64);
 		Handle passedarr = CreateArray(64);
 		Handle equipsarrays = CreateArray(64);
@@ -528,88 +528,130 @@ void ReadCache(char[] cache, char[] mapedt)
 				{
 					if (StrEqual(cls,"logic_auto",false))
 					{
-						Format(cls,sizeof(cls),"hud_timer");
-						PushArrayString(passedarr,"OnTimer \"syn_viewcontrol,Disable,,0,-1\"");
-						PushArrayString(passedarr,"targetname \"syn_hudtimer\"");
-						PushArrayString(passedarr,"TimerText \"WAITING FOR PLAYERS\"");
-						PushArrayString(passedarr,"TimerType \"1\"");
-					}
-					else if (StrEqual(cls,"prop_vehicle_jeep",false))
-					{
-						Format(cls,sizeof(cls),"info_vehicle_spawn");
-						PushArrayString(passedarr,"VehicleType \"4\"");
-						PushArrayString(passedarr,"VehicleSize \"192\"");
-						PushArrayString(passedarr,"StartEnabled \"1\"");
-						PushArrayString(passedarr,"StartGunEnabled \"1\"");
-					}
-					else if (StrEqual(cls,"prop_vehicle_airboat",false))
-					{
-						Format(cls,sizeof(cls),"info_vehicle_spawn");
-						PushArrayString(passedarr,"VehicleType \"2\"");
-						PushArrayString(passedarr,"VehicleSize \"192\"");
-						PushArrayString(passedarr,"StartEnabled \"1\"");
-						PushArrayString(passedarr,"StartGunEnabled \"1\"");
-					}
-					if (StrEqual(cls,"info_player_start",false))
-					{
-						Format(cls,sizeof(cls),"info_player_coop");
 						for (int i = 0;i<GetArraySize(passedarr);i++)
 						{
 							char tmparr[128];
 							GetArrayString(passedarr,i,tmparr,sizeof(tmparr));
-							if (StrContains(tmparr,"spawnflags",false) == 0)
+							if (StrContains(tmparr,"spawnflags",false) == -1)
 							{
-								ReplaceStringEx(tmparr,sizeof(tmparr),"spawnflags \"","");
-								ReplaceStringEx(tmparr,sizeof(tmparr),"\"","");
-								if (StrEqual(tmparr,"1",false)) ismain = true;
+								if (FindStringInArray(hudtimer,tmparr) == -1) PushArrayString(hudtimer,tmparr);
 							}
 						}
-						if (ismain)
+						char deletion[72];
+						Format(deletion,sizeof(deletion),"logic_auto\" %s}//Replaced in hud_timer",origin);
+						if (FindStringInArray(mapremovals,deletion) == -1) PushArrayString(mapremovals,deletion);
+					}
+					else
+					{
+						if (StrEqual(cls,"prop_vehicle_jeep",false))
 						{
-							Format(originalorgs,sizeof(originalorgs),origin);
-							ClearArray(mainspawn);
-							char spawnpoints[64];
-							if (spawns < 10) Format(spawnpoints,sizeof(spawnpoints),"targetname \"syn_spawnpoint_0%i\"",spawns);
-							else Format(spawnpoints,sizeof(spawnpoints),"targetname \"syn_spawnpoint_%i\"",spawns);
-							PushArrayString(passedarr,spawnpoints);
-							if (spawns > 0) PushArrayString(passedarr,"startdisabled \"1\"");
-							else
+							Format(cls,sizeof(cls),"info_vehicle_spawn");
+							
+							PushArrayString(passedarr,"VehicleType \"4\"");
+							PushArrayString(passedarr,"VehicleSize \"192\"");
+							PushArrayString(passedarr,"StartEnabled \"1\"");
+							PushArrayString(passedarr,"StartGunEnabled \"1\"");
+						}
+						else if (StrEqual(cls,"prop_vehicle_airboat",false))
+						{
+							Format(cls,sizeof(cls),"info_vehicle_spawn");
+							PushArrayString(passedarr,"VehicleType \"2\"");
+							PushArrayString(passedarr,"VehicleSize \"192\"");
+							PushArrayString(passedarr,"StartEnabled \"1\"");
+							PushArrayString(passedarr,"StartGunEnabled \"1\"");
+						}
+						if (StrEqual(cls,"info_player_start",false))
+						{
+							Format(cls,sizeof(cls),"info_player_coop");
+							for (int i = 0;i<GetArraySize(passedarr);i++)
 							{
-								WriteFileLine(edtfile,"		create {classname \"trigger_once\" %s",origin);
-								WriteFileLine(edtfile,"			values");
-								WriteFileLine(edtfile,"			{");
-								WriteFileLine(edtfile,"				spawnflags \"1\"");
-								WriteFileLine(edtfile,"				edt_maxs \"20 20 20\"");
-								WriteFileLine(edtfile,"				edt_mins \"-20 -20 -20\"");
-								WriteFileLine(edtfile,"				OnTrigger \"syn_hudtimer,Start,20,0,-1\"");
-								WriteFileLine(edtfile,"				OnTrigger \"syn_viewcontrol,Enable,,0,-1\"");
-								WriteFileLine(edtfile,"			}");
-								WriteFileLine(edtfile,"		}");
-								char kvs[128][64];
-								char lineedt[128];
-								Format(lineedt,sizeof(lineedt),origin);
-								ExplodeString(lineedt, "\"", kvs, 64, 128, true);
-								ExplodeString(kvs[1], " ", kvs, 64, 128, true);
-								orgpos[0] = StringToFloat(kvs[0]);
-								orgpos[1] = StringToFloat(kvs[1]);
-								orgpos[2] = StringToFloat(kvs[2]);
-								Format(lineedt,sizeof(lineedt),"origin \"%s %s %1.f\"",kvs[0],kvs[1],StringToFloat(kvs[2])+60.0);
-								WriteFileLine(edtfile,"		create {classname \"point_viewcontrol\" %s",lineedt);
-								WriteFileLine(edtfile,"			values");
-								WriteFileLine(edtfile,"			{");
-								WriteFileLine(edtfile,"				targetname \"syn_viewcontrol\"");
-								WriteFileLine(edtfile,"				spawnflags \"140\"");
-								if (strlen(angs) < 1) WriteFileLine(edtfile,"				angles \"0 0 0\"");
+								char tmparr[128];
+								GetArrayString(passedarr,i,tmparr,sizeof(tmparr));
+								if (StrContains(tmparr,"spawnflags",false) == 0)
+								{
+									ReplaceStringEx(tmparr,sizeof(tmparr),"spawnflags \"","");
+									ReplaceStringEx(tmparr,sizeof(tmparr),"\"","");
+									if (StrEqual(tmparr,"1",false)) ismain = true;
+								}
+							}
+							if (ismain)
+							{
+								Format(originalorgs,sizeof(originalorgs),origin);
+								ClearArray(mainspawn);
+								char spawnpoints[64];
+								if (spawns < 10) Format(spawnpoints,sizeof(spawnpoints),"targetname \"syn_spawnpoint_0%i\"",spawns);
+								else Format(spawnpoints,sizeof(spawnpoints),"targetname \"syn_spawnpoint_%i\"",spawns);
+								PushArrayString(passedarr,spawnpoints);
+								if (spawns > 0) PushArrayString(passedarr,"startdisabled \"1\"");
 								else
 								{
-									char angset[64];
-									Format(angset,sizeof(angset),"				%s",angs);
-									WriteFileLine(edtfile,angset);
+									WriteFileLine(edtfile,"		create {classname \"trigger_once\" %s",origin);
+									WriteFileLine(edtfile,"			values");
+									WriteFileLine(edtfile,"			{");
+									WriteFileLine(edtfile,"				spawnflags \"1\"");
+									WriteFileLine(edtfile,"				edt_maxs \"20 20 20\"");
+									WriteFileLine(edtfile,"				edt_mins \"-20 -20 -20\"");
+									WriteFileLine(edtfile,"				OnTrigger \"syn_hudtimer,Start,20,0,-1\"");
+									WriteFileLine(edtfile,"				OnTrigger \"syn_viewcontrol,Enable,,0,-1\"");
+									WriteFileLine(edtfile,"			}");
+									WriteFileLine(edtfile,"		}");
+									char kvs[128][64];
+									char lineedt[128];
+									Format(lineedt,sizeof(lineedt),origin);
+									ExplodeString(lineedt, "\"", kvs, 64, 128, true);
+									ExplodeString(kvs[1], " ", kvs, 64, 128, true);
+									orgpos[0] = StringToFloat(kvs[0]);
+									orgpos[1] = StringToFloat(kvs[1]);
+									orgpos[2] = StringToFloat(kvs[2]);
+									Format(lineedt,sizeof(lineedt),"origin \"%s %s %1.f\"",kvs[0],kvs[1],StringToFloat(kvs[2])+60.0);
+									WriteFileLine(edtfile,"		create {classname \"point_viewcontrol\" %s",lineedt);
+									WriteFileLine(edtfile,"			values");
+									WriteFileLine(edtfile,"			{");
+									WriteFileLine(edtfile,"				targetname \"syn_viewcontrol\"");
+									WriteFileLine(edtfile,"				spawnflags \"140\"");
+									if (strlen(angs) < 1) WriteFileLine(edtfile,"				angles \"0 0 0\"");
+									else
+									{
+										char angset[64];
+										Format(angset,sizeof(angset),"				%s",angs);
+										WriteFileLine(edtfile,angset);
+									}
+									WriteFileLine(edtfile,"			}");
+									WriteFileLine(edtfile,"		}");
+								}
+								spawns++;
+								WriteFileLine(edtfile,"		create {classname \"%s\" %s",cls,origin);
+								WriteFileLine(edtfile,"			values");
+								WriteFileLine(edtfile,"			{");
+								for (int i = 0;i<GetArraySize(passedarr);i++)
+								{
+									char tmparr[128];
+									GetArrayString(passedarr,i,tmparr,sizeof(tmparr));
+									if ((StrContains(tmparr,"classname",false) == -1) && (StrContains(tmparr,"}",false) == -1) && (strlen(tmparr) > 0))
+										WriteFileLine(edtfile,"				%s",tmparr);
 								}
 								WriteFileLine(edtfile,"			}");
 								WriteFileLine(edtfile,"		}");
 							}
-							spawns++;
+							else
+							{
+								Format(originalorgs,sizeof(originalorgs),origin);
+								ClearArray(mainspawn);
+								mainspawn = CloneArray(passedarr);
+							}
+						}
+						else if ((StrContains(cls,"weapon_",false) == 0) || (StrContains(cls,"item_",false) == 0))
+						{
+							char kvs[128][64];
+							char lineedt[128];
+							Format(lineedt,sizeof(lineedt),origin);
+							ExplodeString(lineedt, "\"", kvs, 64, 128, true);
+							ExplodeString(kvs[1], " ", kvs, 64, 128, true);
+							Format(lineedt,sizeof(lineedt),"%s,%s %s %s",cls,kvs[0],kvs[1],kvs[2]);
+							PushArrayString(itemsarr,lineedt);
+						}
+						else
+						{
 							WriteFileLine(edtfile,"		create {classname \"%s\" %s",cls,origin);
 							WriteFileLine(edtfile,"			values");
 							WriteFileLine(edtfile,"			{");
@@ -617,66 +659,40 @@ void ReadCache(char[] cache, char[] mapedt)
 							{
 								char tmparr[128];
 								GetArrayString(passedarr,i,tmparr,sizeof(tmparr));
-								if (StrContains(tmparr,"OnMapSpawn",false) == 0) ReplaceStringEx(tmparr,sizeof(tmparr),"OnMapSpawn","OnTimer");
-								else if (StrContains(tmparr,"OnMapTransition") == 0) PushArrayString(logicautos,tmparr);
-								else if ((StrEqual(cls,"info_vehicle_spawn",false)) && (StrContains(tmparr,"model",false) == 0) && (StrContains(tmparr,"models/buggy.mdl",false) != -1))
+								if (StrEqual(cls,"info_vehicle_spawn",false))
 								{
-									ReplaceStringEx(tmparr,sizeof(tmparr),"models/buggy.mdl","models\\vehicles\\buggy_p2.mdl");
+									if (StrContains(tmparr,"model",false) == 0)
+									{
+										if (StrContains(tmparr,"models/buggy.mdl",false) != -1)
+											ReplaceStringEx(tmparr,sizeof(tmparr),"models/buggy.mdl","models\\vehicles\\buggy_p2.mdl");
+										else if (StrContains(tmparr,"models/vehicle.mdl",false) != -1)
+										{
+											int replace = FindStringInArray(passedarr,"VehicleType \"4\"");
+											if (replace != -1)
+											{
+												RemoveFromArray(passedarr,replace);
+												PushArrayString(passedarr,"VehicleType \"3\"");
+											}
+											replace = FindStringInArray(passedarr,"StartGunEnabled \"1\"");
+											if (replace != -1)
+											{
+												RemoveFromArray(passedarr,replace);
+											}
+										}
+									}
+									if ((StrContains(tmparr,"PlayerOff",false) != -1) || (StrContains(tmparr,"PlayerOn",false) != -1)) tmparr = "";
+									else if (StrContains(tmparr,"targetname",false) == 0)
+									{
+										if (vehiclespawns < 10) Format(tmparr,sizeof(tmparr),"targetname \"syn_vehicle_spawn_0%i\"",vehiclespawns);
+										else Format(tmparr,sizeof(tmparr),"targetname \"syn_vehicle_spawn_%i\"",vehiclespawns);
+									}
 								}
-								else if ((StrContains(tmparr,"PlayerOff",false) != -1) || (StrContains(tmparr,"PlayerOn",false) != -1)) tmparr = "";
 								if ((StrContains(tmparr,"classname",false) == -1) && (StrContains(tmparr,"}",false) == -1) && (strlen(tmparr) > 0))
 									WriteFileLine(edtfile,"				%s",tmparr);
 							}
 							WriteFileLine(edtfile,"			}");
 							WriteFileLine(edtfile,"		}");
 						}
-						else
-						{
-							Format(originalorgs,sizeof(originalorgs),origin);
-							ClearArray(mainspawn);
-							mainspawn = CloneArray(passedarr);
-						}
-					}
-					else if ((StrContains(cls,"weapon_",false) == 0) || (StrContains(cls,"item_",false) == 0))
-					{
-						char kvs[128][64];
-						char lineedt[128];
-						Format(lineedt,sizeof(lineedt),origin);
-						ExplodeString(lineedt, "\"", kvs, 64, 128, true);
-						ExplodeString(kvs[1], " ", kvs, 64, 128, true);
-						Format(lineedt,sizeof(lineedt),"%s,%s %s %s",cls,kvs[0],kvs[1],kvs[2]);
-						PushArrayString(itemsarr,lineedt);
-					}
-					else
-					{
-						WriteFileLine(edtfile,"		create {classname \"%s\" %s",cls,origin);
-						WriteFileLine(edtfile,"			values");
-						WriteFileLine(edtfile,"			{");
-						for (int i = 0;i<GetArraySize(passedarr);i++)
-						{
-							char tmparr[128];
-							GetArrayString(passedarr,i,tmparr,sizeof(tmparr));
-							if (StrContains(tmparr,"OnMapSpawn",false) == 0) ReplaceStringEx(tmparr,sizeof(tmparr),"OnMapSpawn","OnTimer");
-							else if (StrContains(tmparr,"OnMapTransition") == 0)
-							{
-								PushArrayString(logicautos,tmparr);
-								tmparr = "";
-							}
-							else if (StrEqual(cls,"info_vehicle_spawn",false))
-							{
-								if ((StrContains(tmparr,"model",false) == 0) && (StrContains(tmparr,"models/buggy.mdl",false) != -1)) ReplaceStringEx(tmparr,sizeof(tmparr),"models/buggy.mdl","models\\vehicles\\buggy_p2.mdl");
-								else if ((StrContains(tmparr,"PlayerOff",false) != -1) || (StrContains(tmparr,"PlayerOn",false) != -1)) tmparr = "";
-								else if (StrContains(tmparr,"targetname",false) == 0)
-								{
-									if (vehiclespawns < 10) Format(tmparr,sizeof(tmparr),"targetname \"syn_vehicle_spawn_0%i\"",vehiclespawns);
-									else Format(tmparr,sizeof(tmparr),"targetname \"syn_vehicle_spawn_%i\"",vehiclespawns);
-								}
-							}
-							if ((StrContains(tmparr,"classname",false) == -1) && (StrContains(tmparr,"}",false) == -1) && (strlen(tmparr) > 0))
-								WriteFileLine(edtfile,"				%s",tmparr);
-						}
-						WriteFileLine(edtfile,"			}");
-						WriteFileLine(edtfile,"		}");
 					}
 					angs = "";
 					cls = "";
@@ -690,39 +706,42 @@ void ReadCache(char[] cache, char[] mapedt)
 			char spawnpoints[64];
 			Format(spawnpoints,sizeof(spawnpoints),"targetname \"syn_spawnpoint_00\"");
 			PushArrayString(mainspawn,spawnpoints);
-			WriteFileLine(edtfile,"		create {classname \"trigger_once\" %s",originalorgs);
-			WriteFileLine(edtfile,"			values");
-			WriteFileLine(edtfile,"			{");
-			WriteFileLine(edtfile,"				spawnflags \"1\"");
-			WriteFileLine(edtfile,"				edt_maxs \"20 20 20\"");
-			WriteFileLine(edtfile,"				edt_mins \"-20 -20 -20\"");
-			WriteFileLine(edtfile,"				OnTrigger \"syn_hudtimer,Start,20,0,-1\"");
-			WriteFileLine(edtfile,"				OnTrigger \"syn_viewcontrol,Enable,,0,-1\"");
-			WriteFileLine(edtfile,"			}");
-			WriteFileLine(edtfile,"		}");
-			char kvs[128][64];
-			char lineedt[128];
-			Format(lineedt,sizeof(lineedt),originalorgs);
-			ExplodeString(lineedt, "\"", kvs, 64, 128, true);
-			ExplodeString(kvs[1], " ", kvs, 64, 128, true);
-			orgpos[0] = StringToFloat(kvs[0]);
-			orgpos[1] = StringToFloat(kvs[1]);
-			orgpos[2] = StringToFloat(kvs[2]);
-			Format(lineedt,sizeof(lineedt),"origin \"%s %s %1.f\"",kvs[0],kvs[1],StringToFloat(kvs[2])+60.0);
-			WriteFileLine(edtfile,"		create {classname \"point_viewcontrol\" %s",lineedt);
-			WriteFileLine(edtfile,"			values");
-			WriteFileLine(edtfile,"			{");
-			WriteFileLine(edtfile,"				targetname \"syn_viewcontrol\"");
-			WriteFileLine(edtfile,"				spawnflags \"140\"");
-			if (strlen(angs) < 1) WriteFileLine(edtfile,"				angles \"0 0 0\"");
-			else
+			if (GetArraySize(hudtimer) > 0)
 			{
-				char angset[64];
-				Format(angset,sizeof(angset),"				%s",angs);
-				WriteFileLine(edtfile,angset);
+				WriteFileLine(edtfile,"		create {classname \"trigger_once\" %s",originalorgs);
+				WriteFileLine(edtfile,"			values");
+				WriteFileLine(edtfile,"			{");
+				WriteFileLine(edtfile,"				spawnflags \"1\"");
+				WriteFileLine(edtfile,"				edt_maxs \"20 20 20\"");
+				WriteFileLine(edtfile,"				edt_mins \"-20 -20 -20\"");
+				WriteFileLine(edtfile,"				OnTrigger \"syn_hudtimer,Start,20,0,-1\"");
+				WriteFileLine(edtfile,"				OnTrigger \"syn_viewcontrol,Enable,,0,-1\"");
+				WriteFileLine(edtfile,"			}");
+				WriteFileLine(edtfile,"		}");
+				char kvs[128][64];
+				char lineedt[128];
+				Format(lineedt,sizeof(lineedt),originalorgs);
+				ExplodeString(lineedt, "\"", kvs, 64, 128, true);
+				ExplodeString(kvs[1], " ", kvs, 64, 128, true);
+				orgpos[0] = StringToFloat(kvs[0]);
+				orgpos[1] = StringToFloat(kvs[1]);
+				orgpos[2] = StringToFloat(kvs[2]);
+				Format(lineedt,sizeof(lineedt),"origin \"%s %s %1.f\"",kvs[0],kvs[1],StringToFloat(kvs[2])+60.0);
+				WriteFileLine(edtfile,"		create {classname \"point_viewcontrol\" %s",lineedt);
+				WriteFileLine(edtfile,"			values");
+				WriteFileLine(edtfile,"			{");
+				WriteFileLine(edtfile,"				targetname \"syn_viewcontrol\"");
+				WriteFileLine(edtfile,"				spawnflags \"140\"");
+				if (strlen(angs) < 1) WriteFileLine(edtfile,"				angles \"0 0 0\"");
+				else
+				{
+					char angset[64];
+					Format(angset,sizeof(angset),"				%s",angs);
+					WriteFileLine(edtfile,angset);
+				}
+				WriteFileLine(edtfile,"			}");
+				WriteFileLine(edtfile,"		}");
 			}
-			WriteFileLine(edtfile,"			}");
-			WriteFileLine(edtfile,"		}");
 			WriteFileLine(edtfile,"		create {classname \"info_player_coop\" %s",originalorgs);
 			WriteFileLine(edtfile,"			values");
 			WriteFileLine(edtfile,"			{");
@@ -733,6 +752,33 @@ void ReadCache(char[] cache, char[] mapedt)
 				if (StrContains(tmparr,"OnMapSpawn",false) == 0) ReplaceStringEx(tmparr,sizeof(tmparr),"OnMapSpawn","OnTimer");
 				if ((StrContains(tmparr,"classname",false) == -1) && (StrContains(tmparr,"}",false) == -1))
 					WriteFileLine(edtfile,"				%s",tmparr);
+			}
+			WriteFileLine(edtfile,"			}");
+			WriteFileLine(edtfile,"		}");
+		}
+		if (GetArraySize(hudtimer) > 0)
+		{
+			WriteFileLine(edtfile,"		create {classname \"hud_timer\"");
+			WriteFileLine(edtfile,"			values");
+			WriteFileLine(edtfile,"			{");
+			WriteFileLine(edtfile,"				targetname \"syn_hudtimer\"");
+			WriteFileLine(edtfile,"				TimerText \"WAITING FOR PLAYERS\"");
+			WriteFileLine(edtfile,"				TimerType \"1\"");
+			WriteFileLine(edtfile,"				OnTimer \"syn_viewcontrol,Disable,,0,-1\"");
+			for (int i = 0;i<GetArraySize(hudtimer);i++)
+			{
+				char tmparr[128];
+				GetArrayString(hudtimer,i,tmparr,sizeof(tmparr));
+				if (StrContains(tmparr,"OnMapSpawn",false) == 0) ReplaceStringEx(tmparr,sizeof(tmparr),"OnMapSpawn","OnTimer");
+				else if (StrContains(tmparr,"OnMapTransition") == 0)
+				{
+					PushArrayString(logicautos,tmparr);
+					tmparr = "";
+				}
+				if (strlen(tmparr) > 1)
+				{
+					WriteFileLine(edtfile,"				%s",tmparr);
+				}
 			}
 			WriteFileLine(edtfile,"			}");
 			WriteFileLine(edtfile,"		}");
@@ -773,7 +819,9 @@ void ReadCache(char[] cache, char[] mapedt)
 						{
 							if (StrEqual(tmparr,"item_suit",false))
 							{
-								if (FindStringInArray(mapremovals,tmparr) == -1) PushArrayString(mapremovals,tmparr);
+								char deletion[72];
+								Format(deletion,sizeof(deletion),"%s\" %s}",tmparr,origin);
+								if (FindStringInArray(mapremovals,deletion) == -1) PushArrayString(mapremovals,deletion);
 							}
 							if ((StrContains(tmparr,"item_",false) == 0) && (!StrEqual(tmparr,"item_suit",false)))
 							{
@@ -808,6 +856,15 @@ void ReadCache(char[] cache, char[] mapedt)
 			WriteFileLine(edtfile,"			}");
 			WriteFileLine(edtfile,"		}");
 		}
+		if (GetArraySize(mapremovals) > 0)
+		{
+			for (int i = 0;i<GetArraySize(mapremovals);i++)
+			{
+				char tmparr[128];
+				GetArrayString(mapremovals,i,tmparr,sizeof(tmparr));
+				WriteFileLine(edtfile,"		delete {classname \"%s",tmparr);
+			}
+		}
 		if (GetArraySize(logicautos) > 0)
 		{
 			WriteFileLine(edtfile,"		create {classname \"logic_auto\"");
@@ -834,29 +891,25 @@ void ReadCache(char[] cache, char[] mapedt)
 				char ammtype[32];
 				Format(ammtype,sizeof(ammtype),"%s",kvs[0]);
 				ReplaceStringEx(ammtype,sizeof(ammtype),"weapon_","sk_max_");
+				if (StrEqual(ammtype,"sk_max_shotgun",false)) Format(ammtype,sizeof(ammtype),"sk_max_buckshot");
 				int ammamount = 1;
 				Handle cvarchk = FindConVar(ammtype);
 				if (cvarchk != INVALID_HANDLE) ammamount = GetConVarInt(cvarchk)/4;
 				CloseHandle(cvarchk);
 				ReplaceStringEx(ammtype,sizeof(ammtype),"sk_max_","ammo_");
 				if (StrEqual(ammtype,"ammo_rpg",false)) Format(ammtype,sizeof(ammtype),"ammo_rpg_round");
-				if (StrEqual(ammtype,"ammo_frag",false)) Format(ammtype,sizeof(ammtype),"ammo_grenade");
-				Format(largerline,sizeof(largerline),"		create {classname \"info_player_equip\" values {targetname \"%s\" startdisabled \"1\" %s \"1\" %s \"%i\"} }",kvs[1],kvs[0],ammtype,ammamount);
+				else if (StrEqual(ammtype,"ammo_frag",false)) Format(ammtype,sizeof(ammtype),"ammo_grenade");
+				else if (StrEqual(ammtype,"ammo_shotgun",false)) Format(ammtype,sizeof(ammtype),"ammo_buckshot");
+				else if ((StrEqual(ammtype,"ammo_crowbar",false)) || (StrEqual(ammtype,"ammo_physcannon",false))) ammtype = "";
+				if (strlen(ammtype) > 1) Format(largerline,sizeof(largerline),"		create {classname \"info_player_equip\" values {targetname \"%s\" startdisabled \"1\" %s \"1\" %s \"%i\"} }",kvs[1],kvs[0],ammtype,ammamount);
+				else Format(largerline,sizeof(largerline),"		create {classname \"info_player_equip\" values {targetname \"%s\" startdisabled \"1\" %s \"1\"} }",kvs[1],kvs[0]);
 				WriteFileLine(edtfile,largerline);
-			}
-		}
-		if (GetArraySize(mapremovals) > 0)
-		{
-			for (int i = 0;i<GetArraySize(mapremovals);i++)
-			{
-				char tmparr[128];
-				GetArrayString(mapremovals,i,tmparr,sizeof(tmparr));
-				WriteFileLine(edtfile,"		delete {classname \"%s\"}",tmparr);
 			}
 		}
 		CloseHandle(passedarr);
 		CloseHandle(mainspawn);
 		CloseHandle(logicautos);
+		CloseHandle(hudtimer);
 		CloseHandle(itemsarr);
 		CloseHandle(equipsarrays);
 		CloseHandle(mapremovals);
