@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.31"
+#define PLUGIN_VERSION "0.32"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -40,6 +40,7 @@ public void OnPluginStart()
 	RegAdminCmd("buildcache",BuildCacheFor,ADMFLAG_ROOT,"Build the entity cache for specified map. No arguments will do current map.");
 	RegAdminCmd("buildedt",BuildEDTFor,ADMFLAG_ROOT,"Build a template EDT using some info provided by entity cache.");
 	RegAdminCmd("buildloader",BuildLoaderFor,ADMFLAG_ROOT,"Build a content loader for a specified sourcemod.");
+	RegAdminCmd("buildantirush",BuildAntirush,ADMFLAG_ROOT,"Build antirush in EDT using some info provided by the current map.");
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -104,6 +105,152 @@ public Action BuildCacheFor(int client, int args)
 		openbrackets = 0;
 		buildcache(0,INVALID_HANDLE);
 	}
+	return Plugin_Handled;
+}
+
+public Action BuildAntirush(int client, int args)
+{
+	Handle changelevels = CreateArray(8);
+	for (int i = MaxClients+1;i<2048;i++)
+	{
+		if (IsValidEntity(i))
+		{
+			if (IsEntNetworkable(i))
+			{
+				char cls[32];
+				GetEntityClassname(i,cls,sizeof(cls));
+				if (StrEqual(cls,"trigger_changelevel",false))
+				{
+					PushArrayCell(changelevels,i);
+				}
+				if (HasEntProp(i,Prop_Data,"m_iName"))
+				{
+					char targn[64];
+					GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+					if (StrContains(targn,"syn_antirush",false) != -1)
+					{
+						PrintToConsole(client,"Antirush already exists on current map");
+						CloseHandle(changelevels);
+						return Plugin_Handled;
+					}
+				}
+			}
+		}
+	}
+	if (GetArraySize(changelevels) > 0)
+	{
+		char mapname[72];
+		GetCurrentMap(mapname,sizeof(mapname));
+		Format(mapname,sizeof(mapname),"maps/%s.edt",mapname);
+		if (FileExists(mapname,true,NULL_STRING))
+		{
+			Handle filecontentsarray = CreateArray(1024);
+			char line[128];
+			Handle filehandle = OpenFile(mapname,"r",true,NULL_STRING);
+			while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
+			{
+				//TrimString will remove blank spaces and tabs.
+				//But without it, newlines are also appended.
+				int numtabs = 0;
+				int tabs = StrContains(line,"	",false);
+				if (tabs != -1)
+				{
+					numtabs = 1;
+					while (tabs == 0)
+					{
+						tabs = StrContains(line[tabs+numtabs],"	",false);
+						if (tabs == 0) numtabs++;
+					}
+				}
+				TrimString(line);
+				for (int i = 0;i<numtabs;i++)
+				{
+					Format(line,sizeof(line),"	%s",line);
+				}
+				PushArrayString(filecontentsarray,line);
+			}
+			CloseHandle(filehandle);
+			if (GetArraySize(filecontentsarray) > 2)
+			{
+				RemoveFromArray(filecontentsarray,GetArraySize(filecontentsarray)-1);
+				RemoveFromArray(filecontentsarray,GetArraySize(filecontentsarray)-1);
+				filehandle = OpenFile(mapname,"w",true,NULL_STRING);
+				for (int i = 0;i<GetArraySize(filecontentsarray);i++)
+				{
+					GetArrayString(filecontentsarray,i,line,sizeof(line));
+					WriteFileLine(filehandle,line);
+				}
+				for (int j = 0;j<GetArraySize(changelevels);j++)
+				{
+					int i = GetArrayCell(changelevels,j);
+					if (IsValidEntity(i))
+					{
+						float mins[3];
+						float maxs[3];
+						GetEntPropVector(i,Prop_Data,"m_vecMins",mins);
+						GetEntPropVector(i,Prop_Data,"m_vecMaxs",maxs);
+						float actualmaxs[3];
+						float actualmins[3];
+						actualmaxs[0] = maxs[0]-mins[0];
+						actualmaxs[1] = maxs[1]-mins[1];
+						actualmaxs[2] = maxs[2]-mins[2];
+						actualmins[0] = mins[0]-maxs[0];
+						actualmins[1] = mins[1]-maxs[1];
+						actualmins[2] = mins[2]-maxs[2];
+						float position[3];
+						position[0] = mins[0]+(actualmaxs[0]/2);
+						position[1] = mins[1]+(actualmaxs[1]/2);
+						position[2] = mins[2]+(actualmaxs[2]/2);
+						int sf = GetEntProp(i,Prop_Data,"m_spawnflags");
+						if (!(sf & 2)) //Includes spawnflags 2 and 4 if not by <<
+						{
+							char changelevelmdl[32];
+							GetEntPropString(i,Prop_Data,"m_ModelName",changelevelmdl,sizeof(changelevelmdl));
+							PrintToConsole(client,"trigger_changelevel Position %1.f %1.f %1.f Maxs %1.f %1.f %1.f Mins %1.f %1.f %1.f",position[0],position[1],position[2],actualmaxs[0],actualmaxs[1],actualmaxs[2],actualmins[0],actualmins[1],actualmins[2]);
+							WriteFileLine(filehandle,"		create {classname \"trigger_coop\" origin \"%1.f %1.f %1.f\"",position[0],position[1],position[2]);
+							WriteFileLine(filehandle,"			values");
+							WriteFileLine(filehandle,"			{");
+							WriteFileLine(filehandle,"				targetname \"syn_antirush_coop%i\"",j);
+							WriteFileLine(filehandle,"				spawnflags \"1\"");
+							WriteFileLine(filehandle,"				edt_mins \"%1.f %1.f %1.f\"",actualmins[0]*1.5,actualmins[1]*1.5,actualmins[2]*1.5);
+							WriteFileLine(filehandle,"				edt_maxs \"%1.f %1.f %1.f\"",actualmaxs[0]*1.5,actualmaxs[1]*1.5,actualmaxs[2]*1.5);
+							WriteFileLine(filehandle,"				UseHud \"1\"");
+							WriteFileLine(filehandle,"				CountType \"1\"");
+							WriteFileLine(filehandle,"				PlayerValue \"66\"");
+							WriteFileLine(filehandle,"				OnPlayersIn \"syn_antirush_block%i,kill,,0,-1\"",j);
+							WriteFileLine(filehandle,"				OnPlayersIn \"!self,kill,,0.1,-1\"");
+							WriteFileLine(filehandle,"			}");
+							WriteFileLine(filehandle,"		}");
+							WriteFileLine(filehandle,"		create {classname \"func_brush\" origin \"0 0 0\"");
+							WriteFileLine(filehandle,"			values");
+							WriteFileLine(filehandle,"			{");
+							WriteFileLine(filehandle,"				targetname \"syn_antirush_block%i\"",j);
+							WriteFileLine(filehandle,"				spawnflags \"2\"");
+							WriteFileLine(filehandle,"				Solidity \"2\"");
+							WriteFileLine(filehandle,"				solidbsp \"1\"");
+							WriteFileLine(filehandle,"				edt_mins \"%1.f %1.f %1.f\"",actualmins[0],actualmins[1],actualmins[2]);
+							WriteFileLine(filehandle,"				edt_maxs \"%1.f %1.f %1.f\"",actualmaxs[0],actualmaxs[1],actualmaxs[2]);
+							WriteFileLine(filehandle,"				model \"%s\"",changelevelmdl);
+							WriteFileLine(filehandle,"				RenderMode \"10\"");
+							WriteFileLine(filehandle,"				RenderFX \"6\"");
+							WriteFileLine(filehandle,"			}");
+							WriteFileLine(filehandle,"		}");
+						}
+					}
+				}
+				WriteFileLine(filehandle,"	}");
+				WriteFileLine(filehandle,"}");
+				CloseHandle(filehandle);
+			}
+			CloseHandle(filecontentsarray);
+		}
+		else
+		{
+			PrintToConsole(client,"Could not find EDT of current map");
+		}
+	}
+	else PrintToConsole(client,"Could not find any trigger_changelevel's on current map");
+	CloseHandle(changelevels);
 	return Plugin_Handled;
 }
 
@@ -438,7 +585,7 @@ void ReadCache(char[] cache, char[] mapedt)
 {
 	char edtfilepath[64];
 	Format(edtfilepath,sizeof(edtfilepath),"maps/%s.edt",mapedt);
-	if (FileExists(edtfilepath,true,NULL_STRING))
+	if (FileExists(edtfilepath))
 	{
 		PrintToServer("EDT %s already exists",edtfilepath);
 		return;
@@ -1045,6 +1192,7 @@ void buildcache(int startline, Handle mapset)
 								}
 								else
 								{
+									PrintToServer("Finished writing map set");
 									CloseHandle(mapset);
 									break;
 								}
