@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.3"
-			"Previous"	"0.2"
+			"Latest"  	"0.31"
+			"Previous"	"0.3"
 		}
 		
-		"Notes"	"Added prop_vehicle_airboat spawners."
+		"Notes"	"Added more vehicle types. Consolidated logic_auto rebuilds to one hud_timer. Fixed a couple ammo type detections in info_player_equip rebuilds."
 	}
 	
 	"Files"
