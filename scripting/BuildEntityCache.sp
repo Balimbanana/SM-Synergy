@@ -438,6 +438,11 @@ void ReadCache(char[] cache, char[] mapedt)
 {
 	char edtfilepath[64];
 	Format(edtfilepath,sizeof(edtfilepath),"maps/%s.edt",mapedt);
+	if (FileExists(edtfilepath,true,NULL_STRING))
+	{
+		PrintToServer("EDT %s already exists",edtfilepath);
+		return;
+	}
 	Handle edtfile = OpenFile(edtfilepath,"w");
 	if (edtfile != INVALID_HANDLE)
 	{
@@ -856,6 +861,7 @@ void ReadCache(char[] cache, char[] mapedt)
 	CloseHandle(filehandle);
 	CloseHandle(edtfile);
 	PrintToServer("Finished writing EDT %s",edtfilepath);
+	return;
 }
 
 public void OnMapStart()
