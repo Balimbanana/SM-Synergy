@@ -10,14 +10,16 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.1"
+#define PLUGIN_VERSION "0.2"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
 bool hasreadcache = false;
+bool startedreading = false;
 bool WriteCache = false;
 char mapbuf[64];
 char curmap[64];
+int openbrackets = 0;
 
 public Plugin myinfo =
 {
@@ -36,6 +38,8 @@ public void OnPluginStart()
 	HookConVarChange(cvar, autobuildch);
 	CloseHandle(cvar);
 	RegAdminCmd("buildcache",BuildCacheFor,ADMFLAG_ROOT,"Build the entity cache for specified map. No arguments will do current map.");
+	RegAdminCmd("buildedt",BuildEDTFor,ADMFLAG_ROOT,"Build a template EDT using some info provided by entity cache.");
+	RegAdminCmd("buildloader",BuildLoaderFor,ADMFLAG_ROOT,"Build a content loader for a specified sourcemod.");
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -66,7 +70,8 @@ public Action BuildCacheFor(int client, int args)
 		GetCurrentMap(curmap,sizeof(curmap));
 		PrintToConsole(client,"Building cache for %s",curmap);
 		Format(curmap,sizeof(curmap),"maps/%s.bsp",curmap);
-		buildcache(0);
+		openbrackets = 0;
+		buildcache(0,INVALID_HANDLE);
 	}
 	else
 	{
@@ -76,10 +81,14 @@ public Action BuildCacheFor(int client, int args)
 			char tag[16];
 			GetCmdArg(1,tag,sizeof(tag));
 			GetCmdArg(2,specmap,sizeof(specmap));
+			Format(curmap,sizeof(curmap),"maps/%s.bsp",specmap);
 			Format(specmap,sizeof(specmap),"%s_%s",tag,specmap);
 		}
-		else GetCmdArg(1,specmap,sizeof(specmap));
-		Format(curmap,sizeof(curmap),"maps/%s.bsp",specmap);
+		else
+		{
+			GetCmdArg(1,specmap,sizeof(specmap));
+			Format(curmap,sizeof(curmap),"maps/%s.bsp",specmap);
+		}
 		Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s.ent",specmap);
 		if (FileExists(mapbuf,true,NULL_STRING))
 		{
@@ -92,9 +101,761 @@ public Action BuildCacheFor(int client, int args)
 			PrintToConsole(client,"Could not find map: %s",specmap);
 			return Plugin_Handled;
 		}
-		buildcache(0);
+		openbrackets = 0;
+		buildcache(0,INVALID_HANDLE);
 	}
 	return Plugin_Handled;
+}
+
+public Action BuildEDTFor(int client, int args)
+{
+	if (!IsValidEntity(client)) return Plugin_Handled;
+	char spec[64];
+	char edtmap[64];
+	char cachepath[64];
+	if (args > 1)
+	{
+		GetCmdArg(1,spec,sizeof(spec));
+		char content[32];
+		GetCmdArg(2,content,sizeof(content));
+		if (StrEqual(spec,"all",false))
+		{
+			char contentdat[64];
+			Format(contentdat,sizeof(contentdat),"content/%s.dat",content);
+			if (FileExists(contentdat,true,NULL_STRING))
+			{
+				Handle curmappass = CreateDataPack();
+				bool foundmaps = false;
+				bool readuntilnext = false;
+				char maptag[32];
+				char modpath[128];
+				char line[128];
+				Handle filehandle = OpenFile(contentdat,"r",true,NULL_STRING);
+				if (filehandle != INVALID_HANDLE)
+				{
+					while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
+					{
+						TrimString(line);
+						if (StrContains(line,"tag",false) != -1)
+						{
+							ReplaceString(line,sizeof(line),"	","");
+							char fixuptmp[16][16];
+							ExplodeString(line,"\"\"",fixuptmp,16,16,true);
+							Format(maptag,sizeof(maptag),"%s",fixuptmp[1]);
+							ReplaceString(maptag,sizeof(maptag),"\"","");
+							PrintToServer("Found tag %s",maptag);
+						}
+						else if (StrContains(line,"path",false) != -1)
+						{
+							ReplaceString(line,sizeof(line),"	","");
+							char fixuptmp[16][16];
+							ExplodeString(line,"\"\"",fixuptmp,16,16,true);
+							Format(modpath,sizeof(modpath),"..\\..\\..\\sourcemods\\%s\\maps",fixuptmp[1]);
+							ReplaceString(modpath,sizeof(modpath),"\"","");
+							PrintToServer("Found path %s",modpath);
+							if (DirExists(modpath,true,NULL_STRING)) PrintToServer("ModPath Exists");
+						}
+						else if (StrContains(line,"maps",false) != -1)
+						{
+							readuntilnext = true;
+						}
+						else if (readuntilnext)
+						{
+							if (StrContains(line,"}",false) != -1) break;
+							else if (StrContains(line,"{",false) == -1)
+							{
+								ReplaceString(line,sizeof(line),"	","");
+								ReplaceString(line,sizeof(line),"\"","");
+								if (StrContains(line,"//",false) != 0)
+								{
+									int commentpos = StrContains(line,"//",false);
+									if (commentpos != -1)
+									{
+										Format(line,commentpos+1,"%s",line);
+									}
+									foundmaps = true;
+									char write[128];
+									char readpath[128];
+									Format(readpath,sizeof(readpath),"%s\\%s.bsp",modpath,line);
+									if (FileExists(readpath,true,NULL_STRING))
+									{
+										if (FileSize(readpath,true,NULL_STRING) > 1)
+										{
+											PrintToServer("Readmap %s",line);
+											Format(write,sizeof(write),"maps/ent_cache/%s_%s.ent",maptag,line);
+											WritePackString(curmappass,write);
+											WritePackString(curmappass,readpath);
+										}
+										else PrintToServer("Skip empty map %s",line);
+									}
+									else
+									{
+										PrintToServer("Could not find map %s",line);
+									}
+								}
+							}
+						}
+					}
+				}
+				CloseHandle(filehandle);
+				if (foundmaps)
+				{
+					//Format(curmap,sizeof(curmap),"%s\\%s.bsp",modpath,mapbuf);
+					//Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s_%s.ent",maptag,mapbuf);
+					WritePackString(curmappass,"endofpack");
+					ResetPack(curmappass);
+					if (curmappass != INVALID_HANDLE)
+					{
+						ReadPackString(curmappass,mapbuf,sizeof(mapbuf));
+						if (!StrEqual(mapbuf,"endofpack",false))
+						{
+							ReadPackString(curmappass,curmap,sizeof(curmap));
+							PrintToServer("WriteTo %s\nRead %s",mapbuf,curmap);
+							buildcache(0,curmappass);
+						}
+						else CloseHandle(curmappass);
+					}
+				}
+				else CloseHandle(curmappass);
+			}
+			return Plugin_Handled;
+		}
+		else
+		{
+			char contentdata[16];
+			GetCmdArg(1,contentdata,sizeof(contentdata));
+			GetCmdArg(2,edtmap,sizeof(edtmap));
+			Format(cachepath,sizeof(cachepath),"maps/ent_cache/%s_%s.ent",contentdata,edtmap);
+		}
+	}
+	else if (args == 1)
+	{
+		GetCmdArg(1,edtmap,sizeof(edtmap));
+		Format(cachepath,sizeof(cachepath),"maps/ent_cache/%s.ent",edtmap);
+	}
+	else
+	{
+		GetCurrentMap(edtmap,sizeof(edtmap));
+		char contentdata[64];
+		Handle cvar = FindConVar("content_metadata");
+		if (cvar != INVALID_HANDLE)
+		{
+			GetConVarString(cvar,contentdata,sizeof(contentdata));
+			char fixuptmp[16][16];
+			ExplodeString(contentdata," ",fixuptmp,16,16,true);
+			Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+		}
+		CloseHandle(cvar);
+		if (strlen(contentdata) < 1) Format(cachepath,sizeof(cachepath),"maps/ent_cache/%s.ent",edtmap);
+		else Format(cachepath,sizeof(cachepath),"maps/ent_cache/%s_%s.ent",contentdata,edtmap);
+	}
+	if (FileExists(cachepath,true,NULL_STRING))
+	{
+		ReadCache(cachepath,edtmap);
+	}
+	else
+	{
+		PrintToConsole(client,"Unable to find entity cache, you may need to build the cache first.");
+	}
+	return Plugin_Handled;
+}
+
+public Action BuildLoaderFor(int client, int args)
+{
+	if (!IsValidEntity(client)) return Plugin_Handled;
+	if (args < 3)
+	{
+		PrintToConsole(client,"Syntax: buildloader <contenttag> <loaderfilename> <sourcemods directory>");
+		return Plugin_Handled;
+	}
+	if (args >= 3)
+	{
+		char newtag[16];
+		char loadername[32];
+		char sourcemodpath[128];
+		char sourcemod[64];
+		char titlepath[128];
+		char gameurl[72];
+		char deps[32];
+		GetCmdArg(1,newtag,sizeof(newtag));
+		GetCmdArg(2,loadername,sizeof(loadername));
+		GetCmdArg(3,sourcemod,sizeof(sourcemod));
+		Format(loadername,sizeof(loadername),"content/%s.dat",loadername);
+		if (FileExists(loadername,true,NULL_STRING))
+		{
+			PrintToConsole(client,"Loader %s already exists",loadername);
+			return Plugin_Handled;
+		}
+		Format(titlepath,sizeof(titlepath),"..\\..\\..\\sourcemods\\%s\\gameinfo.txt",sourcemod);
+		Format(sourcemodpath,sizeof(sourcemodpath),"..\\..\\..\\sourcemods\\%s\\maps",sourcemod);
+		if (!DirExists(sourcemodpath,true,NULL_STRING))
+		{
+			PrintToConsole(client,"Could not determine sourcemod path");
+			return Plugin_Handled;
+		}
+		if (FileExists(titlepath,true,NULL_STRING))
+		{
+			char line[128];
+			Handle filehandle = OpenFile(titlepath,"r",true,NULL_STRING);
+			if (filehandle != INVALID_HANDLE)
+			{
+				bool readdeps = false;
+				bool foundname = false;
+				bool foundurl = false;
+				while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
+				{
+					TrimString(line);
+					if (StrContains(line,"//",false) != 0)
+					{
+						if ((StrContains(line,"game",false) != -1) && (StrContains(line,"gameinfo",false) == -1) && (!foundname))
+						{
+							ReplaceString(line,sizeof(line),"	","");
+							ReplaceString(line,sizeof(line),"game","");
+							ReplaceString(line,sizeof(line),"\"","");
+							TrimString(line);
+							Format(titlepath,sizeof(titlepath),"%s",line);
+							foundname = true;
+						}
+						else if ((StrContains(line,"developer_url",false) != -1) && (!foundurl))
+						{
+							ReplaceString(line,sizeof(line),"	","");
+							ReplaceString(line,sizeof(line),"developer_url","");
+							ReplaceString(line,sizeof(line),"\"","");
+							Format(gameurl,sizeof(gameurl),"%s",line);
+							foundurl = true;
+						}
+						else if (StrContains(line,"SearchPaths",false) != -1)
+						{
+							readdeps = true;
+						}
+						else if (readdeps)
+						{
+							if (StrContains(line,"ep2",false) != -1)
+							{
+								Format(deps,sizeof(deps),"ep2 ep1");
+								readdeps = false;
+							}
+							else if (StrContains(line,"episodic",false) != -1)
+							{
+								if (strlen(deps) < 1) Format(deps,sizeof(deps),"ep1");
+							}
+						}
+					}
+				}
+			}
+			CloseHandle(filehandle);
+		}
+		Handle regularmaps = CreateArray(64);
+		Handle backgroundmaps = CreateArray(32);
+		Handle mdirlisting = OpenDirectory(sourcemodpath,true,NULL_STRING);
+		if (mdirlisting != INVALID_HANDLE)
+		{
+			char buff[64];
+			while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
+			{
+				if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
+				{
+					if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
+					{
+						if (StrContains(buff,".bsp",false) != -1)
+						{
+							if ((StrContains(buff,"background",false) != -1) || (StrContains(buff,"loading",false) != -1))
+							{
+								ReplaceString(buff,sizeof(buff),".bsp","");
+								PrintToConsole(client,"Found backgroundmap %s",buff);
+								PushArrayString(backgroundmaps,buff);
+							}
+							else
+							{
+								ReplaceString(buff,sizeof(buff),".bsp","");
+								PrintToConsole(client,"Found map %s",buff);
+								PushArrayString(regularmaps,buff);
+							}
+						}
+					}
+				}
+			}
+		}
+		CloseHandle(mdirlisting);
+		PrintToConsole(client,"Create loader %s gamename %s contenttag %s dependencies of %s",loadername,titlepath,newtag,deps);
+		Handle loaderdat = OpenFile(loadername,"w");
+		if (loaderdat != INVALID_HANDLE)
+		{
+			WriteFileLine(loaderdat,"\"%s\"",titlepath);
+			WriteFileLine(loaderdat,"{");
+			WriteFileLine(loaderdat,"	\"tag\"	\"%s\"",newtag);
+			WriteFileLine(loaderdat,"	\"web\"	\"%s\"",gameurl);
+			WriteFileLine(loaderdat,"	\"path\"	\"%s\"",sourcemod);
+			WriteFileLine(loaderdat,"	\"sup\"	\"2\"");
+			if (strlen(deps) > 1) WriteFileLine(loaderdat,"	\"deps\"	\"%s\"",deps);
+			WriteFileLine(loaderdat,"	");
+			WriteFileLine(loaderdat,"	\"maps\"");
+			WriteFileLine(loaderdat,"	{");
+			for (int i = 0;i<GetArraySize(regularmaps);i++)
+			{
+				char mapname[64];
+				GetArrayString(regularmaps,i,mapname,sizeof(mapname));
+				WriteFileLine(loaderdat,"		%s		\"\"",mapname);
+			}
+			WriteFileLine(loaderdat,"	}");
+			if (GetArraySize(backgroundmaps) > 0)
+			{
+				WriteFileLine(loaderdat,"	");
+				WriteFileLine(loaderdat,"	\"maps_background\"");
+				WriteFileLine(loaderdat,"	{");
+				for (int i = 0;i<GetArraySize(backgroundmaps);i++)
+				{
+					char mapname[64];
+					GetArrayString(backgroundmaps,i,mapname,sizeof(mapname));
+					WriteFileLine(loaderdat,"		%s		\"\"",mapname);
+				}
+				WriteFileLine(loaderdat,"	}");
+			}
+			WriteFileLine(loaderdat,"}");
+		}
+		CloseHandle(loaderdat);
+		CloseHandle(regularmaps);
+		CloseHandle(backgroundmaps);
+	}
+	return Plugin_Handled;
+}
+
+public Action ReadCacheDelay(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		char cache[64];
+		char mapedt[64];
+		ReadPackString(dp,cache,sizeof(cache));
+		ReadPackString(dp,mapedt,sizeof(mapedt));
+		CloseHandle(dp);
+		ReadCache(cache,mapedt);
+	}
+}
+
+void ReadCache(char[] cache, char[] mapedt)
+{
+	char edtfilepath[64];
+	Format(edtfilepath,sizeof(edtfilepath),"maps/%s.edt",mapedt);
+	Handle edtfile = OpenFile(edtfilepath,"w");
+	if (edtfile != INVALID_HANDLE)
+	{
+		WriteFileLine(edtfile,"%s",mapedt);
+		WriteFileLine(edtfile,"{");
+		WriteFileLine(edtfile,"	entity");
+		WriteFileLine(edtfile,"	{");
+		WriteFileLine(edtfile,"		delete {classname \"logic_auto\"}");
+		WriteFileLine(edtfile,"		delete {classname \"info_player_start\"}");
+		WriteFileLine(edtfile,"		edit {classname \"game_text\" values {spawnflags \"1\"} }");
+		WriteFileLine(edtfile,"		edit {classname \"func_areaportal\" values {targetname \"disabledPortal\" StartOpen \"1\"} }");
+		WriteFileLine(edtfile,"		edit {classname \"point_viewcontrol\" values {edt_addedspawnflags \"128\"} }");
+		WriteFileLine(edtfile,"		create {classname \"info_spawn_manager\" values {targetname \"syn_spawn_manager\"} }");
+	}
+	Handle filehandle = OpenFile(cache,"r",true,NULL_STRING);
+	if (filehandle != INVALID_HANDLE)
+	{
+		char line[128];
+		char origin[64];
+		char originalorgs[64];
+		char angs[64];
+		char cls[32];
+		int spawns = 0;
+		int vehiclespawns = 0;
+		float orgpos[3];
+		bool ismain = false;
+		bool WriteEnt = false;
+		Handle itemsarr = CreateArray(64);
+		Handle logicautos = CreateArray(64);
+		Handle mainspawn = CreateArray(64);
+		Handle passedarr = CreateArray(64);
+		Handle equipsarrays = CreateArray(64);
+		Handle mapremovals = CreateArray(64);
+		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
+		{
+			TrimString(line);
+			if (StrContains(line,"\"classname\"",false) == 0)
+			{
+				char clschk[128];
+				Format(clschk,sizeof(clschk),line);
+				char kvs[128][64];
+				ExplodeString(clschk, "\"", kvs, 64, 128, true);
+				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
+				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
+				if ((StrEqual(kvs[3],"info_player_start")) || (StrEqual(kvs[3],"logic_auto",false)) || (StrEqual(kvs[3],"prop_vehicle_jeep",false)) || (StrEqual(kvs[3],"prop_vehicle_airboat",false)) || (StrContains(kvs[3],"weapon_",false) == 0) || (StrContains(kvs[3],"item_",false) == 0))
+				{
+					WriteEnt = true;
+					Format(cls,sizeof(cls),"%s",kvs[3]);
+				}
+			}
+			if ((!StrEqual(line,"}",false)) || (!StrEqual(line,"{",false)) || (!StrEqual(line,"}{",false)))
+			{
+				char kvs[128][64];
+				char lineedt[128];
+				Format(lineedt,sizeof(lineedt),line);
+				ExplodeString(lineedt, "\"", kvs, 64, 128, true);
+				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
+				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
+				Format(lineedt,sizeof(lineedt),"%s \"%s\"",kvs[1],kvs[3]);
+				if ((strlen(kvs[1]) > 0) && (!StrEqual(kvs[1],"classname",false)))
+				{
+					if (StrContains(kvs[1],"angles",false) == 0)
+					{
+						Format(angs,sizeof(angs),"%s",lineedt);
+					}
+					if (StrContains(line,"\"origin\"",false) == 0)
+					{
+						Format(origin,sizeof(origin),"%s",lineedt);
+					}
+					else if (StrContains(line,"\"hammerid\"",false) == -1)
+					{
+						PushArrayString(passedarr,lineedt);
+					}
+				}
+			}
+			if ((StrEqual(line,"{",false)) || (StrEqual(line,"}",false) || (StrEqual(line,"}{",false))))
+			{
+				if (!WriteEnt)
+				{
+					ClearArray(passedarr);
+				}
+				else
+				{
+					if (StrEqual(cls,"logic_auto",false))
+					{
+						Format(cls,sizeof(cls),"hud_timer");
+						PushArrayString(passedarr,"OnTimer \"syn_viewcontrol,Disable,,0,-1\"");
+						PushArrayString(passedarr,"targetname \"syn_hudtimer\"");
+						PushArrayString(passedarr,"TimerText \"WAITING FOR PLAYERS\"");
+						PushArrayString(passedarr,"TimerType \"1\"");
+					}
+					else if (StrEqual(cls,"prop_vehicle_jeep",false))
+					{
+						Format(cls,sizeof(cls),"info_vehicle_spawn");
+						PushArrayString(passedarr,"VehicleType \"4\"");
+						PushArrayString(passedarr,"VehicleSize \"192\"");
+						PushArrayString(passedarr,"StartEnabled \"1\"");
+						PushArrayString(passedarr,"StartGunEnabled \"1\"");
+					}
+					if (StrEqual(cls,"info_player_start",false))
+					{
+						Format(cls,sizeof(cls),"info_player_coop");
+						for (int i = 0;i<GetArraySize(passedarr);i++)
+						{
+							char tmparr[128];
+							GetArrayString(passedarr,i,tmparr,sizeof(tmparr));
+							if (StrContains(tmparr,"spawnflags",false) == 0)
+							{
+								ReplaceStringEx(tmparr,sizeof(tmparr),"spawnflags \"","");
+								ReplaceStringEx(tmparr,sizeof(tmparr),"\"","");
+								if (StrEqual(tmparr,"1",false)) ismain = true;
+							}
+						}
+						if (ismain)
+						{
+							Format(originalorgs,sizeof(originalorgs),origin);
+							ClearArray(mainspawn);
+							char spawnpoints[64];
+							if (spawns < 10) Format(spawnpoints,sizeof(spawnpoints),"targetname \"syn_spawnpoint_0%i\"",spawns);
+							else Format(spawnpoints,sizeof(spawnpoints),"targetname \"syn_spawnpoint_%i\"",spawns);
+							PushArrayString(passedarr,spawnpoints);
+							if (spawns > 0) PushArrayString(passedarr,"startdisabled \"1\"");
+							else
+							{
+								WriteFileLine(edtfile,"		create {classname \"trigger_once\" %s",origin);
+								WriteFileLine(edtfile,"			values");
+								WriteFileLine(edtfile,"			{");
+								WriteFileLine(edtfile,"				spawnflags \"1\"");
+								WriteFileLine(edtfile,"				edt_maxs \"20 20 20\"");
+								WriteFileLine(edtfile,"				edt_mins \"-20 -20 -20\"");
+								WriteFileLine(edtfile,"				OnTrigger \"syn_hudtimer,Start,20,0,-1\"");
+								WriteFileLine(edtfile,"				OnTrigger \"syn_viewcontrol,Enable,,0,-1\"");
+								WriteFileLine(edtfile,"			}");
+								WriteFileLine(edtfile,"		}");
+								char kvs[128][64];
+								char lineedt[128];
+								Format(lineedt,sizeof(lineedt),origin);
+								ExplodeString(lineedt, "\"", kvs, 64, 128, true);
+								ExplodeString(kvs[1], " ", kvs, 64, 128, true);
+								orgpos[0] = StringToFloat(kvs[0]);
+								orgpos[1] = StringToFloat(kvs[1]);
+								orgpos[2] = StringToFloat(kvs[2]);
+								Format(lineedt,sizeof(lineedt),"origin \"%s %s %1.f\"",kvs[0],kvs[1],StringToFloat(kvs[2])+60.0);
+								WriteFileLine(edtfile,"		create {classname \"point_viewcontrol\" %s",lineedt);
+								WriteFileLine(edtfile,"			values");
+								WriteFileLine(edtfile,"			{");
+								WriteFileLine(edtfile,"				targetname \"syn_viewcontrol\"");
+								WriteFileLine(edtfile,"				spawnflags \"140\"");
+								if (strlen(angs) < 1) WriteFileLine(edtfile,"				angles \"0 0 0\"");
+								else
+								{
+									char angset[64];
+									Format(angset,sizeof(angset),"				%s",angs);
+									WriteFileLine(edtfile,angset);
+								}
+								WriteFileLine(edtfile,"			}");
+								WriteFileLine(edtfile,"		}");
+							}
+							spawns++;
+							WriteFileLine(edtfile,"		create {classname \"%s\" %s",cls,origin);
+							WriteFileLine(edtfile,"			values");
+							WriteFileLine(edtfile,"			{");
+							for (int i = 0;i<GetArraySize(passedarr);i++)
+							{
+								char tmparr[128];
+								GetArrayString(passedarr,i,tmparr,sizeof(tmparr));
+								if (StrContains(tmparr,"OnMapSpawn",false) == 0) ReplaceStringEx(tmparr,sizeof(tmparr),"OnMapSpawn","OnTimer");
+								else if (StrContains(tmparr,"OnMapTransition") == 0) PushArrayString(logicautos,tmparr);
+								else if ((StrEqual(cls,"info_vehicle_spawn",false)) && (StrContains(tmparr,"model",false) == 0) && (StrContains(tmparr,"models/buggy.mdl",false) != -1))
+								{
+									ReplaceStringEx(tmparr,sizeof(tmparr),"models/buggy.mdl","models\\vehicles\\buggy_p2.mdl");
+								}
+								else if ((StrContains(tmparr,"PlayerOff",false) != -1) || (StrContains(tmparr,"PlayerOn",false) != -1)) tmparr = "";
+								if ((StrContains(tmparr,"classname",false) == -1) && (StrContains(tmparr,"}",false) == -1) && (strlen(tmparr) > 0))
+									WriteFileLine(edtfile,"				%s",tmparr);
+							}
+							WriteFileLine(edtfile,"			}");
+							WriteFileLine(edtfile,"		}");
+						}
+						else
+						{
+							Format(originalorgs,sizeof(originalorgs),origin);
+							ClearArray(mainspawn);
+							mainspawn = CloneArray(passedarr);
+						}
+					}
+					else if ((StrContains(cls,"weapon_",false) == 0) || (StrContains(cls,"item_",false) == 0))
+					{
+						char kvs[128][64];
+						char lineedt[128];
+						Format(lineedt,sizeof(lineedt),origin);
+						ExplodeString(lineedt, "\"", kvs, 64, 128, true);
+						ExplodeString(kvs[1], " ", kvs, 64, 128, true);
+						Format(lineedt,sizeof(lineedt),"%s,%s %s %s",cls,kvs[0],kvs[1],kvs[2]);
+						PushArrayString(itemsarr,lineedt);
+					}
+					else
+					{
+						WriteFileLine(edtfile,"		create {classname \"%s\" %s",cls,origin);
+						WriteFileLine(edtfile,"			values");
+						WriteFileLine(edtfile,"			{");
+						for (int i = 0;i<GetArraySize(passedarr);i++)
+						{
+							char tmparr[128];
+							GetArrayString(passedarr,i,tmparr,sizeof(tmparr));
+							if (StrContains(tmparr,"OnMapSpawn",false) == 0) ReplaceStringEx(tmparr,sizeof(tmparr),"OnMapSpawn","OnTimer");
+							else if (StrContains(tmparr,"OnMapTransition") == 0)
+							{
+								PushArrayString(logicautos,tmparr);
+								tmparr = "";
+							}
+							else if (StrEqual(cls,"info_vehicle_spawn",false))
+							{
+								if ((StrContains(tmparr,"model",false) == 0) && (StrContains(tmparr,"models/buggy.mdl",false) != -1)) ReplaceStringEx(tmparr,sizeof(tmparr),"models/buggy.mdl","models\\vehicles\\buggy_p2.mdl");
+								else if ((StrContains(tmparr,"PlayerOff",false) != -1) || (StrContains(tmparr,"PlayerOn",false) != -1)) tmparr = "";
+								else if (StrContains(tmparr,"targetname",false) == 0)
+								{
+									if (vehiclespawns < 10) Format(tmparr,sizeof(tmparr),"targetname \"syn_vehicle_spawn_0%i\"",vehiclespawns);
+									else Format(tmparr,sizeof(tmparr),"targetname \"syn_vehicle_spawn_%i\"",vehiclespawns);
+								}
+							}
+							if ((StrContains(tmparr,"classname",false) == -1) && (StrContains(tmparr,"}",false) == -1) && (strlen(tmparr) > 0))
+								WriteFileLine(edtfile,"				%s",tmparr);
+						}
+						WriteFileLine(edtfile,"			}");
+						WriteFileLine(edtfile,"		}");
+					}
+					angs = "";
+					cls = "";
+					WriteEnt = false;
+					ClearArray(passedarr);
+				}
+			}
+		}
+		if ((GetArraySize(mainspawn) > 0) && (!ismain))
+		{
+			char spawnpoints[64];
+			Format(spawnpoints,sizeof(spawnpoints),"targetname \"syn_spawnpoint_00\"");
+			PushArrayString(mainspawn,spawnpoints);
+			WriteFileLine(edtfile,"		create {classname \"trigger_once\" %s",originalorgs);
+			WriteFileLine(edtfile,"			values");
+			WriteFileLine(edtfile,"			{");
+			WriteFileLine(edtfile,"				spawnflags \"1\"");
+			WriteFileLine(edtfile,"				edt_maxs \"20 20 20\"");
+			WriteFileLine(edtfile,"				edt_mins \"-20 -20 -20\"");
+			WriteFileLine(edtfile,"				OnTrigger \"syn_hudtimer,Start,20,0,-1\"");
+			WriteFileLine(edtfile,"				OnTrigger \"syn_viewcontrol,Enable,,0,-1\"");
+			WriteFileLine(edtfile,"			}");
+			WriteFileLine(edtfile,"		}");
+			char kvs[128][64];
+			char lineedt[128];
+			Format(lineedt,sizeof(lineedt),originalorgs);
+			ExplodeString(lineedt, "\"", kvs, 64, 128, true);
+			ExplodeString(kvs[1], " ", kvs, 64, 128, true);
+			orgpos[0] = StringToFloat(kvs[0]);
+			orgpos[1] = StringToFloat(kvs[1]);
+			orgpos[2] = StringToFloat(kvs[2]);
+			Format(lineedt,sizeof(lineedt),"origin \"%s %s %1.f\"",kvs[0],kvs[1],StringToFloat(kvs[2])+60.0);
+			WriteFileLine(edtfile,"		create {classname \"point_viewcontrol\" %s",lineedt);
+			WriteFileLine(edtfile,"			values");
+			WriteFileLine(edtfile,"			{");
+			WriteFileLine(edtfile,"				targetname \"syn_viewcontrol\"");
+			WriteFileLine(edtfile,"				spawnflags \"140\"");
+			if (strlen(angs) < 1) WriteFileLine(edtfile,"				angles \"0 0 0\"");
+			else
+			{
+				char angset[64];
+				Format(angset,sizeof(angset),"				%s",angs);
+				WriteFileLine(edtfile,angset);
+			}
+			WriteFileLine(edtfile,"			}");
+			WriteFileLine(edtfile,"		}");
+			WriteFileLine(edtfile,"		create {classname \"info_player_coop\" %s",originalorgs);
+			WriteFileLine(edtfile,"			values");
+			WriteFileLine(edtfile,"			{");
+			for (int i = 0;i<GetArraySize(mainspawn);i++)
+			{
+				char tmparr[128];
+				GetArrayString(mainspawn,i,tmparr,sizeof(tmparr));
+				if (StrContains(tmparr,"OnMapSpawn",false) == 0) ReplaceStringEx(tmparr,sizeof(tmparr),"OnMapSpawn","OnTimer");
+				if ((StrContains(tmparr,"classname",false) == -1) && (StrContains(tmparr,"}",false) == -1))
+					WriteFileLine(edtfile,"				%s",tmparr);
+			}
+			WriteFileLine(edtfile,"			}");
+			WriteFileLine(edtfile,"		}");
+		}
+		if (GetArraySize(itemsarr) > 0)
+		{
+			WriteFileLine(edtfile,"		create {classname \"info_player_equip\"");
+			WriteFileLine(edtfile,"			values");
+			WriteFileLine(edtfile,"			{");
+			WriteFileLine(edtfile,"				targetname \"syn_equipment_base\"");
+			SortADTArray(itemsarr,Sort_Ascending,Sort_String);
+			Handle duplicates = CreateArray(64);
+			for (int i = 0;i<GetArraySize(itemsarr);i++)
+			{
+				char tmparr[128];
+				GetArrayString(itemsarr,i,tmparr,sizeof(tmparr));
+				char kvs2[128][64];
+				ExplodeString(tmparr, ",", kvs2, 64, 128, true);
+				Format(tmparr,sizeof(tmparr),"%s",kvs2[0]);
+				ExplodeString(kvs2[1], " ", kvs2, 64, 128, true);
+				if (FindStringInArray(duplicates,tmparr) == -1)
+				{
+					PushArrayString(duplicates,tmparr);
+					float itempos[3];
+					itempos[0] = StringToFloat(kvs2[0]);
+					itempos[1] = StringToFloat(kvs2[1]);
+					itempos[2] = StringToFloat(kvs2[2]);
+					if (GetVectorDistance(orgpos,itempos,false) < 50.0)
+					{
+						if (StrEqual(tmparr,"item_box_buckshot",false)) Format(tmparr,sizeof(tmparr),"ammo_buckshot \"6\"");
+						else if (StrEqual(tmparr,"item_rpg_round",false)) Format(tmparr,sizeof(tmparr),"ammo_rpg_round \"2\"");
+						else if (StrEqual(tmparr,"item_battery",false)) Format(tmparr,sizeof(tmparr),"item_armor \"15\"");
+						else if (StrEqual(tmparr,"item_ar2_grenade",false)) Format(tmparr,sizeof(tmparr),"ammo_ar2_altfire \"1\"");
+						else if (StrEqual(tmparr,"item_box_mrounds",false)) Format(tmparr,sizeof(tmparr),"ammo_smg1 \"90\"");
+						else if (StrEqual(tmparr,"item_box_srounds",false)) Format(tmparr,sizeof(tmparr),"ammo_pistol \"36\""); //But also sniper rounds
+						else if (StrEqual(tmparr,"item_box_lrounds",false)) Format(tmparr,sizeof(tmparr),"ammo_ar2 \"30\"");
+						else
+						{
+							if (StrEqual(tmparr,"item_suit",false))
+							{
+								if (FindStringInArray(mapremovals,tmparr) == -1) PushArrayString(mapremovals,tmparr);
+							}
+							if ((StrContains(tmparr,"item_",false) == 0) && (!StrEqual(tmparr,"item_suit",false)))
+							{
+								ReplaceStringEx(tmparr,sizeof(tmparr),"item_","");
+								StrCat(tmparr,sizeof(tmparr)," \"12\"");
+							}
+							else
+							{
+								StrCat(tmparr,sizeof(tmparr)," \"1\"");
+							}
+						}
+						WriteFileLine(edtfile,"				%s",tmparr);
+					}
+					else if (StrContains(tmparr,"item_",false) == -1)
+					{
+						char push[128];
+						char tmptrunc[4];
+						int truncatedat = StrContains(tmparr,"_",false);
+						if (truncatedat == -1) truncatedat = 0;
+						else truncatedat++;
+						Format(tmptrunc,sizeof(tmptrunc),"%s",tmparr[truncatedat]);
+						Format(push,sizeof(push),"OnMapSpawn \"%s,AddOutput,OnPlayerPickup %spickup:Enable::0:-1,0,-1\"",tmparr,tmptrunc);
+						if (FindStringInArray(logicautos,push) == -1) PushArrayString(logicautos,push);
+						Format(push,sizeof(push),"OnMapSpawn \"%s,AddOutput,OnPlayerPickup %spickup:EquipAllPlayers::0.1:-1,0,-1\"",tmparr,tmptrunc);
+						if (FindStringInArray(logicautos,push) == -1) PushArrayString(logicautos,push);
+						Format(push,sizeof(push),"%s %spickup",tmparr,tmptrunc);
+						if (FindStringInArray(equipsarrays,push) == -1) PushArrayString(equipsarrays,push);
+					}
+				}
+			}
+			CloseHandle(duplicates);
+			WriteFileLine(edtfile,"			}");
+			WriteFileLine(edtfile,"		}");
+		}
+		if (GetArraySize(logicautos) > 0)
+		{
+			WriteFileLine(edtfile,"		create {classname \"logic_auto\"");
+			WriteFileLine(edtfile,"			values");
+			WriteFileLine(edtfile,"			{");
+			WriteFileLine(edtfile,"				spawnflags \"1\"");
+			for (int i = 0;i<GetArraySize(logicautos);i++)
+			{
+				char tmparr[128];
+				GetArrayString(logicautos,i,tmparr,sizeof(tmparr));
+				WriteFileLine(edtfile,"				%s",tmparr);
+			}
+			WriteFileLine(edtfile,"			}");
+			WriteFileLine(edtfile,"		}");
+		}
+		if (GetArraySize(equipsarrays) > 0)
+		{
+			char largerline[256];
+			for (int i = 0;i<GetArraySize(equipsarrays);i++)
+			{
+				GetArrayString(equipsarrays,i,largerline,sizeof(largerline));
+				char kvs[128][64];
+				ExplodeString(largerline, " ", kvs, 64, 128, true);
+				char ammtype[32];
+				Format(ammtype,sizeof(ammtype),"%s",kvs[0]);
+				ReplaceStringEx(ammtype,sizeof(ammtype),"weapon_","sk_max_");
+				int ammamount = 1;
+				Handle cvarchk = FindConVar(ammtype);
+				if (cvarchk != INVALID_HANDLE) ammamount = GetConVarInt(cvarchk)/4;
+				CloseHandle(cvarchk);
+				ReplaceStringEx(ammtype,sizeof(ammtype),"sk_max_","ammo_");
+				if (StrEqual(ammtype,"ammo_rpg",false)) Format(ammtype,sizeof(ammtype),"ammo_rpg_round");
+				if (StrEqual(ammtype,"ammo_frag",false)) Format(ammtype,sizeof(ammtype),"ammo_grenade");
+				Format(largerline,sizeof(largerline),"		create {classname \"info_player_equip\" values {targetname \"%s\" startdisabled \"1\" %s \"1\" %s \"%i\"} }",kvs[1],kvs[0],ammtype,ammamount);
+				WriteFileLine(edtfile,largerline);
+			}
+		}
+		if (GetArraySize(mapremovals) > 0)
+		{
+			for (int i = 0;i<GetArraySize(mapremovals);i++)
+			{
+				char tmparr[128];
+				GetArrayString(mapremovals,i,tmparr,sizeof(tmparr));
+				WriteFileLine(edtfile,"		delete {classname \"%s\"}",tmparr);
+			}
+		}
+		CloseHandle(passedarr);
+		CloseHandle(mainspawn);
+		CloseHandle(logicautos);
+		CloseHandle(itemsarr);
+		CloseHandle(equipsarrays);
+		CloseHandle(mapremovals);
+	}
+	if (edtfile != INVALID_HANDLE)
+	{
+		WriteFileLine(edtfile,"	}");
+		WriteFileLine(edtfile,"}");
+	}
+	CloseHandle(filehandle);
+	CloseHandle(edtfile);
+	PrintToServer("Finished writing EDT %s",edtfilepath);
 }
 
 public void OnMapStart()
@@ -116,7 +877,7 @@ public void OnMapStart()
 		CloseHandle(cvar);
 		if (strlen(contentdata) < 1) Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s.ent",mapbuf);
 		else Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s_%s.ent",contentdata,mapbuf);
-		Handle mdirlisting = OpenDirectory("maps/ent_cachebuilt", false);
+		Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
 		if (mdirlisting == INVALID_HANDLE)
 		{
 			CreateDirectory("maps/ent_cache",511);
@@ -134,21 +895,25 @@ public Action buildinfodelay(Handle timer)
 {
 	if (!FileExists(mapbuf,true,NULL_STRING))
 	{
+		openbrackets = 0;
 		PrintToServer("\n\n\nStart building entity cache\nThis may take a while...\n\n\n");
-		buildcache(0);
+		buildcache(0,INVALID_HANDLE);
 	}
 	return Plugin_Handled;
 }
 
-void buildcache(int startline)
+void buildcache(int startline, Handle mapset)
 {
 	if (hasreadcache) return;
 	Handle cachefile = INVALID_HANDLE;
 	if (startline == 0) cachefile = OpenFile(mapbuf,"w");
 	else cachefile = OpenFile(mapbuf,"a");
-	Handle filehandle = OpenFile(curmap,"rb",true,NULL_STRING);
+	Handle filehandle = INVALID_HANDLE;
+	if (mapset == INVALID_HANDLE) filehandle = OpenFile(curmap,"rb",true,NULL_STRING);
+	else filehandle = OpenFile(curmap,"rb");
 	if (filehandle != INVALID_HANDLE)
 	{
+		startedreading = true;
 		if (startline != 0) FileSeek(filehandle,startline,SEEK_SET);
 		char line[256];
 		int nextline = 0;
@@ -157,33 +922,78 @@ void buildcache(int startline)
 			if ((nextline >= 25000) && (!WriteCache))
 			{
 				startline = FilePosition(filehandle);
-				CreateTimer(0.1,nextlines,startline,TIMER_FLAG_NO_MAPCHANGE);
+				Handle dp = CreateDataPack();
+				WritePackCell(dp,startline);
+				WritePackCell(dp,mapset);
+				CreateTimer(0.1,nextlines,dp,TIMER_FLAG_NO_MAPCHANGE);
 				break;
 			}
 			nextline++;
-			if (((strlen(line) > 2) && (StrContains(line,"\"",false) != -1)) || ((StrContains(line,"{",false) != -1) && (strlen(line) < 3)) || ((StrContains(line,"}",false) != -1) && (strlen(line) < 3)))
+			int quotepos = StrContains(line,"\"",false);
+			if (((strlen(line) > 5) && (quotepos != -1)) || ((StrContains(line,"{",false) != -1) && (strlen(line) < 3)) || ((StrContains(line,"}",false) != -1) && (strlen(line) < 3)))
 			{
-				if ((StrContains(line,"\"world_maxs\"",false) == 0) && (!WriteCache))
+				char additionalquote[128];
+				Format(additionalquote,sizeof(additionalquote),"%s",line[quotepos+1]);
+				if (((strlen(line) > 5) && (StrContains(additionalquote,"\"",false) != -1)) || ((StrContains(line,"{",false) != -1) && (strlen(line) < 3)) || ((StrContains(line,"}",false) != -1) && (strlen(line) < 3)))
 				{
-					PrintToServer("Found first line of entity cache");
-					WriteCache = true;
-					startline = FilePosition(filehandle)-strlen(line)-2;
-					CreateTimer(0.1,nextlines,startline,TIMER_FLAG_NO_MAPCHANGE);
-					break;
-				}
-				else if (WriteCache)
-				{
-					TrimString(line);
-					if ((StrContains(line,"┬",false) != -1) || (StrContains(line,"Ÿ",false) != -1) || (StrContains(line,"{~") == 0) || (StrContains(line,"<",false) != -1) || (StrContains(line,">",false) != -1) || (StrContains(line,"Å",false) != -1) || (StrContains(line,"ÿ",false) != -1) || (StrContains(line,"┼",false) != -1) || (StrContains(line,"",false) != -1))
+					if ((StrContains(line,"\"world_maxs\"",false) == 0) && (!WriteCache))
 					{
-						WriteCache = false;
-						PrintToServer("Finished writing cache %s",mapbuf);
-						hasreadcache = true;
+						PrintToServer("Found first line of entity cache");
+						WriteCache = true;
+						startline = FilePosition(filehandle)-strlen(line)-2;
+						Handle dp = CreateDataPack();
+						WritePackCell(dp,startline);
+						WritePackCell(dp,mapset);
+						CreateTimer(0.1,nextlines,dp,TIMER_FLAG_NO_MAPCHANGE);
 						break;
 					}
-					else
+					else if (WriteCache)
 					{
-						WriteFileLine(cachefile,line);
+						TrimString(line);
+						if (StrContains(line,"{",false) == 0) openbrackets = 0;
+						else if (StrContains(line,"}",false) == 0) openbrackets++;
+						if ((openbrackets > 1) || (StrContains(line,"(",false) == 0) || (StrContains(line,"|",false) != -1) || (StrContains(line,"ý",false) != -1) || (StrContains(line,"┬",false) != -1) || (StrContains(line,"╙",false) != -1) || (StrContains(line,"ü",false) == 0) || (StrContains(line,"õ",false) != -1) || (StrContains(line,"Ó",false) != -1) || (StrContains(line,"Ÿ",false) != -1) || (StrContains(line,"{~") == 0) || (StrContains(line,"<",false) != -1) || (StrContains(line,">",false) != -1) || (StrContains(line,"Å",false) != -1) || (StrContains(line,"ÿ",false) != -1) || (StrContains(line,"┼",false) != -1) || (StrContains(line,"",false) != -1))
+						{
+							WriteCache = false;
+							PrintToServer("Finished writing cache %s",mapbuf);
+							if (mapset != INVALID_HANDLE)
+							{
+								char edtmap[128];
+								Format(edtmap,sizeof(edtmap),"%s",curmap);
+								ReplaceString(edtmap,sizeof(edtmap),".bsp","");
+								int contained = StrContains(edtmap,"maps\\",false);
+								Format(edtmap,sizeof(edtmap),"%s",edtmap[contained]);
+								ReplaceString(edtmap,sizeof(edtmap),"maps\\","");
+								Handle delayedread = CreateDataPack();
+								WritePackString(delayedread,mapbuf);
+								WritePackString(delayedread,edtmap);
+								CreateTimer(0.1,ReadCacheDelay,delayedread,TIMER_FLAG_NO_MAPCHANGE);
+								//ReadCache(mapbuf,edtmap);
+								ReadPackString(mapset,mapbuf,sizeof(mapbuf));
+								if (!StrEqual(mapbuf,"endofpack",false))
+								{
+									ReadPackString(mapset,curmap,sizeof(curmap));
+									PrintToServer("WriteTo %s\nRead %s",mapbuf,curmap);
+									buildcache(0,mapset);
+								}
+								else
+								{
+									CloseHandle(mapset);
+									break;
+								}
+							}
+							else
+							{
+								hasreadcache = true;
+								CloseHandle(mapset);
+							}
+							startedreading = false;
+							break;
+						}
+						else
+						{
+							WriteFileLine(cachefile,line);
+						}
 					}
 				}
 			}
@@ -191,9 +1001,25 @@ void buildcache(int startline)
 	}
 	CloseHandle(cachefile);
 	CloseHandle(filehandle);
+	openbrackets = 0;
 }
 
-public Action nextlines(Handle timer, int startline)
+public void OnMapEnd()
 {
-	buildcache(startline);
+	if (startedreading)
+	{
+		//Need to free file handles
+	}
+}
+
+public Action nextlines(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int startline = ReadPackCell(dp);
+		Handle hndl = ReadPackCell(dp);
+		CloseHandle(dp);
+		buildcache(startline,hndl);
+	}
 }
