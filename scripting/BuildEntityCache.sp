@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.2"
+#define PLUGIN_VERSION "0.3"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -538,6 +538,14 @@ void ReadCache(char[] cache, char[] mapedt)
 					{
 						Format(cls,sizeof(cls),"info_vehicle_spawn");
 						PushArrayString(passedarr,"VehicleType \"4\"");
+						PushArrayString(passedarr,"VehicleSize \"192\"");
+						PushArrayString(passedarr,"StartEnabled \"1\"");
+						PushArrayString(passedarr,"StartGunEnabled \"1\"");
+					}
+					else if (StrEqual(cls,"prop_vehicle_airboat",false))
+					{
+						Format(cls,sizeof(cls),"info_vehicle_spawn");
+						PushArrayString(passedarr,"VehicleType \"2\"");
 						PushArrayString(passedarr,"VehicleSize \"192\"");
 						PushArrayString(passedarr,"StartEnabled \"1\"");
 						PushArrayString(passedarr,"StartGunEnabled \"1\"");
