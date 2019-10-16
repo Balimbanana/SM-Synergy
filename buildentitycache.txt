@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.32"
-			"Previous"	"0.31"
+			"Latest"  	"0.33"
+			"Previous"	"0.32"
 		}
 		
 		"Notes"	"Added buildantirush, only works on current map by compiling information on trigger_changelevels and creating a blocker and coop trig."
