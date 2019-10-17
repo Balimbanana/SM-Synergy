@@ -855,6 +855,7 @@ void ReadCache(char[] cache, char[] mapedt)
 									if ((StrContains(tmparr,"PlayerOff",false) != -1) || (StrContains(tmparr,"PlayerOn",false) != -1)) tmparr = "";
 									else if (StrContains(tmparr,"targetname",false) == 0)
 									{
+										vehiclespawns++;
 										if (vehiclespawns < 10) Format(tmparr,sizeof(tmparr),"targetname \"syn_vehicle_spawn_0%i\"",vehiclespawns);
 										else Format(tmparr,sizeof(tmparr),"targetname \"syn_vehicle_spawn_%i\"",vehiclespawns);
 									}
