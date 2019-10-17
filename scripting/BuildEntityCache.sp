@@ -520,6 +520,13 @@ public Action BuildLoaderFor(int client, int args)
 								PrintToConsole(client,"Found backgroundmap %s",buff);
 								PushArrayString(backgroundmaps,buff);
 							}
+							else if (StrContains(buff,"test_",false) != -1)
+							{
+								ReplaceString(buff,sizeof(buff),".bsp","");
+								PrintToConsole(client,"Found testmap %s",buff);
+								Format(buff,sizeof(buff),"//%s",buff);
+								PushArrayString(regularmaps,buff);
+							}
 							else
 							{
 								ReplaceString(buff,sizeof(buff),".bsp","");
