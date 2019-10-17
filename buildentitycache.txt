@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.34"
-			"Previous"	"0.33"
+			"Latest"  	"0.35"
+			"Previous"	"0.34"
 		}
 		
-		"Notes"	"Added all entities that contain Lock inputs to EDT generation."
+		"Notes"	"Added all entities that contain Lock and Reload inputs to EDT generation."
 	}
 	
 	"Files"
