@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.33"
+#define PLUGIN_VERSION "0.34"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -614,11 +614,11 @@ void ReadCache(char[] cache, char[] mapedt)
 	Handle filehandle = OpenFile(cache,"r",true,NULL_STRING);
 	if (filehandle != INVALID_HANDLE)
 	{
-		char line[128];
+		char line[172];
 		char origin[64];
 		char originalorgs[64];
 		char angs[64];
-		char cls[32];
+		char cls[48];
 		int spawns = 0;
 		int vehiclespawns = 0;
 		float orgpos[3];
@@ -636,16 +636,16 @@ void ReadCache(char[] cache, char[] mapedt)
 			TrimString(line);
 			if (StrContains(line,"\"classname\"",false) == 0)
 			{
-				char clschk[128];
+				char clschk[172];
 				Format(clschk,sizeof(clschk),line);
 				char kvs[128][64];
 				ExplodeString(clschk, "\"", kvs, 64, 128, true);
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
+				Format(cls,sizeof(cls),"%s",kvs[3]);
 				if ((StrEqual(kvs[3],"info_player_start")) || (StrEqual(kvs[3],"logic_auto",false)) || (StrEqual(kvs[3],"prop_vehicle_jeep",false)) || (StrEqual(kvs[3],"prop_vehicle_airboat",false)) || (StrContains(kvs[3],"weapon_",false) == 0) || (StrContains(kvs[3],"item_",false) == 0))
 				{
 					WriteEnt = true;
-					Format(cls,sizeof(cls),"%s",kvs[3]);
 				}
 			}
 			if ((!StrEqual(line,"}",false)) || (!StrEqual(line,"{",false)) || (!StrEqual(line,"}{",false)))
@@ -657,6 +657,15 @@ void ReadCache(char[] cache, char[] mapedt)
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
 				Format(lineedt,sizeof(lineedt),"%s \"%s\"",kvs[1],kvs[3]);
+				if ((StrContains(line,",Lock,,",false) != -1) && (!StrEqual(cls,"logic_auto",false)) && (!StrEqual(cls,"hud_timer",false)))
+				{
+					WriteEnt = true;
+					char deletion[128];
+					Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains Lock Input",cls,origin);
+					WriteFileLine(edtfile,deletion);
+					StrCat(lineedt,sizeof(lineedt),"//May need to edit this Lock");
+					
+				}
 				if ((strlen(kvs[1]) > 0) && (!StrEqual(kvs[1],"classname",false)))
 				{
 					if (StrContains(kvs[1],"angles",false) == 0)
@@ -1126,7 +1135,11 @@ public Action buildinfodelay(Handle timer)
 
 void buildcache(int startline, Handle mapset)
 {
-	if (hasreadcache) return;
+	if (hasreadcache)
+	{
+		CloseHandle(mapset);
+		return;
+	}
 	Handle cachefile = INVALID_HANDLE;
 	if (startline == 0) cachefile = OpenFile(mapbuf,"w");
 	else cachefile = OpenFile(mapbuf,"a");
