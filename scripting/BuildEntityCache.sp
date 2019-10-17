@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.34"
+#define PLUGIN_VERSION "0.35"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -638,8 +638,8 @@ void ReadCache(char[] cache, char[] mapedt)
 			{
 				char clschk[172];
 				Format(clschk,sizeof(clschk),line);
-				char kvs[128][64];
-				ExplodeString(clschk, "\"", kvs, 64, 128, true);
+				char kvs[128][128];
+				ExplodeString(clschk, "\"", kvs, 128, 128, true);
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
 				Format(cls,sizeof(cls),"%s",kvs[3]);
@@ -650,20 +650,28 @@ void ReadCache(char[] cache, char[] mapedt)
 			}
 			if ((!StrEqual(line,"}",false)) || (!StrEqual(line,"{",false)) || (!StrEqual(line,"}{",false)))
 			{
-				char kvs[128][64];
-				char lineedt[128];
+				char kvs[128][128];
+				char lineedt[256];
 				Format(lineedt,sizeof(lineedt),line);
-				ExplodeString(lineedt, "\"", kvs, 64, 128, true);
+				ExplodeString(lineedt, "\"", kvs, 128, 128, true);
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
 				Format(lineedt,sizeof(lineedt),"%s \"%s\"",kvs[1],kvs[3]);
-				if ((StrContains(line,",Lock,,",false) != -1) && (!StrEqual(cls,"logic_auto",false)) && (!StrEqual(cls,"hud_timer",false)))
+				if (((StrContains(line,",Lock,,",false) != -1) || (StrContains(line,",Reload,,",false) != -1)) && (!StrEqual(cls,"logic_auto",false)) && (!StrEqual(cls,"hud_timer",false)) && (!WriteEnt))
 				{
 					WriteEnt = true;
 					char deletion[128];
-					Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains Lock Input",cls,origin);
+					if (StrContains(line,",Reload,,",false) != -1)
+					{
+						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains Reload Input",cls,origin);
+						StrCat(lineedt,sizeof(lineedt),"//May need to edit this Reload");
+					}
+					else if (StrContains(line,",Lock,,",false) != -1)
+					{
+						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains Lock Input",cls,origin);
+						StrCat(lineedt,sizeof(lineedt),"//May need to edit this Lock");
+					}
 					WriteFileLine(edtfile,deletion);
-					StrCat(lineedt,sizeof(lineedt),"//May need to edit this Lock");
 					
 				}
 				if ((strlen(kvs[1]) > 0) && (!StrEqual(kvs[1],"classname",false)))
@@ -759,11 +767,11 @@ void ReadCache(char[] cache, char[] mapedt)
 									WriteFileLine(edtfile,"				OnTrigger \"syn_viewcontrol,Enable,,0,-1\"");
 									WriteFileLine(edtfile,"			}");
 									WriteFileLine(edtfile,"		}");
-									char kvs[128][64];
+									char kvs[128][128];
 									char lineedt[128];
 									Format(lineedt,sizeof(lineedt),origin);
-									ExplodeString(lineedt, "\"", kvs, 64, 128, true);
-									ExplodeString(kvs[1], " ", kvs, 64, 128, true);
+									ExplodeString(lineedt, "\"", kvs, 128, 128, true);
+									ExplodeString(kvs[1], " ", kvs, 128, 128, true);
 									orgpos[0] = StringToFloat(kvs[0]);
 									orgpos[1] = StringToFloat(kvs[1]);
 									orgpos[2] = StringToFloat(kvs[2]);
@@ -806,11 +814,11 @@ void ReadCache(char[] cache, char[] mapedt)
 						}
 						else if ((StrContains(cls,"weapon_",false) == 0) || (StrContains(cls,"item_",false) == 0))
 						{
-							char kvs[128][64];
+							char kvs[128][128];
 							char lineedt[128];
 							Format(lineedt,sizeof(lineedt),origin);
-							ExplodeString(lineedt, "\"", kvs, 64, 128, true);
-							ExplodeString(kvs[1], " ", kvs, 64, 128, true);
+							ExplodeString(lineedt, "\"", kvs, 128, 128, true);
+							ExplodeString(kvs[1], " ", kvs, 128, 128, true);
 							Format(lineedt,sizeof(lineedt),"%s,%s %s %s",cls,kvs[0],kvs[1],kvs[2]);
 							PushArrayString(itemsarr,lineedt);
 						}
@@ -882,11 +890,11 @@ void ReadCache(char[] cache, char[] mapedt)
 				WriteFileLine(edtfile,"				OnTrigger \"syn_viewcontrol,Enable,,0,-1\"");
 				WriteFileLine(edtfile,"			}");
 				WriteFileLine(edtfile,"		}");
-				char kvs[128][64];
+				char kvs[128][128];
 				char lineedt[128];
 				Format(lineedt,sizeof(lineedt),originalorgs);
-				ExplodeString(lineedt, "\"", kvs, 64, 128, true);
-				ExplodeString(kvs[1], " ", kvs, 64, 128, true);
+				ExplodeString(lineedt, "\"", kvs, 128, 128, true);
+				ExplodeString(kvs[1], " ", kvs, 128, 128, true);
 				orgpos[0] = StringToFloat(kvs[0]);
 				orgpos[1] = StringToFloat(kvs[1]);
 				orgpos[2] = StringToFloat(kvs[2]);
@@ -933,12 +941,12 @@ void ReadCache(char[] cache, char[] mapedt)
 			{
 				char tmparr[128];
 				GetArrayString(hudtimer,i,tmparr,sizeof(tmparr));
-				if (StrContains(tmparr,"OnMapSpawn",false) == 0) ReplaceStringEx(tmparr,sizeof(tmparr),"OnMapSpawn","OnTimer");
-				else if (StrContains(tmparr,"OnMapTransition") == 0)
+				if ((StrContains(tmparr,"OnMapTransition") == 0) || ((StrContains(tmparr,"OnMapSpawn",false) == 0) && (StrContains(tmparr,"AddOutput",false) != -1)))
 				{
 					PushArrayString(logicautos,tmparr);
 					tmparr = "";
 				}
+				else if (StrContains(tmparr,"OnMapSpawn",false) == 0) ReplaceStringEx(tmparr,sizeof(tmparr),"OnMapSpawn","OnTimer");
 				if (strlen(tmparr) > 1)
 				{
 					WriteFileLine(edtfile,"				%s",tmparr);
@@ -1050,8 +1058,8 @@ void ReadCache(char[] cache, char[] mapedt)
 			for (int i = 0;i<GetArraySize(equipsarrays);i++)
 			{
 				GetArrayString(equipsarrays,i,largerline,sizeof(largerline));
-				char kvs[128][64];
-				ExplodeString(largerline, " ", kvs, 64, 128, true);
+				char kvs[128][128];
+				ExplodeString(largerline, " ", kvs, 128, 128, true);
 				char ammtype[32];
 				Format(ammtype,sizeof(ammtype),"%s",kvs[0]);
 				ReplaceStringEx(ammtype,sizeof(ammtype),"weapon_","sk_max_");
