@@ -10,15 +10,15 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.35"
+#define PLUGIN_VERSION "0.36"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
-bool hasreadcache = false;
 bool startedreading = false;
 bool WriteCache = false;
 char mapbuf[64];
 char curmap[64];
+char globaldots[32];
 int openbrackets = 0;
 
 public Plugin myinfo =
@@ -364,6 +364,7 @@ public Action BuildEDTFor(int client, int args)
 						ReadPackString(curmappass,mapbuf,sizeof(mapbuf));
 						if (!StrEqual(mapbuf,"endofpack",false))
 						{
+							globaldots = "";
 							ReadPackString(curmappass,curmap,sizeof(curmap));
 							PrintToServer("WriteTo %s\nRead %s",mapbuf,curmap);
 							buildcache(0,curmappass);
@@ -1108,6 +1109,7 @@ void ReadCache(char[] cache, char[] mapedt)
 
 public void OnMapStart()
 {
+	globaldots = "";
 	if (GetMapHistorySize() > 0)
 	{
 		GetCurrentMap(curmap,sizeof(curmap));
@@ -1131,7 +1133,6 @@ public void OnMapStart()
 			CreateDirectory("maps/ent_cache",511);
 		}
 		CloseHandle(mdirlisting);
-		hasreadcache = false;
 		if (AutoBuild)
 		{
 			CreateTimer(1.0,buildinfodelay,_,TIMER_FLAG_NO_MAPCHANGE);
@@ -1152,11 +1153,6 @@ public Action buildinfodelay(Handle timer)
 
 void buildcache(int startline, Handle mapset)
 {
-	if (hasreadcache)
-	{
-		CloseHandle(mapset);
-		return;
-	}
 	Handle cachefile = INVALID_HANDLE;
 	if (startline == 0) cachefile = OpenFile(mapbuf,"w");
 	else cachefile = OpenFile(mapbuf,"a");
@@ -1177,6 +1173,8 @@ void buildcache(int startline, Handle mapset)
 				Handle dp = CreateDataPack();
 				WritePackCell(dp,startline);
 				WritePackCell(dp,mapset);
+				if (strlen(globaldots) > 0) PrintToServer("%s",globaldots);
+				StrCat(globaldots,sizeof(globaldots),".");
 				CreateTimer(0.1,nextlines,dp,TIMER_FLAG_NO_MAPCHANGE);
 				break;
 			}
@@ -1202,6 +1200,7 @@ void buildcache(int startline, Handle mapset)
 					else if (WriteCache)
 					{
 						TrimString(line);
+						if (StrContains(line,"",false) != -1) ReplaceString(line,sizeof(line),"",",");
 						if (StrContains(line,"{",false) == 0) openbrackets = 0;
 						else if (StrContains(line,"}",false) == 0) openbrackets++;
 						if ((openbrackets > 1) || (StrContains(line,"(",false) == 0) || (StrContains(line,"|",false) != -1) || (StrContains(line,"ý",false) != -1) || (StrContains(line,"┬",false) != -1) || (StrContains(line,"╙",false) != -1) || (StrContains(line,"ü",false) == 0) || (StrContains(line,"õ",false) != -1) || (StrContains(line,"Ó",false) != -1) || (StrContains(line,"Ÿ",false) != -1) || (StrContains(line,"{~") == 0) || (StrContains(line,"<",false) != -1) || (StrContains(line,">",false) != -1) || (StrContains(line,"Å",false) != -1) || (StrContains(line,"ÿ",false) != -1) || (StrContains(line,"┼",false) != -1) || (StrContains(line,"",false) != -1))
@@ -1225,6 +1224,7 @@ void buildcache(int startline, Handle mapset)
 								if (!StrEqual(mapbuf,"endofpack",false))
 								{
 									ReadPackString(mapset,curmap,sizeof(curmap));
+									globaldots = "";
 									PrintToServer("WriteTo %s\nRead %s",mapbuf,curmap);
 									buildcache(0,mapset);
 								}
@@ -1237,9 +1237,9 @@ void buildcache(int startline, Handle mapset)
 							}
 							else
 							{
-								hasreadcache = true;
 								CloseHandle(mapset);
 							}
+							globaldots = "";
 							startedreading = false;
 							break;
 						}
