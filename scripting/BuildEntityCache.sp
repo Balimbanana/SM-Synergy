@@ -974,13 +974,13 @@ void ReadCache(char[] cache, char[] mapedt)
 				ExplodeString(kvs2[1], " ", kvs2, 64, 128, true);
 				if (FindStringInArray(duplicates,tmparr) == -1)
 				{
-					PushArrayString(duplicates,tmparr);
 					float itempos[3];
 					itempos[0] = StringToFloat(kvs2[0]);
 					itempos[1] = StringToFloat(kvs2[1]);
 					itempos[2] = StringToFloat(kvs2[2]);
-					if (GetVectorDistance(orgpos,itempos,false) < 50.0)
+					if (GetVectorDistance(orgpos,itempos,false) < 60.0)
 					{
+						PushArrayString(duplicates,tmparr);
 						if (StrEqual(tmparr,"item_box_buckshot",false)) Format(tmparr,sizeof(tmparr),"ammo_buckshot \"6\"");
 						else if (StrEqual(tmparr,"item_rpg_round",false)) Format(tmparr,sizeof(tmparr),"ammo_rpg_round \"2\"");
 						else if (StrEqual(tmparr,"item_battery",false)) Format(tmparr,sizeof(tmparr),"item_armor \"15\"");
@@ -1073,6 +1073,7 @@ void ReadCache(char[] cache, char[] mapedt)
 				if (StrEqual(ammtype,"ammo_rpg",false)) Format(ammtype,sizeof(ammtype),"ammo_rpg_round");
 				else if (StrEqual(ammtype,"ammo_frag",false)) Format(ammtype,sizeof(ammtype),"ammo_grenade");
 				else if (StrEqual(ammtype,"ammo_shotgun",false)) Format(ammtype,sizeof(ammtype),"ammo_buckshot");
+				else if (StrEqual(ammtype,"ammo_crossbow",false)) Format(ammtype,sizeof(ammtype),"ammo_xbowbolt");
 				else if ((StrEqual(ammtype,"ammo_crowbar",false)) || (StrEqual(ammtype,"ammo_physcannon",false))) ammtype = "";
 				if (strlen(ammtype) > 1) Format(largerline,sizeof(largerline),"		create {classname \"info_player_equip\" values {targetname \"%s\" startdisabled \"1\" %s \"1\" %s \"%i\"} }",kvs[1],kvs[0],ammtype,ammamount);
 				else Format(largerline,sizeof(largerline),"		create {classname \"info_player_equip\" values {targetname \"%s\" startdisabled \"1\" %s \"1\"} }",kvs[1],kvs[0]);
