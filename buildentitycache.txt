@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.33"
-			"Previous"	"0.32"
+			"Latest"  	"0.34"
+			"Previous"	"0.33"
 		}
 		
-		"Notes"	"Added buildantirush, only works on current map by compiling information on trigger_changelevels and creating a blocker and coop trig."
+		"Notes"	"Added all entities that contain Lock inputs to EDT generation."
 	}
 	
 	"Files"
