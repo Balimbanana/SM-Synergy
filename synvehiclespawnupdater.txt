@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.15"
-			"Previous"	"1.14"
+			"Latest"  	"1.16"
+			"Previous"	"1.15"
 		}
 		
-		"Notes"	"Additional checks on vehicle type."
+		"Notes"	"Increase delay on autoenter."
 	}
 	
 	"Files"
