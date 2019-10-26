@@ -13,7 +13,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.23"
+#define PLUGIN_VERSION "1.24"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -486,10 +486,13 @@ public void aggroch(Handle convar, const char[] oldValue, const char[] newValue)
 
 public void gmch(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	if (StrEqual(newValue,"dm",false)) setupdmfor("dm");
-	else if (StrEqual(newValue,"tdm",false)) setupdmfor("tdm");
-	else if (StrEqual(newValue,"survival",false)) setupdmfor("survival");
-	else setupdmfor("coop");
+	if (!StrEqual(newValue,oldValue,false))
+	{
+		if (StrEqual(newValue,"dm",false)) setupdmfor("dm");
+		else if (StrEqual(newValue,"tdm",false)) setupdmfor("tdm");
+		else if (StrEqual(newValue,"survival",false)) setupdmfor("survival");
+		else setupdmfor("coop");
+	}
 }
 
 public Action setinstspawn(int client, int args)
