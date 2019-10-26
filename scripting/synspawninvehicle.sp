@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.15"
+#define PLUGIN_VERSION "1.16"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -79,7 +79,7 @@ public Action waitforlive(Handle timer, int client)
 {
 	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && IsValidEntity(client) && !IsFakeClient(client))
 	{
-		CreateTimer(0.5,spawninvehicle,client,TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(1.1,spawninvehicle,client,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	else if ((IsClientConnected(client)) && (!IsFakeClient(client)))
 	{
