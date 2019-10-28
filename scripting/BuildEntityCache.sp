@@ -10,15 +10,16 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.36"
+#define PLUGIN_VERSION "0.37"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
 bool startedreading = false;
 bool WriteCache = false;
+bool Reverse = false;
 char mapbuf[64];
 char curmap[64];
-char globaldots[32];
+char globaldots[48];
 int openbrackets = 0;
 
 public Plugin myinfo =
@@ -365,6 +366,7 @@ public Action BuildEDTFor(int client, int args)
 						if (!StrEqual(mapbuf,"endofpack",false))
 						{
 							globaldots = "";
+							Reverse = false;
 							ReadPackString(curmappass,curmap,sizeof(curmap));
 							PrintToServer("WriteTo %s\nRead %s",mapbuf,curmap);
 							buildcache(0,curmappass);
@@ -1109,7 +1111,14 @@ void ReadCache(char[] cache, char[] mapedt)
 
 public void OnMapStart()
 {
+	Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
+	if (mdirlisting == INVALID_HANDLE)
+	{
+		CreateDirectory("maps/ent_cache",511);
+	}
+	CloseHandle(mdirlisting);
 	globaldots = "";
+	Reverse = false;
 	if (GetMapHistorySize() > 0)
 	{
 		GetCurrentMap(curmap,sizeof(curmap));
@@ -1127,12 +1136,6 @@ public void OnMapStart()
 		CloseHandle(cvar);
 		if (strlen(contentdata) < 1) Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s.ent",mapbuf);
 		else Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s_%s.ent",contentdata,mapbuf);
-		Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
-		if (mdirlisting == INVALID_HANDLE)
-		{
-			CreateDirectory("maps/ent_cache",511);
-		}
-		CloseHandle(mdirlisting);
 		if (AutoBuild)
 		{
 			CreateTimer(1.0,buildinfodelay,_,TIMER_FLAG_NO_MAPCHANGE);
@@ -1174,7 +1177,10 @@ void buildcache(int startline, Handle mapset)
 				WritePackCell(dp,startline);
 				WritePackCell(dp,mapset);
 				if (strlen(globaldots) > 0) PrintToServer("%s",globaldots);
-				StrCat(globaldots,sizeof(globaldots),".");
+				if ((!Reverse) && (strlen(globaldots) > 46)) Reverse = true;
+				else if ((Reverse) && (strlen(globaldots) < 1)) Reverse = false;
+				if ((Reverse) && (strlen(globaldots) > 0)) ReplaceStringEx(globaldots,sizeof(globaldots),".","");
+				else StrCat(globaldots,sizeof(globaldots),".");
 				CreateTimer(0.1,nextlines,dp,TIMER_FLAG_NO_MAPCHANGE);
 				break;
 			}
@@ -1225,6 +1231,7 @@ void buildcache(int startline, Handle mapset)
 								{
 									ReadPackString(mapset,curmap,sizeof(curmap));
 									globaldots = "";
+									Reverse = false;
 									PrintToServer("WriteTo %s\nRead %s",mapbuf,curmap);
 									buildcache(0,mapset);
 								}
@@ -1240,6 +1247,7 @@ void buildcache(int startline, Handle mapset)
 								CloseHandle(mapset);
 							}
 							globaldots = "";
+							Reverse = false;
 							startedreading = false;
 							break;
 						}
