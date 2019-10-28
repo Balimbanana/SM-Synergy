@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.37"
-			"Previous"	"0.36"
+			"Latest"  	"0.38"
+			"Previous"	"0.37"
 		}
 		
 		"Notes"	"Added progress indicator dots back and forth for buildcache. Fixed ent_cache directory not found."
