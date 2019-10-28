@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.37"
+#define PLUGIN_VERSION "0.38"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -1006,10 +1006,11 @@ void ReadCache(char[] cache, char[] mapedt)
 								Format(deletion,sizeof(deletion),"%s\" %s}",tmparr,origin);
 								if (FindStringInArray(mapremovals,deletion) == -1) PushArrayString(mapremovals,deletion);
 							}
-							if ((StrContains(tmparr,"item_",false) == 0) && (!StrEqual(tmparr,"item_suit",false)))
+							if ((StrContains(tmparr,"item_ammo",false) == 0) && (!StrEqual(tmparr,"item_suit",false)))
 							{
 								ReplaceStringEx(tmparr,sizeof(tmparr),"item_","");
-								StrCat(tmparr,sizeof(tmparr)," \"12\"");
+								if (StrContains(tmparr,"grenade",false) != -1) StrCat(tmparr,sizeof(tmparr)," \"3\"");
+								else StrCat(tmparr,sizeof(tmparr)," \"12\"");
 							}
 							else
 							{
@@ -1190,7 +1191,7 @@ void buildcache(int startline, Handle mapset)
 			{
 				char additionalquote[128];
 				Format(additionalquote,sizeof(additionalquote),"%s",line[quotepos+1]);
-				if (((strlen(line) > 5) && (StrContains(additionalquote,"\"",false) != -1)) || ((StrContains(line,"{",false) != -1) && (strlen(line) < 3)) || ((StrContains(line,"}",false) != -1) && (strlen(line) < 3)))
+				if (((strlen(line) > 5) && (StrContains(additionalquote,"\"",false) != -1) && (StrContains(additionalquote," ",false) != -1)) || ((StrContains(line,"{",false) != -1) && (strlen(line) < 3)) || ((StrContains(line,"}",false) != -1) && (strlen(line) < 3)))
 				{
 					if ((StrContains(line,"\"world_maxs\"",false) == 0) && (!WriteCache))
 					{
