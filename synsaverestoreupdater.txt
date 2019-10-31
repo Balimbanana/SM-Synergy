@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.06"
-			"Previous"	"2.05"
+			"Latest"  	"2.07"
+			"Previous"	"2.06"
 		}
 		
-		"Notes"	"Added Black Mesa transitions support. Added certain global entity transitions and offsets of parented transitions."
+		"Notes"	"Increased range for transitioning player positions."
 	}
 	
 	"Files"
