@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.07"
-			"Previous"	"2.06"
+			"Latest"  	"2.08"
+			"Previous"	"2.07"
 		}
 		
-		"Notes"	"Increased range for transitioning player positions."
+		"Notes"	"Increased range for transitioning player positions. Separated OutOfWorld checks."
 	}
 	
 	"Files"
