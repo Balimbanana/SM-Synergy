@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.08"
-			"Previous"	"2.07"
+			"Latest"  	"2.09"
+			"Previous"	"2.08"
 		}
 		
-		"Notes"	"Increased range for transitioning player positions. Separated OutOfWorld checks."
+		"Notes"	"Recompile on old headers."
 	}
 	
 	"Files"
