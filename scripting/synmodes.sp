@@ -13,7 +13,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.24"
+#define PLUGIN_VERSION "1.25"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -130,14 +130,6 @@ public void OnPluginStart()
 	HookConVarChange(mpcvar,teambalancech);
 	if (GetConVarInt(mpcvar) == 1) teambalance = true;
 	else teambalance = false;
-	mpcvar = CreateConVar("sm_gamemodeset", "coop", "", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, false, 0.0, false);
-	HookConVarChange(mpcvar,gmch);
-	char curgamemode[16];
-	GetConVarString(mpcvar,curgamemode,sizeof(curgamemode));
-	if (StrEqual(curgamemode,"dm",false)) setupdmfor("dm");
-	else if (StrEqual(curgamemode,"tdm",false)) setupdmfor("tdm");
-	else if (StrEqual(curgamemode,"survival",false)) setupdmfor("survival");
-	else setupdmfor("coop");
 	mpcvar = CreateConVar("mp_teams_unbalance_limit", "0", "Teams are unbalanced when one team has this many more players than the other team. (0 disables check)", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 0.0, true, 64.0);
 	HookConVarChange(mpcvar,teambalancelimitch);
 	teambalancelimit = GetConVarInt(mpcvar);
@@ -159,7 +151,6 @@ public void OnPluginStart()
 	else if (GetConVarInt(mpcvar) == 0) SetConVarInt(mpcvar,20,false,false);
 	HookConVarChange(mpcvar,fraglimch);
 	fraglimit = GetConVarInt(mpcvar);
-	CloseHandle(mpcvar);
 	Handle resetmodeh = CreateConVar("sm_resetmode", "0", "Reset mode for survival gamemode. 0 is reload checkpoint, 1 is reload map, 2 is respawn all players.", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 0.0, true, 2.0);
 	HookConVarChange(resetmodeh,resetmodech);
 	resetmode = GetConVarInt(resetmodeh);
@@ -171,6 +162,15 @@ public void OnPluginStart()
 	CreateTimer(1.0,roundtimeout,_,TIMER_REPEAT);
 	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
 	AutoExecConfig(true, "synmodes");
+	mpcvar = CreateConVar("sm_gamemodeset", "coop", "", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, false, 0.0, false);
+	HookConVarChange(mpcvar,gmch);
+	char curgamemode[16];
+	GetConVarString(mpcvar,curgamemode,sizeof(curgamemode));
+	if (StrEqual(curgamemode,"dm",false)) setupdmfor("dm");
+	else if (StrEqual(curgamemode,"tdm",false)) setupdmfor("tdm");
+	else if (StrEqual(curgamemode,"survival",false)) setupdmfor("survival");
+	else setupdmfor("coop");
+	CloseHandle(mpcvar);
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -928,7 +928,10 @@ void setupdmfor(char[] gametype)
 			{
 				SetConVarInt(cvarset,2,false,false);
 			}
-			else SetConVarInt(cvarset,1,false,false);
+			else if (GetConVarInt(cvarset) < 1)
+			{
+				SetConVarInt(cvarset,1,false,false);
+			}
 		}
 		CloseHandle(cvarset);
 	}
