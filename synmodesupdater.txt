@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.24"
-			"Previous"	"1.23"
+			"Latest"  	"1.25"
+			"Previous"	"1.24"
 		}
 		
 		"Notes"	"Apply gamemode setup only when supplied with new value on recheck."
