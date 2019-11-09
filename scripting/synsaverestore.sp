@@ -58,7 +58,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.09"
+#define PLUGIN_VERSION "2.10"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2170,7 +2170,7 @@ public void OnMapStart()
 											float addz = StringToFloat(scriptexp[jadd+2]);
 											addz+=50.0;
 											Format(scriptexp[jadd],sizeof(scriptexp[]),"%s, %s %s %1.f",scriptexp[jadd],firstv,scriptexp[jadd+1],addz);
-											PrintToServer("Dispatch %s %s",scriptexp[j],scriptexp[jadd]);
+											//PrintToServer("Dispatch %s %s",scriptexp[j],scriptexp[jadd]);
 											DispatchKeyValue(ent,scriptexp[j],scriptexp[jadd]);
 										}
 										else
@@ -3008,7 +3008,8 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 										GetEntityClassname(par,parentcls,sizeof(parentcls));
 										if (((StrEqual(parentcls,"func_door",false)) || (StrEqual(parentcls,"func_tracktrain",false))) || (StrContains(clsname,"npc_",false) == -1))
 										{
-											CloseHandle(dp);
+											if (dp != INVALID_HANDLE) CloseHandle(dp);
+											dp = INVALID_HANDLE;
 											transitionthis = false;
 											PushArrayCell(ignoreent,i);
 										}
@@ -3022,7 +3023,8 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 								}
 								if (StrEqual(mdl,"models/alyx_emptool_prop.mdl"))
 								{
-									CloseHandle(dp);
+									if (dp != INVALID_HANDLE) CloseHandle(dp);
+									dp = INVALID_HANDLE;
 									transitionthis = false;
 									PushArrayCell(ignoreent,i);
 								}
@@ -3936,9 +3938,9 @@ public Action anotherdelay(Handle timer, int client)
 						if (StrEqual(ammosettype,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
 						else if (StrEqual(ammosettype,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 						else if ((StrEqual(ammosettype,"weapon_glock",false)) || (StrEqual(ammosettype,"weapon_pistol_worker",false)) || (StrEqual(ammosettype,"weapon_flaregun",false)) || (StrEqual(ammosettype,"weapon_manhack",false)) || (StrEqual(ammosettype,"weapon_manhackgun",false)) || (StrEqual(ammosettype,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-						else if ((StrEqual(ammosettype,"weapon_medkit",false)) || (StrEqual(ammosettype,"weapon_snark",false)) || (StrEqual(ammosettype,"weapon_hivehand",false)) || (StrEqual(ammosettype,"weapon_satchel",false)) || (StrEqual(ammosettype,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-						else if ((StrEqual(ammosettype,"weapon_mp5",false)) || (StrEqual(ammosettype,"weapon_sl8",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-						else if ((StrEqual(ammosettype,"weapon_gauss",false)) || (StrEqual(ammosettype,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+						else if ((StrEqual(ammosettype,"weapon_medkit",false)) || (StrEqual(ammosettype,"weapon_healer",false)) || (StrEqual(ammosettype,"weapon_snark",false)) || (StrEqual(ammosettype,"weapon_hivehand",false)) || (StrEqual(ammosettype,"weapon_satchel",false)) || (StrEqual(ammosettype,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+						else if ((StrEqual(ammosettype,"weapon_mp5",false)) || (StrEqual(ammosettype,"weapon_sl8",false)) || (StrEqual(ammosettype,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+						else if ((StrEqual(ammosettype,"weapon_gauss",false)) || (StrEqual(ammosettype,"weapon_tau",false)) || (StrEqual(ammosettype,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 						else if (StrEqual(ammosettype,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 						else if (StrEqual(ammosettype,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 						else if (StrContains(ammosettype,"customweapons",false) != -1)
@@ -4150,9 +4152,9 @@ public void EquipCustom(int equip, int client)
 						if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
 						else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 						else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-						else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-						else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-						else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+						else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+						else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+						else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 						else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 						else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 						else if (StrContains(basecls,"customweapons",false) != -1)
