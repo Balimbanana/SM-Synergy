@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.09"
-			"Previous"	"2.08"
+			"Latest"  	"2.10"
+			"Previous"	"2.09"
 		}
 		
 		"Notes"	"Recompile on old headers."
