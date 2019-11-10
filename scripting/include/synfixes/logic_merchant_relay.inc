@@ -3,7 +3,7 @@ logmerches(int ent, int activator, char[] input, char[] targn, char[] parampass,
 	int thisent = FindEntityByClassname(ent,"logic_*");
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
-		char enttargn[32];
+		char enttargn[128];
 		GetEntPropString(thisent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
 		if (StrEqual(targn,enttargn,false))
 		{
@@ -46,15 +46,15 @@ public void LogMerchInputs(int ent, int activator, char[] input, char[] parampas
 	//PrintToServer("LogMerchInputs %i %i %s %s",ent,activator,input,parampass);
 	if ((activator != 0) && (IsValidEntity(activator)))
 	{
-		if (HasEntProp(activator,Prop_Data,"m_iPoints"))
+		if (HasEntProp(activator,Prop_Data,"m_iFrags"))
 		{
-			int points = GetEntProp(activator,Prop_Data,"m_iPoints");
+			int points = GetEntProp(activator,Prop_Data,"m_iFrags");
 			if (StrEqual(input,"Purchase",false))
 			{
 				int cost = GetEntProp(ent,Prop_Data,"m_iHealth");
 				if (points >= cost)
 				{
-					SetEntProp(activator,Prop_Data,"m_iPoints",points-cost);
+					SetEntProp(activator,Prop_Data,"m_iFrags",points-cost);
 					char purchasesnd[64];
 					GetEntPropString(ent,Prop_Data,"m_iszResponseContext",purchasesnd,sizeof(purchasesnd));
 					if (strlen(purchasesnd) > 0)

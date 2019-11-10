@@ -111,12 +111,12 @@ public int MenuHandlersub(Menu menu, MenuAction action, int param1, int param2)
 			TrimString(data[2]);
 			Format(data[1],sizeof(data[]),"%s",data[2]);
 		}
-		int points = GetEntProp(param1,Prop_Data,"m_iPoints");
+		int points = GetEntProp(param1,Prop_Data,"m_iFrags");
 		int cost = StringToInt(data[1]);
 		//PrintToServer("Activator %i has %i cost is %i",param1,points,cost);
 		if (points >= cost)
 		{
-			SetEntProp(param1,Prop_Data,"m_iPoints",points-cost);
+			SetEntProp(param1,Prop_Data,"m_iFrags",points-cost);
 			CreateCustomItem(param1,data[0],cost);
 		}
 		else
@@ -137,14 +137,14 @@ void CreateCustomItem(int client, char[] info, int cost)
 	{
 		char basecls[64];
 		Format(basecls,sizeof(basecls),"%s",info);
-		if (StrEqual(info,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
-		else if (StrEqual(info,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
-		else if ((StrEqual(info,"weapon_glock",false)) || (StrEqual(info,"weapon_pistol_worker",false)) || (StrEqual(info,"weapon_flaregun",false)) || (StrEqual(info,"weapon_manhack",false)) || (StrEqual(info,"weapon_manhackgun",false)) || (StrEqual(info,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-		else if ((StrEqual(info,"weapon_medkit",false)) || (StrEqual(info,"weapon_snark",false)) || (StrEqual(info,"weapon_hivehand",false)) || (StrEqual(info,"weapon_hornetgun",false)) || (StrEqual(info,"weapon_satchel",false)) || (StrEqual(info,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-		else if ((StrEqual(info,"weapon_mp5",false)) || (StrEqual(info,"weapon_m4",false)) || (StrEqual(info,"weapon_sl8",false)) || (StrEqual(info,"weapon_g36c",false)) || (StrEqual(info,"weapon_oicw",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-		else if ((StrEqual(info,"weapon_gauss",false)) || (StrEqual(info,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
-		else if (StrEqual(info,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
-		else if (StrEqual(info,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
+		if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
+		else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
+		else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+		else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+		else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+		else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+		else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
+		else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 		else if (StrContains(info,"custom_",false) != -1)
 		{
 			char weapscr[72];
@@ -189,10 +189,10 @@ void CreateCustomItem(int client, char[] info, int cost)
 		}
 		else
 		{
-			int points = GetEntProp(client,Prop_Data,"m_iPoints");
+			int points = GetEntProp(client,Prop_Data,"m_iFrags");
 			PrintToChat(client,"Failed to create \"%s\" ask for it to be added to ent list.",basecls);
 			PrintToChat(client,"You have been refunded %i",cost);
-			SetEntProp(client,Prop_Data,"m_iPoints",points+cost);
+			SetEntProp(client,Prop_Data,"m_iFrags",points+cost);
 		}
 	}
 }
