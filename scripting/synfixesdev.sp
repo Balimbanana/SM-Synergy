@@ -85,7 +85,7 @@ bool weapmanagersplaced = false;
 bool mapchanging = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9993"
+#define PLUGIN_VERSION "1.9994"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -147,7 +147,7 @@ public void OnPluginStart()
 	instswitch = GetConVarBool(instphyswitch);
 	HookConVarChange(instphyswitch, instphych);
 	CloseHandle(instphyswitch);
-	Handle forcehdrh = CreateConVar("sm_forcehdr", "0", "Force clients to use HDR (fixes fullbright).", _, true, 0.0, true, 1.0);
+	Handle forcehdrh = CreateConVar("sm_forcehdr", "1", "Force clients to use HDR (fixes fullbright).", _, true, 0.0, true, 1.0);
 	forcehdr = GetConVarBool(forcehdrh);
 	HookConVarChange(forcehdrh, forcehdrch);
 	CloseHandle(forcehdrh);
@@ -768,6 +768,7 @@ public void OnMapStart()
 		PushArrayString(customentlist,"weapon_gluon");
 		PushArrayString(customentlist,"weapon_gauss");
 		PushArrayString(customentlist,"weapon_tau");
+		PushArrayString(customentlist,"weapon_sniperrifle");
 		PushArrayString(customentlist,"weapon_snark");
 		PushArrayString(customentlist,"weapon_hivehand");
 		PushArrayString(customentlist,"weapon_mp5");
@@ -775,6 +776,8 @@ public void OnMapStart()
 		PushArrayString(customentlist,"weapon_m4");
 		PushArrayString(customentlist,"weapon_oicw");
 		PushArrayString(customentlist,"weapon_sl8");
+		PushArrayString(customentlist,"weapon_uzi");
+		PushArrayString(customentlist,"weapon_healer");
 		PushArrayString(customentlist,"item_weapon_gluon");
 		PushArrayString(customentlist,"item_ammo_energy");
 		PushArrayString(customentlist,"item_weapon_gauss");
@@ -1475,9 +1478,9 @@ public Action everyspawnpost(Handle timer, int client)
 										if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
 										else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 										else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-										else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-										else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-										else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+										else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+										else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+										else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 										else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 										else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 										else if (StrContains(basecls,"customweapons",false) != -1)
@@ -1658,9 +1661,9 @@ public Action clspawnpost(Handle timer, int client)
 										if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
 										else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 										else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-										else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-										else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_m4",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_g36c",false)) || (StrEqual(basecls,"weapon_oicw",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-										else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+										else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+										else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_m4",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_g36c",false)) || (StrEqual(basecls,"weapon_oicw",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+										else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 										else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 										else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 										int ent = CreateEntityByName(basecls);
@@ -3560,6 +3563,44 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			{
 				Format(tmpout,sizeof(tmpout),"OnFinishPortal");
 			}
+			if (caller == activator)
+			{
+				if (activator > MaxClients)
+				{
+					for (int j = 1;j<MaxClients+1;j++)
+					{
+						if (IsValidEntity(j))
+						{
+							if (IsClientConnected(j))
+							{
+								if (IsClientInGame(j))
+								{
+									if (IsPlayerAlive(j))
+									{
+										if (HasEntProp(j,Prop_Data,"m_hUseEntity"))
+										{
+											int useent = GetClientAimTarget(j,false);
+											if (useent == activator)
+											{
+												float clpos[3];
+												GetClientAbsOrigin(j,clpos);
+												float entpos[3];
+												if (HasEntProp(activator,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(activator,Prop_Data,"m_vecAbsOrigin",entpos);
+												else if (HasEntProp(activator,Prop_Send,"m_vecOrigin")) GetEntPropVector(activator,Prop_Send,"m_vecOrigin",entpos);
+												if (GetVectorDistance(clpos,entpos,false) < 150.0)
+												{
+													actmod = j;
+													break;
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 		if (skipactchk)
 		{
@@ -4462,7 +4503,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						if (findskin == -1)
 						{
 							char randskin[4];
-							Format(randskin,sizeof(randskin),"%i",GetRandomInt(0,7));
+							Format(randskin,sizeof(randskin),"%i",GetRandomInt(0,14));
 							PushArrayString(passedarr,"skin");
 							PushArrayString(passedarr,randskin);
 						}
@@ -4940,7 +4981,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					{
 						Format(cls,sizeof(cls),"weapon_pistol");
 					}
-					else if ((StrEqual(cls,"weapon_medkit",false)) || (StrEqual(cls,"weapon_camera",false)))
+					else if ((StrEqual(cls,"weapon_medkit",false)) || (StrEqual(cls,"weapon_healer",false)) || (StrEqual(cls,"weapon_camera",false)))
 					{
 						Format(cls,sizeof(cls),"weapon_slam");
 					}
@@ -4977,7 +5018,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							WritePackString(dp,"models/w_gaussammo.mdl");
 						}
 					}
-					else if ((StrEqual(cls,"weapon_gauss",false)) || (StrEqual(cls,"weapon_tau",false)))
+					else if ((StrEqual(cls,"weapon_gauss",false)) || (StrEqual(cls,"weapon_tau",false)) || (StrEqual(cls,"weapon_sniperrifle",false)))
 					{
 						Format(cls,sizeof(cls),"weapon_ar2");
 					}
@@ -4998,7 +5039,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						}
 						Format(cls,sizeof(cls),"weapon_slam");
 					}
-					else if ((StrEqual(cls,"weapon_mp5",false)) || (StrEqual(cls,"item_weapon_mp5",false)) || (StrEqual(cls,"weapon_m4",false)) || (StrEqual(cls,"weapon_oicw",false)) || (StrEqual(cls,"weapon_sl8",false)))
+					else if ((StrEqual(cls,"weapon_mp5",false)) || (StrEqual(cls,"item_weapon_mp5",false)) || (StrEqual(cls,"weapon_m4",false)) || (StrEqual(cls,"weapon_oicw",false)) || (StrEqual(cls,"weapon_sl8",false)) || (StrEqual(cls,"weapon_uzi",false)))
 					{
 						if (StrContains(cls,"item_",false) == 0)
 						{
@@ -6374,7 +6415,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					}
 					else if (StrEqual(oldcls,"func_minefield",false))
 					{
-						SetVariantString("spawnflags 3");
+						SetVariantString("spawnflags 11");//3
 						AcceptEntityInput(ent,"AddOutput");
 						int findminect = FindStringInArray(passedarr,"minecount");
 						if (findminect != -1)
@@ -8061,7 +8102,7 @@ void readcacheexperimental(int client)
 					}
 					else if (StrEqual(oldcls,"func_minefield",false))
 					{
-						SetVariantString("spawnflags 3");
+						SetVariantString("spawnflags 11");
 						AcceptEntityInput(ent,"AddOutput");
 						int findminect = FindStringInArray(passedarr,"minecount");
 						if (findminect != -1)
@@ -10501,10 +10542,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 			//if ((StrContains(tmpch,tmpoutpchk,false) != -1) || ((StrContains(tmpch,origintargnfind,false) != -1) && (StrEqual(clsorfixup[1],originchar,false))))
 			if ((StrEqual(input,"!picker",false)) && (StrContains(tmpch,output) != -1) && (StrEqual(clsorfixup[0],targn)))
 			{
-				char lineorgrescom[16][64];
+				char lineorgrescom[16][128];
 				if ((StrContains(clsorfixup[5],",") != -1) && (StrContains(clsorfixup[3],":") == -1))
 				{
-					ExplodeString(clsorfixup[5],",",lineorgrescom,16,64);
+					ExplodeString(clsorfixup[5],",",lineorgrescom,16,128);
 					if (StrEqual(input,lineorgrescom[0]))
 					{
 						float delay = StringToFloat(lineorgrescom[3]);
@@ -10516,10 +10557,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 			{
 				if (StrContains(tmpch,output) != -1)
 				{
-					char lineorgrescom[16][64];
+					char lineorgrescom[16][128];
 					if ((StrContains(clsorfixup[5],",") != -1) && (StrContains(clsorfixup[3],":") == -1))
 					{
-						ExplodeString(clsorfixup[5],",",lineorgrescom,16,64);
+						ExplodeString(clsorfixup[5],",",lineorgrescom,16,128);
 						if (StrEqual(input,lineorgrescom[1]))
 						{
 							ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
@@ -10605,7 +10646,7 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 					}
 					else
 					{
-						ExplodeString(clsorfixup[3],":",lineorgrescom,16,64);
+						ExplodeString(clsorfixup[3],":",lineorgrescom,16,128);
 						if (StrEqual(input,lineorgrescom[1]))
 						{
 							char delaystr[64];
@@ -10829,6 +10870,9 @@ void readoutputsforinputs()
 						if (debuglvl == 3) PrintToServer("Targetname %s Outp %s",tmptarg,tmpexpl[0]);
 						SearchForClass(tmptarg);
 						Format(outpchk,sizeof(outpchk),"%s %s",tmptarg,tmpexpl[0]);
+						if (StrEqual(classhook,"prop_physics_override",false)) Format(classhook,sizeof(classhook),"prop_physics");
+						Format(classhook,sizeof(classhook),"%s",tmptarg);
+						Format(kvs[3],sizeof(kvs[]),"%s",tmpexpl[0]);
 					}
 					else Format(outpchk,sizeof(outpchk),"%s %s",classhook,kvs[3]);
 					if (StrEqual(kvs[3],"OnFinishPortal",false))
@@ -10837,6 +10881,7 @@ void readoutputsforinputs()
 					}
 					if (FindStringInArray(inputclasshooks,outpchk) == -1)
 					{
+						if (StrEqual(classhook,"prop_physics_override",false)) Format(classhook,sizeof(classhook),"prop_physics");
 						if (StrContains(kvs[5],"!picker",false) != -1) HookEntityOutput(classhook,kvs[3],trigpicker);
 						else HookEntityOutput(classhook,kvs[3],trigtp);
 						PushArrayString(inputclasshooks,outpchk);
@@ -10961,6 +11006,9 @@ void readoutputsforinputs()
 							if (debuglvl == 3) PrintToServer("Targetname %s Outp %s",tmptarg,tmpexpl[0]);
 							SearchForClass(tmptarg);
 							Format(outpchk,sizeof(outpchk),"%s %s",tmptarg,tmpexpl[0]);
+							if (StrEqual(classhook,"prop_physics_override",false)) Format(classhook,sizeof(classhook),"prop_physics");
+							Format(classhook,sizeof(classhook),"%s",tmptarg);
+							Format(kvs[1],sizeof(kvs[]),"%s",tmpexpl[0]);
 							/*
 							if (StrEqual(tmpexpl[0],"OnPressed",false))
 							{
@@ -10977,6 +11025,7 @@ void readoutputsforinputs()
 						}
 						if (FindStringInArray(inputclasshooks,outpchk) == -1)
 						{
+							if (StrEqual(classhook,"prop_physics_override",false)) Format(classhook,sizeof(classhook),"prop_physics");
 							if (StrContains(kvs[3],"!picker",false) != -1) HookEntityOutput(classhook,kvs[1],trigpicker);
 							else HookEntityOutput(classhook,kvs[1],trigtp);
 							PushArrayString(inputclasshooks,outpchk);
@@ -11034,6 +11083,7 @@ int SearchForClass(char tmptarg[128])
 				{
 					char targn[128];
 					GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+					if (StrContains(targn,"\"",false) != -1) ReplaceString(targn,sizeof(targn),"\"","");
 					if (StrContains(tmptarg,"*",false) == 0)
 					{
 						char targwithout[128];
@@ -11125,7 +11175,7 @@ void findpointtp(int ent, char[] targn, int cl, float delay)
 	int thisent = FindEntityByClassname(ent,"point_teleport");
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
-		char enttargn[32];
+		char enttargn[64];
 		GetEntPropString(thisent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
 		char pttarget[32];
 		GetEntPropString(thisent,Prop_Data,"m_target",pttarget,sizeof(pttarget));
@@ -11193,7 +11243,7 @@ void findospreys(int ent, char[] targn, float delay)
 	int thisent = FindEntityByClassname(ent,"npc_osprey");
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
-		char enttargn[32];
+		char enttargn[64];
 		GetEntPropString(thisent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
 		if (StrEqual(targn,enttargn,false))
 		{
@@ -11218,7 +11268,7 @@ void findfades(int ent, char[] targn, int activator, float delay)
 	int thisent = FindEntityByClassname(ent,"env_fade");
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
-		char enttargn[32];
+		char enttargn[64];
 		GetEntPropString(thisent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
 		if (StrEqual(targn,enttargn,false))
 		{
@@ -11284,7 +11334,7 @@ void findequips(int ent, char[] targn, float delay)
 	int thisent = FindEntityByClassname(ent,"info_player_equip");
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
-		char enttargn[32];
+		char enttargn[64];
 		GetEntPropString(thisent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
 		if (StrEqual(targn,enttargn,false))
 		{
@@ -11367,9 +11417,9 @@ public void EquipCustom(int equip, int client)
 							if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
 							else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 							else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-							else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-							else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-							else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+							else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+							else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+							else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 							else if (StrContains(basecls,"customweapons",false) != -1)
 							{
 								char findpath[64];
@@ -11422,7 +11472,7 @@ void finddisplays(int ent, char[] input, char[] targn, char[] parampass, float d
 	int thisent = FindEntityByClassname(ent,"game_text*");
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
-		char enttargn[32];
+		char enttargn[64];
 		GetEntPropString(thisent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
 		if (StrEqual(targn,enttargn,false))
 		{
@@ -11577,7 +11627,7 @@ void findxenporttp(int ent, char[] cls, char[] targn, float delay)
 	int thisent = FindEntityByClassname(ent,cls);
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
-		char enttargn[32];
+		char enttargn[64];
 		GetEntPropString(thisent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
 		if (StrEqual(targn,enttargn,false))
 		{
@@ -11638,7 +11688,7 @@ void findsentriesd(int ent, char[] cls, char[] targn, float delay)
 	int thisent = FindEntityByClassname(ent,cls);
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
-		char enttargn[32];
+		char enttargn[64];
 		GetEntPropString(thisent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
 		if (StrEqual(targn,enttargn,false))
 		{
@@ -11660,7 +11710,7 @@ void findsentriesr(int ent, char[] cls, char[] targn, float delay)
 	int thisent = FindEntityByClassname(ent,cls);
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
-		char enttargn[32];
+		char enttargn[64];
 		GetEntPropString(thisent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
 		if (StrEqual(targn,enttargn,false))
 		{
@@ -12260,7 +12310,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 		WritePackString(data, classname);
 		CreateTimer(removertimer,cleanup,data,TIMER_FLAG_NO_MAPCHANGE);
 	}
-	if ((StrEqual(classname,"logic_auto",false)) || (StrEqual(classname,"env_sprite",false)))
+	if ((StrEqual(classname,"logic_auto",false)) || (StrEqual(classname,"env_sprite",false)) || (StrEqual(classname,"env_laser",false)))
 	{
 		CreateTimer(1.0,rechk,entity,TIMER_FLAG_NO_MAPCHANGE);
 	}
@@ -14552,11 +14602,11 @@ void restoreent(Handle dp)
 			Format(clsname,sizeof(clsname),"weapon_frag");
 		else if ((StrEqual(clsname,"weapon_glock",false)) || (StrEqual(clsname,"weapon_pistol_worker",false)) || (StrEqual(clsname,"weapon_flaregun",false)) || (StrEqual(clsname,"weapon_manhack",false)) || (StrEqual(clsname,"weapon_manhackgun",false)) || (StrEqual(clsname,"weapon_manhacktoss",false)))
 			Format(clsname,sizeof(clsname),"weapon_pistol");
-		else if ((StrEqual(clsname,"weapon_medkit",false)) || (StrEqual(clsname,"weapon_snark",false)) || (StrEqual(clsname,"weapon_hivehand",false)) || (StrEqual(clsname,"weapon_satchel",false)) || (StrEqual(clsname,"weapon_tripmine",false)))
+		else if ((StrEqual(clsname,"weapon_medkit",false)) || (StrEqual(clsname,"weapon_healer",false)) || (StrEqual(clsname,"weapon_snark",false)) || (StrEqual(clsname,"weapon_hivehand",false)) || (StrEqual(clsname,"weapon_satchel",false)) || (StrEqual(clsname,"weapon_tripmine",false)))
 			Format(clsname,sizeof(clsname),"weapon_slam");
-		else if ((StrEqual(clsname,"weapon_mp5",false)) || (StrEqual(clsname,"weapon_sl8",false)) || (StrEqual(clsname,"weapon_oicw",false)))
+		else if ((StrEqual(clsname,"weapon_mp5",false)) || (StrEqual(clsname,"weapon_sl8",false)) || (StrEqual(clsname,"weapon_uzi",false)) || (StrEqual(clsname,"weapon_oicw",false)))
 			Format(clsname,sizeof(clsname),"weapon_smg1");
-		else if ((StrEqual(clsname,"weapon_gauss",false)) || (StrEqual(clsname,"weapon_tau",false)))
+		else if ((StrEqual(clsname,"weapon_gauss",false)) || (StrEqual(clsname,"weapon_tau",false)) || (StrEqual(clsname,"weapon_sniperrifle",false)))
 			Format(clsname,sizeof(clsname),"weapon_ar2");
 		int ent = CreateEntityByName(clsname);
 		if ((TR_PointOutsideWorld(porigin)) && (ent != -1))
@@ -15947,6 +15997,13 @@ public Action rechk(Handle timer, int logent)
 		{
 			float proxysize = GetEntPropFloat(logent,Prop_Data,"m_flGlowProxySize");
 			if (proxysize > 256.0) SetEntPropFloat(logent,Prop_Data,"m_flGlowProxySize",256.0);
+		}
+		else if (StrEqual(clsname,"env_laser",false))
+		{
+			if (HasEntProp(logent,Prop_Data,"m_flDamage"))
+			{
+				if (GetEntPropFloat(logent,Prop_Data,"m_flDamage") > 999.0) SetEntPropFloat(logent,Prop_Data,"m_flDamage",999.0);
+			}
 		}
 		else if ((StrEqual(clsname,"npc_houndeye",false)) || (StrEqual(clsname,"monster_houndeye",false)))
 		{
