@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.983"
-			"Previous"	"0.982"
+			"Latest"  	"0.984"
+			"Previous"	"0.983"
 		}
 		
-		"Notes"	"Added cvar synsweps_spawnwith."
+		"Notes"	"Added weapon_sniperrifle, weapon_uzi, and weapon_healer. Fixed being able to place tripmines on players. Fixed collision group on thrown satchels."
 	}
 	
 	"Files"
