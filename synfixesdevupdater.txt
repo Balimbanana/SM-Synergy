@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9994"
-			"Previous"	"1.9993"
+			"Latest"  	"1.9995"
+			"Previous"	"1.9994"
 		}
 		
-		"Notes"	"Added more skins to npc_human_scientist. Fixed func_minefield to include props. Fixed some output hooking. Fixed targetname buffer clamp for certain entities. Added a few entities to customentlist."
+		"Notes"	"Added monster_alien_grunt. Added monster_gargantua. Added mission briefing if briefing is found."
 	}
 	
 	"Files"
