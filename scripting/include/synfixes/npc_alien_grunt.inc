@@ -16,6 +16,8 @@ void agruntthink(int entity)
 				else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",curorg);
 				float enorg[3];
 				float angs[3];
+				char entmdl[64];
+				if (HasEntProp(entity,Prop_Data,"m_ModelName")) GetEntPropString(entity,Prop_Data,"m_ModelName",entmdl,sizeof(entmdl));
 				if (HasEntProp(entity,Prop_Data,"m_angAbsRotation")) GetEntPropVector(entity,Prop_Data,"m_angAbsRotation",angs);
 				if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",enorg);
 				else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",enorg);
@@ -55,19 +57,65 @@ void agruntthink(int entity)
 					else if ((angs[1]-toang[1] < -180) && (angs[1]-toang[1] > -220)) withinradius = false;
 					else withinradius = true;
 				}
-				if ((chkdist <= meleerange) && ((seq == 16) || (seq == 20)) && (withinradius))
+				int meleeanim = 16;
+				int meleeanim2 = 20;
+				if (StrEqual(entmdl,"models/agrunt.mdl",false))
+				{
+					meleeanim = 9;
+					meleeanim2 = 1;
+					meleerange+=25.0;
+					hornetminrange-=80.0;
+					jumprange = 1.0;
+				}
+				if ((chkdist <= meleerange) && ((seq == meleeanim) || (seq == meleeanim2)) && (withinradius))
 				{
 					int propset;
 					if (RoundFloat(centlastang[entity]) > 0) propset = RoundFloat(centlastang[entity]);
-					if ((IsValidEntity(propset)) && (propset != 0))
+					if (StrEqual(entmdl,"models/agrunt.mdl",false))
+					{
+						char snd[64];
+						Format(snd,sizeof(snd),"npc\\agrunt\\ag_attack%i.wav",GetRandomInt(1,3));
+						EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+						SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
+						if ((IsValidEntity(propset)) && (propset != 0))
+						{
+							char randanim[32];
+							Format(randanim,sizeof(randanim),"mattack%i",GetRandomInt(2,3));
+							SetVariantString(randanim);
+							AcceptEntityInput(propset,"SetAnimation");
+						}
+						else
+						{
+							int propshow = CreateEntityByName("prop_dynamic");
+							if (propshow != -1)
+							{
+								DispatchKeyValue(propshow,"solid","0");
+								DispatchKeyValue(propshow,"model","models/agrunt.mdl");
+								if (GetRandomInt(0,1) == 0) DispatchKeyValue(propshow,"DefaultAnim","mattack2");
+								else DispatchKeyValue(propshow,"DefaultAnim","mattack3");
+								TeleportEntity(propshow,curorg,angs,NULL_VECTOR);
+								DispatchSpawn(propshow);
+								ActivateEntity(propshow);
+								SetVariantString("!activator");
+								AcceptEntityInput(propshow,"SetParent",entity);
+								int rand = GetRandomInt(17,19);
+								SetEntProp(propshow,Prop_Data,"m_nSequence",rand);
+								float tmp;
+								tmp+=propshow;
+								centlastang[entity] = tmp;
+							}
+						}
+					}
+					else if ((IsValidEntity(propset)) && (propset != 0))
 					{
 						char clschk[24];
 						GetEntityClassname(propset,clschk,sizeof(clschk));
 						if (StrEqual(clschk,"prop_dynamic",false))
 							AcceptEntityInput(propset,"kill");
 						centlastang[entity] = 0.0;
+						SetEntProp(entity,Prop_Data,"m_nRenderFX",0);
 					}
-					SetEntProp(entity,Prop_Data,"m_nRenderFX",0);
+					else SetEntProp(entity,Prop_Data,"m_nRenderFX",0);
 					isattacking[entity] = true;
 					centnextatk[entity] = Time+0.5;
 					float damageForce[3];
@@ -94,8 +142,17 @@ void agruntthink(int entity)
 						if (propshow != -1)
 						{
 							DispatchKeyValue(propshow,"solid","0");
-							DispatchKeyValue(propshow,"model","models/xenians/agrunt.mdl");
-							DispatchKeyValue(propshow,"DefaultAnim","attack_leap");
+							if (StrEqual(entmdl,"models/agrunt.mdl",false))
+							{
+								DispatchKeyValue(propshow,"model","models/agrunt.mdl");
+								if (GetRandomInt(0,1) == 0) DispatchKeyValue(propshow,"DefaultAnim","mattack2");
+								else DispatchKeyValue(propshow,"DefaultAnim","mattack3");
+							}
+							else
+							{
+								DispatchKeyValue(propshow,"model","models/xenians/agrunt.mdl");
+								DispatchKeyValue(propshow,"DefaultAnim","attack_leap");
+							}
 							TeleportEntity(propshow,curorg,angs,NULL_VECTOR);
 							DispatchSpawn(propshow);
 							ActivateEntity(propshow);
@@ -135,7 +192,8 @@ void agruntthink(int entity)
 						TeleportEntity(attachfind,curorg,NULL_VECTOR,NULL_VECTOR);
 						SetVariantString("!activator");
 						AcceptEntityInput(attachfind,"SetParent",entity);
-						SetVariantString("rightclaw");
+						if (StrEqual(entmdl,"models/agrunt.mdl",false)) SetVariantString("0");
+						else SetVariantString("rightclaw");
 						AcceptEntityInput(attachfind,"SetParentAttachment");
 						if (HasEntProp(attachfind,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(attachfind,Prop_Data,"m_vecAbsOrigin",curorg);
 						else if (HasEntProp(attachfind,Prop_Send,"m_vecOrigin")) GetEntPropVector(attachfind,Prop_Send,"m_vecOrigin",curorg);
@@ -143,17 +201,65 @@ void agruntthink(int entity)
 					}
 					int propset;
 					if (RoundFloat(centlastang[entity]) > 0) propset = RoundFloat(centlastang[entity]);
-					if ((IsValidEntity(propset)) && (propset != 0))
+					if (StrEqual(entmdl,"models/agrunt.mdl",false))
+					{
+						char snd[64];
+						Format(snd,sizeof(snd),"npc\\agrunt\\ag_attack%i.wav",GetRandomInt(1,3));
+						EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+						SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
+						if ((IsValidEntity(propset)) && (propset != 0))
+						{
+							char randanim[32];
+							Format(randanim,sizeof(randanim),"attack3_2");
+							if (enorg[2] > curorg[2]+20.0) Format(randanim,sizeof(randanim),"attack3_1");
+							SetVariantString(randanim);
+							AcceptEntityInput(propset,"SetAnimation");
+						}
+						else
+						{
+							int propshow = CreateEntityByName("prop_dynamic");
+							if (propshow != -1)
+							{
+								DispatchKeyValue(propshow,"solid","0");
+								DispatchKeyValue(propshow,"model","models/agrunt.mdl");
+								char randanim[32];
+								Format(randanim,sizeof(randanim),"attack3_2");
+								if (enorg[2] > curorg[2]+20.0) Format(randanim,sizeof(randanim),"attack3_1");
+								DispatchKeyValue(propshow,"DefaultAnim",randanim);
+								TeleportEntity(propshow,curorg,angs,NULL_VECTOR);
+								DispatchSpawn(propshow);
+								ActivateEntity(propshow);
+								SetVariantString("!activator");
+								AcceptEntityInput(propshow,"SetParent",entity);
+								int rand = GetRandomInt(17,19);
+								SetEntProp(propshow,Prop_Data,"m_nSequence",rand);
+								float tmp;
+								tmp+=propshow;
+								centlastang[entity] = tmp;
+							}
+						}
+					}
+					else if ((IsValidEntity(propset)) && (propset != 0))
 					{
 						char clschk[24];
 						GetEntityClassname(propset,clschk,sizeof(clschk));
 						if (StrEqual(clschk,"prop_dynamic",false))
 							AcceptEntityInput(propset,"kill");
 						centlastang[entity] = 0.0;
+						SetEntProp(entity,Prop_Data,"m_nRenderFX",0);
 					}
-					SetEntProp(entity,Prop_Data,"m_nRenderFX",0);
-					int rand = GetRandomInt(41,42);
-					SetEntProp(entity,Prop_Data,"m_nSequence",rand);
+					else SetEntProp(entity,Prop_Data,"m_nRenderFX",0);
+					if (StrEqual(entmdl,"models/agrunt.mdl",false))
+					{
+						int context = 19;
+						if (enorg[2] > curorg[2]+10.0) context = 18;
+						SetEntProp(entity,Prop_Data,"m_nSequence",context);
+					}
+					else
+					{
+						int rand = GetRandomInt(41,42);
+						SetEntProp(entity,Prop_Data,"m_nSequence",rand);
+					}
 					lastseen[entity] = lastsaw;
 					isattacking[entity] = true;
 					centnextatk[entity] = Time+0.5;
@@ -183,7 +289,8 @@ void agruntthink(int entity)
 					if (spitball != -1)
 					{
 						//DispatchKeyValue(spitball,"model","models/props_junk/popcan01a.mdl");
-						DispatchKeyValue(spitball,"model","models/weapons/w_hornet.mdl");
+						if (StrEqual(entmdl,"models/agrunt.mdl",false)) DispatchKeyValue(spitball,"model","models/hornet.mdl");
+						else DispatchKeyValue(spitball,"model","models/weapons/w_hornet.mdl");
 						DispatchKeyValue(spitball,"classname","npc_hornet");
 						TeleportEntity(spitball,loc,angs,NULL_VECTOR);
 						DispatchSpawn(spitball);
@@ -193,21 +300,24 @@ void agruntthink(int entity)
 						SetEntityMoveType(spitball,MOVETYPE_FLY);
 						SDKHook(spitball, SDKHook_StartTouch, StartTouchHornet);
 						//TeleportEntity(spitball,loc,angs,shootvel);
-						int effect = CreateEntityByName("info_particle_system");
-						if (effect != -1)
+						if (!StrEqual(entmdl,"models/agrunt.mdl",false))
 						{
-							DispatchKeyValue(effect,"effect_name","hornet_trail");
-							DispatchKeyValue(effect,"start_active","1");
-							TeleportEntity(effect,loc,angs,NULL_VECTOR);
-							DispatchSpawn(effect);
-							ActivateEntity(effect);
-							SetVariantString("!activator");
-							AcceptEntityInput(effect,"SetParent",spitball);
-							AcceptEntityInput(effect,"Start");
-							Handle dp = CreateDataPack();
-							WritePackCell(dp,effect);
-							WritePackString(dp,"info_particle_system");
-							CreateTimer(2.0,cleanup,dp,TIMER_FLAG_NO_MAPCHANGE);
+							int effect = CreateEntityByName("info_particle_system");
+							if (effect != -1)
+							{
+								DispatchKeyValue(effect,"effect_name","hornet_trail");
+								DispatchKeyValue(effect,"start_active","1");
+								TeleportEntity(effect,loc,angs,NULL_VECTOR);
+								DispatchSpawn(effect);
+								ActivateEntity(effect);
+								SetVariantString("!activator");
+								AcceptEntityInput(effect,"SetParent",spitball);
+								AcceptEntityInput(effect,"Start");
+								Handle dp = CreateDataPack();
+								WritePackCell(dp,effect);
+								WritePackString(dp,"info_particle_system");
+								CreateTimer(2.0,cleanup,dp,TIMER_FLAG_NO_MAPCHANGE);
+							}
 						}
 						SetEntProp(spitball,Prop_Data,"m_MoveType",4);
 						TeleportEntity(spitball,NULL_VECTOR,NULL_VECTOR,shootvel);
@@ -251,20 +361,31 @@ public Action StartTouchHornet(int entity, int other)
 			damageForce[1] = dmgforce;
 			damageForce[2] = dmgforce;
 			SDKHooks_TakeDamage(other,entity,entity,dmgset,DMG_CLUB,-1,damageForce);
-			int rand = GetRandomInt(1,2);
-			switch(rand)
+			char entmdl[64];
+			if (HasEntProp(entity,Prop_Data,"m_ModelName")) GetEntPropString(entity,Prop_Data,"m_ModelName",entmdl,sizeof(entmdl));
+			if (StrEqual(entmdl,"models/hornet.mdl",false))
 			{
-				case 1:
+				char snd[64];
+				Format(snd,sizeof(snd),"npc\\agrunt\\ag_fire%i.wav",GetRandomInt(1,3));
+				EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+			}
+			else
+			{
+				int rand = GetRandomInt(1,2);
+				switch(rand)
 				{
-					char snd[64];
-					Format(snd,sizeof(snd),"weapons\\hivehand\\bug_impact.wav");
-					EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
-				}
-				case 2:
-				{
-					char snd[64];
-					Format(snd,sizeof(snd),"weapons\\hivehand\\single.wav");
-					EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+					case 1:
+					{
+						char snd[64];
+						Format(snd,sizeof(snd),"weapons\\hivehand\\bug_impact.wav");
+						EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+					}
+					case 2:
+					{
+						char snd[64];
+						Format(snd,sizeof(snd),"weapons\\hivehand\\single.wav");
+						EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+					}
 				}
 			}
 			int effect = CreateEntityByName("info_particle_system");
@@ -291,7 +412,7 @@ public Action StartTouchHornet(int entity, int other)
 	}
 }
 
-public Action agrunttkdmg(victim, &attacker, &inflictor, &Float:damage, &damagetype)
+public Action agrunttkdmg(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
 {
 	if ((IsValidEntity(victim)) && (IsValidEntity(attacker)))
 	{
@@ -311,11 +432,24 @@ public Action agrunttkdmg(victim, &attacker, &inflictor, &Float:damage, &damaget
 					float Time = GetTickedTime();
 					if (centlastposchk[victim] <= Time)
 					{
-						int rand = GetRandomInt(1,4);
 						char snd[64];
-						Format(snd,sizeof(snd),"npc\\alien_grunt\\PAIN_%i.wav",rand);
-						EmitSoundToAll(snd, victim, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+						char entmdl[64];
+						if (HasEntProp(victim,Prop_Data,"m_ModelName")) GetEntPropString(victim,Prop_Data,"m_ModelName",entmdl,sizeof(entmdl));
+						if (StrEqual(entmdl,"models/agrunt.mdl",false)) Format(snd,sizeof(snd),"npc\\agrunt\\ag_pain%i.wav",GetRandomInt(1,5));
+						else Format(snd,sizeof(snd),"npc\\alien_grunt\\PAIN_%i.wav",GetRandomInt(1,4));
+						EmitSoundToAll(snd, victim, SNDCHAN_AUTO, SNDLEVEL_SCREAMING);
 						centlastposchk[victim] = Time+2.5;
+					}
+				}
+				if (GetEntProp(victim,Prop_Data,"m_iHealth")-damage < 1.0)
+				{
+					char snd[64];
+					char entmdl[64];
+					if (HasEntProp(victim,Prop_Data,"m_ModelName")) GetEntPropString(victim,Prop_Data,"m_ModelName",entmdl,sizeof(entmdl));
+					if (StrEqual(entmdl,"models/agrunt.mdl",false))
+					{
+						Format(snd,sizeof(snd),"npc\\agrunt\\ag_die%i.wav",GetRandomInt(1,5));
+						EmitSoundToAll(snd, victim, SNDCHAN_AUTO, SNDLEVEL_SCREAMING);
 					}
 				}
 			}
