@@ -85,7 +85,7 @@ bool weapmanagersplaced = false;
 bool mapchanging = false;
 bool DisplayedChapterTitle[65];
 
-#define PLUGIN_VERSION "1.9994"
+#define PLUGIN_VERSION "1.9995"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -742,6 +742,8 @@ public void OnMapStart()
 		PushArrayString(customentlist,"monster_ichthyosaur");
 		PushArrayString(customentlist,"monster_headcrab");
 		PushArrayString(customentlist,"monster_barnacle");
+		PushArrayString(customentlist,"monster_alien_grunt");
+		PushArrayString(customentlist,"monster_gargantua");
 		PushArrayString(customentlist,"prop_train_awesome");
 		PushArrayString(customentlist,"prop_train_apprehension");
 		PushArrayString(customentlist,"item_weapon_tripmine");
@@ -1748,6 +1750,14 @@ public Action clspawnpost(Handle timer, int client)
 		SDKHook(client, SDKHook_WeaponSwitch, OnWeaponUse);
 		ClientCommand(client,"snd_restart");
 		CreateTimer(0.1,restoresound,client,TIMER_FLAG_NO_MAPCHANGE);
+		char briefing[128];
+		char mapname[64];
+		GetCurrentMap(mapname,sizeof(mapname));
+		Format(briefing,sizeof(briefing),"maps/cfg/%s_briefing.txt",mapname);
+		if (FileExists(briefing,true,NULL_STRING))
+		{
+			ShowMOTDPanel(client,mapname,briefing,MOTDPANEL_TYPE_FILE);
+		}
 	}
 	else if (IsClientConnected(client))
 	{
@@ -4006,6 +4016,23 @@ void resetspawners(int ent, char[] clsname)
 					PushArrayString(precachedarr,"npc_alien_grunt");
 				}
 			}
+			else if (StrEqual(clschk,"monster_alien_grunt",false))
+			{
+				SetEntPropString(thisent,Prop_Data,"m_iszNPCClassname","npc_combine_s");
+				DispatchKeyValue(thisent,"NPCType","npc_combine_s");
+				if (FindStringInArray(precachedarr,"monster_alien_grunt") == -1)
+				{
+					char searchprecache[128];
+					Format(searchprecache,sizeof(searchprecache),"sound/npc/agrunt/");
+					recursion(searchprecache);
+					PushArrayString(precachedarr,"monster_alien_grunt");
+				}
+			}
+			else if (StrEqual(clschk,"monster_gargantua",false))
+			{
+				SetEntPropString(thisent,Prop_Data,"m_iszNPCClassname","npc_gargantua");
+				DispatchKeyValue(thisent,"NPCType","npc_gargantua");
+			}
 			else if ((StrEqual(clschk,"npc_human_grunt",false)) || (StrEqual(clschk,"npc_human_commander",false)) || (StrEqual(clschk,"npc_human_grenadier",false)) || (StrEqual(clschk,"npc_human_medic",false)) || (StrEqual(clschk,"npc_abrams",false)))
 			{
 				SetEntPropString(thisent,Prop_Data,"m_iszNPCClassname","npc_combine_s");
@@ -5109,6 +5136,29 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							relsetvort = true;
 						}
 						Format(setupent,sizeof(setupent),"agrunt");
+					}
+					else if (StrEqual(cls,"monster_alien_grunt",false))
+					{
+						if (FindStringInArray(precachedarr,cls) == -1)
+						{
+							char searchprecache[128];
+							Format(searchprecache,sizeof(searchprecache),"sound/npc/agrunt/");
+							recursion(searchprecache);
+							PushArrayString(precachedarr,cls);
+						}
+						Format(cls,sizeof(cls),"npc_combine_s");
+						PushArrayString(passedarr,"model");
+						PushArrayString(passedarr,"models/agrunt.mdl");
+						if (!relsetvort)
+						{
+							setuprelations("monster_alien_grunt");
+							relsetvort = true;
+						}
+						Format(setupent,sizeof(setupent),"agrunt");
+					}
+					else if (StrEqual(cls,"monster_gargantua",false))
+					{
+						Format(cls,sizeof(cls),"npc_gargantua");
 					}
 					else if (StrEqual(cls,"npc_alien_grunt_unarmored",false))
 					{
@@ -9229,7 +9279,7 @@ public Action resetmdl(Handle timer, Handle dp)
 			}
 			SetEntityModel(ent,mdl);
 			char cvarchk[32];
-			if ((StrEqual(clsname,"npc_alien_grunt",false)) || (StrEqual(clsname,"npc_alien_grunt_unarmored",false)) || (StrEqual(clsname,"npc_alien_slave",false)) || (StrEqual(clsname,"npc_ichthyosaur",false)) || (StrEqual(clsname,"monster_ichthyosaur",false)))
+			if ((StrEqual(clsname,"npc_alien_grunt",false)) || (StrEqual(clsname,"monster_alien_grunt",false)) || (StrEqual(clsname,"npc_alien_grunt_unarmored",false)) || (StrEqual(clsname,"monster_gargantua",false)) || (StrEqual(clsname,"npc_alien_slave",false)) || (StrEqual(clsname,"npc_ichthyosaur",false)) || (StrEqual(clsname,"monster_ichthyosaur",false)))
 				SetEntProp(ent,Prop_Data,"m_nRenderFX",0);
 			Format(cvarchk,sizeof(cvarchk),"%s_health",clsname);
 			ReplaceString(cvarchk,sizeof(cvarchk),"npc_","sk_",false);
@@ -9957,7 +10007,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	{
 		AcceptEntityInput(killed,"kill");
 	}
-	else if ((StrEqual(clsname,"npc_alien_slave",false)) || (StrEqual(clsname,"npc_alien_controller",false)) || (StrEqual(clsname,"npc_alien_grunt",false)))
+	else if ((StrEqual(clsname,"npc_alien_slave",false)) || (StrEqual(clsname,"npc_alien_controller",false)) || (StrEqual(clsname,"npc_alien_grunt",false)) || (StrEqual(clsname,"monster_alien_grunt",false)))
 	{
 		int propset;
 		if (RoundFloat(centlastang[killed]) > 0) propset = RoundFloat(centlastang[killed]);
@@ -10069,7 +10119,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				EmitSoundToAll(snd, killed, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
 				viccol = -16732161;
 			}
-			if ((FindStringInArray(customentlist,clsname) != -1) || (StrEqual(clsname,"npc_ichthyosaur",false)))
+			if (((FindStringInArray(customentlist,clsname) != -1) || (StrEqual(clsname,"npc_ichthyosaur",false))) && (!StrEqual(clsname,"monster_alien_grunt",false)) && (StrEqual(clsname,"monster_gargantua",false)))
 			{
 				//-6921216 is blue -16083416 is green -16777041 is red -1052689 is white -3644216 is purple -16732161 is yellow
 				Handle entkilled = CreateEvent("synergy_entity_death");
@@ -13167,6 +13217,31 @@ public Action custent(Handle timer, int entity)
 					setuprelations("npc_alien_grunt_unarmored");
 				}
 			}
+			else if ((StrContains(cls,"monster_alien_grunt",false) == 0) || (StrEqual(entcls,"monster_alien_grunt",false)))
+			{
+				if (FileExists("models/agrunt.mdl",true,NULL_STRING))
+				{
+					SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
+					DispatchKeyValue(entity,"classname","monster_alien_grunt");
+					ReplaceString(cls,sizeof(cls),"monster_alien_grunt","");
+					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					DispatchKeyValue(entity,"model","models/agrunt.mdl");
+					WritePackString(dp,"models/agrunt.mdl");
+					AcceptEntityInput(entity,"GagEnable");
+					SDKHookEx(entity,SDKHook_Think,agruntthink);
+					SDKHookEx(entity,SDKHook_OnTakeDamage,agrunttkdmg);
+					setuprelations("npc_alien_grunt");
+				}
+			}
+			else if (StrContains(cls,"monster_gargantua",false) == 0)
+			{
+				if (FileExists("models/garg.mdl",true,NULL_STRING))
+				{
+					DispatchKeyValue(entity,"classname","monster_gargantua");
+					ReplaceString(cls,sizeof(cls),"monster_gargantua","");
+					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				}
+			}
 			else if (StrContains(cls,"npc_snark",false) == 0)
 			{
 				if (FileExists("models/xenians/snark.mdl",true,NULL_STRING))
@@ -13681,6 +13756,114 @@ void setuprelations(char[] cls)
 		aidisp = CreateEntityByName("ai_relationship");
 		DispatchKeyValue(aidisp,"disposition","3");
 		DispatchKeyValue(aidisp,"subject","npc_alien_grunt");
+		DispatchKeyValue(aidisp,"target","npc_gargantua");
+		DispatchKeyValue(aidisp,"targetname","syn_relations");
+		DispatchKeyValue(aidisp,"rank","99");
+		DispatchKeyValue(aidisp,"reciprocal","1");
+		DispatchKeyValue(aidisp,"StartActive","1");
+		DispatchSpawn(aidisp);
+		ActivateEntity(aidisp);
+		AcceptEntityInput(aidisp,"ApplyRelationship");
+		PushArrayCell(customrelations,aidisp);
+		aidisp = CreateEntityByName("ai_relationship");
+		DispatchKeyValue(aidisp,"disposition","1");
+		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
+		DispatchKeyValue(aidisp,"target","player");
+		DispatchKeyValue(aidisp,"targetname","syn_relations");
+		DispatchKeyValue(aidisp,"rank","99");
+		DispatchKeyValue(aidisp,"reciprocal","1");
+		DispatchKeyValue(aidisp,"StartActive","1");
+		DispatchSpawn(aidisp);
+		ActivateEntity(aidisp);
+		AcceptEntityInput(aidisp,"ApplyRelationship");
+		PushArrayCell(customrelations,aidisp);
+		aidisp = CreateEntityByName("ai_relationship");
+		DispatchKeyValue(aidisp,"disposition","3");
+		DispatchKeyValue(aidisp,"subject","npc_alien_slave");
+		DispatchKeyValue(aidisp,"target","monster_alien_grunt");
+		DispatchKeyValue(aidisp,"targetname","syn_relations");
+		DispatchKeyValue(aidisp,"rank","99");
+		DispatchKeyValue(aidisp,"reciprocal","1");
+		DispatchKeyValue(aidisp,"StartActive","1");
+		DispatchSpawn(aidisp);
+		ActivateEntity(aidisp);
+		AcceptEntityInput(aidisp,"ApplyRelationship");
+		PushArrayCell(customrelations,aidisp);
+		aidisp = CreateEntityByName("ai_relationship");
+		DispatchKeyValue(aidisp,"disposition","1");
+		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
+		DispatchKeyValue(aidisp,"target","npc_human_grenadier");
+		DispatchKeyValue(aidisp,"targetname","syn_relations");
+		DispatchKeyValue(aidisp,"rank","80");
+		DispatchKeyValue(aidisp,"reciprocal","1");
+		DispatchKeyValue(aidisp,"StartActive","1");
+		DispatchSpawn(aidisp);
+		ActivateEntity(aidisp);
+		AcceptEntityInput(aidisp,"ApplyRelationship");
+		PushArrayCell(customrelations,aidisp);
+		aidisp = CreateEntityByName("ai_relationship");
+		DispatchKeyValue(aidisp,"disposition","1");
+		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
+		DispatchKeyValue(aidisp,"target","npc_human_commander");
+		DispatchKeyValue(aidisp,"targetname","syn_relations");
+		DispatchKeyValue(aidisp,"rank","80");
+		DispatchKeyValue(aidisp,"reciprocal","1");
+		DispatchKeyValue(aidisp,"StartActive","1");
+		DispatchSpawn(aidisp);
+		ActivateEntity(aidisp);
+		AcceptEntityInput(aidisp,"ApplyRelationship");
+		PushArrayCell(customrelations,aidisp);
+		aidisp = CreateEntityByName("ai_relationship");
+		DispatchKeyValue(aidisp,"disposition","1");
+		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
+		DispatchKeyValue(aidisp,"target","npc_human_medic");
+		DispatchKeyValue(aidisp,"targetname","syn_relations");
+		DispatchKeyValue(aidisp,"rank","80");
+		DispatchKeyValue(aidisp,"reciprocal","1");
+		DispatchKeyValue(aidisp,"StartActive","1");
+		DispatchSpawn(aidisp);
+		ActivateEntity(aidisp);
+		AcceptEntityInput(aidisp,"ApplyRelationship");
+		PushArrayCell(customrelations,aidisp);
+		aidisp = CreateEntityByName("ai_relationship");
+		DispatchKeyValue(aidisp,"disposition","1");
+		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
+		DispatchKeyValue(aidisp,"target","npc_human_grunt");
+		DispatchKeyValue(aidisp,"targetname","syn_relations");
+		DispatchKeyValue(aidisp,"rank","80");
+		DispatchKeyValue(aidisp,"reciprocal","1");
+		DispatchKeyValue(aidisp,"StartActive","1");
+		DispatchSpawn(aidisp);
+		ActivateEntity(aidisp);
+		AcceptEntityInput(aidisp,"ApplyRelationship");
+		PushArrayCell(customrelations,aidisp);
+		aidisp = CreateEntityByName("ai_relationship");
+		DispatchKeyValue(aidisp,"disposition","1");
+		DispatchKeyValue(aidisp,"subject","npc_turret_ceiling");
+		DispatchKeyValue(aidisp,"target","monster_alien_grunt");
+		DispatchKeyValue(aidisp,"targetname","syn_relations");
+		DispatchKeyValue(aidisp,"rank","40");
+		DispatchKeyValue(aidisp,"reciprocal","0");
+		DispatchKeyValue(aidisp,"StartActive","1");
+		DispatchSpawn(aidisp);
+		ActivateEntity(aidisp);
+		AcceptEntityInput(aidisp,"ApplyRelationship");
+		PushArrayCell(customrelations,aidisp);
+		aidisp = CreateEntityByName("ai_relationship");
+		DispatchKeyValue(aidisp,"disposition","3");
+		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
+		DispatchKeyValue(aidisp,"target","npc_headcrab");
+		DispatchKeyValue(aidisp,"targetname","syn_relations");
+		DispatchKeyValue(aidisp,"rank","99");
+		DispatchKeyValue(aidisp,"reciprocal","1");
+		DispatchKeyValue(aidisp,"StartActive","1");
+		DispatchSpawn(aidisp);
+		ActivateEntity(aidisp);
+		AcceptEntityInput(aidisp,"ApplyRelationship");
+		PushArrayCell(customrelations,aidisp);
+		aidisp = CreateEntityByName("ai_relationship");
+		DispatchKeyValue(aidisp,"disposition","3");
+		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
 		DispatchKeyValue(aidisp,"target","npc_gargantua");
 		DispatchKeyValue(aidisp,"targetname","syn_relations");
 		DispatchKeyValue(aidisp,"rank","99");
@@ -15005,8 +15188,10 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				Format(clsname,sizeof(clsname),"npc_antlion");
 			else if (StrEqual(clsname,"npc_snark",false))
 				Format(clsname,sizeof(clsname),"npc_headcrab_fast");
-			else if ((StrEqual(clsname,"npc_alien_grunt",false)) || (StrEqual(clsname,"npc_alien_grunt_unarmored",false)))
+			else if ((StrEqual(clsname,"npc_alien_grunt",false)) || (StrEqual(clsname,"npc_alien_grunt_unarmored",false)) || (StrEqual(clsname,"monster_alien_grunt",false)))
 				Format(clsname,sizeof(clsname),"npc_combine_s");
+			else if (StrEqual(clsname,"monster_gargantua",false))
+				Format(clsname,sizeof(clsname),"npc_gargantua");
 			else if (StrEqual(clsname,"grenade_tripmine",false))
 				Format(clsname,sizeof(clsname),"prop_physics");
 			else if (StrEqual(clsname,"npc_apache",false))
@@ -15244,7 +15429,7 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				{
 					SDKHookEx(ent,SDKHook_OnTakeDamage,enttkdmgcust);
 				}
-				else if ((StrEqual(oldcls,"npc_alien_grunt")) || (StrEqual(oldcls,"npc_alien_grunt_unarmored")))
+				else if ((StrEqual(oldcls,"npc_alien_grunt")) || (StrEqual(oldcls,"monster_alien_grunt")) || (StrEqual(oldcls,"npc_alien_grunt_unarmored")))
 				{
 					AcceptEntityInput(ent,"GagEnable");
 					SDKHookEx(ent,SDKHook_Think,agruntthink);
@@ -15252,6 +15437,7 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 					SetEntProp(ent,Prop_Data,"m_nRenderFX",6);
 					HookSingleEntityOutput(ent,"OnDeath",OnCDeath);
 				}
+				else if (StrEqual(oldcls,"monster_gargantua",false)) setmdl = false;
 				else if (StrEqual(oldcls,"npc_snark"))
 				{
 					SDKHookEx(ent,SDKHook_Think,snarkthink);
