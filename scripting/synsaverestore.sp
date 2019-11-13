@@ -58,7 +58,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.10"
+#define PLUGIN_VERSION "2.11"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -367,6 +367,7 @@ public Action savecurgame(int client, int args)
 		logsv = CreateEntityByName("logic_autosave");
 		if ((logsv != -1) && (IsValidEntity(logsv)))
 		{
+			DispatchKeyValue(logsv,"NewLevelUnit","1");
 			DispatchSpawn(logsv);
 			ActivateEntity(logsv);
 			saveresetveh(false);
@@ -778,6 +779,7 @@ public Action savecurgamedp(Handle timer, any dp)
 				logsv = CreateEntityByName("logic_autosave");
 				if ((logsv != -1) && (IsValidEntity(logsv)))
 				{
+					DispatchKeyValue(logsv,"NewLevelUnit","1");
 					DispatchSpawn(logsv);
 					ActivateEntity(logsv);
 					saveresetveh(false);
@@ -1509,6 +1511,7 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 					logsv = CreateEntityByName("logic_autosave");
 					if ((logsv != -1) && (IsValidEntity(logsv)))
 					{
+						DispatchKeyValue(logsv,"NewLevelUnit","1");
 						DispatchSpawn(logsv);
 						ActivateEntity(logsv);
 						saveresetveh(false);
@@ -1557,6 +1560,7 @@ public void OnMapStart()
 		logsv = CreateEntityByName("logic_autosave");
 		if ((logsv != -1) && (IsValidEntity(logsv)))
 		{
+			DispatchKeyValue(logsv,"NewLevelUnit","1");
 			DispatchSpawn(logsv);
 			ActivateEntity(logsv);
 		}
@@ -3692,6 +3696,7 @@ public void OnClientAuthorized(int client, const char[] szAuth)
 				logsv = CreateEntityByName("logic_autosave");
 				if ((logsv != -1) && (IsValidEntity(logsv)))
 				{
+					DispatchKeyValue(logsv,"NewLevelUnit","1");
 					DispatchSpawn(logsv);
 					ActivateEntity(logsv);
 					saveresetveh(true);
@@ -3703,108 +3708,111 @@ public void OnClientAuthorized(int client, const char[] szAuth)
 
 void saveresetveh(bool rmsave)
 {
-	float Time = GetTickedTime();
-	if (mapstarttime <= Time)
+	if (StrContains(mapbuf,"oc_spaceinvaders",false) == -1)
 	{
-		if ((rmsave) && (!nodel) && (strlen(savedir) > 0))
+		float Time = GetTickedTime();
+		if (mapstarttime <= Time)
 		{
-			if (DirExists(savedir,false))
+			if ((rmsave) && (!nodel) && (strlen(savedir) > 0))
 			{
-				Handle savedirrmh = OpenDirectory(savedir, false);
-				char subfilen[64];
-				while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
+				if (DirExists(savedir,false))
 				{
-					if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
+					Handle savedirrmh = OpenDirectory(savedir, false);
+					char subfilen[64];
+					while (ReadDirEntry(savedirrmh, subfilen, sizeof(subfilen)))
 					{
-						if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
+						if ((!(savedirrmh == INVALID_HANDLE)) && (!(StrEqual(subfilen, "."))) && (!(StrEqual(subfilen, ".."))))
 						{
-							Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-							if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
+							if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 							{
-								DeleteFile(subfilen,false);
-								/*
-								Handle subfiletarg = OpenFile(subfilen,"wb");
-								if (subfiletarg != INVALID_HANDLE)
+								Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
+								if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
 								{
-									WriteFileLine(subfiletarg,"");
+									DeleteFile(subfilen,false);
+									/*
+									Handle subfiletarg = OpenFile(subfilen,"wb");
+									if (subfiletarg != INVALID_HANDLE)
+									{
+										WriteFileLine(subfiletarg,"");
+									}
+									CloseHandle(subfiletarg);
+									*/
 								}
-								CloseHandle(subfiletarg);
-								*/
+							}
+						}
+					}
+					CloseHandle(savedirrmh);
+				}
+			}
+			int vehicles[MAXPLAYERS];
+			float steerpos[MAXPLAYERS];
+			int vehon[MAXPLAYERS];
+			float throttle[MAXPLAYERS];
+			int speed[MAXPLAYERS];
+			float restoreang[3];
+			float ang0[MAXPLAYERS];
+			float ang1[MAXPLAYERS];
+			float ang2[MAXPLAYERS];
+			int gearsound[MAXPLAYERS];
+			for (int i = 1;i<MaxClients+1;i++)
+			{
+				if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
+				{
+					vehicles[i] = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+					char vehiclecls[32];
+					if (vehicles[i] != -1) GetEntityClassname(vehicles[i],vehiclecls,sizeof(vehiclecls));
+					if (vehicles[i] > MaxClients)
+					{
+						int driver = GetEntProp(i,Prop_Data,"m_iHideHUD");
+						vehon[i] = 1;
+						if (HasEntProp(vehicles[i],Prop_Data,"m_bIsOn")) vehon[i] = GetEntProp(vehicles[i],Prop_Data,"m_bIsOn");
+						if ((driver == 3328) && (vehon[i]))
+						{
+							char clsname[32];
+							GetEntityClassname(vehicles[i],clsname,sizeof(clsname));
+							if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
+							{
+								if (HasEntProp(vehicles[i],Prop_Data,"m_controls.steering")) steerpos[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering");
+								if (HasEntProp(vehicles[i],Prop_Data,"m_controls.throttle")) throttle[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle");
+								if (HasEntProp(vehicles[i],Prop_Data,"m_nSpeed")) speed[i] = GetEntProp(vehicles[i],Prop_Data,"m_nSpeed");
+								if (HasEntProp(vehicles[i],Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",restoreang);
+								ang1[i] = restoreang[1];
+								if (HasEntProp(vehicles[i],Prop_Data,"m_iSoundGear")) gearsound[i] = GetEntProp(vehicles[i],Prop_Data,"m_iSoundGear");
 							}
 						}
 					}
 				}
-				CloseHandle(savedirrmh);
 			}
-		}
-		int vehicles[MAXPLAYERS];
-		float steerpos[MAXPLAYERS];
-		int vehon[MAXPLAYERS];
-		float throttle[MAXPLAYERS];
-		int speed[MAXPLAYERS];
-		float restoreang[3];
-		float ang0[MAXPLAYERS];
-		float ang1[MAXPLAYERS];
-		float ang2[MAXPLAYERS];
-		int gearsound[MAXPLAYERS];
-		for (int i = 1;i<MaxClients+1;i++)
-		{
-			if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
+			AcceptEntityInput(logsv,"Save");
+			for (int i = 1;i<MaxClients+1;i++)
 			{
-				vehicles[i] = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
-				char vehiclecls[32];
-				if (vehicles[i] != -1) GetEntityClassname(vehicles[i],vehiclecls,sizeof(vehiclecls));
-				if (vehicles[i] > MaxClients)
+				if ((vehicles[i] != 0) && (IsValidEntity(vehicles[i])))
 				{
-					int driver = GetEntProp(i,Prop_Data,"m_iHideHUD");
-					vehon[i] = 1;
-					if (HasEntProp(vehicles[i],Prop_Data,"m_bIsOn")) vehon[i] = GetEntProp(vehicles[i],Prop_Data,"m_bIsOn");
-					if ((driver == 3328) && (vehon[i]))
+					char clsname[32];
+					GetEntityClassname(vehicles[i],clsname,sizeof(clsname));
+					if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
 					{
-						char clsname[32];
-						GetEntityClassname(vehicles[i],clsname,sizeof(clsname));
-						if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
-						{
-							if (HasEntProp(vehicles[i],Prop_Data,"m_controls.steering")) steerpos[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering");
-							if (HasEntProp(vehicles[i],Prop_Data,"m_controls.throttle")) throttle[i] = GetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle");
-							if (HasEntProp(vehicles[i],Prop_Data,"m_nSpeed")) speed[i] = GetEntProp(vehicles[i],Prop_Data,"m_nSpeed");
-							if (HasEntProp(vehicles[i],Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",restoreang);
-							ang1[i] = restoreang[1];
-							if (HasEntProp(vehicles[i],Prop_Data,"m_iSoundGear")) gearsound[i] = GetEntProp(vehicles[i],Prop_Data,"m_iSoundGear");
-						}
+						if (HasEntProp(vehicles[i],Prop_Data,"m_controls.steering")) SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering",steerpos[i]);
+						if (HasEntProp(vehicles[i],Prop_Data,"m_controls.throttle")) SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle",throttle[i]);
+						if (HasEntProp(vehicles[i],Prop_Data,"m_bIsOn")) SetEntProp(vehicles[i],Prop_Data,"m_bIsOn",vehon[i]);
+						if (HasEntProp(vehicles[i],Prop_Data,"m_nSpeed")) SetEntProp(vehicles[i],Prop_Data,"m_nSpeed",speed[i]);
+						if (HasEntProp(vehicles[i],Prop_Data,"m_iSoundGear")) SetEntProp(vehicles[i],Prop_Data,"m_iSoundGear",gearsound[i]);
+						if (HasEntProp(vehicles[i],Prop_Data,"m_controls.handbrake")) SetEntProp(vehicles[i],Prop_Data,"m_controls.handbrake",1);
+						restoreang[0] = ang0[i];
+						restoreang[1] = ang1[i];
+						restoreang[2] = ang2[i];
+						/*
+						Handle dp = CreateDataPack();
+						WritePackCell(dp,i);
+						WritePackFloat(dp,ang1[i]);
+						CreateTimer(0.01,
+						*/
 					}
-				}
-			}
-		}
-		AcceptEntityInput(logsv,"Save");
-		for (int i = 1;i<MaxClients+1;i++)
-		{
-			if ((vehicles[i] != 0) && (IsValidEntity(vehicles[i])))
-			{
-				char clsname[32];
-				GetEntityClassname(vehicles[i],clsname,sizeof(clsname));
-				if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
-				{
-					if (HasEntProp(vehicles[i],Prop_Data,"m_controls.steering")) SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.steering",steerpos[i]);
-					if (HasEntProp(vehicles[i],Prop_Data,"m_controls.throttle")) SetEntPropFloat(vehicles[i],Prop_Data,"m_controls.throttle",throttle[i]);
-					if (HasEntProp(vehicles[i],Prop_Data,"m_bIsOn")) SetEntProp(vehicles[i],Prop_Data,"m_bIsOn",vehon[i]);
-					if (HasEntProp(vehicles[i],Prop_Data,"m_nSpeed")) SetEntProp(vehicles[i],Prop_Data,"m_nSpeed",speed[i]);
-					if (HasEntProp(vehicles[i],Prop_Data,"m_iSoundGear")) SetEntProp(vehicles[i],Prop_Data,"m_iSoundGear",gearsound[i]);
-					if (HasEntProp(vehicles[i],Prop_Data,"m_controls.handbrake")) SetEntProp(vehicles[i],Prop_Data,"m_controls.handbrake",1);
-					restoreang[0] = ang0[i];
-					restoreang[1] = ang1[i];
-					restoreang[2] = ang2[i];
-					/*
-					Handle dp = CreateDataPack();
-					WritePackCell(dp,i);
-					WritePackFloat(dp,ang1[i]);
-					CreateTimer(0.01,
-					*/
-				}
-				else if ((StrEqual(clsname,"prop_vehicle_prisoner_pod",false)) || (StrContains(clsname,"prop_vehicle_choreo",false) == 0))
-				{
-					SetVariantString("!activator");
-					AcceptEntityInput(vehicles[i],"EnterVehicleImmediate",i);
+					else if ((StrEqual(clsname,"prop_vehicle_prisoner_pod",false)) || (StrContains(clsname,"prop_vehicle_choreo",false) == 0))
+					{
+						SetVariantString("!activator");
+						AcceptEntityInput(vehicles[i],"EnterVehicleImmediate",i);
+					}
 				}
 			}
 		}
