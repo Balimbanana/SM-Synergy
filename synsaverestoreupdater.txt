@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.10"
-			"Previous"	"2.09"
+			"Latest"  	"2.11"
+			"Previous"	"2.10"
 		}
 		
-		"Notes"	"Recompile on old headers."
+		"Notes"	"Added force NewLevelUnit to connect overwrite which should prevent pSaveData crash attempting to read/write from old saves."
 	}
 	
 	"Files"
