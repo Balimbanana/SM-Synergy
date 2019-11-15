@@ -102,12 +102,7 @@ public Action waitforlive(Handle timer, int client)
 				}
 			}
 		}
-		if (hasweapons)
-		{
-			int team = 0;
-			if (HasEntProp(client,Prop_Data,"m_iTeamNum")) team = GetEntProp(client,Prop_Data,"m_iTeamNum");
-			if (team == 0) CreateTimer(0.5,spawninvehicle,client,TIMER_FLAG_NO_MAPCHANGE);
-		}
+		if (hasweapons) CreateTimer(0.5,spawninvehicle,client,TIMER_FLAG_NO_MAPCHANGE);
 		else if (IsValidEntity(spawninthisvehicle)) CreateTimer(1.0,waitforlive,client,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	else if ((IsClientConnected(client)) && (!IsFakeClient(client)))
@@ -230,6 +225,9 @@ public Action spawninvehicle(Handle timer, int i)
 {
 	if ((IsValidEntity(spawninthisvehicle)) && (IsValidEntity(i)))
 	{
+		int team = 0;
+		if (HasEntProp(i,Prop_Data,"m_iTeamNum")) team = GetEntProp(i,Prop_Data,"m_iTeamNum");
+		if (team != 0) return Plugin_Handled;
 		int vehchk = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
 		if (vehchk != -1) return Plugin_Handled;
 		char clschk[32];
