@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.16"
-			"Previous"	"1.15"
+			"Latest"  	"1.17"
+			"Previous"	"1.16"
 		}
 		
-		"Notes"	"Increase delay on autoenter."
+		"Notes"	"Added check for spawn in vehicle to not place players in vehicles until they have at least one weapon in their inventory."
 	}
 	
 	"Files"
