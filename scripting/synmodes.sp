@@ -3245,8 +3245,6 @@ public Action RecheckAFKList(Handle timer)
 	{
 		if (strlen(SteamID[client]) > 0)
 		{
-			if (!IsValidEntity(client)) PrintToServer("Invalid");
-			if (!IsClientConnected(client)) PrintToServer("NotConnected");
 			if ((!IsValidEntity(client)) || (!IsClientConnected(client)))
 			{
 				int find = FindStringInArray(afkids,SteamID[client]);
