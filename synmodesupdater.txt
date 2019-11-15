@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.25"
-			"Previous"	"1.24"
+			"Latest"  	"1.26"
+			"Previous"	"1.25"
 		}
 		
-		"Notes"	"Apply gamemode setup only when supplied with new value on recheck."
+		"Notes"	"AFK now carries over map changes with a time delay for removal of auto afk after map change and client not connected."
 	}
 	
 	"Files"
