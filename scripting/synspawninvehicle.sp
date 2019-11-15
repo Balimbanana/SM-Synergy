@@ -7,8 +7,10 @@
 #tryinclude <updater>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
+#pragma semicolon 1;
+#pragma newdecls required;
 
-#define PLUGIN_VERSION "1.16"
+#define PLUGIN_VERSION "1.17"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -16,8 +18,9 @@ bool vehiclemaphook = false;
 bool spawninvehicles = true;
 int spawninthisvehicle = -1;
 int collisiongroup = -1;
+int WeapList = -1;
 
-public Plugin:myinfo =
+public Plugin myinfo =
 {
 	name = "SynFixesSpawnInVehicle",
 	author = "Balimbanana",
@@ -41,6 +44,7 @@ public void OnPluginStart()
 public void OnMapStart()
 {
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
+	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	spawninthisvehicle = -1;
 	ClearArray(spawnplayers);
 	int jstat = FindEntityByClassname(MaxClients+1,"prop_vehicle_jeep");
@@ -49,13 +53,13 @@ public void OnMapStart()
 	if ((jstat != -1) || (jspawn != -1) || (jstatmp != -1))
 	{
 		vehiclemaphook = true;
-		HookEntityOutput("info_vehicle_spawn","OnSpawnVehicle",EntityOutput:vehiclespawn);
-		HookEntityOutput("prop_vehicle_jeep","PlayerOn",EntityOutput:vehicleseatadjust);
+		HookEntityOutput("info_vehicle_spawn","OnSpawnVehicle",vehiclespawn);
+		HookEntityOutput("prop_vehicle_jeep","PlayerOn",vehicleseatadjust);
 	}
 	else vehiclemaphook = false;
 }
 
-public OnClientAuthorized(int client, const char[] szAuth)
+public void OnClientAuthorized(int client, const char[] szAuth)
 {
 	if ((spawninvehicles) && (vehiclemaphook))
 		if (FindValueInArray(spawnplayers,client) == -1)
@@ -79,7 +83,27 @@ public Action waitforlive(Handle timer, int client)
 {
 	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && IsValidEntity(client) && !IsFakeClient(client))
 	{
-		CreateTimer(1.1,spawninvehicle,client,TIMER_FLAG_NO_MAPCHANGE);
+		bool hasweapons = false;
+		if (WeapList == -1) WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
+		if (WeapList != -1)
+		{
+			char clschk[32];
+			for (int l; l<104; l += 4)
+			{
+				int tmpi = GetEntDataEnt2(client,WeapList + l);
+				if ((tmpi != 0) && (IsValidEntity(tmpi)))
+				{
+					GetEntityClassname(tmpi,clschk,sizeof(clschk));
+					if (strlen(clschk) > 1)
+					{
+						hasweapons = true;
+						break;
+					}
+				}
+			}
+		}
+		if (hasweapons) CreateTimer(0.5,spawninvehicle,client,TIMER_FLAG_NO_MAPCHANGE);
+		else if (IsValidEntity(spawninthisvehicle)) CreateTimer(1.0,waitforlive,client,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	else if ((IsClientConnected(client)) && (!IsFakeClient(client)))
 	{
@@ -117,7 +141,7 @@ public Action removesparr(Handle timer, int client)
 		RemoveFromArray(spawnplayers,find);
 }
 
-public OnLibraryAdded(const char[] name)
+public void OnLibraryAdded(const char[] name)
 {
 	if (StrEqual(name,"updater",false))
 	{
@@ -125,13 +149,13 @@ public OnLibraryAdded(const char[] name)
 	}
 }
 
-public Updater_OnPluginUpdated()
+public int Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
 }
 
-setupvehicle(int vehicle, int client, bool enterexit)
+void setupvehicle(int vehicle, int client, bool enterexit)
 {
 	if ((!enterexit) && (IsValidEntity(vehicle)))
 	{
@@ -174,7 +198,7 @@ setupvehicle(int vehicle, int client, bool enterexit)
 		if (HasEntProp(vehicle,Prop_Data,"bWasRunningAnim")) SetEntProp(vehicle,Prop_Data,"bWasRunningAnim",1);
 		if (HasEntProp(vehicle,Prop_Data,"bRunningEnterExit")) SetEntProp(vehicle,Prop_Data,"bRunningEnterExit",0);
 		if (HasEntProp(vehicle,Prop_Data,"m_controls.handbrake")) SetEntProp(vehicle,Prop_Data,"m_controls.handbrake",0);
-		HookSingleEntityOutput(vehicle,"PlayerOff",EntityOutput:exitspawnvehicle,true);
+		HookSingleEntityOutput(vehicle,"PlayerOff",exitspawnvehicle,true);
 		CreateTimer(2.0,resetcollision,vehicle,TIMER_REPEAT);
 	}
 }
@@ -358,7 +382,7 @@ public Action resetcollision(Handle timer, int vehicle)
 	else KillTimer(timer);
 }
 
-findcolliding(int ent, char[] cls, int vehicle, Handle arr)
+void findcolliding(int ent, char[] cls, int vehicle, Handle arr)
 {
 	int thisent = FindEntityByClassname(ent,cls);
 	if ((IsValidEntity(thisent)) && (thisent != -1))
@@ -658,7 +682,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	}
 }
 
-public OnClientDisconnect(int client)
+public void OnClientDisconnect(int client)
 {
 	int find = FindValueInArray(spawnplayers,client);
 	if (find != -1)
@@ -675,12 +699,12 @@ public OnClientDisconnect(int client)
 
 int g_LastButtons[MAXPLAYERS+1];
 
-public OnClientDisconnect_Post(int client)
+public void OnClientDisconnect_Post(int client)
 {
 	g_LastButtons[client] = 0;
 }
 
-public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
+public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon)
 {
 	if (buttons & IN_SPEED) {
 		if (!(g_LastButtons[client] & IN_SPEED)) {
@@ -690,7 +714,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	g_LastButtons[client] = buttons;
 }
 
-public OnButtonPressBoostchk(int client, int button)
+public void OnButtonPressBoostchk(int client, int button)
 {
 	if (IsValidEntity(client))
 	{
@@ -738,7 +762,7 @@ public Action boostveh(Handle timer, int vehicle)
 	}
 }
 
-public vehiclespawnch(Handle convar, const char[] oldValue, const char[] newValue)
+public void vehiclespawnch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) > 0)
 		spawninvehicles = true;
