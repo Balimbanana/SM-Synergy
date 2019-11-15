@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.17"
+#define PLUGIN_VERSION "1.18"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -102,7 +102,12 @@ public Action waitforlive(Handle timer, int client)
 				}
 			}
 		}
-		if (hasweapons) CreateTimer(0.5,spawninvehicle,client,TIMER_FLAG_NO_MAPCHANGE);
+		if (hasweapons)
+		{
+			int team = 0;
+			if (HasEntProp(client,Prop_Data,"m_iTeamNum")) team = GetEntProp(client,Prop_Data,"m_iTeamNum");
+			if (team == 0) CreateTimer(0.5,spawninvehicle,client,TIMER_FLAG_NO_MAPCHANGE);
+		}
 		else if (IsValidEntity(spawninthisvehicle)) CreateTimer(1.0,waitforlive,client,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	else if ((IsClientConnected(client)) && (!IsFakeClient(client)))
