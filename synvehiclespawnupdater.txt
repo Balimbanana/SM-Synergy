@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.17"
-			"Previous"	"1.16"
+			"Latest"  	"1.18"
+			"Previous"	"1.17"
 		}
 		
 		"Notes"	"Added check for spawn in vehicle to not place players in vehicles until they have at least one weapon in their inventory."
