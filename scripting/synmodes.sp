@@ -13,7 +13,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.25"
+#define PLUGIN_VERSION "1.26"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -39,6 +39,7 @@ int scoreshowstat = -1;
 int dmkills[MAXPLAYERS+1];
 int teamnum[MAXPLAYERS+1];
 float scoreshowcd[MAXPLAYERS+1];
+char SteamID[32][MAXPLAYERS+1];
 
 bool instspawnb = false;
 bool instspawnuse = false;
@@ -49,6 +50,7 @@ Handle globalsarr = INVALID_HANDLE;
 Handle changelevels = INVALID_HANDLE;
 Handle respawnids = INVALID_HANDLE;
 Handle inputsarrorigincls = INVALID_HANDLE;
+Handle afkids = INVALID_HANDLE;
 bool clspawntimeallow[MAXPLAYERS+1];
 int clspawntime[MAXPLAYERS+1];
 int clspawntimemax = 10;
@@ -112,7 +114,8 @@ public void OnPluginStart()
 	}
 	globalsarr = CreateArray(32);
 	changelevels = CreateArray(16);
-	respawnids = CreateArray(64);
+	respawnids = CreateArray(65);
+	afkids = CreateArray(65);
 	inputsarrorigincls = CreateArray(768);
 	Handle instspawntime = INVALID_HANDLE;
 	instspawntime = CreateConVar("sm_instspawntime", "10", "Instspawn time, default is 10", _, true, 0.0, false);
@@ -259,8 +262,13 @@ public void instspawnch(Handle convar, const char[] oldValue, const char[] newVa
 		int cvarflag = GetCommandFlags("mp_respawndelay");
 		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_REPLICATED));
 		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY));
-		Handle resdelay = INVALID_HANDLE;
-		resdelay = FindConVar("mp_respawndelay");
+		Handle resdelay = FindConVar("mp_respawndelay");
+		SetConVarInt(resdelay,0,false,false);
+		cvarflag = GetCommandFlags("mp_respawnwavetime");
+		SetCommandFlags("mp_respawnwavetime", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_respawnwavetime", (cvarflag & ~FCVAR_NOTIFY));
+		CloseHandle(resdelay);
+		resdelay = FindConVar("mp_respawnwavetime");
 		SetConVarInt(resdelay,0,false,false);
 		cvarflag = GetCommandFlags("mp_reset");
 		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED));
@@ -301,8 +309,13 @@ public void instspawnch(Handle convar, const char[] oldValue, const char[] newVa
 		int cvarflag = GetCommandFlags("mp_respawndelay");
 		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_REPLICATED));
 		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY));
-		Handle resdelay = INVALID_HANDLE;
-		resdelay = FindConVar("mp_respawndelay");
+		Handle resdelay = FindConVar("mp_respawndelay");
+		SetConVarInt(resdelay,0,false,false);
+		cvarflag = GetCommandFlags("mp_respawnwavetime");
+		SetCommandFlags("mp_respawnwavetime", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_respawnwavetime", (cvarflag & ~FCVAR_NOTIFY));
+		CloseHandle(resdelay);
+		resdelay = FindConVar("mp_respawnwavetime");
 		SetConVarInt(resdelay,0,false,false);
 		cvarflag = GetCommandFlags("mp_reset");
 		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED));
@@ -327,9 +340,14 @@ public void instspawnch(Handle convar, const char[] oldValue, const char[] newVa
 		int cvarflag = GetCommandFlags("mp_respawndelay");
 		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_REPLICATED));
 		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY));
-		Handle resdelay = INVALID_HANDLE;
-		resdelay = FindConVar("mp_respawndelay");
+		Handle resdelay = FindConVar("mp_respawndelay");
 		SetConVarInt(resdelay,1,false,false);
+		cvarflag = GetCommandFlags("mp_respawnwavetime");
+		SetCommandFlags("mp_respawnwavetime", (cvarflag & ~FCVAR_REPLICATED));
+		SetCommandFlags("mp_respawnwavetime", (cvarflag & ~FCVAR_NOTIFY));
+		CloseHandle(resdelay);
+		resdelay = FindConVar("mp_respawnwavetime");
+		SetConVarInt(resdelay,10,false,false);
 		cvarflag = GetCommandFlags("mp_reset");
 		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED));
 		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_NOTIFY));
@@ -663,9 +681,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				Format(resspawn,sizeof(resspawn),"You will respawn at the next checkpoint.");
 				SetHudTextParams(0.016, 0.05, 5.0, 255, 255, 0, 255, 1, 1.0, 1.0, 1.0);
 				ShowHudText(killed, 3, "%s",resspawn);
-				char SteamID[32];
-				GetClientAuthId(killed,AuthId_Steam2,SteamID,sizeof(SteamID));
-				PushArrayString(respawnids,SteamID);
+				PushArrayString(respawnids,SteamID[killed]);
 				bool reset = true;
 				for (int i = 1;i<MaxClients+1;i++)
 				{
@@ -1023,6 +1039,8 @@ public Action setupafk(int client, int args)
 		SetEntProp(client,Prop_Data,"m_fEffects",40);
 		ForcePlayerSuicide(client);
 		PrintToChatAll("%N has joined the spectators",client);
+		if (strlen(SteamID[client]) < 1) GetClientAuthId(client,AuthId_Steam2,SteamID[client],sizeof(SteamID[]));
+		if (FindStringInArray(afkids,SteamID[client]) == -1) PushArrayString(afkids,SteamID[client]);
 	}
 	else
 	{
@@ -1031,6 +1049,8 @@ public Action setupafk(int client, int args)
 		SetEntProp(client,Prop_Data,"m_iTeamNum",0);
 		teamnum[client] = 0;
 		PrintToChatAll("%N has left spectators.",client);
+		int find = FindStringInArray(afkids,SteamID[client]);
+		if (find != -1) RemoveFromArray(afkids,find);
 		clinspectate[client] = false;
 		if (instspawnb)
 		{
@@ -1075,9 +1095,7 @@ public Action setupafk(int client, int args)
 				Format(resspawn,sizeof(resspawn),"You will respawn at the next checkpoint.");
 				SetHudTextParams(0.016, 0.05, 5.0, 255, 255, 0, 255, 1, 1.0, 1.0, 1.0);
 				ShowHudText(client, 3, "%s",resspawn);
-				char SteamID[32];
-				GetClientAuthId(client,AuthId_Steam2,SteamID,sizeof(SteamID));
-				PushArrayString(respawnids,SteamID);
+				if (FindStringInArray(respawnids,SteamID[client]) == -1) PushArrayString(respawnids,SteamID[client]);
 			}
 		}
 	}
@@ -1620,9 +1638,9 @@ public void EquipCustom(int equip, int client)
 						if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
 						else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 						else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-						else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-						else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-						else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+						else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+						else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+						else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 						else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 						else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 						int ent = CreateEntityByName(basecls);
@@ -2593,6 +2611,21 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(GetEventInt(event,"userid"));
 	clspawntimeallow[client] = false;
+	if (FindStringInArray(afkids,SteamID[client]) != -1)
+	{
+		clinspectate[client] = true;
+		SetVariantInt(1);
+		AcceptEntityInput(client,"SetTeamNum");
+		SetEntProp(client,Prop_Data,"m_iTeamNum",1);
+		teamnum[client] = 1;
+		SetEntProp(client,Prop_Data,"deadflag",1);
+		SetEntProp(client,Prop_Data,"m_iObserverMode",5);
+		SetEntProp(client,Prop_Data,"m_iHideHUD",2056);
+		SetEntProp(client,Prop_Data,"m_fEffects",40);
+		//SetEntProp(client,Prop_Data,"m_lifeState",1);
+		//ForcePlayerSuicide(client);
+		return Plugin_Handled;
+	}
 	CreateTimer(2.0, joincfg, client);
 	return Plugin_Continue;
 }
@@ -2888,6 +2921,7 @@ public Action roundtimeout(Handle timer)
 				if (clinspectate[i])
 				{
 					int spectarg = GetEntPropEnt(i,Prop_Data,"m_hObserverTarget");
+					if ((GetEntProp(i,Prop_Data,"m_lifeState") == 0) && (spectarg != -1)) SetEntProp(i,Prop_Data,"m_lifeState",2);
 					if (spectarg != -1)
 					{
 						float orgreset[3];
@@ -2895,6 +2929,7 @@ public Action roundtimeout(Handle timer)
 						else if (HasEntProp(spectarg,Prop_Data,"m_vecOrigin")) GetEntPropVector(spectarg,Prop_Data,"m_vecOrigin",orgreset);
 						SetEntPropVector(i,Prop_Data,"m_vecOrigin",orgreset);
 					}
+					else ClientCommand(i,"spec_next");
 				}
 			}
 		}
@@ -3010,6 +3045,21 @@ public Action joincfg(Handle timer, int client)
 		ClientCommand(client,"crosshair 1");
 		if (HasEntProp(client,Prop_Send,"m_bDisplayReticle"))
 			SetEntProp(client,Prop_Send,"m_bDisplayReticle",1);
+		if (FindStringInArray(afkids,SteamID[client]) != -1)
+		{
+			clinspectate[client] = true;
+			SetVariantInt(1);
+			AcceptEntityInput(client,"SetTeamNum");
+			SetEntProp(client,Prop_Data,"m_iTeamNum",1);
+			teamnum[client] = 1;
+			SetEntProp(client,Prop_Data,"deadflag",1);
+			SetEntProp(client,Prop_Data,"m_iObserverMode",5);
+			SetEntProp(client,Prop_Data,"m_iHideHUD",2056);
+			SetEntProp(client,Prop_Data,"m_fEffects",40);
+			//SetEntProp(client,Prop_Data,"m_lifeState",1);
+			//ForcePlayerSuicide(client);
+			return Plugin_Handled;
+		}
 		if (dmact)
 		{
 			if (teamnum[client] == 0)
@@ -3030,9 +3080,7 @@ public Action joincfg(Handle timer, int client)
 		}
 		if (survivalact)
 		{
-			char SteamID[32];
-			GetClientAuthId(client,AuthId_Steam2,SteamID,sizeof(SteamID));
-			int arrindx = FindStringInArray(respawnids,SteamID);
+			int arrindx = FindStringInArray(respawnids,SteamID[client]);
 			if (arrindx != -1)
 			{
 				ForcePlayerSuicide(client);
@@ -3089,10 +3137,12 @@ public Action joincfg(Handle timer, int client)
 	{
 		CreateTimer(1.0,joincfg,client);
 	}
+	return Plugin_Handled;
 }
 
 public OnClientAuthorized(int client, const char[] szAuth)
 {
+	GetClientAuthId(client,AuthId_Steam2,SteamID[client],sizeof(SteamID[]));
 	CreateTimer(2.0, joincfg, client);
 }
 
@@ -3157,6 +3207,7 @@ public void OnMapStart()
 		}
 	}
 	CreateTimer(0.1,rehooksaves);
+	CreateTimer(30.0,RecheckAFKList,_,TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Action rehooksaves(Handle timer)
@@ -3186,6 +3237,23 @@ public Action findsavetrigs(int ent, char[] clsname)
 		findsavetrigs(thisent++,clsname);
 	}
 	return Plugin_Handled;
+}
+
+public Action RecheckAFKList(Handle timer)
+{
+	for (int client = 1;client<MaxClients+1;client++)
+	{
+		if (strlen(SteamID[client]) > 0)
+		{
+			if (!IsValidEntity(client)) PrintToServer("Invalid");
+			if (!IsClientConnected(client)) PrintToServer("NotConnected");
+			if ((!IsValidEntity(client)) || (!IsClientConnected(client)))
+			{
+				int find = FindStringInArray(afkids,SteamID[client]);
+				if (find != -1) RemoveFromArray(afkids,find);
+			}
+		}
+	}
 }
 
 void CreateTrig(float origins[3], char[] mdlnum)
@@ -3432,4 +3500,5 @@ public void OnClientDisconnect(int client)
 	g_LastButtons[client] = 0;
 	antispamchk[client] = 0.0;
 	clinspectate[client] = false;
+	SteamID[client] = "";
 }
