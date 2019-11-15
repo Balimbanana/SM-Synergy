@@ -17,7 +17,7 @@ Handle spawnplayers = INVALID_HANDLE;
 bool vehiclemaphook = false;
 bool spawninvehicles = true;
 int spawninthisvehicle = -1;
-int collisiongroup = -1;
+//int collisiongroup = -1;
 int WeapList = -1;
 
 public Plugin myinfo =
@@ -43,7 +43,7 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
-	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
+	//collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	spawninthisvehicle = -1;
 	ClearArray(spawnplayers);
@@ -189,7 +189,7 @@ void setupvehicle(int vehicle, int client, bool enterexit)
 	else if ((enterexit) && (IsValidEntity(vehicle)) && (IsValidEntity(client)))
 	{
 		if (HasEntProp(vehicle,Prop_Data,"m_CollisionGroup")) SetEntProp(vehicle,Prop_Data,"m_CollisionGroup",5);
-		SetEntData(vehicle,collisiongroup,5,4,true);
+		//SetEntData(vehicle,collisiongroup,5,4,true);
 		if (HasEntProp(vehicle,Prop_Data,"m_hPlayer")) SetEntPropEnt(vehicle,Prop_Data,"m_hPlayer",client);
 		if (HasEntProp(vehicle,Prop_Data,"m_hMoveChild")) SetEntPropEnt(vehicle,Prop_Data,"m_hMoveChild",client);
 		if (HasEntProp(vehicle,Prop_Data,"m_bIsOn")) SetEntProp(vehicle,Prop_Data,"m_bIsOn",1);
