@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.22"
-			"Previous"	"1.21"
+			"Latest"  	"1.23"
+			"Previous"	"1.22"
 		}
 		
-		"Notes"	"Added sm_showall_normsounds and sm_showall_ambientsounds. Added more property type sets."
+		"Notes"	"Added !mywep to sm_sep for your current weapon. Changed a few prints to console instead of chat for some games."
 	}
 	
 	"Files"
