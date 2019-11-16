@@ -9,7 +9,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.22"
+#define PLUGIN_VERSION "1.23"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -70,7 +70,7 @@ public Action CreateStuff(int client, int args)
 	if (strlen(ent) < 1)
 	{
 		if (client != 0)
-			PrintToChat(client,"Please specify ent");
+			PrintToConsole(client,"Please specify ent");
 		else
 			PrintToServer("Please specify ent");
 		return Plugin_Handled;
@@ -131,7 +131,7 @@ public Action CreateStuff(int client, int args)
 		{
 			if ((!FileExists("models/vehicle.mdl",true,NULL_STRING)) && (!IsModelPrecached("models/vehicle.mdl")))
 			{
-				PrintToChat(client,"Ep2 must be mounted to spawn a jalopy.");
+				PrintToConsole(client,"Ep2 must be mounted to spawn a jalopy.");
 				return Plugin_Handled;
 			}
 			vehiclemodeldefined = true;
@@ -207,7 +207,7 @@ public Action CreateStuff(int client, int args)
 		if (stuff == 0) stuff = CreateEntityByName(ent);
 		if (stuff == -1)
 		{
-			PrintToChat(client,"Unable to create entity %s",ent);
+			PrintToConsole(client,"Unable to create entity %s",ent);
 			return Plugin_Handled;
 		}
 		char fullstr[512];
@@ -232,7 +232,7 @@ public Action CreateStuff(int client, int args)
 							Format(matchk,sizeof(matchk),"materials/%s",tmp2);
 							if ((!FileExists(matchk,true,NULL_STRING)) && (!IsModelPrecached(matchk)))
 							{
-								PrintToChat(client,"The material %s was not found.",matchk);
+								PrintToConsole(client,"The material %s was not found.",matchk);
 								AcceptEntityInput(stuff,"kill");
 								return Plugin_Handled;
 							}
@@ -245,7 +245,7 @@ public Action CreateStuff(int client, int args)
 						{
 							if ((!FileExists(tmp2,true,NULL_STRING)) && (!IsModelPrecached(tmp2)))
 							{
-								PrintToChat(client,"The model %s was not found.",tmp2);
+								PrintToConsole(client,"The model %s was not found.",tmp2);
 								AcceptEntityInput(stuff,"kill");
 								return Plugin_Handled;
 							}
@@ -260,8 +260,8 @@ public Action CreateStuff(int client, int args)
 						vehiclescriptdefined = true;
 						if (!FileExists(tmp2,true,NULL_STRING))
 						{
-							PrintToChat(client,"The vehiclescript %s was not found.",tmp2);
-							PrintToChat(client,"Defaulting to \"scripts/vehicles/jeep_test.txt\"");
+							PrintToConsole(client,"The vehiclescript %s was not found.",tmp2);
+							PrintToConsole(client,"Defaulting to \"scripts/vehicles/jeep_test.txt\"");
 							Format(tmp2,sizeof(tmp2),"scripts/vehicles/jeep_test.txt");
 						}
 					}
@@ -291,13 +291,13 @@ public Action CreateStuff(int client, int args)
 		}
 		if (((StrContains(ent,"prop_vehicle",false) != -1) || (StrEqual(ent,"generic_actor",false)) || (StrEqual(ent,"monster_generic",false))) && (!vehiclemodeldefined))
 		{
-			PrintToChat(client,"Model must be defined for this type of entity.");
+			PrintToConsole(client,"Model must be defined for this type of entity.");
 			AcceptEntityInput(stuff,"kill");
 			return Plugin_Handled;
 		}
 		if ((StrContains(ent,"prop_vehicle",false) != -1) && (!vehiclescriptdefined))
 		{
-			PrintToChat(client,"VehicleScript was not defined, defaulting to \"scripts/vehicles/jeep_test.txt\"");
+			PrintToConsole(client,"VehicleScript was not defined, defaulting to \"scripts/vehicles/jeep_test.txt\"");
 			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
 		}
 		TeleportEntity(stuff, PlayerOrigin, NULL_VECTOR, NULL_VECTOR);
@@ -316,7 +316,7 @@ public Action CreateStuffThere(int client, int args)
 	GetCmdArg(1,ent,sizeof(ent));
 	if (strlen(ent) < 1)
 	{
-		PrintToChat(client,"Please specify ent");
+		PrintToConsole(client,"Please specify ent");
 		return Plugin_Handled;
 	}
 	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && !IsFakeClient(client))
@@ -347,7 +347,7 @@ public Action CreateStuffThere(int client, int args)
 		{
 			if ((!FileExists("models/vehicle.mdl",true,NULL_STRING)) && (!IsModelPrecached("models/vehicle.mdl")))
 			{
-				PrintToChat(client,"Ep2 must be mounted to spawn a jalopy.");
+				PrintToConsole(client,"Ep2 must be mounted to spawn a jalopy.");
 				return Plugin_Handled;
 			}
 			vehiclemodeldefined = true;
@@ -423,7 +423,7 @@ public Action CreateStuffThere(int client, int args)
 		if (stuff == 0) stuff = CreateEntityByName(ent);
 		if (stuff == -1)
 		{
-			PrintToChat(client,"Unable to create entity %s",ent);
+			PrintToConsole(client,"Unable to create entity %s",ent);
 			return Plugin_Handled;
 		}
 		char fullstr[512];
@@ -448,7 +448,7 @@ public Action CreateStuffThere(int client, int args)
 							Format(matchk,sizeof(matchk),"materials/%s",tmp2);
 							if ((!FileExists(matchk,true,NULL_STRING)) && (!IsModelPrecached(matchk)))
 							{
-								PrintToChat(client,"The material %s was not found.",matchk);
+								PrintToConsole(client,"The material %s was not found.",matchk);
 								AcceptEntityInput(stuff,"kill");
 								return Plugin_Handled;
 							}
@@ -461,7 +461,7 @@ public Action CreateStuffThere(int client, int args)
 						{
 							if ((!FileExists(tmp2,true,NULL_STRING)) && (!IsModelPrecached(tmp2)))
 							{
-								PrintToChat(client,"The model %s was not found.",tmp2);
+								PrintToConsole(client,"The model %s was not found.",tmp2);
 								AcceptEntityInput(stuff,"kill");
 								return Plugin_Handled;
 							}
@@ -476,8 +476,8 @@ public Action CreateStuffThere(int client, int args)
 						vehiclescriptdefined = true;
 						if (!FileExists(tmp2,true,NULL_STRING))
 						{
-							PrintToChat(client,"The vehiclescript %s was not found.",tmp2);
-							PrintToChat(client,"Defaulting to \"scripts/vehicles/jeep_test.txt\"");
+							PrintToConsole(client,"The vehiclescript %s was not found.",tmp2);
+							PrintToConsole(client,"Defaulting to \"scripts/vehicles/jeep_test.txt\"");
 							Format(tmp2,sizeof(tmp2),"scripts/vehicles/jeep_test.txt");
 						}
 					}
@@ -500,13 +500,13 @@ public Action CreateStuffThere(int client, int args)
 		}
 		if (((StrContains(ent,"prop_vehicle",false) != -1) || (StrEqual(ent,"generic_actor",false)) || (StrEqual(ent,"monster_generic",false))) && (!vehiclemodeldefined))
 		{
-			PrintToChat(client,"Model must be defined for this type of entity.");
+			PrintToConsole(client,"Model must be defined for this type of entity.");
 			AcceptEntityInput(stuff,"kill");
 			return Plugin_Handled;
 		}
 		if ((StrContains(ent,"prop_vehicle",false) != -1) && (!vehiclescriptdefined))
 		{
-			PrintToChat(client,"VehicleScript was not defined, defaulting to \"scripts/vehicles/jeep_test.txt\"");
+			PrintToConsole(client,"VehicleScript was not defined, defaulting to \"scripts/vehicles/jeep_test.txt\"");
 			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
 		}
 		PrintToConsole(client,"%s",fullstr);
@@ -529,7 +529,7 @@ public Action cinp(int client, int args)
 		if (targ == -1)
 		{
 			if (client == 0) PrintToServer("Invalid target.");
-			else PrintToChat(client,"Invalid target.");
+			else PrintToConsole(client,"Invalid target.");
 			return Plugin_Handled;
 		}
 		char second[128];
@@ -598,14 +598,14 @@ public Action cinp(int client, int args)
 		if (arr == INVALID_HANDLE)
 		{
 			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",firstarg);
-			else PrintToChat(client,"No entities found with either classname or targetname of %s",firstarg);
+			else PrintToConsole(client,"No entities found with either classname or targetname of %s",firstarg);
 			CloseHandle(arr);
 			return Plugin_Handled;
 		}
 		else if (GetArraySize(arr) < 1)
 		{
 			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",firstarg);
-			else PrintToChat(client,"No entities found with either classname or targetname of %s",firstarg);
+			else PrintToConsole(client,"No entities found with either classname or targetname of %s",firstarg);
 			CloseHandle(arr);
 			return Plugin_Handled;
 		}
@@ -623,7 +623,7 @@ public Action cinp(int client, int args)
 				AcceptEntityInput(j,input);
 			}
 			if (client == 0) PrintToServer("%s %s %s",firstarg,input,fullinp);
-			else PrintToChat(client,"%s %s %s",firstarg,input,fullinp);
+			else PrintToConsole(client,"%s %s %s",firstarg,input,fullinp);
 			CloseHandle(arr);
 			return Plugin_Handled;
 		}
@@ -649,7 +649,7 @@ public Action cinp(int client, int args)
 					if (client == 0)
 						PrintToServer("Setting %s %s %s",nick,third,fourth);
 					else
-						PrintToChat(client,"Setting %s %s %s",nick,third,fourth);
+						PrintToConsole(client,"Setting %s %s %s",nick,third,fourth);
 					break;
 				}
 			}
@@ -742,7 +742,7 @@ public Action SetTargMdl(int client, int args)
 	if ((args < 2) || (client == 0))
 	{
 		if (client == 0) PrintToServer("Must specify model to set");
-		else PrintToChat(client,"Must specify model to set");
+		else PrintToConsole(client,"Must specify model to set");
 		return Plugin_Handled;
 	}
 	else
@@ -758,7 +758,7 @@ public Action SetTargMdl(int client, int args)
 			targ = StringToInt(first);
 		if (targ == -1)
 		{
-			PrintToChat(client,"Invalid target");
+			PrintToConsole(client,"Invalid target");
 			return Plugin_Handled;
 		}
 		else
@@ -767,7 +767,7 @@ public Action SetTargMdl(int client, int args)
 			GetCmdArg(2,mdltoset, sizeof(mdltoset));
 			if ((!FileExists(mdltoset,true,NULL_STRING)) && (!IsModelPrecached(mdltoset)))
 			{
-				PrintToChat(client,"The model %s was not found.",mdltoset);
+				PrintToConsole(client,"The model %s was not found.",mdltoset);
 				return Plugin_Handled;
 			}
 			if (!IsModelPrecached(mdltoset)) PrecacheModel(mdltoset,true);
@@ -863,6 +863,7 @@ public Handle findentsarrtargsub(Handle arr, int ent, char[] namechk, char[] cls
 		{
 			char fname[128];
 			GetEntPropString(thisent,Prop_Data,"m_iName",fname,sizeof(fname));
+			if (StrContains(fname,"\"",false) != -1) ReplaceString(fname,sizeof(fname),"\"","");
 			if (StrEqual(fname,namechk,false))
 				PushArrayCell(arr, thisent);
 		}
@@ -889,6 +890,7 @@ public Handle findentsarrtarg(Handle arr, char[] namechk)
 			{
 				char fname[128];
 				GetEntPropString(i,Prop_Data,"m_iName",fname,sizeof(fname));
+				if (StrContains(fname,"\"",false) != -1) ReplaceString(fname,sizeof(fname),"\"","");
 				if (StrEqual(fname,namechk,false))
 					PushArrayCell(arr, i);
 			}
@@ -913,7 +915,7 @@ public Action listents(int client, int args)
 	if (args < 1)
 	{
 		if (client == 0) PrintToServer("Must specify targetname or classname");
-		else PrintToChat(client,"Must specify targetname or classname");
+		else PrintToConsole(client,"Must specify targetname or classname");
 		return Plugin_Handled;
 	}
 	char search[128];
@@ -928,13 +930,13 @@ public Action listents(int client, int args)
 		if (arr == INVALID_HANDLE)
 		{
 			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",search);
-			else PrintToChat(client,"No entities found with either classname or targetname of %s",search);
+			else PrintToConsole(client,"No entities found with either classname or targetname of %s",search);
 			return Plugin_Handled;
 		}
 		else if (GetArraySize(arr) < 1)
 		{
 			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",search);
-			else PrintToChat(client,"No entities found with either classname or targetname of %s",search);
+			else PrintToConsole(client,"No entities found with either classname or targetname of %s",search);
 			return Plugin_Handled;
 		}
 		else
@@ -1271,7 +1273,7 @@ public Action listents(int client, int args)
 						float chkdist = GetVectorDistance(clorigin,vec,false);
 						if (chkdist < 500.0)
 						{
-							PrintToChat(client,"%i %s is %1.f away from you.",targ,targname,chkdist);
+							PrintToConsole(client,"%i %s is %1.f away from you.",targ,targname,chkdist);
 						}
 					}
 				}
@@ -1301,7 +1303,7 @@ public Action listents(int client, int args)
 						else Format(displaymsg,sizeof(displaymsg),"%s ToggleState: Enabled ",displaymsg);
 					}
 					if (client == 0) PrintToServer("%s",displaymsg);
-					else PrintToChat(client,"%s",displaymsg);
+					else PrintToConsole(client,"%s",displaymsg);
 					if (client != 0)
 					{
 						float clorigin[3];
@@ -1309,7 +1311,7 @@ public Action listents(int client, int args)
 						float chkdist = GetVectorDistance(clorigin,entorigin,false);
 						if (chkdist < 500.0)
 						{
-							PrintToChat(client,"%i %s is %1.f away from you.",j,fname,chkdist);
+							PrintToConsole(client,"%i %s is %1.f away from you.",j,fname,chkdist);
 						}
 					}
 				}
@@ -1325,19 +1327,19 @@ public Action moveentity(int client, int args)
 	if (args < 1)
 	{
 		if (client == 0) PrintToServer("Must specify targetname or classname");
-		else PrintToChat(client,"Must specify targetname or classname");
+		else PrintToConsole(client,"Must specify targetname or classname");
 		return Plugin_Handled;
 	}
 	else if (args < 4)
 	{
 		if (client == 0) PrintToServer("Must specify origin");
-		else PrintToChat(client,"Must specify origin");
+		else PrintToConsole(client,"Must specify origin");
 		return Plugin_Handled;
 	}
 	else if ((args > 4) && (args < 7))
 	{
 		if (client == 0) PrintToServer("Must specify all angles to set or just origin");
-		else PrintToChat(client,"Must specify all angles to set or just origin");
+		else PrintToConsole(client,"Must specify all angles to set or just origin");
 		return Plugin_Handled;
 	}
 	char search[64];
@@ -1359,13 +1361,13 @@ public Action moveentity(int client, int args)
 		if (arr == INVALID_HANDLE)
 		{
 			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",search);
-			else PrintToChat(client,"No entities found with either classname or targetname of %s",search);
+			else PrintToConsole(client,"No entities found with either classname or targetname of %s",search);
 			return Plugin_Handled;
 		}
 		else if (GetArraySize(arr) < 1)
 		{
 			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",search);
-			else PrintToChat(client,"No entities found with either classname or targetname of %s",search);
+			else PrintToConsole(client,"No entities found with either classname or targetname of %s",search);
 			return Plugin_Handled;
 		}
 		else
@@ -1469,7 +1471,7 @@ public Action moveentity(int client, int args)
 				}
 				TeleportEntity(targ,tporgs,tpangs,NULL_VECTOR);
 				if (client == 0) PrintToServer("Moved %i to origin %f %f %f angles %f %f %f",targ,tporgs[0],tporgs[1],tporgs[2],tpangs[0],tpangs[1],tpangs[2]);
-				else PrintToChat(client,"Moved %i to origin %f %f %f angles %f %f %f",targ,tporgs[0],tporgs[1],tporgs[2],tpangs[0],tpangs[1],tpangs[2]);
+				else PrintToConsole(client,"Moved %i to origin %f %f %f angles %f %f %f",targ,tporgs[0],tporgs[1],tporgs[2],tpangs[0],tpangs[1],tpangs[2]);
 			}
 		}
 	}
@@ -1603,11 +1605,11 @@ public Action sett(int client, int args)
 		char cmodel[64];
 		GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 		GetEntPropString(targ,Prop_Data,"m_iName",targname,sizeof(targname));
-		PrintToChat(client,"%s %s %s",ent,targname,cmodel);
+		PrintToConsole(client,"%s %s %s",ent,targname,cmodel);
 	}
 	else
 	{
-		PrintToChat(client,"Not enough args, or invalid target");
+		PrintToConsole(client,"Not enough args, or invalid target");
 	}
 	return Plugin_Handled;
 }
@@ -1632,6 +1634,14 @@ public Action setprops(int client, int args)
 	Handle arr = CreateArray(64);
 	if (StrEqual(first,"!self",false))
 		PushArrayCell(arr,client);
+	else if (StrEqual(first,"!mywep",false))
+	{
+		if (HasEntProp(client,Prop_Data,"m_hActiveWeapon"))
+		{
+			int wep = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+			if (wep != -1) PushArrayCell(arr,wep);
+		}
+	}
 	else if (StrEqual(first,"!picker",false))
 		PushArrayCell(arr,GetClientAimTarget(client, false));
 	else if ((StringToInt(first) != 0) && (strlen(first) > 0))
@@ -1643,13 +1653,13 @@ public Action setprops(int client, int args)
 	if (arr == INVALID_HANDLE)
 	{
 		if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",first);
-		else PrintToChat(client,"No entities found with either classname or targetname of %s",first);
+		else PrintToConsole(client,"No entities found with either classname or targetname of %s",first);
 		return Plugin_Handled;
 	}
 	else if (GetArraySize(arr) < 1)
 	{
 		if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",first);
-		else PrintToChat(client,"No entities found with either classname or targetname of %s",first);
+		else PrintToConsole(client,"No entities found with either classname or targetname of %s",first);
 		return Plugin_Handled;
 	}
 	for (int i = 0;i<GetArraySize(arr);i++)
@@ -1685,7 +1695,7 @@ public Action setprops(int client, int args)
 								char propinf[64];
 								GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf),j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
-								else PrintToChat(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+								else PrintToConsole(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
 							}
 						}
 						else
@@ -1693,7 +1703,7 @@ public Action setprops(int client, int args)
 							char propinf[64];
 							GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf));
 							if (client == 0) PrintToServer("%i %s %s is %s",targ,cls,propname,propinf);
-							else PrintToChat(client,"%i %s %s is %s",targ,cls,propname,propinf);
+							else PrintToConsole(client,"%i %s %s is %s",targ,cls,propname,propinf);
 						}
 					}
 					else if (type == PropField_Entity)
@@ -1705,14 +1715,14 @@ public Action setprops(int client, int args)
 							{
 								int enth = GetEntPropEnt(targ,Prop_Send,propname,j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
-								else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+								else PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
 							}
 						}
 						else
 						{
 							int enth = GetEntPropEnt(targ,Prop_Send,propname);
 							if (client == 0) PrintToServer("%i %s %s is %i",targ,cls,propname,enth);
-							else PrintToChat(client,"%i %s %s is %i",targ,cls,propname,enth);
+							else PrintToConsole(client,"%i %s %s is %i",targ,cls,propname,enth);
 						}
 					}
 					else if (type == PropField_Integer)
@@ -1724,14 +1734,14 @@ public Action setprops(int client, int args)
 							{
 								int enti = GetEntProp(targ,Prop_Send,propname,j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
-								else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+								else PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
 							}
 						}
 						else
 						{
 							int enti = GetEntProp(targ,Prop_Send,propname);
 							if (client == 0) PrintToServer("%i %s %s is %i",targ,cls,propname,enti);
-							else PrintToChat(client,"%i %s %s is %i",targ,cls,propname,enti);
+							else PrintToConsole(client,"%i %s %s is %i",targ,cls,propname,enti);
 						}
 					}
 					else if (type == PropField_Float)
@@ -1743,14 +1753,14 @@ public Action setprops(int client, int args)
 							{
 								float entf = GetEntPropFloat(targ,Prop_Send,propname,j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
-								else PrintToChat(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+								else PrintToConsole(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
 							}
 						}
 						else
 						{
 							float entf = GetEntPropFloat(targ,Prop_Send,propname);
 							if (client == 0) PrintToServer("%i %s %s is %f",targ,cls,propname,entf);
-							else PrintToChat(client,"%i %s %s is %f",targ,cls,propname,entf);
+							else PrintToConsole(client,"%i %s %s is %f",targ,cls,propname,entf);
 						}
 					}
 					else if (type == PropField_Vector)
@@ -1763,7 +1773,7 @@ public Action setprops(int client, int args)
 								float entvec[3];
 								GetEntPropVector(targ,Prop_Send,propname,entvec,j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
-								else PrintToChat(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+								else PrintToConsole(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
 							}
 						}
 						else
@@ -1771,7 +1781,7 @@ public Action setprops(int client, int args)
 							float entvec[3];
 							GetEntPropVector(targ,Prop_Send,propname,entvec);
 							if (client == 0) PrintToServer("%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
-							else PrintToChat(client,"%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
+							else PrintToConsole(client,"%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
 						}
 					}
 				}
@@ -1790,7 +1800,7 @@ public Action setprops(int client, int args)
 								char propinf[64];
 								GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf),j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
-								else PrintToChat(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+								else PrintToConsole(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
 							}
 						}
 						else
@@ -1798,7 +1808,7 @@ public Action setprops(int client, int args)
 							char propinf[64];
 							GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf));
 							if (client == 0) PrintToServer("%i %s is %s",targ,propname,propinf);
-							else PrintToChat(client,"%i %s is %s",targ,propname,propinf);
+							else PrintToConsole(client,"%i %s is %s",targ,propname,propinf);
 						}
 					}
 					else if (type == PropField_Entity)
@@ -1810,14 +1820,14 @@ public Action setprops(int client, int args)
 							{
 								int enth = GetEntPropEnt(targ,Prop_Data,propname,j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
-								else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+								else PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
 							}
 						}
 						else
 						{
 							int enth = GetEntPropEnt(targ,Prop_Data,propname);
 							if (client == 0) PrintToServer("%i %s is %i",targ,propname,enth);
-							else PrintToChat(client,"%i %s is %i",targ,propname,enth);
+							else PrintToConsole(client,"%i %s is %i",targ,propname,enth);
 						}
 					}
 					else if (type == PropField_Integer)
@@ -1833,14 +1843,14 @@ public Action setprops(int client, int args)
 								if (!useelement) enti = GetEntProp(targ,Prop_Data,propname,j);
 								else enti = GetEntProp(targ,Prop_Data,propname,_,j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
-								else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+								else PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
 							}
 						}
 						else
 						{
 							int enti = GetEntProp(targ,Prop_Data,propname);
 							if (client == 0) PrintToServer("%i %s is %i",targ,propname,enti);
-							else PrintToChat(client,"%i %s is %i",targ,propname,enti);
+							else PrintToConsole(client,"%i %s is %i",targ,propname,enti);
 						}
 					}
 					else if (type == PropField_Float)
@@ -1852,14 +1862,14 @@ public Action setprops(int client, int args)
 							{
 								float entf = GetEntPropFloat(targ,Prop_Data,propname,j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
-								else PrintToChat(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+								else PrintToConsole(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
 							}
 						}
 						else
 						{
 							float entf = GetEntPropFloat(targ,Prop_Data,propname);
 							if (client == 0) PrintToServer("%i %s is %f",targ,propname,entf);
-							else PrintToChat(client,"%i %s is %f",targ,propname,entf);
+							else PrintToConsole(client,"%i %s is %f",targ,propname,entf);
 						}
 					}
 					else if (type == PropField_Vector)
@@ -1872,7 +1882,7 @@ public Action setprops(int client, int args)
 								float entvec[3];
 								GetEntPropVector(targ,Prop_Data,propname,entvec,j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
-								else PrintToChat(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+								else PrintToConsole(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
 							}
 						}
 						else
@@ -1880,7 +1890,7 @@ public Action setprops(int client, int args)
 							float entvec[3];
 							GetEntPropVector(targ,Prop_Data,propname,entvec);
 							if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
-							else PrintToChat(client,"%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
+							else PrintToConsole(client,"%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
 						}
 					}
 				}
@@ -1891,39 +1901,39 @@ public Action setprops(int client, int args)
 						char propinf[64];
 						GetEntDataString(targ,datamapoffs,propinf,sizeof(propinf));
 						if (client == 0) PrintToServer("%i %s %s is %s",targ,cls,propname,propinf);
-						else PrintToChat(client,"%i %s %s is %s",targ,cls,propname,propinf);
+						else PrintToConsole(client,"%i %s %s is %s",targ,cls,propname,propinf);
 					}
 					else if (datamaptype == PropField_Entity)
 					{
 						int enth = GetEntDataEnt2(targ,datamapoffs);
 						if (client == 0) PrintToServer("%i %s is %i",targ,propname,enth);
-						else PrintToChat(client,"%i %s is %i",targ,propname,enth);
+						else PrintToConsole(client,"%i %s is %i",targ,propname,enth);
 					}
 					else if (datamaptype == PropField_Integer)
 					{
 						int enti = GetEntData(targ,datamapoffs,4);
 						if (client == 0) PrintToServer("%i %s is %i",targ,propname,enti);
-						else PrintToChat(client,"%i %s is %i",targ,propname,enti);
+						else PrintToConsole(client,"%i %s is %i",targ,propname,enti);
 					}
 					else if (datamaptype == PropField_Float)
 					{
 						float entf = GetEntDataFloat(targ,datamapoffs);
 						if (client == 0) PrintToServer("%i %s is %f",targ,propname,entf);
-						else PrintToChat(client,"%i %s is %f",targ,propname,entf);
+						else PrintToConsole(client,"%i %s is %f",targ,propname,entf);
 					}
 					else if (datamaptype == PropField_Vector)
 					{
 						float entvec[3];
 						GetEntDataVector(targ,datamapoffs,entvec);
 						if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
-						else PrintToChat(client,"%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
+						else PrintToConsole(client,"%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
 					}
 					else datamapoffs = -1;
 				}
 				if (((!HasEntProp(targ,Prop_Data,propname)) && (!HasEntProp(targ,Prop_Send,propname)) || (datatypeunsupported)) && (datamapoffs == -1))
 				{
 					if (client == 0) PrintToServer("%i %s doesn't have the %s property, or the type is unsupported.",targ,cls,propname);
-					else PrintToChat(client,"%i %s doesn't have the %s property, or the type is unsupported.",targ,cls,propname);
+					else PrintToConsole(client,"%i %s doesn't have the %s property, or the type is unsupported.",targ,cls,propname);
 				}
 			}
 			else
@@ -2145,7 +2155,7 @@ public Action setprops(int client, int args)
 						if (StringToInt(pdatachk) >= arrsize)
 						{
 							if (client == 0) PrintToServer("Array index out of bounds.");
-							else PrintToChat(client,"Array index out of bounds.");
+							else PrintToConsole(client,"Array index out of bounds.");
 							return Plugin_Handled;
 						}
 						else
@@ -2160,7 +2170,7 @@ public Action setprops(int client, int args)
 						if (StringToInt(pdatachk) >= arrsize)
 						{
 							if (client == 0) PrintToServer("Array index out of bounds.");
-							else PrintToChat(client,"Array index out of bounds.");
+							else PrintToConsole(client,"Array index out of bounds.");
 							return Plugin_Handled;
 						}
 						else
@@ -2186,7 +2196,7 @@ public Action setprops(int client, int args)
 						{
 							GetEntPropVector(targ,Prop_Send,propname,secondvec);
 							if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-							else PrintToChat(client,"Set %i's %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
+							else PrintToConsole(client,"Set %i's %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
 						}
 						else
 						{
@@ -2194,14 +2204,14 @@ public Action setprops(int client, int args)
 							{
 								SetEntPropVector(targ,Prop_Send,propname,secondvec);
 								if (client == 0) PrintToServer("Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-								else PrintToChat(client,"Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
+								else PrintToConsole(client,"Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropVector(targ,Prop_Send,propname,secondvec,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
-								else PrintToChat(client,"Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
+								else PrintToConsole(client,"Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
@@ -2212,7 +2222,7 @@ public Action setprops(int client, int args)
 						{
 							GetEntPropVector(targ,Prop_Data,propname,secondvec);
 							if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-							else PrintToChat(client,"%i %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
+							else PrintToConsole(client,"%i %s is %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
 						}
 						else
 						{
@@ -2220,14 +2230,14 @@ public Action setprops(int client, int args)
 							{
 								SetEntPropVector(targ,Prop_Data,propname,secondvec);
 								if (client == 0) PrintToServer("Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
-								else PrintToChat(client,"Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
+								else PrintToConsole(client,"Set %i's %s to %f %f %f",targ,propname,secondvec[0],secondvec[1],secondvec[2]);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropVector(targ,Prop_Data,propname,secondvec,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
-								else PrintToChat(client,"Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
+								else PrintToConsole(client,"Set %i's %s [%i] to %f %f %f",targ,propname,usearr,secondvec[0],secondvec[1],secondvec[2]);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
@@ -2235,7 +2245,7 @@ public Action setprops(int client, int args)
 					else
 					{
 						if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
-						else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
+						else PrintToConsole(client,"%i doesn't have the %s property.",targ,propname);
 					}
 				}
 				else if (usefloat)
@@ -2246,7 +2256,7 @@ public Action setprops(int client, int args)
 						{
 							float flchk = GetEntPropFloat(targ,Prop_Send,propname);
 							if (client == 0) PrintToServer("%i %s is %f",targ,propname,flchk);
-							else PrintToChat(client,"Set %i's %s is %f",targ,propname,flchk);
+							else PrintToConsole(client,"Set %i's %s is %f",targ,propname,flchk);
 						}
 						else
 						{
@@ -2254,14 +2264,14 @@ public Action setprops(int client, int args)
 							{
 								SetEntPropFloat(targ,Prop_Send,propname,secondfl);
 								if (client == 0) PrintToServer("Set %i's %s to %f",targ,propname,secondfl);
-								else PrintToChat(client,"Set %i's %s to %f",targ,propname,secondfl);
+								else PrintToConsole(client,"Set %i's %s to %f",targ,propname,secondfl);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropFloat(targ,Prop_Send,propname,secondfl,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
-								else PrintToChat(client,"Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
+								else PrintToConsole(client,"Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
@@ -2272,7 +2282,7 @@ public Action setprops(int client, int args)
 						{
 							float flchk = GetEntPropFloat(targ,Prop_Data,propname);
 							if (client == 0) PrintToServer("%i %s is %f",targ,propname,flchk);
-							else PrintToChat(client,"%i %s is %f",targ,propname,flchk);
+							else PrintToConsole(client,"%i %s is %f",targ,propname,flchk);
 						}
 						else
 						{
@@ -2280,14 +2290,14 @@ public Action setprops(int client, int args)
 							{
 								SetEntPropFloat(targ,Prop_Data,propname,secondfl);
 								if (client == 0) PrintToServer("Set %i's %s to %f",targ,propname,secondfl);
-								else PrintToChat(client,"Set %i's %s to %f",targ,propname,secondfl);
+								else PrintToConsole(client,"Set %i's %s to %f",targ,propname,secondfl);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropFloat(targ,Prop_Data,propname,secondfl,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
-								else PrintToChat(client,"Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
+								else PrintToConsole(client,"Set %i's %s [%i] to %f",targ,propname,usearr,secondfl);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
@@ -2295,7 +2305,7 @@ public Action setprops(int client, int args)
 					else
 					{
 						if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
-						else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
+						else PrintToConsole(client,"%i doesn't have the %s property.",targ,propname);
 					}
 				}
 				else if (usestring)
@@ -2307,7 +2317,7 @@ public Action setprops(int client, int args)
 							char chchk[64];
 							GetEntPropString(targ,Prop_Send,propname,chchk,sizeof(chchk));
 							if (client == 0) PrintToServer("%i %s is %s",targ,propname,chchk);
-							else PrintToChat(client,"%i %s is %s",targ,propname,chchk);
+							else PrintToConsole(client,"%i %s is %s",targ,propname,chchk);
 						}
 						else
 						{
@@ -2315,14 +2325,14 @@ public Action setprops(int client, int args)
 							{
 								SetEntPropString(targ,Prop_Send,propname,secondintchk);
 								if (client == 0) PrintToServer("Set %i's %s to %s",targ,propname,secondintchk);
-								else PrintToChat(client,"Set %i's %s to %s",targ,propname,secondintchk);
+								else PrintToConsole(client,"Set %i's %s to %s",targ,propname,secondintchk);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropString(targ,Prop_Send,propname,secondintchk,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
-								else PrintToChat(client,"Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
+								else PrintToConsole(client,"Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
@@ -2334,7 +2344,7 @@ public Action setprops(int client, int args)
 							char chchk[64];
 							GetEntPropString(targ,Prop_Data,propname,chchk,sizeof(chchk));
 							if (client == 0) PrintToServer("%i %s is %s",targ,propname,chchk);
-							else PrintToChat(client,"%i %s is %s",targ,propname,chchk);
+							else PrintToConsole(client,"%i %s is %s",targ,propname,chchk);
 						}
 						else
 						{
@@ -2342,14 +2352,14 @@ public Action setprops(int client, int args)
 							{
 								SetEntPropString(targ,Prop_Data,propname,secondintchk);
 								if (client == 0) PrintToServer("Set %i's %s to %s",targ,propname,secondintchk);
-								else PrintToChat(client,"Set %i's %s to %s",targ,propname,secondintchk);
+								else PrintToConsole(client,"Set %i's %s to %s",targ,propname,secondintchk);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropString(targ,Prop_Data,propname,secondintchk,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
-								else PrintToChat(client,"Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
+								else PrintToConsole(client,"Set %i's %s [%i] to %s",targ,propname,usearr,secondintchk);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
@@ -2357,7 +2367,7 @@ public Action setprops(int client, int args)
 					else
 					{
 						if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
-						else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
+						else PrintToConsole(client,"%i doesn't have the %s property.",targ,propname);
 					}
 				}
 				else if (getent)
@@ -2368,7 +2378,7 @@ public Action setprops(int client, int args)
 						{
 							int intchk = GetEntPropEnt(targ,Prop_Send,propname);
 							if (client == 0) PrintToServer("%i %s is %i",targ,propname,intchk);
-							else PrintToChat(client,"%i %s is %i",targ,propname,intchk);
+							else PrintToConsole(client,"%i %s is %i",targ,propname,intchk);
 						}
 						else
 						{
@@ -2376,14 +2386,14 @@ public Action setprops(int client, int args)
 							{
 								SetEntPropEnt(targ,Prop_Send,propname,secondint);
 								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
-								else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
+								else PrintToConsole(client,"Set %i's %s to %i",targ,propname,secondint);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropEnt(targ,Prop_Send,propname,secondint,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
-								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
+								else PrintToConsole(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
@@ -2394,7 +2404,7 @@ public Action setprops(int client, int args)
 						{
 							int intchk = GetEntPropEnt(targ,Prop_Data,propname);
 							if (client == 0) PrintToServer("%i %s is %i",targ,propname,intchk);
-							else PrintToChat(client,"%i %s is %i",targ,propname,intchk);
+							else PrintToConsole(client,"%i %s is %i",targ,propname,intchk);
 						}
 						else
 						{
@@ -2402,14 +2412,14 @@ public Action setprops(int client, int args)
 							{
 								SetEntPropEnt(targ,Prop_Data,propname,secondint);
 								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
-								else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
+								else PrintToConsole(client,"Set %i's %s to %i",targ,propname,secondint);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntPropEnt(targ,Prop_Data,propname,secondint,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
-								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
+								else PrintToConsole(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
@@ -2417,7 +2427,7 @@ public Action setprops(int client, int args)
 					else
 					{
 						if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
-						else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
+						else PrintToConsole(client,"%i doesn't have the %s property.",targ,propname);
 					}
 				}
 				else if ((usearr) && (getpropinf))
@@ -2438,7 +2448,7 @@ public Action setprops(int client, int args)
 									char propinf[64];
 									GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf),j);
 									if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
-									else PrintToChat(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+									else PrintToConsole(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
 								}
 							}
 							else if (type == PropField_Entity)
@@ -2447,7 +2457,7 @@ public Action setprops(int client, int args)
 								{
 									int enth = GetEntPropEnt(targ,Prop_Send,propname,j);
 									if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
-									else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+									else PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
 								}
 							}
 							else if (type == PropField_Integer)
@@ -2456,7 +2466,7 @@ public Action setprops(int client, int args)
 								{
 									int enti = GetEntProp(targ,Prop_Send,propname,j);
 									if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
-									else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+									else PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
 								}
 							}
 							else if (type == PropField_Float)
@@ -2465,7 +2475,7 @@ public Action setprops(int client, int args)
 								{
 									float entf = GetEntPropFloat(targ,Prop_Send,propname,j);
 									if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
-									else PrintToChat(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+									else PrintToConsole(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
 								}
 							}
 							else if (type == PropField_Vector)
@@ -2475,7 +2485,7 @@ public Action setprops(int client, int args)
 									float entvec[3];
 									GetEntPropVector(targ,Prop_Send,propname,entvec,j);
 									if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
-									else PrintToChat(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+									else PrintToConsole(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
 								}
 							}
 						}
@@ -2492,7 +2502,7 @@ public Action setprops(int client, int args)
 									char propinf[64];
 									GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf),j);
 									if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
-									else PrintToChat(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+									else PrintToConsole(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
 								}
 							}
 							else if (type == PropField_Entity)
@@ -2501,7 +2511,7 @@ public Action setprops(int client, int args)
 								{
 									int enth = GetEntPropEnt(targ,Prop_Data,propname,j);
 									if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
-									else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+									else PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
 								}
 							}
 							else if (type == PropField_Integer)
@@ -2514,7 +2524,7 @@ public Action setprops(int client, int args)
 									if (!useelement) enti = GetEntProp(targ,Prop_Data,propname,j);
 									else enti = GetEntProp(targ,Prop_Data,propname,_,j);
 									if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
-									else PrintToChat(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+									else PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
 								}
 							}
 							else if (type == PropField_Float)
@@ -2523,7 +2533,7 @@ public Action setprops(int client, int args)
 								{
 									float entf = GetEntPropFloat(targ,Prop_Data,propname,j);
 									if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
-									else PrintToChat(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+									else PrintToConsole(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
 								}
 							}
 							else if (type == PropField_Vector)
@@ -2533,7 +2543,7 @@ public Action setprops(int client, int args)
 									float entvec[3];
 									GetEntPropVector(targ,Prop_Data,propname,entvec,j);
 									if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
-									else PrintToChat(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+									else PrintToConsole(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
 								}
 							}
 						}
@@ -2541,7 +2551,7 @@ public Action setprops(int client, int args)
 					else
 					{
 						if (client == 0) PrintToServer("%i does not have property of type",targ);
-						else PrintToChat(client,"%i does not have property of type",targ);
+						else PrintToConsole(client,"%i does not have property of type",targ);
 					}
 				}
 				else
@@ -2552,7 +2562,7 @@ public Action setprops(int client, int args)
 						{
 							int intchk = GetEntProp(targ,Prop_Send,propname);
 							if (client == 0) PrintToServer("%i %s is %i",targ,propname,intchk);
-							else PrintToChat(client,"%i %s is %i",targ,propname,intchk);
+							else PrintToConsole(client,"%i %s is %i",targ,propname,intchk);
 						}
 						else
 						{
@@ -2560,7 +2570,7 @@ public Action setprops(int client, int args)
 							{
 								SetEntProp(targ,Prop_Send,propname,secondint);
 								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
-								else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
+								else PrintToConsole(client,"Set %i's %s to %i",targ,propname,secondint);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
@@ -2570,7 +2580,7 @@ public Action setprops(int client, int args)
 								if (!useelement) SetEntProp(targ,Prop_Send,propname,secondint,usearr);
 								else SetEntProp(targ,Prop_Send,propname,secondint,_,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
-								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
+								else PrintToConsole(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
@@ -2581,7 +2591,7 @@ public Action setprops(int client, int args)
 						{
 							int intchk = GetEntProp(targ,Prop_Data,propname);
 							if (client == 0) PrintToServer("%i %s is %i",targ,propname,intchk);
-							else PrintToChat(client,"%i %s is %i",targ,propname,intchk);
+							else PrintToConsole(client,"%i %s is %i",targ,propname,intchk);
 						}
 						else
 						{
@@ -2589,14 +2599,14 @@ public Action setprops(int client, int args)
 							{
 								SetEntProp(targ,Prop_Data,propname,secondint);
 								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
-								else PrintToChat(client,"Set %i's %s to %i",targ,propname,secondint);
+								else PrintToConsole(client,"Set %i's %s to %i",targ,propname,secondint);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
 							{
 								SetEntProp(targ,Prop_Data,propname,secondint,usearr);
 								if (client == 0) PrintToServer("Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
-								else PrintToChat(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
+								else PrintToConsole(client,"Set %i's %s [%i] to %i",targ,propname,usearr,secondint);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 						}
@@ -2604,7 +2614,7 @@ public Action setprops(int client, int args)
 					else
 					{
 						if (client == 0) PrintToServer("%i doesn't have the %s property.",targ,propname);
-						else PrintToChat(client,"%i doesn't have the %s property.",targ,propname);
+						else PrintToConsole(client,"%i doesn't have the %s property.",targ,propname);
 					}
 				}
 			}
@@ -2612,7 +2622,7 @@ public Action setprops(int client, int args)
 		else
 		{
 			if (client == 0) PrintToServer("Invalid target");
-			else if (IsClientInGame(client)) PrintToChat(client,"Invalid target");
+			else if (IsClientInGame(client)) PrintToConsole(client,"Invalid target");
 		}
 	}
 	return Plugin_Handled;
