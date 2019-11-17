@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.26"
-			"Previous"	"1.25"
+			"Latest"  	"1.27"
+			"Previous"	"1.26"
 		}
 		
-		"Notes"	"AFK now carries over map changes with a time delay for removal of auto afk after map change and client not connected."
+		"Notes"	"Removed unecessary cvar change on different spawn modes. Fixed ID array size."
 	}
 	
 	"Files"
