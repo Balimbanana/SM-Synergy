@@ -35,7 +35,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-char restorelang[65];
+char restorelang[65][65];
 char ChapterTitle[64];
 char PreviousTitle[64];
 Handle equiparr = INVALID_HANDLE;
@@ -64,6 +64,7 @@ int mdlus = -1;
 int mdlus3 = -1;
 int longjumpactive = false;
 int autorebuild = 0;
+int playercapadj = 20;
 bool rebuildnodes = false;
 bool allownoguide = true;
 bool guiderocket[65];
@@ -84,8 +85,9 @@ bool reloadaftersetup = false;
 bool weapmanagersplaced = false;
 bool mapchanging = false;
 bool DisplayedChapterTitle[65];
+bool appliedlargeplayeradj = false;
 
-#define PLUGIN_VERSION "1.9995"
+#define PLUGIN_VERSION "1.9996"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -176,11 +178,25 @@ public void OnPluginStart()
 		difficulty = GetConVarInt(cvar);
 		HookConVarChange(cvar, difficultych);
 	}
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_player_head");
 	if (cvar != INVALID_HANDLE)
 	{
 		headgroup = GetConVarInt(cvar);
 		HookConVarChange(cvar, headgrpch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("sm_playertriggerapply");
+	if (cvar != INVALID_HANDLE)
+	{
+		playercapadj = GetConVarInt(cvar);
+		HookConVarChange(cvar, plytrigch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_playertriggerapply", "20", "Set player trigger amount for map adjustments such as additional vehicle spawns. 0 disables.", _, true, 0.0, true, 128.0);
+		playercapadj = GetConVarInt(cvar);
+		HookConVarChange(cvar, plytrigch);
 	}
 	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
@@ -343,6 +359,7 @@ public void OnMapStart()
 {
 	mapchanging = false;
 	customents = false;
+	appliedlargeplayeradj = false;
 	ChapterTitle = "";
 	if (reloadaftersetup)
 	{
@@ -1242,7 +1259,7 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 		{
 			votes = totalVotes - votes;
 		}
-		percent = FloatDiv(float(votes),float(totalVotes));
+		percent = float(votes)/float(totalVotes);
 		if ((strcmp(item, VOTE_YES) == 0 && FloatCompare(percent,perclimit) < 0 && param1 == 0) || (strcmp(item, VOTE_NO) == 0 && param1 == 1))
 		{
 			PrintToChatAll("%t","Vote Failed", RoundToNearest(100.0*perclimit), RoundToNearest(100.0*percent), totalVotes);
@@ -1295,6 +1312,205 @@ public void OnClientPutInServer(int client)
 	QueryClientConVar(client,"cc_lang",langchk,0);
 	showcc[client] = false;
 	QueryClientConVar(client,"closecaption",checkccsettings,0);
+	if ((GetClientCount(true) >= playercapadj) && (!appliedlargeplayeradj) && (playercapadj > 0))
+	{
+		appliedlargeplayeradj = true;
+		reloadaftersetup = true;
+		Handle spawns = CreateArray(32);
+		FindAllByClassname(spawns,-1,"info_vehicle_spawn");
+		if (GetArraySize(spawns) > 0)
+		{
+			for (int i = 0;i<GetArraySize(spawns);i++)
+			{
+				int ent = GetArrayCell(spawns,i);
+				if (IsValidEntity(ent))
+				{
+					float origin[3];
+					float angs[3];
+					float loc[3];
+					if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+					if (HasEntProp(ent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",origin);
+					else if (HasEntProp(ent,Prop_Send,"m_vecOrigin")) GetEntPropVector(ent,Prop_Send,"m_vecOrigin",origin);
+					//horizontal right check
+					angs[1]-=90.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					loc[2] = origin[2];
+					if (CheckBounds(loc,angs))
+					{
+						//get original just in case
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//horizontal left check
+					angs[1]+=180.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					if (CheckBounds(loc,angs))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//forward check
+					angs[1]-=90.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					if (CheckBounds(loc,angs))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//backwards check
+					angs[1]-=180.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					if (CheckBounds(loc,angs))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					
+					//run all over again with +50 z
+					origin[2]+=50.0;
+					if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+					//horizontal right check
+					angs[1]-=90.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					loc[2] = origin[2];
+					if (CheckBounds(loc,angs))
+					{
+						//get original just in case
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//horizontal left check
+					angs[1]+=180.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					if (CheckBounds(loc,angs))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//forward check
+					angs[1]-=90.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					if (CheckBounds(loc,angs))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//backwards check
+					angs[1]-=180.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					if (CheckBounds(loc,angs))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//asfasf
+				}
+			}
+		}
+		CloseHandle(spawns);
+	}
+}
+
+bool CheckBounds(float loc[3], float angs[3])
+{
+	if (!TR_PointOutsideWorld(loc))
+	{
+		float trpos[3];
+		int posworks = 0;
+		TR_TraceRay(loc,angs,MASK_PLAYERSOLID,RayType_Infinite);
+		TR_GetEndPosition(trpos);
+		if (GetVectorDistance(loc,trpos,false) > 100.0) posworks++;
+		//left
+		angs[1]+=180.0;
+		TR_TraceRay(loc,angs,MASK_PLAYERSOLID,RayType_Infinite);
+		TR_GetEndPosition(trpos);
+		if (GetVectorDistance(loc,trpos,false) > 100.0) posworks++;
+		//forwards
+		angs[1]-=90.0;
+		TR_TraceRay(loc,angs,MASK_PLAYERSOLID,RayType_Infinite);
+		TR_GetEndPosition(trpos);
+		if (GetVectorDistance(loc,trpos,false) > 100.0) posworks++;
+		//back
+		angs[1]+=180.0;
+		TR_TraceRay(loc,angs,MASK_PLAYERSOLID,RayType_Infinite);
+		TR_GetEndPosition(trpos);
+		if (GetVectorDistance(loc,trpos,false) > 100.0) posworks++;
+		angs[1]-=180.0;
+		//up
+		angs[0]-=90.0;
+		TR_TraceRay(loc,angs,MASK_PLAYERSOLID,RayType_Infinite);
+		TR_GetEndPosition(trpos);
+		if (GetVectorDistance(loc,trpos,false) > 80.0) posworks++;
+		angs[0]+=90.0;
+		if (posworks >= 5)
+		{
+			return true;
+		}
+		return false;
+	}
+	return false;
+}
+
+void SetupVehicleSpawn(int ent, float loc[3], float angs[3])
+{
+	char targn[128];
+	if (HasEntProp(ent,Prop_Data,"m_iName")) GetEntPropString(ent,Prop_Data,"m_iName",targn,sizeof(targn));
+	char vehscript[128];
+	if (HasEntProp(ent,Prop_Data,"m_iVehicleScript")) GetEntPropString(ent,Prop_Data,"m_iVehicleScript",vehscript,sizeof(vehscript));
+	char vehmdl[128];
+	if (HasEntProp(ent,Prop_Data,"m_ModelName")) GetEntPropString(ent,Prop_Data,"m_ModelName",vehmdl,sizeof(vehmdl));
+	char vehicletype[8];
+	Format(vehicletype,sizeof(vehicletype),"1");
+	if (HasEntProp(ent,Prop_Data,"m_iVehicleType"))
+	{
+		int vehtype = GetEntProp(ent,Prop_Data,"m_iVehicleType");
+		Format(vehicletype,sizeof(vehicletype),"%i",vehtype);
+	}
+	bool enablegun = false;
+	bool enabled = false;
+	if (HasEntProp(ent,Prop_Data,"m_bEnableGun"))
+	{
+		if (GetEntProp(ent,Prop_Data,"m_bEnableGun")) enablegun = true;
+	}
+	if (HasEntProp(ent,Prop_Data,"m_bEnabled"))
+	{
+		if (GetEntProp(ent,Prop_Data,"m_bEnabled")) enabled = true;
+	}
+	if (strlen(vehmdl) > 1)
+	{
+		int nextspawn = CreateEntityByName("info_vehicle_spawn");
+		if (nextspawn != -1)
+		{
+			DispatchKeyValue(nextspawn,"vehiclescript",vehscript);
+			DispatchKeyValue(nextspawn,"targetname",targn);
+			DispatchKeyValue(nextspawn,"skin","0");
+			DispatchKeyValue(nextspawn,"solid","6");
+			DispatchKeyValue(nextspawn,"model",vehmdl);
+			DispatchKeyValue(nextspawn,"VehicleType",vehicletype);
+			DispatchKeyValue(nextspawn,"VehicleSize","192");
+			if (enabled) DispatchKeyValue(nextspawn,"StartEnabled","1");
+			if (enablegun) DispatchKeyValue(nextspawn,"StartGunEnabled","1");
+			TeleportEntity(nextspawn,loc,angs,NULL_VECTOR);
+			DispatchSpawn(nextspawn);
+			ActivateEntity(nextspawn);
+		}
+	}
 }
 
 public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
@@ -17119,9 +17335,22 @@ public void OnButtonPressJump(int client, int button)
 			else
 			{
 				Format(snd,sizeof(snd),"ambient\\gas\\cannister_loop.wav");
-				EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER, _, _, _, _, _, _, _, 0.5);
+				EmitSoundToAll(snd, client, SNDCHAN_ITEM, SNDLEVEL_DISHWASHER, _, _, _, _, _, _, _, 0.5);
+				CreateTimer(0.5,StopLoop,client,TIMER_FLAG_NO_MAPCHANGE);
+				snd = "";
 			}
 			if (strlen(snd) > 0) EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+		}
+	}
+}
+
+public Action StopLoop(Handle timer, int client)
+{
+	if (IsValidEntity(client))
+	{
+		if (IsClientConnected(client))
+		{
+			StopSound(client,SNDCHAN_ITEM,"ambient\\gas\\cannister_loop.wav");
 		}
 	}
 }
@@ -17854,6 +18083,11 @@ public void difficultych(Handle convar, const char[] oldValue, const char[] newV
 public void headgrpch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	headgroup = StringToInt(newValue);
+}
+
+public void plytrigch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	playercapadj = StringToInt(newValue);
 }
 
 public void autorebuildch(Handle convar, const char[] oldValue, const char[] newValue)
