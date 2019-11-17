@@ -31,6 +31,7 @@ int restrictmode = 0;
 int clrocket[64];
 int longjumpactive = false;
 int slavezap = 10;
+int playercapadj = 20;
 bool allownoguide = true;
 bool guiderocket[64];
 bool restrictact = false;
@@ -44,8 +45,9 @@ bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
 bool DisplayedChapterTitle[65];
+bool appliedlargeplayeradj = false;
 
-#define PLUGIN_VERSION "1.9992"
+#define PLUGIN_VERSION "1.9993"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -131,6 +133,19 @@ public void OnPluginStart()
 	allownoguide = GetConVarBool(noguidecv);
 	HookConVarChange(noguidecv,noguidech);
 	CloseHandle(noguidecv);
+	Handle cvar = FindConVar("sm_playertriggerapply");
+	if (cvar != INVALID_HANDLE)
+	{
+		playercapadj = GetConVarInt(cvar);
+		HookConVarChange(cvar, plytrigch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_playertriggerapply", "20", "Set player trigger amount for map adjustments such as additional vehicle spawns. 0 disables.", _, true, 0.0, true, 128.0);
+		playercapadj = GetConVarInt(cvar);
+		HookConVarChange(cvar, plytrigch);
+	}
+	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -174,6 +189,7 @@ public void OnMapStart()
 	}
 	hasread = false;
 	playerteleports = false;
+	appliedlargeplayeradj = false;
 	entrefresh = 0.0;
 	ChapterTitle = "";
 	ClearArray(entlist);
@@ -597,6 +613,204 @@ public void OnClientPutInServer(int client)
 {
 	CreateTimer(0.5,clspawnpost,client);
 	if (forcehdr) QueryClientConVar(client,"mat_hdr_level",hdrchk,0);
+	if ((GetClientCount(true) >= playercapadj) && (!appliedlargeplayeradj) && (playercapadj > 0))
+	{
+		appliedlargeplayeradj = true;
+		Handle spawns = CreateArray(32);
+		FindAllByClassname(spawns,-1,"info_vehicle_spawn");
+		if (GetArraySize(spawns) > 0)
+		{
+			for (int i = 0;i<GetArraySize(spawns);i++)
+			{
+				int ent = GetArrayCell(spawns,i);
+				if (IsValidEntity(ent))
+				{
+					float origin[3];
+					float angs[3];
+					float loc[3];
+					if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+					if (HasEntProp(ent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",origin);
+					else if (HasEntProp(ent,Prop_Send,"m_vecOrigin")) GetEntPropVector(ent,Prop_Send,"m_vecOrigin",origin);
+					//horizontal right check
+					angs[1]-=90.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					loc[2] = origin[2];
+					if (CheckBounds(loc,angs))
+					{
+						//get original just in case
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//horizontal left check
+					angs[1]+=180.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					if (CheckBounds(loc,angs))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//forward check
+					angs[1]-=90.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					if (CheckBounds(loc,angs))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//backwards check
+					angs[1]-=180.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					if (CheckBounds(loc,angs))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					
+					//run all over again with +50 z
+					origin[2]+=50.0;
+					if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+					//horizontal right check
+					angs[1]-=90.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					loc[2] = origin[2];
+					if (CheckBounds(loc,angs))
+					{
+						//get original just in case
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//horizontal left check
+					angs[1]+=180.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					if (CheckBounds(loc,angs))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//forward check
+					angs[1]-=90.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					if (CheckBounds(loc,angs))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//backwards check
+					angs[1]-=180.0;
+					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+					if (CheckBounds(loc,angs))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+						SetupVehicleSpawn(ent,loc,angs);
+						continue;
+					}
+					//asfasf
+				}
+			}
+		}
+		CloseHandle(spawns);
+	}
+}
+
+bool CheckBounds(float loc[3], float angs[3])
+{
+	if (!TR_PointOutsideWorld(loc))
+	{
+		float trpos[3];
+		int posworks = 0;
+		TR_TraceRay(loc,angs,MASK_PLAYERSOLID,RayType_Infinite);
+		TR_GetEndPosition(trpos);
+		if (GetVectorDistance(loc,trpos,false) > 100.0) posworks++;
+		//left
+		angs[1]+=180.0;
+		TR_TraceRay(loc,angs,MASK_PLAYERSOLID,RayType_Infinite);
+		TR_GetEndPosition(trpos);
+		if (GetVectorDistance(loc,trpos,false) > 100.0) posworks++;
+		//forwards
+		angs[1]-=90.0;
+		TR_TraceRay(loc,angs,MASK_PLAYERSOLID,RayType_Infinite);
+		TR_GetEndPosition(trpos);
+		if (GetVectorDistance(loc,trpos,false) > 100.0) posworks++;
+		//back
+		angs[1]+=180.0;
+		TR_TraceRay(loc,angs,MASK_PLAYERSOLID,RayType_Infinite);
+		TR_GetEndPosition(trpos);
+		if (GetVectorDistance(loc,trpos,false) > 100.0) posworks++;
+		angs[1]-=180.0;
+		//up
+		angs[0]-=90.0;
+		TR_TraceRay(loc,angs,MASK_PLAYERSOLID,RayType_Infinite);
+		TR_GetEndPosition(trpos);
+		if (GetVectorDistance(loc,trpos,false) > 80.0) posworks++;
+		angs[0]+=90.0;
+		if (posworks >= 5)
+		{
+			return true;
+		}
+		return false;
+	}
+	return false;
+}
+
+void SetupVehicleSpawn(int ent, float loc[3], float angs[3])
+{
+	char targn[128];
+	if (HasEntProp(ent,Prop_Data,"m_iName")) GetEntPropString(ent,Prop_Data,"m_iName",targn,sizeof(targn));
+	char vehscript[128];
+	if (HasEntProp(ent,Prop_Data,"m_iVehicleScript")) GetEntPropString(ent,Prop_Data,"m_iVehicleScript",vehscript,sizeof(vehscript));
+	char vehmdl[128];
+	if (HasEntProp(ent,Prop_Data,"m_ModelName")) GetEntPropString(ent,Prop_Data,"m_ModelName",vehmdl,sizeof(vehmdl));
+	char vehicletype[8];
+	Format(vehicletype,sizeof(vehicletype),"1");
+	if (HasEntProp(ent,Prop_Data,"m_iVehicleType"))
+	{
+		int vehtype = GetEntProp(ent,Prop_Data,"m_iVehicleType");
+		Format(vehicletype,sizeof(vehicletype),"%i",vehtype);
+	}
+	bool enablegun = false;
+	bool enabled = false;
+	if (HasEntProp(ent,Prop_Data,"m_bEnableGun"))
+	{
+		if (GetEntProp(ent,Prop_Data,"m_bEnableGun")) enablegun = true;
+	}
+	if (HasEntProp(ent,Prop_Data,"m_bEnabled"))
+	{
+		if (GetEntProp(ent,Prop_Data,"m_bEnabled")) enabled = true;
+	}
+	if (strlen(vehmdl) > 1)
+	{
+		int nextspawn = CreateEntityByName("info_vehicle_spawn");
+		if (nextspawn != -1)
+		{
+			DispatchKeyValue(nextspawn,"vehiclescript",vehscript);
+			DispatchKeyValue(nextspawn,"targetname",targn);
+			DispatchKeyValue(nextspawn,"skin","0");
+			DispatchKeyValue(nextspawn,"solid","6");
+			DispatchKeyValue(nextspawn,"model",vehmdl);
+			DispatchKeyValue(nextspawn,"VehicleType",vehicletype);
+			DispatchKeyValue(nextspawn,"VehicleSize","192");
+			if (enabled) DispatchKeyValue(nextspawn,"StartEnabled","1");
+			if (enablegun) DispatchKeyValue(nextspawn,"StartGunEnabled","1");
+			TeleportEntity(nextspawn,loc,angs,NULL_VECTOR);
+			DispatchSpawn(nextspawn);
+			ActivateEntity(nextspawn);
+		}
+	}
 }
 
 public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
@@ -1631,6 +1845,16 @@ void readoutputsforinputs()
 	return;
 }
 
+void FindAllByClassname(Handle arr, int ent, char[] classname)
+{
+	int thisent = FindEntityByClassname(ent,classname);
+	if ((IsValidEntity(thisent)) && (thisent != -1))
+	{
+		PushArrayCell(arr,thisent);
+		FindAllByClassname(arr,thisent++,classname);
+	}
+}
+
 void findpointtp(int ent, char[] targn, int cl, float delay)
 {
 	int thisent = FindEntityByClassname(ent,"point_teleport");
@@ -2645,6 +2869,11 @@ public void spawneramtresch(Handle convar, const char[] oldValue, const char[] n
 			}
 		}
 	}
+}
+
+public void plytrigch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	playercapadj = StringToInt(newValue);
 }
 
 public void noguidech(Handle convar, const char[] oldValue, const char[] newValue)
