@@ -13,7 +13,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.26"
+#define PLUGIN_VERSION "1.27"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -39,7 +39,7 @@ int scoreshowstat = -1;
 int dmkills[MAXPLAYERS+1];
 int teamnum[MAXPLAYERS+1];
 float scoreshowcd[MAXPLAYERS+1];
-char SteamID[32][MAXPLAYERS+1];
+char SteamID[MAXPLAYERS+1][65];
 
 bool instspawnb = false;
 bool instspawnuse = false;
@@ -264,12 +264,7 @@ public void instspawnch(Handle convar, const char[] oldValue, const char[] newVa
 		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY));
 		Handle resdelay = FindConVar("mp_respawndelay");
 		SetConVarInt(resdelay,0,false,false);
-		cvarflag = GetCommandFlags("mp_respawnwavetime");
-		SetCommandFlags("mp_respawnwavetime", (cvarflag & ~FCVAR_REPLICATED));
-		SetCommandFlags("mp_respawnwavetime", (cvarflag & ~FCVAR_NOTIFY));
 		CloseHandle(resdelay);
-		resdelay = FindConVar("mp_respawnwavetime");
-		SetConVarInt(resdelay,0,false,false);
 		cvarflag = GetCommandFlags("mp_reset");
 		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED));
 		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_NOTIFY));
@@ -311,12 +306,7 @@ public void instspawnch(Handle convar, const char[] oldValue, const char[] newVa
 		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY));
 		Handle resdelay = FindConVar("mp_respawndelay");
 		SetConVarInt(resdelay,0,false,false);
-		cvarflag = GetCommandFlags("mp_respawnwavetime");
-		SetCommandFlags("mp_respawnwavetime", (cvarflag & ~FCVAR_REPLICATED));
-		SetCommandFlags("mp_respawnwavetime", (cvarflag & ~FCVAR_NOTIFY));
 		CloseHandle(resdelay);
-		resdelay = FindConVar("mp_respawnwavetime");
-		SetConVarInt(resdelay,0,false,false);
 		cvarflag = GetCommandFlags("mp_reset");
 		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED));
 		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_NOTIFY));
@@ -342,12 +332,7 @@ public void instspawnch(Handle convar, const char[] oldValue, const char[] newVa
 		SetCommandFlags("mp_respawndelay", (cvarflag & ~FCVAR_NOTIFY));
 		Handle resdelay = FindConVar("mp_respawndelay");
 		SetConVarInt(resdelay,1,false,false);
-		cvarflag = GetCommandFlags("mp_respawnwavetime");
-		SetCommandFlags("mp_respawnwavetime", (cvarflag & ~FCVAR_REPLICATED));
-		SetCommandFlags("mp_respawnwavetime", (cvarflag & ~FCVAR_NOTIFY));
 		CloseHandle(resdelay);
-		resdelay = FindConVar("mp_respawnwavetime");
-		SetConVarInt(resdelay,10,false,false);
 		cvarflag = GetCommandFlags("mp_reset");
 		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_REPLICATED));
 		SetCommandFlags("mp_reset", (cvarflag & ~FCVAR_NOTIFY));
