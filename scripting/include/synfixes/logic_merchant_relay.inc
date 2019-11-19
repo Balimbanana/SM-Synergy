@@ -1,4 +1,4 @@
-logmerches(int ent, int activator, char[] input, char[] targn, char[] parampass, float delay)
+void logmerches(int ent, int activator, char[] input, char[] targn, char[] parampass, float delay)
 {
 	int thisent = FindEntityByClassname(ent,"logic_*");
 	if ((IsValidEntity(thisent)) && (thisent != -1))

@@ -3,22 +3,26 @@ void assassinthink(int entity)
 	if ((IsValidEntity(entity)) && (IsEntNetworkable(entity)))
 	{
 		float Time = GetTickedTime();
-		if (lastseen[entity] < Time)
+		char cls[32];
+		GetEntityClassname(entity,cls,sizeof(cls));
+		if (!StrEqual(cls,"monster_human_assassin",false))
 		{
-			if (isattacking[entity])
+			if (lastseen[entity] < Time)
 			{
-				SetVariantString("player D_FR 40");
-				AcceptEntityInput(entity,"SetRelationship");
-				isattacking[entity] = 0;
+				if (isattacking[entity])
+				{
+					SetVariantString("player D_FR 40");
+					AcceptEntityInput(entity,"SetRelationship");
+					isattacking[entity] = 0;
+				}
+				else
+				{
+					SetVariantString("player D_HT 99");
+					AcceptEntityInput(entity,"SetRelationship");
+					isattacking[entity] = 1;
+				}
+				lastseen[entity] = Time+GetRandomFloat(5.0,15.0);
 			}
-			else
-			{
-				SetVariantString("player D_HT 99");
-				AcceptEntityInput(entity,"SetRelationship");
-				isattacking[entity] = 1;
-			}
-			float rand = GetRandomFloat(5.0,15.0);
-			lastseen[entity] = Time+rand;
 		}
 		int targ = GetEntPropEnt(entity,Prop_Data,"m_hTarget");
 		if ((targ != 0) && (IsValidEntity(targ)))
@@ -43,6 +47,24 @@ void assassinthink(int entity)
 			GetVectorAngles(targvec,toang);
 			float chkdist = GetVectorDistance(curorg,enorg,false);
 			bool withinradius = false;
+			int kickseq = 22;
+			if (StrEqual(cls,"monster_human_assassin",false))
+			{
+				kickseq = 7;
+				if (HasEntProp(entity,Prop_Data,"m_hActiveWeapon"))
+				{
+					int wep = GetEntPropEnt(entity,Prop_Data,"m_hActiveWeapon");
+					if (IsValidEntity(wep))
+					{
+						if (GetEntProp(wep,Prop_Data,"m_nRenderMode") != 10) SetEntProp(wep,Prop_Data,"m_nRenderMode",10);
+						if (GetEntProp(wep,Prop_Data,"m_nRenderFX") != 6) SetEntProp(wep,Prop_Data,"m_nRenderFX",6);
+					}
+				}
+				if (HasEntProp(entity,Prop_Data,"m_bShouldPatrol"))
+				{
+					if (!GetEntProp(entity,Prop_Data,"m_bShouldPatrol")) SetEntProp(entity,Prop_Data,"m_bShouldPatrol",1);
+				}
+			}
 			if (angs[1] > toang[1])
 			{
 				if ((angs[1]-toang[1] > 180) && (angs[1]-toang[1] < 220)) withinradius = false;
@@ -61,9 +83,17 @@ void assassinthink(int entity)
 				if (mdl != -1)
 				{
 					SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
-					DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+					if (StrEqual(cls,"monster_human_assassin",false))
+					{
+						DispatchKeyValue(mdl,"model","models/hassassin.mdl");
+						DispatchKeyValue(mdl,"DefaultAnim","grenadethrow");
+					}
+					else
+					{
+						DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+						DispatchKeyValue(mdl,"DefaultAnim","grenade");
+					}
 					DispatchKeyValue(mdl,"solid","0");
-					DispatchKeyValue(mdl,"DefaultAnim","grenade");
 					TeleportEntity(mdl,curorg,angs,NULL_VECTOR);
 					DispatchSpawn(mdl);
 					ActivateEntity(mdl);
@@ -115,9 +145,17 @@ void assassinthink(int entity)
 							if (mdl != -1)
 							{
 								SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
-								DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+								if (StrEqual(cls,"monster_human_assassin",false))
+								{
+									DispatchKeyValue(mdl,"model","models/hassassin.mdl");
+									DispatchKeyValue(mdl,"DefaultAnim","fly_up");
+								}
+								else
+								{
+									DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+									DispatchKeyValue(mdl,"DefaultAnim","Flip_all");
+								}
 								DispatchKeyValue(mdl,"solid","0");
-								DispatchKeyValue(mdl,"DefaultAnim","Flip_all");
 								TeleportEntity(mdl,curorg,angs,NULL_VECTOR);
 								DispatchSpawn(mdl);
 								ActivateEntity(mdl);
@@ -145,9 +183,17 @@ void assassinthink(int entity)
 							if (mdl != -1)
 							{
 								SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
-								DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+								if (StrEqual(cls,"monster_human_assassin",false))
+								{
+									DispatchKeyValue(mdl,"model","models/hassassin.mdl");
+									DispatchKeyValue(mdl,"DefaultAnim","jump");
+								}
+								else
+								{
+									DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+									DispatchKeyValue(mdl,"DefaultAnim","flip_L");
+								}
 								DispatchKeyValue(mdl,"solid","0");
-								DispatchKeyValue(mdl,"DefaultAnim","flip_L");
 								TeleportEntity(mdl,curorg,angs,NULL_VECTOR);
 								DispatchSpawn(mdl);
 								ActivateEntity(mdl);
@@ -176,9 +222,17 @@ void assassinthink(int entity)
 							if (mdl != -1)
 							{
 								SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
-								DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+								if (StrEqual(cls,"monster_human_assassin",false))
+								{
+									DispatchKeyValue(mdl,"model","models/hassassin.mdl");
+									DispatchKeyValue(mdl,"DefaultAnim","jump");
+								}
+								else
+								{
+									DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+									DispatchKeyValue(mdl,"DefaultAnim","flip_R");
+								}
 								DispatchKeyValue(mdl,"solid","0");
-								DispatchKeyValue(mdl,"DefaultAnim","flip_R");
 								TeleportEntity(mdl,curorg,angs,NULL_VECTOR);
 								DispatchSpawn(mdl);
 								ActivateEntity(mdl);
@@ -204,7 +258,7 @@ void assassinthink(int entity)
 					}
 				}
 			}
-			if ((seq == 22) && (centnextatk[entity] < Time))
+			if ((seq == kickseq) && (centnextatk[entity] < Time))
 			{
 				float damageForce[3];
 				damageForce[0]=10.0;
@@ -223,173 +277,226 @@ void assassinthink(int entity)
 				float lastenemy = GetEntPropFloat(entity,Prop_Data,"m_flLastEnemyTime");
 				if (lastsaw > lastenemy-1.0)
 				{
-					int randside = GetRandomInt(0,1);
-					if (randside == 0)
+					if (StrEqual(cls,"monster_human_assassin",false))
 					{
-						int findleft = GetEntPropEnt(entity,Prop_Data,"m_hEffectEntity");
-						if (findleft != -1)
+						int bulletmuzzle = CreateEntityByName("env_muzzleflash");
+						if (bulletmuzzle != -1)
 						{
-							if (HasEntProp(findleft,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(findleft,Prop_Data,"m_vecAbsOrigin",curorg);
-							else if (HasEntProp(findleft,Prop_Send,"m_vecOrigin")) GetEntPropVector(findleft,Prop_Send,"m_vecOrigin",curorg);
-							if (HasEntProp(findleft,Prop_Data,"m_angAbsRotation")) GetEntPropVector(findleft,Prop_Data,"m_angAbsRotation",angs);
-							//int spitball = CreateEntityByName("prop_physics");
-							//if (spitball != -1)
-							//{
+							DispatchKeyValue(bulletmuzzle,"scale","0.5");
+							DispatchSpawn(bulletmuzzle);
+							ActivateEntity(bulletmuzzle);
+							SetVariantString("!activator");
+							AcceptEntityInput(bulletmuzzle,"SetParent",entity);
+							SetVariantString("0");
+							AcceptEntityInput(bulletmuzzle,"SetParentAttachment");
+							AcceptEntityInput(bulletmuzzle,"Fire");
+							Handle dp = CreateDataPack();
+							WritePackCell(dp,bulletmuzzle);
+							WritePackString(dp,"env_muzzleflash");
+							CreateTimer(0.2,cleanup,dp,TIMER_FLAG_NO_MAPCHANGE);
+							if (HasEntProp(bulletmuzzle,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(bulletmuzzle,Prop_Data,"m_vecAbsOrigin",curorg);
+							else if (HasEntProp(bulletmuzzle,Prop_Send,"m_vecOrigin")) GetEntPropVector(bulletmuzzle,Prop_Send,"m_vecOrigin",curorg);
+							if (HasEntProp(bulletmuzzle,Prop_Data,"m_angAbsRotation")) GetEntPropVector(bulletmuzzle,Prop_Data,"m_angAbsRotation",angs);
 							float loc[3];
 							loc[0] = (curorg[0] + (20 * Cosine(DegToRad(angs[1]))));
 							loc[1] = (curorg[1] + (20 * Sine(DegToRad(angs[1]))));
 							loc[2] = curorg[2] + 1.0;
-							/*
-							ScaleVector(shootvel,3.0);
-							DispatchKeyValue(spitball,"model","models/props_junk/popcan01a.mdl");
-							DispatchSpawn(spitball);
-							ActivateEntity(spitball);
-							if (!IsModelPrecached("models/weapons/rifleshell.mdl")) PrecacheModel("models/weapons/rifleshell.mdl",true);
-							SetEntityModel(spitball,"models/weapons/rifleshell.mdl");
-							SetEntityMoveType(spitball,MOVETYPE_FLY);
-							SDKHook(spitball, SDKHook_StartTouch, StartTouchBullet);
-							TeleportEntity(spitball,loc,angs,shootvel);
-							Handle dp = CreateDataPack();
-							WritePackCell(dp,spitball);
-							WritePackString(dp,"prop_physics");
-							CreateTimer(0.5,cleanup,dp,TIMER_FLAG_NO_MAPCHANGE);
-							*/
 							NPCShootBullet(entity,"weapon_glock",loc,toang,0.5);
-							int bulletmuzzle = GetEntPropEnt(findleft,Prop_Data,"m_hEffectEntity");
-							if (bulletmuzzle == -1)
-							{
-								bulletmuzzle = CreateEntityByName("env_muzzleflash");
-								if (bulletmuzzle != -1)
-								{
-									DispatchKeyValue(bulletmuzzle,"scale","0.5");
-									DispatchSpawn(bulletmuzzle);
-									ActivateEntity(bulletmuzzle);
-									SetVariantString("!activator");
-									AcceptEntityInput(bulletmuzzle,"SetParent",findleft);
-									SetVariantString("muzzle");
-									AcceptEntityInput(bulletmuzzle,"SetParentAttachment");
-									SetEntPropEnt(findleft,Prop_Data,"m_hEffectEntity",bulletmuzzle);
-									AcceptEntityInput(bulletmuzzle,"Fire");
-								}
-							}
-							else
-							{
-								AcceptEntityInput(bulletmuzzle,"Fire");
-							}
-							int rand = GetRandomInt(1,2);
-							switch(rand)
-							{
-								case 1:
-								{
-									char snd[64];
-									Format(snd,sizeof(snd),"weapons\\glock\\single.wav");
-									EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
-								}
-								case 2:
-								{
-									char snd[64];
-									Format(snd,sizeof(snd),"weapons\\glock\\single_npc.wav");
-									EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
-								}
-							}
-							centnextatk[entity] = Time+0.2;
-							if (timesattacked[entity] > 10)
-							{
-								centnextatk[entity] = Time+5.0;
-								timesattacked[entity] = 0;
-								rand = GetRandomInt(1,2);
-								switch(rand)
-								{
-									case 1:
-									{
-										char snd[64];
-										Format(snd,sizeof(snd),"weapons\\glock\\reload.wav");
-										EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
-									}
-									case 2:
-									{
-										char snd[64];
-										Format(snd,sizeof(snd),"weapons\\glock\\reload_npc.wav");
-										EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
-									}
-								}
-							}
-							else timesattacked[entity]++;
 						}
+						int rand = GetRandomInt(1,2);
+						switch(rand)
+						{
+							case 1:
+							{
+								char snd[64];
+								Format(snd,sizeof(snd),"weapons\\pl_gun1.wav");
+								EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
+							}
+							case 2:
+							{
+								char snd[64];
+								Format(snd,sizeof(snd),"weapons\\pl_gun2.wav");
+								EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
+							}
+						}
+						centnextatk[entity] = Time+0.2;
+						if (timesattacked[entity] > 10)
+						{
+							centnextatk[entity] = Time+5.0;
+							timesattacked[entity] = 0;
+						}
+						else timesattacked[entity]++;
 					}
 					else
 					{
-						int findright = GetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity");
-						if (findright != -1)
+						int randside = GetRandomInt(0,1);
+						if (randside == 0)
 						{
-							if (HasEntProp(findright,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(findright,Prop_Data,"m_vecAbsOrigin",curorg);
-							else if (HasEntProp(findright,Prop_Send,"m_vecOrigin")) GetEntPropVector(findright,Prop_Send,"m_vecOrigin",curorg);
-							if (HasEntProp(findright,Prop_Data,"m_angAbsRotation")) GetEntPropVector(findright,Prop_Data,"m_angAbsRotation",angs);
-							float loc[3];
-							loc[0] = (curorg[0] + (20 * Cosine(DegToRad(angs[1]))));
-							loc[1] = (curorg[1] + (20 * Sine(DegToRad(angs[1]))));
-							loc[2] = curorg[2] + 1.0;
-							NPCShootBullet(entity,"weapon_glock",loc,toang,0.5);
-							int bulletmuzzle = GetEntPropEnt(findright,Prop_Data,"m_hEffectEntity");
-							if (bulletmuzzle == -1)
+							int findleft = GetEntPropEnt(entity,Prop_Data,"m_hEffectEntity");
+							if (findleft != -1)
 							{
-								bulletmuzzle = CreateEntityByName("env_muzzleflash");
-								if (bulletmuzzle != -1)
+								if (HasEntProp(findleft,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(findleft,Prop_Data,"m_vecAbsOrigin",curorg);
+								else if (HasEntProp(findleft,Prop_Send,"m_vecOrigin")) GetEntPropVector(findleft,Prop_Send,"m_vecOrigin",curorg);
+								if (HasEntProp(findleft,Prop_Data,"m_angAbsRotation")) GetEntPropVector(findleft,Prop_Data,"m_angAbsRotation",angs);
+								//int spitball = CreateEntityByName("prop_physics");
+								//if (spitball != -1)
+								//{
+								float loc[3];
+								loc[0] = (curorg[0] + (20 * Cosine(DegToRad(angs[1]))));
+								loc[1] = (curorg[1] + (20 * Sine(DegToRad(angs[1]))));
+								loc[2] = curorg[2] + 1.0;
+								/*
+								ScaleVector(shootvel,3.0);
+								DispatchKeyValue(spitball,"model","models/props_junk/popcan01a.mdl");
+								DispatchSpawn(spitball);
+								ActivateEntity(spitball);
+								if (!IsModelPrecached("models/weapons/rifleshell.mdl")) PrecacheModel("models/weapons/rifleshell.mdl",true);
+								SetEntityModel(spitball,"models/weapons/rifleshell.mdl");
+								SetEntityMoveType(spitball,MOVETYPE_FLY);
+								SDKHook(spitball, SDKHook_StartTouch, StartTouchBullet);
+								TeleportEntity(spitball,loc,angs,shootvel);
+								Handle dp = CreateDataPack();
+								WritePackCell(dp,spitball);
+								WritePackString(dp,"prop_physics");
+								CreateTimer(0.5,cleanup,dp,TIMER_FLAG_NO_MAPCHANGE);
+								*/
+								NPCShootBullet(entity,"weapon_glock",loc,toang,0.5);
+								int bulletmuzzle = GetEntPropEnt(findleft,Prop_Data,"m_hEffectEntity");
+								if (bulletmuzzle == -1)
 								{
-									DispatchKeyValue(bulletmuzzle,"scale","0.5");
-									DispatchSpawn(bulletmuzzle);
-									ActivateEntity(bulletmuzzle);
-									SetVariantString("!activator");
-									AcceptEntityInput(bulletmuzzle,"SetParent",findright);
-									SetVariantString("muzzle");
-									AcceptEntityInput(bulletmuzzle,"SetParentAttachment");
-									SetEntPropEnt(findright,Prop_Data,"m_hEffectEntity",bulletmuzzle);
+									bulletmuzzle = CreateEntityByName("env_muzzleflash");
+									if (bulletmuzzle != -1)
+									{
+										DispatchKeyValue(bulletmuzzle,"scale","0.5");
+										DispatchSpawn(bulletmuzzle);
+										ActivateEntity(bulletmuzzle);
+										SetVariantString("!activator");
+										AcceptEntityInput(bulletmuzzle,"SetParent",findleft);
+										SetVariantString("muzzle");
+										AcceptEntityInput(bulletmuzzle,"SetParentAttachment");
+										SetEntPropEnt(findleft,Prop_Data,"m_hEffectEntity",bulletmuzzle);
+										AcceptEntityInput(bulletmuzzle,"Fire");
+									}
+								}
+								else
+								{
 									AcceptEntityInput(bulletmuzzle,"Fire");
 								}
-							}
-							else
-							{
-								AcceptEntityInput(bulletmuzzle,"Fire");
-							}
-							int rand = GetRandomInt(1,2);
-							switch(rand)
-							{
-								case 1:
-								{
-									char snd[64];
-									Format(snd,sizeof(snd),"weapons\\glock\\single.wav");
-									EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
-								}
-								case 2:
-								{
-									char snd[64];
-									Format(snd,sizeof(snd),"weapons\\glock\\single_npc.wav");
-									EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
-								}
-							}
-							centnextatk[entity] = Time+0.2;
-							if (timesattacked[entity] > 10)
-							{
-								centnextatk[entity] = Time+5.0;
-								timesattacked[entity] = 0;
-								rand = GetRandomInt(1,2);
+								int rand = GetRandomInt(1,2);
 								switch(rand)
 								{
 									case 1:
 									{
 										char snd[64];
-										Format(snd,sizeof(snd),"weapons\\glock\\reload.wav");
-										EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+										Format(snd,sizeof(snd),"weapons\\glock\\single.wav");
+										EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
 									}
 									case 2:
 									{
 										char snd[64];
-										Format(snd,sizeof(snd),"weapons\\glock\\reload_npc.wav");
-										EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+										Format(snd,sizeof(snd),"weapons\\glock\\single_npc.wav");
+										EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
 									}
 								}
+								centnextatk[entity] = Time+0.2;
+								if (timesattacked[entity] > 10)
+								{
+									centnextatk[entity] = Time+5.0;
+									timesattacked[entity] = 0;
+									rand = GetRandomInt(1,2);
+									switch(rand)
+									{
+										case 1:
+										{
+											char snd[64];
+											Format(snd,sizeof(snd),"weapons\\glock\\reload.wav");
+											EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+										}
+										case 2:
+										{
+											char snd[64];
+											Format(snd,sizeof(snd),"weapons\\glock\\reload_npc.wav");
+											EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+										}
+									}
+								}
+								else timesattacked[entity]++;
 							}
-							else timesattacked[entity]++;
+						}
+						else
+						{
+							int findright = GetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity");
+							if (findright != -1)
+							{
+								if (HasEntProp(findright,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(findright,Prop_Data,"m_vecAbsOrigin",curorg);
+								else if (HasEntProp(findright,Prop_Send,"m_vecOrigin")) GetEntPropVector(findright,Prop_Send,"m_vecOrigin",curorg);
+								if (HasEntProp(findright,Prop_Data,"m_angAbsRotation")) GetEntPropVector(findright,Prop_Data,"m_angAbsRotation",angs);
+								float loc[3];
+								loc[0] = (curorg[0] + (20 * Cosine(DegToRad(angs[1]))));
+								loc[1] = (curorg[1] + (20 * Sine(DegToRad(angs[1]))));
+								loc[2] = curorg[2] + 1.0;
+								NPCShootBullet(entity,"weapon_glock",loc,toang,0.5);
+								int bulletmuzzle = GetEntPropEnt(findright,Prop_Data,"m_hEffectEntity");
+								if (bulletmuzzle == -1)
+								{
+									bulletmuzzle = CreateEntityByName("env_muzzleflash");
+									if (bulletmuzzle != -1)
+									{
+										DispatchKeyValue(bulletmuzzle,"scale","0.5");
+										DispatchSpawn(bulletmuzzle);
+										ActivateEntity(bulletmuzzle);
+										SetVariantString("!activator");
+										AcceptEntityInput(bulletmuzzle,"SetParent",findright);
+										SetVariantString("muzzle");
+										AcceptEntityInput(bulletmuzzle,"SetParentAttachment");
+										SetEntPropEnt(findright,Prop_Data,"m_hEffectEntity",bulletmuzzle);
+										AcceptEntityInput(bulletmuzzle,"Fire");
+									}
+								}
+								else
+								{
+									AcceptEntityInput(bulletmuzzle,"Fire");
+								}
+								int rand = GetRandomInt(1,2);
+								switch(rand)
+								{
+									case 1:
+									{
+										char snd[64];
+										Format(snd,sizeof(snd),"weapons\\glock\\single.wav");
+										EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
+									}
+									case 2:
+									{
+										char snd[64];
+										Format(snd,sizeof(snd),"weapons\\glock\\single_npc.wav");
+										EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
+									}
+								}
+								centnextatk[entity] = Time+0.2;
+								if (timesattacked[entity] > 10)
+								{
+									centnextatk[entity] = Time+5.0;
+									timesattacked[entity] = 0;
+									rand = GetRandomInt(1,2);
+									switch(rand)
+									{
+										case 1:
+										{
+											char snd[64];
+											Format(snd,sizeof(snd),"weapons\\glock\\reload.wav");
+											EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+										}
+										case 2:
+										{
+											char snd[64];
+											Format(snd,sizeof(snd),"weapons\\glock\\reload_npc.wav");
+											EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+										}
+									}
+								}
+								else timesattacked[entity]++;
+							}
 						}
 					}
 				}
@@ -404,14 +511,26 @@ public Action assassintkdmg(victim, &attacker, &inflictor, &Float:damage, &damag
 	{
 		if (HasEntProp(victim,Prop_Data,"m_iHealth"))
 		{
+			char cls[32];
+			GetEntityClassname(victim,cls,sizeof(cls));
 			int curh = GetEntProp(victim,Prop_Data,"m_iHealth");
 			float Time = GetTickedTime();
 			if (damage > curh)
 			{
 				char snd[64];
 				int randdeath = GetRandomInt(1,6);
-				Format(snd,sizeof(snd),"npc\\assassin\\death0%i.wav",randdeath);
-				EmitSoundToAll(snd, victim, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+				if (StrEqual(cls,"monster_human_assassin",false))
+				{
+					randdeath = GetRandomInt(1,4);
+					Format(snd,sizeof(snd),"common\\bodydrop%i.wav",randdeath);
+					if (FileExists(snd,true,NULL_STRING))
+						EmitSoundToAll(snd, victim, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+				}
+				else
+				{
+					Format(snd,sizeof(snd),"npc\\assassin\\death0%i.wav",randdeath);
+					EmitSoundToAll(snd, victim, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+				}
 			}
 			else if ((damage > 1) && (centnextsndtime[victim] < Time))
 			{
@@ -444,9 +563,17 @@ public Action assassintkdmg(victim, &attacker, &inflictor, &Float:damage, &damag
 							if (mdl != -1)
 							{
 								SetEntProp(victim,Prop_Data,"m_nRenderFX",6);
-								DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+								if (StrEqual(cls,"monster_human_assassin",false))
+								{
+									DispatchKeyValue(mdl,"model","models/hassassin.mdl");
+									DispatchKeyValue(mdl,"DefaultAnim","jump");
+								}
+								else
+								{
+									DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+									DispatchKeyValue(mdl,"DefaultAnim","Flip_all");
+								}
 								DispatchKeyValue(mdl,"solid","0");
-								DispatchKeyValue(mdl,"DefaultAnim","Flip_all");
 								TeleportEntity(mdl,curorg,angs,NULL_VECTOR);
 								DispatchSpawn(mdl);
 								ActivateEntity(mdl);
@@ -474,9 +601,17 @@ public Action assassintkdmg(victim, &attacker, &inflictor, &Float:damage, &damag
 							if (mdl != -1)
 							{
 								SetEntProp(victim,Prop_Data,"m_nRenderFX",6);
-								DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+								if (StrEqual(cls,"monster_human_assassin",false))
+								{
+									DispatchKeyValue(mdl,"model","models/hassassin.mdl");
+									DispatchKeyValue(mdl,"DefaultAnim","jump");
+								}
+								else
+								{
+									DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+									DispatchKeyValue(mdl,"DefaultAnim","flip_L");
+								}
 								DispatchKeyValue(mdl,"solid","0");
-								DispatchKeyValue(mdl,"DefaultAnim","flip_L");
 								TeleportEntity(mdl,curorg,angs,NULL_VECTOR);
 								DispatchSpawn(mdl);
 								ActivateEntity(mdl);
@@ -505,9 +640,17 @@ public Action assassintkdmg(victim, &attacker, &inflictor, &Float:damage, &damag
 							if (mdl != -1)
 							{
 								SetEntProp(victim,Prop_Data,"m_nRenderFX",6);
-								DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+								if (StrEqual(cls,"monster_human_assassin",false))
+								{
+									DispatchKeyValue(mdl,"model","models/hassassin.mdl");
+									DispatchKeyValue(mdl,"DefaultAnim","jump");
+								}
+								else
+								{
+									DispatchKeyValue(mdl,"model","models/humans/hassassin.mdl");
+									DispatchKeyValue(mdl,"DefaultAnim","flip_R");
+								}
 								DispatchKeyValue(mdl,"solid","0");
-								DispatchKeyValue(mdl,"DefaultAnim","flip_R");
 								TeleportEntity(mdl,curorg,angs,NULL_VECTOR);
 								DispatchSpawn(mdl);
 								ActivateEntity(mdl);
