@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9996"
-			"Previous"	"1.9995"
+			"Latest"  	"1.9997"
+			"Previous"	"1.9996"
 		}
 		
-		"Notes"	"Added CVar sm_playertriggerapply which will create additional vehicle spawns when connected players are above that number default 20."
+		"Notes"	"Added CVar sm_antlionhardmode which will create a poison cloud and fixes the summon counter for additional antlions. Added game_countdown_timer. Added monster_human_assassin."
 	}
 	
 	"Files"
