@@ -47,7 +47,7 @@ bool hasread = false;
 bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
 
-#define PLUGIN_VERSION "1.9993"
+#define PLUGIN_VERSION "1.9994"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2210,6 +2210,136 @@ void FindSaveTPHooks()
 
 public Action rehooksaves(Handle timer)
 {
+	//fix non-initialized cvars
+	DefaultCVarCheck("sk_zombie_soldier_health",100);
+	DefaultCVarCheck("sk_antlion_air_attack_dmg",10);
+	DefaultCVarCheck("sk_antlion_worker_spit_speed",600);
+	DefaultCVarCheck("sk_antlion_worker_health",60);
+	DefaultCVarCheck("sk_vortigaunt_armor_charge",15);
+	DefaultCVarCheck("sk_vortigaunt_armor_charge_per_token",5);
+	DefaultCVarCheck("sk_vortigaunt_dmg_zap",25);
+	DefaultCVarCheck("sk_headcrab_poison_npc_damage",20);
+	DefaultCVarCheck("sk_advisor_health",1000);
+	DefaultCVarCheck("sk_barnacle_health",35);
+	DefaultCVarCheck("sk_barney_health",35);
+	DefaultCVarCheck("sk_bullseye_health",35);
+	DefaultCVarCheck("sk_citizen_health",40);
+	DefaultCVarCheck("sk_combine_s_health",50);
+	DefaultCVarCheck("sk_combine_s_kick",10);
+	DefaultCVarCheck("sk_combine_guard_health",70);
+	DefaultCVarCheck("sk_combine_guard_kick",15);
+	DefaultCVarCheck("sk_strider_health",350);
+	DefaultCVarCheck("sk_headcrab_health",10);
+	DefaultCVarCheck("sk_headcrab_melee_dmg",5);
+	DefaultCVarCheck("sk_headcrab_fast_health",10);
+	DefaultCVarCheck("sk_headcrab_poison_health",35);
+	DefaultCVarCheck("sk_manhack_health",25);
+	DefaultCVarCheck("sk_manhack_melee_dmg",20);
+	DefaultCVarCheck("sk_metropolice_health",40);
+	DefaultCVarCheck("sk_metropolice_stitch_reaction",1);
+	DefaultCVarCheck("sk_metropolice_stitch_tight_hitcount",2);
+	DefaultCVarCheck("sk_metropolice_stitch_at_hitcount",1);
+	DefaultCVarCheck("sk_metropolice_stitch_behind_hitcount",3);
+	DefaultCVarCheck("sk_metropolice_stitch_along_hitcount",2);
+	DefaultCVarCheck("sk_rollermine_shock",10);
+	DefaultCVarCheck("sk_rollermine_stun_delay",3);
+	DefaultCVarCheck("sk_rollermine_vehicle_intercept",1);
+	DefaultCVarCheck("sk_scanner_health",30);
+	DefaultCVarCheck("sk_scanner_dmg_dive",25);
+	DefaultCVarCheck("sk_stalker_health",50);
+	DefaultCVarCheck("sk_stalker_melee_dmg",5);
+	DefaultCVarCheck("sk_vortigaunt_health",100);
+	DefaultCVarCheck("sk_vortigaunt_dmg_claw",10);
+	DefaultCVarCheck("sk_vortigaunt_dmg_rake",25);
+	DefaultCVarCheck("sk_zombie_health",50);
+	DefaultCVarCheck("sk_zombie_dmg_one_slash",10);
+	DefaultCVarCheck("sk_zombie_dmg_both_slash",25);
+	DefaultCVarCheck("sk_zombie_poison_health",175);
+	DefaultCVarCheck("sk_zombie_poison_dmg_spit",20);
+	DefaultCVarCheck("sk_antlion_health",30);
+	DefaultCVarCheck("sk_antlion_swipe_damage",5);
+	DefaultCVarCheck("sk_antlion_jump_damage",5);
+	DefaultCVarCheck("sk_antlionguard_health",500);
+	DefaultCVarCheck("sk_antlionguard_dmg_charge",20);
+	DefaultCVarCheck("sk_antlionguard_dmg_shove",10);
+	DefaultCVarCheck("sk_antliongrub_health",5);
+	DefaultCVarCheck("sk_ichthyosaur_health",200);
+	DefaultCVarCheck("sk_ichthyosaur_melee_dmg",8);
+	DefaultCVarCheck("sk_gunship_burst_size",15);
+	DefaultCVarCheck("sk_gunship_health_increments",5);
+	DefaultCVarCheck("sk_npc_dmg_gunship",40);
+	DefaultCVarCheck("sk_npc_dmg_gunship_to_plr",3);
+	DefaultCVarCheck("sk_npc_dmg_helicopter",6);
+	DefaultCVarCheck("sk_npc_dmg_helicopter_to_plr",3);
+	DefaultCVarCheck("sk_helicopter_grenadedamage",30);
+	DefaultCVarCheck("sk_helicopter_grenaderadius",275);
+	DefaultCVarCheck("sk_helicopter_grenadeforce",55000);
+	DefaultCVarCheck("sk_npc_dmg_dropship",2);
+	DefaultCVarCheck("sk_apc_health",750);
+	DefaultCVarCheck("sk_plr_dmg_ar2",8);
+	DefaultCVarCheck("sk_npc_dmg_ar2",3);
+	DefaultCVarCheck("sk_max_ar2",60);
+	DefaultCVarCheck("sk_max_ar2_altfire",3);
+	DefaultCVarCheck("sk_plr_dmg_pistol",5);
+	DefaultCVarCheck("sk_npc_dmg_pistol",3);
+	DefaultCVarCheck("sk_max_pistol",150);
+	DefaultCVarCheck("sk_plr_dmg_smg1",4);
+	DefaultCVarCheck("sk_npc_dmg_smg1",3);
+	DefaultCVarCheck("sk_max_smg1",225);
+	DefaultCVarCheck("sk_plr_dmg_buckshot",8);
+	DefaultCVarCheck("sk_npc_dmg_buckshot",3);
+	DefaultCVarCheck("sk_max_buckshot",30);
+	DefaultCVarCheck("sk_plr_dmg_rpg_round",100);
+	DefaultCVarCheck("sk_npc_dmg_rpg_round",50);
+	DefaultCVarCheck("sk_max_rpg_round",3);
+	DefaultCVarCheck("sk_plr_dmg_smg1_grenade",100);
+	DefaultCVarCheck("sk_npc_dmg_smg1_grenade",50);
+	DefaultCVarCheck("sk_max_smg1_grenade",3);
+	DefaultCVarCheck("sk_smg1_grenade_radius",250);
+	DefaultCVarCheck("sk_plr_dmg_357",40);
+	DefaultCVarCheck("sk_npc_dmg_357",30);
+	DefaultCVarCheck("sk_max_357",12);
+	DefaultCVarCheck("sk_plr_dmg_crossbow",100);
+	DefaultCVarCheck("sk_npc_dmg_crossbow",10);
+	DefaultCVarCheck("sk_max_crossbow",10);
+	DefaultCVarCheck("sk_plr_dmg_airboat",3);
+	DefaultCVarCheck("sk_npc_dmg_airboat",3);
+	DefaultCVarCheck("sk_plr_dmg_grenade",150);
+	DefaultCVarCheck("sk_npc_dmg_grenade",75);
+	DefaultCVarCheck("sk_max_grenade",5);
+	DefaultCVarCheck("sk_plr_dmg_crowbar",10);
+	DefaultCVarCheck("sk_npc_dmg_crowbar",5);
+	DefaultCVarCheck("sk_plr_dmg_stunstick",10);
+	DefaultCVarCheck("sk_npc_dmg_stunstick",40);
+	DefaultCVarCheck("sk_plr_dmg_satchel",150);
+	DefaultCVarCheck("sk_npc_dmg_satchel",75);
+	DefaultCVarCheck("sk_satchel_radius",150);
+	DefaultCVarCheck("sk_dmg_energy_grenade",2);
+	DefaultCVarCheck("sk_energy_grenade_radius",100);
+	DefaultCVarCheck("sk_dmg_homer_grenade",20);
+	DefaultCVarCheck("sk_homer_grenade_radius",100);
+	DefaultCVarCheck("sk_dmg_spit_grenade",5);
+	DefaultCVarCheck("sk_spit_grenade_radius",50);
+	DefaultCVarCheck("sk_plr_dmg_fraggrenade",125);
+	DefaultCVarCheck("sk_npc_dmg_fraggrenade",75);
+	DefaultCVarCheck("sk_fraggrenade_radius",250);
+	DefaultCVarCheck("sk_battery",15);
+	DefaultCVarCheck("sk_healthcharger",50);
+	DefaultCVarCheck("sk_healthkit",25);
+	DefaultCVarCheck("sk_healthvial",10);
+	DefaultCVarCheck("sk_suitcharger",75);
+	DefaultCVarCheck("sk_suitcharger_citadel",500);
+	DefaultCVarCheck("sk_suitcharger_citadel_maxarmor",200);
+	DefaultCVarCheck("sk_npc_head",3);
+	DefaultCVarCheck("sk_npc_chest",1);
+	DefaultCVarCheck("sk_npc_stomach",1);
+	DefaultCVarCheck("sk_npc_arm",1);
+	DefaultCVarCheck("sk_npc_leg",1);
+	DefaultCVarCheck("sk_player_head",3);
+	DefaultCVarCheck("sk_player_chest",1);
+	DefaultCVarCheck("sk_player_stomach",1);
+	DefaultCVarCheck("sk_player_arm",1);
+	DefaultCVarCheck("sk_player_leg",1);
 	int weapres = CreateEntityByName("game_weapon_manager");
 	if (weapres != -1)
 	{
@@ -2308,6 +2438,16 @@ public Action rehooksaves(Handle timer)
 	}
 	findsavetrigs(-1,"trigger_autosave");
 	readoutputsforinputs();
+}
+
+void DefaultCVarCheck(char[] cvarname, int defaultvalue)
+{
+	Handle cvar = FindConVar(cvarname);
+	if (cvar != INVALID_HANDLE)
+	{
+		if (GetConVarInt(cvar) == 0) SetConVarInt(cvar,defaultvalue,false,false);
+	}
+	CloseHandle(cvar);
 }
 
 public Action findsavetrigs(int ent, char[] clsname)
