@@ -86,8 +86,9 @@ bool weapmanagersplaced = false;
 bool mapchanging = false;
 bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
+bool antlionguardhard = false;
 
-#define PLUGIN_VERSION "1.9996"
+#define PLUGIN_VERSION "1.9997"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -197,6 +198,19 @@ public void OnPluginStart()
 		cvar = CreateConVar("sm_playertriggerapply", "20", "Set player trigger amount for map adjustments such as additional vehicle spawns. 0 disables.", _, true, 0.0, true, 128.0);
 		playercapadj = GetConVarInt(cvar);
 		HookConVarChange(cvar, plytrigch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("sm_antlionhardmode");
+	if (cvar != INVALID_HANDLE)
+	{
+		antlionguardhard = GetConVarBool(cvar);
+		HookConVarChange(cvar, antliongch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_antlionhardmode", "0", "Enables hard mode for antlion guards.", _, true, 0.0, true, 1.0);
+		antlionguardhard = GetConVarBool(cvar);
+		HookConVarChange(cvar, antliongch);
 	}
 	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
@@ -761,6 +775,7 @@ public void OnMapStart()
 		PushArrayString(customentlist,"monster_barnacle");
 		PushArrayString(customentlist,"monster_alien_grunt");
 		PushArrayString(customentlist,"monster_gargantua");
+		PushArrayString(customentlist,"monster_human_assassin");
 		PushArrayString(customentlist,"prop_train_awesome");
 		PushArrayString(customentlist,"prop_train_apprehension");
 		PushArrayString(customentlist,"item_weapon_tripmine");
@@ -835,6 +850,7 @@ public void OnMapStart()
 		PushArrayString(customentlist,"weapon_scripted");
 		PushArrayString(customentlist,"logic_merchant_relay");
 		PushArrayString(customentlist,"npc_merchant");
+		PushArrayString(customentlist,"game_countdown_timer");
 		if ((!autorebuild) && (!rebuildentsset)) CreateTimer(0.1,rehooksaves);
 		if ((rebuildentsset) && (!customents))
 		{
@@ -1419,7 +1435,6 @@ public void OnClientPutInServer(int client)
 						SetupVehicleSpawn(ent,loc,angs);
 						continue;
 					}
-					//asfasf
 				}
 			}
 		}
@@ -3471,6 +3486,32 @@ void findpts(char[] targn, float delay)
 			}
 		}
 	}
+	if (GetArraySize(temparr) < 1)
+	{
+		Handle nextarrchk = CreateArray(128);
+		FindAllByClassname(nextarrchk,-1,"env_entity_maker");
+		if (GetArraySize(nextarrchk) > 0)
+		{
+			for (int j = 0;j<GetArraySize(nextarrchk);j++)
+			{
+				int i = GetArrayCell(nextarrchk,j);
+				if (IsValidEntity(i))
+				{
+					char tmpname[64];
+					char tmpchild[64];
+					if (HasEntProp(i,Prop_Data,"m_iName")) GetEntPropString(i,Prop_Data,"m_iName",tmpname,sizeof(tmpname));
+					if (HasEntProp(i,Prop_Data,"m_iszTemplate")) GetEntPropString(i,Prop_Data,"m_iszTemplate",tmpchild,sizeof(tmpchild));
+					ReplaceStringEx(tmpchild,sizeof(tmpchild),"pttemplate","");
+					//PrintToServer("Template named %s %s",tmpname,tmpchild);
+					if ((StrEqual(tmpname,targn,false)) || (StrEqual(tmpchild,targn,false)))
+					{
+						PushArrayCell(temparr,i);
+					}
+				}
+			}
+		}
+		CloseHandle(nextarrchk);
+	}
 	if ((GetArraySize(templatetargs) > 0) && (GetArraySize(temparr) > 0))
 	{
 		for (int i = 0;i<GetArraySize(temparr);i++)
@@ -3479,7 +3520,58 @@ void findpts(char[] targn, float delay)
 			char clschk[24];
 			GetEntityClassname(templateent,clschk,sizeof(clschk));
 			//PrintToServer("PT %i %s",templateent,clschk);
-			if (StrEqual(clschk,"point_template"))
+			if (StrEqual(clschk,"env_entity_maker",false))
+			{
+				char tmpchild[128];
+				if (HasEntProp(templateent,Prop_Data,"m_iszTemplate")) GetEntPropString(templateent,Prop_Data,"m_iszTemplate",tmpchild,sizeof(tmpchild));
+				Handle alltargs = CreateArray(64);
+				SearchForAllByTargetname(tmpchild,alltargs);
+				if (GetArraySize(alltargs) > 0)
+				{
+					for (int k = 0;k<GetArraySize(alltargs);k++)
+					{
+						int ptent = GetArrayCell(alltargs,k);
+						if (IsValidEntity(ptent))
+						{
+							char tmpchk[32];
+							for (int j = 0;j<16;j++)
+							{
+								Format(tmpchk,sizeof(tmpchk),"m_iszTemplateEntityNames[%i]",j);
+								if (HasEntProp(ptent,Prop_Data,tmpchk))
+								{
+									char templatename[32];
+									GetEntPropString(ptent,Prop_Data,tmpchk,templatename,sizeof(templatename));
+									if (strlen(templatename) > 0)
+									{
+										int find = FindStringInArray(templatetargs,templatename);
+										if (find != -1)
+										{
+											if (debuglvl >= 2) PrintToServer("point_template spawn custom ent %s",templatename);
+											Handle dp = GetArrayCell(templateents,find);
+											if (delay > 0.01)
+											{
+												Handle dppass = CreateDataPack();
+												WritePackCell(dppass,templateent);
+												WritePackCell(dppass,dp);
+												CreateTimer(delay,restoreentdp,dppass,TIMER_FLAG_NO_MAPCHANGE);
+												CreateTimer(delay,restoreentfire,ptent,TIMER_FLAG_NO_MAPCHANGE);
+											}
+											else
+											{
+												restoreentarr(dp,templateent,true);
+												//RemoveFromArray(templateents,find);
+												//RemoveFromArray(templatetargs,find);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				CloseHandle(alltargs);
+			}
+			else if (StrEqual(clschk,"point_template"))
 			{
 				char tmpchk[32];
 				for (int j = 0;j<16;j++)
@@ -3855,6 +3947,9 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 				readoutputstp(caller,targn,tmpout,"Disable",origin,actmod);
 				readoutputstp(caller,targn,tmpout,"CounterEntity",origin,actmod);
 				readoutputstp(caller,targn,tmpout,"ApplyScore",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"SetTimerLabel",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"StartTimer",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"StopTimer",origin,actmod);
 			}
 			readoutputstp(caller,targn,tmpout,"SetMass",origin,actmod);
 			readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
@@ -3887,6 +3982,9 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 				readoutputstp(caller,targn,tmpout,"Disable",origin,actmod);
 				readoutputstp(caller,targn,tmpout,"CounterEntity",origin,actmod);
 				readoutputstp(caller,targn,tmpout,"ApplyScore",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"SetTimerLabel",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"StartTimer",origin,actmod);
+				readoutputstp(caller,targn,tmpout,"StopTimer",origin,actmod);
 			}
 			readoutputstp(caller,targn,tmpout,"SetMass",origin,actmod);
 			readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
@@ -4959,6 +5057,12 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						PushArrayString(passedarr,"model");
 						PushArrayString(passedarr,"models/humans/hassassin.mdl");
 					}
+					else if (StrEqual(cls,"monster_human_assassin",false))
+					{
+						Format(cls,sizeof(cls),"npc_combine_s");
+						PushArrayString(passedarr,"model");
+						PushArrayString(passedarr,"models/hassassin.mdl");
+					}
 					else if (StrEqual(cls,"npc_assassin",false))
 					{
 						Format(cls,sizeof(cls),"npc_combine_s");
@@ -4970,8 +5074,10 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						Format(cls,sizeof(cls),"npc_citizen");
 						PushArrayString(passedarr,"model");
 						PushArrayString(passedarr,"models/_characters/odell.mdl");
-						dp = CreateDataPack();
-						WritePackString(dp,"models/_characters/odell.mdl");
+						PushArrayString(passedarr,"CitizenType");
+						PushArrayString(passedarr,"4");
+						//dp = CreateDataPack();
+						//WritePackString(dp,"models/_characters/odell.mdl");
 					}
 					else if (StrEqual(cls,"npc_osprey",false))
 					{
@@ -5664,6 +5770,19 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					else if (StrEqual(cls,"logic_merchant_relay",false))
 					{
 						Format(cls,sizeof(cls),"logic_relay");
+					}
+					else if (StrEqual(cls,"game_countdown_timer",false))
+					{
+						Format(cls,sizeof(cls),"hud_timer");
+						int find = FindStringInArray(passedarr,"classname");
+						if (find != -1)
+						{
+							RemoveFromArray(passedarr,find);
+							find++;
+							RemoveFromArray(passedarr,find);
+						}
+						PushArrayString(passedarr,"TimerType");
+						PushArrayString(passedarr,"1");
 					}
 					else if (StrEqual(cls,"npc_merchant",false))
 					{
@@ -6704,6 +6823,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						GetEntPropString(ent,Prop_Data,"m_ModelName",mdlchk,sizeof(mdlchk));
 						if (!StrEqual(mdlchk,"models/humans/hassassin.mdl",false))
 						{
+							if (!IsModelPrecached("models/humans/hassassin.mdl")) PrecacheModel("models/humans/hassassin.mdl",true);
 							DispatchKeyValue(ent,"model","models/humans/hassassin.mdl");
 							SetEntPropString(ent,Prop_Data,"m_ModelName","models/humans/hassassin.mdl");
 							SetEntityModel(ent,"models/humans/hassassin.mdl");
@@ -6742,6 +6862,30 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							Format(searchprecache,sizeof(searchprecache),"sound/npc/assassin/");
 							recursion(searchprecache);
 							PushArrayString(precachedarr,"npc_human_assassin");
+						}
+					}
+					else if (StrEqual(oldcls,"monster_human_assassin",false))
+					{
+						SDKHookEx(ent,SDKHook_Think,assassinthink);
+						SDKHookEx(ent,SDKHook_OnTakeDamage,assassintkdmg);
+						char mdlchk[64];
+						GetEntPropString(ent,Prop_Data,"m_ModelName",mdlchk,sizeof(mdlchk));
+						if (!StrEqual(mdlchk,"models/hassassin.mdl",false))
+						{
+							if (!IsModelPrecached("models/hassassin.mdl")) PrecacheModel("models/hassassin.mdl",true);
+							DispatchKeyValue(ent,"model","models/hassassin.mdl");
+							SetEntPropString(ent,Prop_Data,"m_ModelName","models/hassassin.mdl");
+							SetEntityModel(ent,"models/hassassin.mdl");
+						}
+						if (FindStringInArray(precachedarr,"monster_human_assassin") == -1)
+						{
+							PrecacheSound("common\\bodydrop1.wav",true);
+							PrecacheSound("common\\bodydrop2.wav",true);
+							PrecacheSound("common\\bodydrop3.wav",true);
+							PrecacheSound("common\\bodydrop4.wav",true);
+							PrecacheSound("weapons\\pl_gun1.wav",true);
+							PrecacheSound("weapons\\pl_gun2.wav",true);
+							PushArrayString(precachedarr,"monster_human_assassin");
 						}
 					}
 					else if (StrEqual(oldcls,"npc_alien_slave",false))
@@ -8431,6 +8575,21 @@ void readcacheexperimental(int client)
 							PushArrayString(precachedarr,"npc_human_assassin");
 						}
 					}
+					else if (StrEqual(oldcls,"monster_human_assassin",false))
+					{
+						SDKHookEx(ent,SDKHook_Think,assassinthink);
+						SDKHookEx(ent,SDKHook_OnTakeDamage,assassintkdmg);
+						if (FindStringInArray(precachedarr,"monster_human_assassin") == -1)
+						{
+							PrecacheSound("common\\bodydrop1.wav",true);
+							PrecacheSound("common\\bodydrop2.wav",true);
+							PrecacheSound("common\\bodydrop3.wav",true);
+							PrecacheSound("common\\bodydrop4.wav",true);
+							PrecacheSound("weapons\\pl_gun1.wav",true);
+							PrecacheSound("weapons\\pl_gun2.wav",true);
+							PushArrayString(precachedarr,"monster_human_assassin");
+						}
+					}
 					else if (StrEqual(oldcls,"npc_alien_slave",false))
 					{
 						SDKHookEx(ent,SDKHook_Think,aslavethink);
@@ -8955,7 +9114,7 @@ public Action resetatk(Handle timer, int entity)
 		{
 			SetEntProp(entity,Prop_Data,"m_nRenderMode",0);
 		}
-		else if (StrEqual(cls,"npc_human_assassin",false))
+		else if ((StrEqual(cls,"npc_human_assassin",false)) || (StrEqual(cls,"monster_human_assassin",false)))
 		{
 			SetEntProp(entity,Prop_Data,"m_nRenderFX",0);
 		}
@@ -10457,13 +10616,26 @@ public Action Event_SynEntityKilled(Handle event, const char[] name, bool Broadc
 			{
 				if (HasEntProp(attacker,Prop_Data,"m_bitsDamageInflict"))
 				{
+					if (HasEntProp(attacker,Prop_Data,"m_hParent"))
+					{
+						int parent = GetEntPropEnt(attacker,Prop_Data,"m_hParent");
+						if (IsValidEntity(parent))
+						{
+							char parcls[32];
+							GetEntityClassname(parent,parcls,sizeof(parcls));
+							if (StrEqual(parcls,"func_tracktrain",false))
+							{
+								Format(clsname,sizeof(clsname),"Train");
+							}
+						}
+					}
 					int damagetype = GetEntProp(attacker,Prop_Data,"m_bitsDamageInflict");
 					if (damagetype == 256) Format(clsname,sizeof(clsname),"Shock");
 					else if (damagetype == 512) Format(clsname,sizeof(clsname),"Sonic");
-					else if (damagetype == 1024) Format(clsname,sizeof(clsname),"EnergyBeam");
+					else if (damagetype == 1024) Format(clsname,sizeof(clsname),"Energy Beam");
 					else if (damagetype == 16384) Format(clsname,sizeof(clsname),"Drown");
 					else if (damagetype == 32768) Format(clsname,sizeof(clsname),"Paralyse");
-					else if (damagetype == 65536) Format(clsname,sizeof(clsname),"NerveGas");
+					else if (damagetype == 65536) Format(clsname,sizeof(clsname),"Nerve Gas");
 					else if (damagetype == 131072) Format(clsname,sizeof(clsname),"Poison");
 					else if (damagetype == 262144) Format(clsname,sizeof(clsname),"Radiation");
 					else if (damagetype == 1048576) Format(clsname,sizeof(clsname),"Chemical");
@@ -10894,6 +11066,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 									}
 								}
 							}
+							else if ((StrEqual(input,"SetTimerLabel",false)) || (StrEqual(input,"StartTimer",false)) || (StrEqual(input,"StopTimer",false)))
+							{
+								hudtimers(-1,input,lineorgrescom[0],lineorgrescom[2],delay);
+							}
 							else if ((StrEqual(input,"Purchase",false)) || (StrEqual(input,"SetPurchaseName",false)) || (StrEqual(input,"SetPurchaseCost",false)) || (StrEqual(input,"Disable",false)))
 							{
 								logmerches(-1,activator,input,lineorgrescom[0],lineorgrescom[2],delay);
@@ -10982,6 +11158,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 									}
 								}
 							}
+							else if ((StrEqual(input,"SetTimerLabel",false)) || (StrEqual(input,"StartTimer",false)) || (StrEqual(input,"StopTimer",false)))
+							{
+								hudtimers(-1,input,lineorgrescom[0],lineorgrescom[2],delay);
+							}
 							else if ((StrEqual(input,"Purchase",false)) || (StrEqual(input,"SetPurchaseName",false)) || (StrEqual(input,"SetPurchaseCost",false)) || (StrEqual(input,"Disable",false)))
 							{
 								logmerches(-1,activator,input,lineorgrescom[0],lineorgrescom[2],delay);
@@ -11062,6 +11242,9 @@ void readoutputsforinputs()
 			PushArrayString(inputs,",SetPurchaseCost,,");
 			PushArrayString(inputs,",CounterEntity,");
 			PushArrayString(inputs,",ApplyScore,,");
+			PushArrayString(inputs,",SetTimerLabel,");
+			PushArrayString(inputs,",StartTimer,");
+			PushArrayString(inputs,",StopTimer,,");
 		}
 		if (syn56act)
 		{
@@ -11436,6 +11619,110 @@ void FindAllByClassname(Handle arr, int ent, char[] classname)
 	}
 }
 
+int SearchForAllByTargetname(char tmptarg[128], Handle returnarr)
+{
+	findtargnbyclassarr(-1,"logic_*",tmptarg,returnarr);
+	if (GetArraySize(returnarr) > 0) return GetArraySize(returnarr);
+	findtargnbyclassarr(-1,"info_*",tmptarg,returnarr);
+	if (GetArraySize(returnarr) > 0) return GetArraySize(returnarr);
+	findtargnbyclassarr(-1,"env_*",tmptarg,returnarr);
+	if (GetArraySize(returnarr) > 0) return GetArraySize(returnarr);
+	findtargnbyclassarr(-1,"ai_*",tmptarg,returnarr);
+	if (GetArraySize(returnarr) > 0) return GetArraySize(returnarr);
+	findtargnbyclassarr(-1,"math_*",tmptarg,returnarr);
+	if (GetArraySize(returnarr) > 0) return GetArraySize(returnarr);
+	findtargnbyclassarr(-1,"game_*",tmptarg,returnarr);
+	if (GetArraySize(returnarr) > 0) return GetArraySize(returnarr);
+	findtargnbyclassarr(-1,"point_template",tmptarg,returnarr);
+	char renamereturn[64];
+	if (GetArraySize(returnarr) < 1)
+	{
+		for (int i = MaxClients+1; i<GetMaxEntities(); i++)
+		{
+			if (IsValidEntity(i) && IsEntNetworkable(i))
+			{
+				if (HasEntProp(i,Prop_Data,"m_iName"))
+				{
+					char targn[128];
+					GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+					if (StrContains(targn,"\"",false) != -1) ReplaceString(targn,sizeof(targn),"\"","");
+					if (StrContains(tmptarg,"*",false) == 0)
+					{
+						char targwithout[128];
+						Format(targwithout,sizeof(targwithout),"%s",tmptarg);
+						ReplaceString(targwithout,sizeof(targwithout),"*","");
+						if (StrContains(targn,targwithout) != -1)
+						{
+							GetEntityClassname(i,renamereturn,sizeof(renamereturn));
+							if (FindValueInArray(returnarr,i) == -1) PushArrayCell(returnarr,i);
+						}
+					}
+					else if (StrContains(tmptarg,"*",false) >= 1)
+					{
+						char targwithout[128];
+						Format(targwithout,sizeof(targwithout),"%s",tmptarg);
+						ReplaceString(targwithout,sizeof(targwithout),"*","");
+						if (StrContains(targn,targwithout) == 0)
+						{
+							GetEntityClassname(i,renamereturn,sizeof(renamereturn));
+							if (FindValueInArray(returnarr,i) == -1) PushArrayCell(returnarr,i);
+						}
+					}
+					else if (StrEqual(targn,tmptarg))
+					{
+						GetEntityClassname(i,renamereturn,sizeof(renamereturn));
+						if (FindValueInArray(returnarr,i) == -1) PushArrayCell(returnarr,i);
+					}
+				}
+			}
+		}
+	}
+	if (strlen(renamereturn) > 0) Format(tmptarg,sizeof(tmptarg),"%s",renamereturn);
+	return GetArraySize(returnarr);
+}
+
+public void findtargnbyclassarr(int ent, char cls[64], char tmptarg[128], Handle returnarr)
+{
+	int thisent = FindEntityByClassname(ent,cls);
+	if ((IsValidEntity(thisent)) && (thisent != -1))
+	{
+		if (HasEntProp(thisent,Prop_Data,"m_iName"))
+		{
+			char targn[128];
+			GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
+			if (StrContains(tmptarg,"*",false) == 0)
+			{
+				char targwithout[128];
+				Format(targwithout,sizeof(targwithout),"%s",tmptarg);
+				ReplaceString(targwithout,sizeof(targwithout),"*","");
+				if (StrContains(targn,targwithout) != -1)
+				{
+					GetEntityClassname(thisent,tmptarg,sizeof(tmptarg));
+					if (FindValueInArray(returnarr,thisent) == -1) PushArrayCell(returnarr,thisent);
+				}
+			}
+			else if (StrContains(tmptarg,"*",false) >= 1)
+			{
+				char targwithout[128];
+				Format(targwithout,sizeof(targwithout),"%s",tmptarg);
+				ReplaceString(targwithout,sizeof(targwithout),"*","");
+				if (StrContains(targn,targwithout) == 0)
+				{
+					GetEntityClassname(thisent,tmptarg,sizeof(tmptarg));
+					if (FindValueInArray(returnarr,thisent) == -1) PushArrayCell(returnarr,thisent);
+				}
+			}
+			else if (StrEqual(targn,tmptarg,false))
+			{
+				GetEntityClassname(thisent,tmptarg,sizeof(tmptarg));
+				if (FindValueInArray(returnarr,thisent) == -1) PushArrayCell(returnarr,thisent);
+			}
+		}
+		findtargnbyclassarr(thisent++,cls,tmptarg,returnarr);
+	}
+	return;
+}
+
 void findpointtp(int ent, char[] targn, int cl, float delay)
 {
 	int thisent = FindEntityByClassname(ent,"point_teleport");
@@ -11784,6 +12071,67 @@ void finddisplays(int ent, char[] input, char[] targn, char[] parampass, float d
 			}
 		}
 		finddisplays(thisent++,input,targn,parampass,delay);
+	}
+}
+
+void hudtimers(int ent, char[] input, char[] targn, char[] parampass, float delay)
+{
+	int thisent = FindEntityByClassname(ent,"hud_timer");
+	if ((IsValidEntity(thisent)) && (thisent != -1))
+	{
+		char enttargn[128];
+		GetEntPropString(thisent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
+		if (StrEqual(targn,enttargn,false))
+		{
+			if (delay > 0.1)
+			{
+				Handle dp = CreateDataPack();
+				WritePackCell(dp,thisent);
+				WritePackString(dp,parampass);
+				WritePackString(dp,input);
+				CreateTimer(delay,hudtimerdelay,dp,TIMER_FLAG_NO_MAPCHANGE);
+			}
+			else
+			{
+				hudtimerinputs(thisent,input,parampass);
+			}
+		}
+		hudtimers(thisent++,input,targn,parampass,delay);
+	}
+}
+
+public Action hudtimerdelay(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int thisent = ReadPackCell(dp);
+		char parampass[64];
+		char input[64];
+		ReadPackString(dp,parampass,sizeof(parampass));
+		ReadPackString(dp,input,sizeof(input));
+		CloseHandle(dp);
+		hudtimerinputs(thisent,input,parampass);
+	}
+}
+
+void hudtimerinputs(int ent, char[] input, char[] parampass)
+{
+	if (StrEqual(input,"SetTimerLabel",false))
+	{
+		if (HasEntProp(ent,Prop_Data,"m_iszTimerText"))
+		{
+			SetEntPropString(ent,Prop_Data,"m_iszTimerText",parampass);
+		}
+	}
+	else if (StrEqual(input,"StartTimer",false))
+	{
+		SetVariantString(parampass);
+		AcceptEntityInput(ent,"Start");
+	}
+	else if (StrEqual(input,"StopTimer",false))
+	{
+		AcceptEntityInput(ent,"Stop");
 	}
 }
 
@@ -12158,6 +12506,22 @@ public void OnClientDisconnect(int client)
 	DisplayedChapterTitle[client] = false;
 }
 
+public Action TakeDamageAnts(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
+{
+	char atkcls[32];
+	if (IsValidEntity(attacker)) GetEntityClassname(attacker,atkcls,sizeof(atkcls));
+	char infcls[32];
+	if (IsValidEntity(inflictor)) GetEntityClassname(inflictor,infcls,sizeof(infcls));
+	char viccls[32];
+	if (IsValidEntity(victim)) GetEntityClassname(victim,viccls,sizeof(viccls));
+	if ((StrEqual(viccls,"npc_antlion",false)) && ((StrEqual(infcls,"npc_antlionguard",false)) || (StrEqual(atkcls,"npc_antlionguard",false))))
+	{
+		damage = 0.0;
+		return Plugin_Changed;
+	}
+	return Plugin_Continue;
+}
+
 public Action TakeDamageCustom(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
 {
 	char atkcls[32];
@@ -12344,6 +12708,136 @@ void FindSaveTPHooks()
 
 public Action rehooksaves(Handle timer)
 {
+	//fix non-initialized cvars
+	DefaultCVarCheck("sk_zombie_soldier_health",100);
+	DefaultCVarCheck("sk_antlion_air_attack_dmg",10);
+	DefaultCVarCheck("sk_antlion_worker_spit_speed",600);
+	DefaultCVarCheck("sk_antlion_worker_health",60);
+	DefaultCVarCheck("sk_vortigaunt_armor_charge",15);
+	DefaultCVarCheck("sk_vortigaunt_armor_charge_per_token",5);
+	DefaultCVarCheck("sk_vortigaunt_dmg_zap",25);
+	DefaultCVarCheck("sk_headcrab_poison_npc_damage",20);
+	DefaultCVarCheck("sk_advisor_health",1000);
+	DefaultCVarCheck("sk_barnacle_health",35);
+	DefaultCVarCheck("sk_barney_health",35);
+	DefaultCVarCheck("sk_bullseye_health",35);
+	DefaultCVarCheck("sk_citizen_health",40);
+	DefaultCVarCheck("sk_combine_s_health",50);
+	DefaultCVarCheck("sk_combine_s_kick",10);
+	DefaultCVarCheck("sk_combine_guard_health",70);
+	DefaultCVarCheck("sk_combine_guard_kick",15);
+	DefaultCVarCheck("sk_strider_health",350);
+	DefaultCVarCheck("sk_headcrab_health",10);
+	DefaultCVarCheck("sk_headcrab_melee_dmg",5);
+	DefaultCVarCheck("sk_headcrab_fast_health",10);
+	DefaultCVarCheck("sk_headcrab_poison_health",35);
+	DefaultCVarCheck("sk_manhack_health",25);
+	DefaultCVarCheck("sk_manhack_melee_dmg",20);
+	DefaultCVarCheck("sk_metropolice_health",40);
+	DefaultCVarCheck("sk_metropolice_stitch_reaction",1);
+	DefaultCVarCheck("sk_metropolice_stitch_tight_hitcount",2);
+	DefaultCVarCheck("sk_metropolice_stitch_at_hitcount",1);
+	DefaultCVarCheck("sk_metropolice_stitch_behind_hitcount",3);
+	DefaultCVarCheck("sk_metropolice_stitch_along_hitcount",2);
+	DefaultCVarCheck("sk_rollermine_shock",10);
+	DefaultCVarCheck("sk_rollermine_stun_delay",3);
+	DefaultCVarCheck("sk_rollermine_vehicle_intercept",1);
+	DefaultCVarCheck("sk_scanner_health",30);
+	DefaultCVarCheck("sk_scanner_dmg_dive",25);
+	DefaultCVarCheck("sk_stalker_health",50);
+	DefaultCVarCheck("sk_stalker_melee_dmg",5);
+	DefaultCVarCheck("sk_vortigaunt_health",100);
+	DefaultCVarCheck("sk_vortigaunt_dmg_claw",10);
+	DefaultCVarCheck("sk_vortigaunt_dmg_rake",25);
+	DefaultCVarCheck("sk_zombie_health",50);
+	DefaultCVarCheck("sk_zombie_dmg_one_slash",10);
+	DefaultCVarCheck("sk_zombie_dmg_both_slash",25);
+	DefaultCVarCheck("sk_zombie_poison_health",175);
+	DefaultCVarCheck("sk_zombie_poison_dmg_spit",20);
+	DefaultCVarCheck("sk_antlion_health",30);
+	DefaultCVarCheck("sk_antlion_swipe_damage",5);
+	DefaultCVarCheck("sk_antlion_jump_damage",5);
+	DefaultCVarCheck("sk_antlionguard_health",500);
+	DefaultCVarCheck("sk_antlionguard_dmg_charge",20);
+	DefaultCVarCheck("sk_antlionguard_dmg_shove",10);
+	DefaultCVarCheck("sk_antliongrub_health",5);
+	DefaultCVarCheck("sk_ichthyosaur_health",200);
+	DefaultCVarCheck("sk_ichthyosaur_melee_dmg",8);
+	DefaultCVarCheck("sk_gunship_burst_size",15);
+	DefaultCVarCheck("sk_gunship_health_increments",5);
+	DefaultCVarCheck("sk_npc_dmg_gunship",40);
+	DefaultCVarCheck("sk_npc_dmg_gunship_to_plr",3);
+	DefaultCVarCheck("sk_npc_dmg_helicopter",6);
+	DefaultCVarCheck("sk_npc_dmg_helicopter_to_plr",3);
+	DefaultCVarCheck("sk_helicopter_grenadedamage",30);
+	DefaultCVarCheck("sk_helicopter_grenaderadius",275);
+	DefaultCVarCheck("sk_helicopter_grenadeforce",55000);
+	DefaultCVarCheck("sk_npc_dmg_dropship",2);
+	DefaultCVarCheck("sk_apc_health",750);
+	DefaultCVarCheck("sk_plr_dmg_ar2",8);
+	DefaultCVarCheck("sk_npc_dmg_ar2",3);
+	DefaultCVarCheck("sk_max_ar2",60);
+	DefaultCVarCheck("sk_max_ar2_altfire",3);
+	DefaultCVarCheck("sk_plr_dmg_pistol",5);
+	DefaultCVarCheck("sk_npc_dmg_pistol",3);
+	DefaultCVarCheck("sk_max_pistol",150);
+	DefaultCVarCheck("sk_plr_dmg_smg1",4);
+	DefaultCVarCheck("sk_npc_dmg_smg1",3);
+	DefaultCVarCheck("sk_max_smg1",225);
+	DefaultCVarCheck("sk_plr_dmg_buckshot",8);
+	DefaultCVarCheck("sk_npc_dmg_buckshot",3);
+	DefaultCVarCheck("sk_max_buckshot",30);
+	DefaultCVarCheck("sk_plr_dmg_rpg_round",100);
+	DefaultCVarCheck("sk_npc_dmg_rpg_round",50);
+	DefaultCVarCheck("sk_max_rpg_round",3);
+	DefaultCVarCheck("sk_plr_dmg_smg1_grenade",100);
+	DefaultCVarCheck("sk_npc_dmg_smg1_grenade",50);
+	DefaultCVarCheck("sk_max_smg1_grenade",3);
+	DefaultCVarCheck("sk_smg1_grenade_radius",250);
+	DefaultCVarCheck("sk_plr_dmg_357",40);
+	DefaultCVarCheck("sk_npc_dmg_357",30);
+	DefaultCVarCheck("sk_max_357",12);
+	DefaultCVarCheck("sk_plr_dmg_crossbow",100);
+	DefaultCVarCheck("sk_npc_dmg_crossbow",10);
+	DefaultCVarCheck("sk_max_crossbow",10);
+	DefaultCVarCheck("sk_plr_dmg_airboat",3);
+	DefaultCVarCheck("sk_npc_dmg_airboat",3);
+	DefaultCVarCheck("sk_plr_dmg_grenade",150);
+	DefaultCVarCheck("sk_npc_dmg_grenade",75);
+	DefaultCVarCheck("sk_max_grenade",5);
+	DefaultCVarCheck("sk_plr_dmg_crowbar",10);
+	DefaultCVarCheck("sk_npc_dmg_crowbar",5);
+	DefaultCVarCheck("sk_plr_dmg_stunstick",10);
+	DefaultCVarCheck("sk_npc_dmg_stunstick",40);
+	DefaultCVarCheck("sk_plr_dmg_satchel",150);
+	DefaultCVarCheck("sk_npc_dmg_satchel",75);
+	DefaultCVarCheck("sk_satchel_radius",150);
+	DefaultCVarCheck("sk_dmg_energy_grenade",2);
+	DefaultCVarCheck("sk_energy_grenade_radius",100);
+	DefaultCVarCheck("sk_dmg_homer_grenade",20);
+	DefaultCVarCheck("sk_homer_grenade_radius",100);
+	DefaultCVarCheck("sk_dmg_spit_grenade",5);
+	DefaultCVarCheck("sk_spit_grenade_radius",50);
+	DefaultCVarCheck("sk_plr_dmg_fraggrenade",125);
+	DefaultCVarCheck("sk_npc_dmg_fraggrenade",75);
+	DefaultCVarCheck("sk_fraggrenade_radius",250);
+	DefaultCVarCheck("sk_battery",15);
+	DefaultCVarCheck("sk_healthcharger",50);
+	DefaultCVarCheck("sk_healthkit",25);
+	DefaultCVarCheck("sk_healthvial",10);
+	DefaultCVarCheck("sk_suitcharger",75);
+	DefaultCVarCheck("sk_suitcharger_citadel",500);
+	DefaultCVarCheck("sk_suitcharger_citadel_maxarmor",200);
+	DefaultCVarCheck("sk_npc_head",3);
+	DefaultCVarCheck("sk_npc_chest",1);
+	DefaultCVarCheck("sk_npc_stomach",1);
+	DefaultCVarCheck("sk_npc_arm",1);
+	DefaultCVarCheck("sk_npc_leg",1);
+	DefaultCVarCheck("sk_player_head",3);
+	DefaultCVarCheck("sk_player_chest",1);
+	DefaultCVarCheck("sk_player_stomach",1);
+	DefaultCVarCheck("sk_player_arm",1);
+	DefaultCVarCheck("sk_player_leg",1);
 	resetspawners(-1,"env_xen_portal");
 	resetspawners(-1,"env_xen_portal_template");
 	if (GetArraySize(spawnerswait) > 0)
@@ -12475,6 +12969,16 @@ public Action rehooksaves(Handle timer)
 	FindSaveTPHooks();
 }
 
+void DefaultCVarCheck(char[] cvarname, int defaultvalue)
+{
+	Handle cvar = FindConVar(cvarname);
+	if (cvar != INVALID_HANDLE)
+	{
+		if (GetConVarInt(cvar) == 0) SetConVarInt(cvar,defaultvalue,false,false);
+	}
+	CloseHandle(cvar);
+}
+
 public Action findsavetrigs(int ent, char[] clsname)
 {
 	int thisent = FindEntityByClassname(ent,clsname);
@@ -12565,6 +13069,14 @@ public void OnEntityCreated(int entity, const char[] classname)
 			{
 				SetEntProp(entity,Prop_Data,"m_iEFlags",flageffects+1073741824);
 			}
+		}
+		else if (StrEqual(classname,"npc_antlionguard",false))
+		{
+			CreateTimer(1.0,GuardSlowThink,entity,TIMER_FLAG_NO_MAPCHANGE);
+		}
+		else if (StrEqual(classname,"npc_antlion",false))
+		{
+			SDKHook(entity, SDKHook_OnTakeDamage, TakeDamageAnts);
 		}
 	}
 	if ((StrEqual(classname,"item_health_drop",false)) || (StrEqual(classname,"item_ammo_drop",false)) || (StrEqual(classname,"item_ammo_pack",false)))
@@ -12848,6 +13360,91 @@ public Action OnCDeath(const char[] output, int caller, int activator, float del
 	if (find != -1) RemoveFromArray(grenlist,find);
 }
 
+public Action GuardSlowThink(Handle timer, int entity)
+{
+	if (IsValidEntity(entity))
+	{
+		char cls[32];
+		GetEntityClassname(entity,cls,sizeof(cls));
+		if (StrEqual(cls,"npc_antlionguard",false))
+		{
+			CreateTimer(1.0,GuardSlowThink,entity,TIMER_FLAG_NO_MAPCHANGE);
+			float Time = GetTickedTime();
+			if ((centnextatk[entity] < Time) && (antlionguardhard))
+			{
+				float orgs[3];
+				float clorgs[3];
+				int clinrange = 0;
+				if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",orgs);
+				else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",orgs);
+				for (int i = 1;i<MaxClients+1;i++)
+				{
+					if (IsValidEntity(i))
+					{
+						if (IsClientConnected(i))
+						{
+							if (IsClientInGame(i))
+							{
+								if (IsPlayerAlive(i))
+								{
+									if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",clorgs);
+									else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",clorgs);
+									if (GetVectorDistance(orgs,clorgs,false) < 110.0)
+									{
+										clinrange++;
+									}
+								}
+							}
+						}
+					}
+				}
+				SetEntProp(entity,Prop_Data,"m_bBarkEnabled",1);
+				if (GetRandomInt(0,100) > 80)
+					if (GetEntProp(entity,Prop_Data,"m_iNumLiveAntlions") > 0) SetEntProp(entity,Prop_Data,"m_iNumLiveAntlions",0);
+				if ((clinrange > 0) || (GetRandomInt(0,100) > 92))
+				{
+					int grenade = CreateEntityByName("env_sporeexplosion");
+					if (grenade != -1)
+					{
+						orgs[2]+=10.0;
+						TeleportEntity(grenade,orgs,NULL_VECTOR,NULL_VECTOR);
+						DispatchSpawn(grenade);
+						ActivateEntity(grenade);
+						SetEntPropFloat(grenade,Prop_Data,"m_flSpawnRate",150.0);
+						SetEntPropFloat(grenade,Prop_Data,"m_flParticleLifetime",2.0);
+						SetEntPropFloat(grenade,Prop_Data,"m_flStartSize",20.0);
+						SetEntPropFloat(grenade,Prop_Data,"m_flSpawnRadius",32.0);
+						SetEntProp(grenade,Prop_Data,"m_bEmit",1);
+						Handle dp = CreateDataPack();
+						WritePackCell(dp,grenade);
+						WritePackString(dp,"env_sporeexplosion");
+						CreateTimer(5.0,cleanup,dp,TIMER_FLAG_NO_MAPCHANGE);
+						int trighurt = CreateEntityByName("trigger_hurt");
+						if (trighurt != -1)
+						{
+							if (!IsModelPrecached("*1")) PrecacheModel("*1",true);
+							DispatchKeyValue(trighurt,"spawnflags","1");
+							DispatchKeyValue(trighurt,"damagetype","65536");
+							DispatchKeyValue(trighurt,"damagecap","20");
+							DispatchKeyValue(trighurt,"damage","10");
+							DispatchKeyValue(trighurt,"edt_mins","-100 -100 -100");
+							DispatchKeyValue(trighurt,"edt_maxs","100 100 100");
+							TeleportEntity(trighurt,orgs,NULL_VECTOR,NULL_VECTOR);
+							DispatchSpawn(trighurt);
+							ActivateEntity(trighurt);
+							Handle dp2 = CreateDataPack();
+							WritePackCell(dp2,trighurt);
+							WritePackString(dp2,"trigger_hurt");
+							CreateTimer(5.0,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+						}
+					}
+					centnextatk[entity] = Time+GetRandomFloat(5.0,12.0);
+				}
+			}
+		}
+	}
+}
+
 public Action MineFieldTouch(const char[] output, int caller, int activator, float delay)
 {
 	//OnDetonate
@@ -12918,7 +13515,7 @@ public Action StartTouchLongJump(int entity, int other)
 				Handle dp = CreateDataPack();
 				WritePackCell(dp,hudhint);
 				WritePackString(dp,"env_hudhint");
-				CreateTimer(0.5,cleanup,dp);
+				CreateTimer(0.5,cleanup,dp,TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 	}
@@ -13249,6 +13846,8 @@ public Action custent(Handle timer, int entity)
 			{
 				if (FileExists("models/humans/hassassin.mdl",true,NULL_STRING))
 				{
+					ReplaceString(cls,sizeof(cls),"npc_human_assassin","");
+					SetEntPropString(entity,Prop_Data,"m_iName",cls);
 					if (!IsModelPrecached("models/humans/hassassin.mdl")) PrecacheModel("models/humans/hassassin.mdl",true);
 					SDKHookEx(entity,SDKHook_Think,assassinthink);
 					SDKHookEx(entity,SDKHook_OnTakeDamage,assassintkdmg);
@@ -13336,6 +13935,28 @@ public Action custent(Handle timer, int entity)
 						Format(searchprecache,sizeof(searchprecache),"sound/npc/assassin/");
 						recursion(searchprecache);
 						PushArrayString(precachedarr,"npc_human_assassin");
+					}
+				}
+				CloseHandle(dp);
+				dp = INVALID_HANDLE;
+			}
+			else if (StrContains(cls,"monster_human_assassin",false) == 0)
+			{
+				if (FileExists("models/hassassin.mdl",true,NULL_STRING))
+				{
+					ReplaceString(cls,sizeof(cls),"monster_human_assassin","");
+					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					SDKHookEx(entity,SDKHook_Think,assassinthink);
+					SDKHookEx(entity,SDKHook_OnTakeDamage,assassintkdmg);
+					if (FindStringInArray(precachedarr,"monster_human_assassin") == -1)
+					{
+						PrecacheSound("common\\bodydrop1.wav",true);
+						PrecacheSound("common\\bodydrop2.wav",true);
+						PrecacheSound("common\\bodydrop3.wav",true);
+						PrecacheSound("common\\bodydrop4.wav",true);
+						PrecacheSound("weapons\\pl_gun1.wav",true);
+						PrecacheSound("weapons\\pl_gun2.wav",true);
+						PushArrayString(precachedarr,"monster_human_assassin");
 					}
 				}
 				CloseHandle(dp);
@@ -14941,7 +15562,7 @@ void restoreent(Handle dp)
 			Format(clsname,sizeof(clsname),"npc_kleiner");
 		else if (StrEqual(clsname,"npc_human_scientist_eli",false))
 			Format(clsname,sizeof(clsname),"npc_eli");
-		else if ((StrEqual(clsname,"npc_human_grunt",false)) || (StrEqual(clsname,"npc_human_commander",false)) || (StrEqual(clsname,"npc_human_medic",false)) || (StrEqual(clsname,"npc_human_grenadier",false)) || (StrEqual(clsname,"npc_assassin",false)))
+		else if ((StrEqual(clsname,"npc_human_grunt",false)) || (StrEqual(clsname,"npc_human_commander",false)) || (StrEqual(clsname,"npc_human_medic",false)) || (StrEqual(clsname,"npc_human_grenadier",false)) || (StrEqual(clsname,"npc_assassin",false)) || (StrEqual(clsname,"npc_human_assassin",false)) || (StrEqual(clsname,"monster_human_assassin",false)))
 			Format(clsname,sizeof(clsname),"npc_combine_s");
 		else if (StrEqual(clsname,"monster_headcrab",false))
 			Format(clsname,sizeof(clsname),"npc_headcrab");
@@ -15136,6 +15757,21 @@ void restoreent(Handle dp)
 			{
 				AcceptEntityInput(ent,"GagEnable");
 				SDKHookEx(ent,SDKHook_Think,grenthink);
+			}
+			else if (StrEqual(oldcls,"monster_human_assassin",false))
+			{
+				SDKHookEx(ent,SDKHook_Think,assassinthink);
+				SDKHookEx(ent,SDKHook_OnTakeDamage,assassintkdmg);
+				if (FindStringInArray(precachedarr,"monster_human_assassin") == -1)
+				{
+					PrecacheSound("common\\bodydrop1.wav",true);
+					PrecacheSound("common\\bodydrop2.wav",true);
+					PrecacheSound("common\\bodydrop3.wav",true);
+					PrecacheSound("common\\bodydrop4.wav",true);
+					PrecacheSound("weapons\\pl_gun1.wav",true);
+					PrecacheSound("weapons\\pl_gun2.wav",true);
+					PushArrayString(precachedarr,"monster_human_assassin");
+				}
 			}
 			else if (StrEqual(oldcls,"npc_human_scientist",false))
 			{
@@ -15378,7 +16014,7 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				Format(clsname,sizeof(clsname),"npc_kleiner");
 			else if (StrEqual(clsname,"npc_human_scientist_eli",false))
 				Format(clsname,sizeof(clsname),"npc_eli");
-			else if ((StrEqual(clsname,"npc_human_grunt",false)) || (StrEqual(clsname,"npc_human_commander",false)) || (StrEqual(clsname,"npc_human_medic",false)) || (StrEqual(clsname,"npc_human_grenadier",false)) || (StrEqual(clsname,"npc_assassin",false)))
+			else if ((StrEqual(clsname,"npc_human_grunt",false)) || (StrEqual(clsname,"npc_human_commander",false)) || (StrEqual(clsname,"npc_human_medic",false)) || (StrEqual(clsname,"npc_human_grenadier",false)) || (StrEqual(clsname,"npc_assassin",false)) || (StrEqual(clsname,"npc_human_assassin",false)) || (StrEqual(clsname,"monster_human_assassin",false)))
 				Format(clsname,sizeof(clsname),"npc_combine_s");
 			else if (StrEqual(clsname,"monster_headcrab",false))
 				Format(clsname,sizeof(clsname),"npc_headcrab");
@@ -15438,6 +16074,8 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				Format(clsname,sizeof(clsname),"trigger_multiple");
 			else if (StrEqual(clsname,"logic_merchant_relay"))
 				Format(clsname,sizeof(clsname),"logic_relay");
+			else if (StrEqual(clsname,"game_countdown_timer"))
+				Format(clsname,sizeof(clsname),"hud_timer");
 			else if (StrEqual(clsname,"npc_merchant",false))
 				Format(clsname,sizeof(clsname),"generic_actor");
 			else if (StrContains(clsname,"customweapons/",false) == 0)
@@ -15639,6 +16277,20 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				{
 					AcceptEntityInput(ent,"GagEnable");
 					SDKHookEx(ent,SDKHook_Think,grenthink);
+					setmdl = false;
+				}
+				else if (StrEqual(oldcls,"npc_human_assassin",false))
+				{
+					AcceptEntityInput(ent,"GagEnable");
+					SDKHookEx(ent,SDKHook_Think,assassinthink);
+					SDKHookEx(ent,SDKHook_OnTakeDamage,assassintkdmg);
+					setmdl = false;
+				}
+				else if (StrEqual(oldcls,"monster_human_assassin",false))
+				{
+					AcceptEntityInput(ent,"GagEnable");
+					SDKHookEx(ent,SDKHook_Think,assassinthink);
+					SDKHookEx(ent,SDKHook_OnTakeDamage,assassintkdmg);
 					setmdl = false;
 				}
 				else if (StrEqual(oldcls,"npc_human_scientist",false))
@@ -17060,6 +17712,26 @@ void findentlist(int ent, char[] clsname)
 				recursion(searchprecache);
 				PushArrayString(precachedarr,"npc_human_assassin");
 			}
+			customents = true;
+		}
+		else if (StrContains(clsofent,"monster_human_assassin",false) == 0)
+		{
+			if (FileExists("models/hassassin.mdl",true,NULL_STRING))
+			{
+				SDKHookEx(thisent,SDKHook_Think,assassinthink);
+				SDKHookEx(thisent,SDKHook_OnTakeDamage,assassintkdmg);
+				if (FindStringInArray(precachedarr,"monster_human_assassin") == -1)
+				{
+					PrecacheSound("common\\bodydrop1.wav",true);
+					PrecacheSound("common\\bodydrop2.wav",true);
+					PrecacheSound("common\\bodydrop3.wav",true);
+					PrecacheSound("common\\bodydrop4.wav",true);
+					PrecacheSound("weapons\\pl_gun1.wav",true);
+					PrecacheSound("weapons\\pl_gun2.wav",true);
+					PushArrayString(precachedarr,"monster_human_assassin");
+				}
+			}
+			customents = true;
 		}
 		else if (StrEqual(clsofent,"npc_sentry_ground",false))
 		{
@@ -18088,6 +18760,14 @@ public void headgrpch(Handle convar, const char[] oldValue, const char[] newValu
 public void plytrigch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	playercapadj = StringToInt(newValue);
+}
+
+public void antliongch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		antlionguardhard = true;
+	else
+		antlionguardhard = false;
 }
 
 public void autorebuildch(Handle convar, const char[] oldValue, const char[] newValue)
