@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9993"
-			"Previous"	"1.9992"
+			"Latest"  	"1.9994"
+			"Previous"	"1.9993"
 		}
 		
-		"Notes"	"Added CVar sm_playertriggerapply which will create additional vehicle spawns when connected players are above that number default 20."
+		"Notes"	"Added default CVar resets for non-initalized CVars. This can happen if starting a server on a non-standard map."
 	}
 	
 	"Files"
