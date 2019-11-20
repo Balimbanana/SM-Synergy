@@ -113,6 +113,9 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
+	Handle hostnam = FindConVar("hostname");
+	GetConVarString(hostnam,srvname,sizeof(srvname));
+	CloseHandle(hostnam);
 	if(GetConVarInt(sm_crashmap_enabled) == 0)
 	{
 		return;
