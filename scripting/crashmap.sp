@@ -48,19 +48,12 @@ char logPath[PLATFORM_MAX_PATH];
 Handle logFileHandle = INVALID_HANDLE;
 Handle dataFileHandle = INVALID_HANDLE;
 Handle sm_crashmap_enabled = INVALID_HANDLE;
-Handle sm_crashmap_recovertime = INVALID_HANDLE;
-Handle sm_crashmap_interval = INVALID_HANDLE;
 Handle sm_crashmap_maxrestarts = INVALID_HANDLE;
-Handle TimeleftHandle = INVALID_HANDLE;
 bool Recovered = false;
-bool TimelimitChanged = false;
-bool Overwrite = false;
-int newTimelimit;
 
 //new
 Handle Handle_Database = INVALID_HANDLE;
 char srvname[64];
-
 
 public Plugin myinfo = 
 {
@@ -75,20 +68,12 @@ public void OnPluginStart()
 {
 	CreateConVar("sm_crashmap_version", PLUGIN_VERSION, "Crashed Map Recovery Version", FCVAR_SPONLY | FCVAR_NOTIFY | FCVAR_DONTRECORD);
 	sm_crashmap_enabled = CreateConVar("sm_crashmap_enabled", "1", "Enable Crashed Map Recovery? (1=yes 0=no)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-	sm_crashmap_recovertime = CreateConVar("sm_crashmap_recovertime", "0", "Recover timelimit? (1=yes 0=no)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
-	sm_crashmap_interval = CreateConVar("sm_crashmap_interval", "20", "Interval between timeleft updates (in seconds)", FCVAR_NOTIFY, true, 1.0);
 	sm_crashmap_maxrestarts = CreateConVar("sm_crashmap_maxrestarts", "5", "How many consecutive crashes until server loads the default map", FCVAR_NOTIFY, true, 3.0);
 	AutoExecConfig(true, "plugin.crashmap");
-	HookConVarChange(sm_crashmap_recovertime, TimerState);
-	HookConVarChange(sm_crashmap_interval, IntervalChange);
 	Handle cvar = FindConVar("hostname");
 	if (cvar != INVALID_HANDLE) HookConVarChange(cvar, HostNameChange);
 	CloseHandle(cvar);
 	
-	if (GetConVarInt(sm_crashmap_recovertime) == 1)
-	{
-		TimeleftHandle = CreateTimer(GetConVarFloat(sm_crashmap_interval), SaveTimeleft, _, TIMER_REPEAT);
-	}
 	BuildPath(Path_SM, FileLoc, 128, "data/crashmap.txt");
 	if (!FileExists(FileLoc))
 	{
@@ -133,18 +118,6 @@ public void OnMapStart()
 		return;
 	}
 	if(Recovered){
-		/*
-		char CurrentMap[128];
-		GetCurrentMap(CurrentMap, sizeof(CurrentMap));
-		Handle SavedMap;
-		SavedMap = CreateKeyValues("SavedMap");
-		FileToKeyValues(SavedMap, FileLoc);
-		KvJumpToKey(SavedMap, "Map", true);
-		KvSetString(SavedMap, "Map", CurrentMap);
-		KvRewind(SavedMap);
-		KeyValuesToFile(SavedMap, FileLoc);
-		CloseHandle(SavedMap);
-		*/
 		
 		//new sys sqlite
 		char CurrentMap[128];
@@ -179,36 +152,6 @@ public void OnMapStart()
 	}
 	if(!Recovered){
 		//char MapToLoad[256], String:nextmap[256], timeleft, restarts
-		/*
-		Handle SavedMap
-		SavedMap = CreateKeyValues("SavedMap");
-		FileToKeyValues(SavedMap, FileLoc);
-		KvJumpToKey(SavedMap, "Map", true);
-		KvGetString(SavedMap, "Map", MapToLoad, sizeof(MapToLoad));
-		restarts = KvGetNum(SavedMap, "restarts", 0);
-		//LogToFile(logPath, "[CMR] Server restarted, restarts is %i", restarts);
-		restarts++;
-		//LogToFile(logPath, "[CMR] Restarts incremented, restarts is %i", restarts);
-		LogToFile(logPath, "Restarts is %i", restarts);
-		KvSetNum(SavedMap, "restarts", restarts);
-		timeleft = KvGetNum(SavedMap, "Timeleft", 30);
-		KvGetString(SavedMap, "Nextmap", nextmap, sizeof(nextmap));
-		SetNextMap(nextmap);
-		newTimelimit = timeleft/60;
-		Recovered = true;
-		if(restarts > GetConVarInt(sm_crashmap_maxrestarts)){
-			LogToFile(logPath, "[CMR] Error! %s is causing the server to crash. Please fix!", MapToLoad);
-			KvSetNum(SavedMap, "restarts", 0);
-			KvRewind(SavedMap);
-			KeyValuesToFile(SavedMap, FileLoc);
-			CloseHandle(SavedMap);
-			return;
-		}
-		KvRewind(SavedMap);
-		KeyValuesToFile(SavedMap, FileLoc);
-		CloseHandle(SavedMap);
-		*/
-		
 		//new sys sqlite
 		char CurrentMap[128];
 		GetCurrentMap(CurrentMap, sizeof(CurrentMap));
@@ -232,7 +175,6 @@ public void OnMapStart()
 			PrintToServer(Query);
 			hQuery = SQL_Query(Handle_Database,origQuery);
 		}
-		int timeleft;
 		Recovered = true;
 		char MapToLoad[256];
 		int restarts;
@@ -263,15 +205,12 @@ public void OnMapStart()
 			PrintToServer("Q %s \nOQ %s \n map %s",Query,origQuery,MapToLoad);
 		}
 		
-		
-		if(GetConVarInt(sm_crashmap_recovertime) == 1){
-			LogToFile(logPath, "[CMR] %s loaded after server crash. Timelimit set to %i", MapToLoad, timeleft/60);
-		}else{
-			LogToFile(logPath, "[CMR] %s loaded after server crash.", MapToLoad);
-		}
+		LogToFile(logPath, "[CMR] %s loaded after server crash.", MapToLoad);
 		ServerCommand("changelevel %s",MapToLoad);
-		ServerCommand("changelevel custom %s",MapToLoad);
-		//ForceChangeLevel(MapToLoad, "Crashed Map Recovery")
+		char gamedir[16];
+		GetGameFolderName(gamedir,sizeof(gamedir));
+		if (!StrEqual(gamedir,"bms",false)) ServerCommand("changelevel custom %s",MapToLoad);
+		//ForceChangeLevel(MapToLoad, "Crashed Map Recovery");
 		return;
 	}
 }
@@ -286,76 +225,6 @@ public Action delayedcheck(Handle timer, Handle hQuery)
 		Format(Query,256,"UPDATE srvcm SET mapname = '%s', restarts = 0 WHERE srvname = '%s'",CurrentMap,srvname);
 		SQL_FastQuery(Handle_Database,Query);
 		//hQuery = SQL_Query(Handle_Database,origQuery);
-	}
-}
-
-public Action SaveTimeleft(Handle timer)
-{
-	if(Overwrite){
-		int timeleft;
-		if(!GetMapTimeLeft(timeleft)){
-			if(!GetMapTimeLimit(timeleft)){
-				timeleft = 30;
-			}
-		}
-		char nextmap[256];
-		GetNextMap(nextmap, sizeof(nextmap));
-		Handle SavedMap;
-		SavedMap = CreateKeyValues("SavedMap");
-		FileToKeyValues(SavedMap, FileLoc);
-		KvJumpToKey(SavedMap, "Map", true);
-		KvSetNum(SavedMap, "Timeleft", timeleft);
-		KvSetString(SavedMap, "Nextmap", nextmap) ;
-		KvRewind(SavedMap);
-		KeyValuesToFile(SavedMap, FileLoc);
-		CloseHandle(SavedMap);
-	}
-}
-
-public void OnClientAuthorized(int client)
-{
-	Handle SavedMap;
-	SavedMap = CreateKeyValues("SavedMap");
-	FileToKeyValues(SavedMap, FileLoc);
-	KvJumpToKey(SavedMap, "Map", true);
-	KvSetNum(SavedMap, "restarts", 0);
-	KvRewind(SavedMap);
-	KeyValuesToFile(SavedMap, FileLoc);
-	CloseHandle(SavedMap);
-	if(!TimelimitChanged && GetConVarInt(sm_crashmap_recovertime) == 1)
-	{
-		ServerCommand("mp_timelimit %i", newTimelimit);
-		TimelimitChanged = true;
-		Overwrite = true;
-	}
-}
-
-public void TimerState(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if(GetConVarInt(sm_crashmap_recovertime) < 1)
-	{
-		if(TimeleftHandle != INVALID_HANDLE)
-		{
-			KillTimer(TimeleftHandle);
-			TimeleftHandle = INVALID_HANDLE;
-		}
-	}
-	if(GetConVarInt(sm_crashmap_recovertime) > 0)
-	{
-		float newTime = GetConVarFloat(sm_crashmap_interval);
-		TimeleftHandle = CreateTimer(newTime, SaveTimeleft, _, TIMER_REPEAT);
-		Overwrite = true;
-	}
-}
-
-public void IntervalChange(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if(TimeleftHandle != INVALID_HANDLE)
-	{
-		float newTime = StringToFloat(newValue);
-		KillTimer(TimeleftHandle);
-		TimeleftHandle = INVALID_HANDLE;
-		TimeleftHandle = CreateTimer(newTime, SaveTimeleft, _, TIMER_REPEAT);
 	}
 }
 
