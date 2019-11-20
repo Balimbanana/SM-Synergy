@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.39"
-			"Previous"	"0.38"
+			"Latest"  	"0.40"
+			"Previous"	"0.39"
 		}
 		
-		"Notes"	"Recompile on old headers."
+		"Notes"	"Re-write of autobuildcache to OnLevelInit which is significantly faster."
 	}
 	
 	"Files"
