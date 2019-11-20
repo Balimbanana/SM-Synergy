@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.9"
-			"Previous"	"0.8"
+			"Latest"  	"0.91"
+			"Previous"	"0.9"
 		}
 		
-		"Notes"	"Init."
+		"Notes"	"Added custom death hook for certain npcs that should have certain animations or model overrides."
 	}
 	
 	"Files"
