@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.9"
+#define PLUGIN_VERSION "0.91"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synbuildnpcinfoupdater.txt"
 
 bool hasreadcache = false;
@@ -144,6 +144,7 @@ void buildnpcinfo()
 			}
 		}
 	}
+	CloseHandle(filehandle);
 	if (GetArraySize(npcpacks) > 0) ResetCurrent(-1);
 	return;
 }
@@ -165,6 +166,8 @@ void ResetCurrent(int ent)
 				{
 					ResetPack(dp);
 					char namechk[64];
+					char npccls[32];
+					GetEntityClassname(thisent,npccls,sizeof(npccls));
 					ReadPackString(dp,namechk,sizeof(namechk));
 					if (StrEqual(targn,namechk,false))
 					{
@@ -179,11 +182,15 @@ void ResetCurrent(int ent)
 							SetEntProp(thisent,Prop_Data,"m_iMaxHealth",npchealth);
 						}
 						SetEntPropString(thisent,Prop_Data,"m_iszResponseContext",npcname);
-						if (FileExists(npcmodel,true,NULL_STRING))
+						if (!StrEqual(npccls,"monster_gargantua",false))
 						{
-							if (!IsModelPrecached(npcmodel)) PrecacheModel(npcmodel,true);
-							SetEntityModel(thisent,npcmodel);
+							if (FileExists(npcmodel,true,NULL_STRING))
+							{
+								if (!IsModelPrecached(npcmodel)) PrecacheModel(npcmodel,true);
+								SetEntityModel(thisent,npcmodel);
+							}
 						}
+						HookSingleEntityOutput(thisent,"OnDeath",OnCDeath);
 						break;
 					}
 				}
@@ -222,6 +229,8 @@ public Action ResetThis(Handle timer, int entity)
 				{
 					ResetPack(dp);
 					char namechk[64];
+					char npccls[32];
+					GetEntityClassname(entity,npccls,sizeof(npccls));
 					ReadPackString(dp,namechk,sizeof(namechk));
 					if (StrEqual(targn,namechk,false))
 					{
@@ -236,11 +245,15 @@ public Action ResetThis(Handle timer, int entity)
 							SetEntProp(entity,Prop_Data,"m_iMaxHealth",npchealth);
 						}
 						SetEntPropString(entity,Prop_Data,"m_iszResponseContext",npcname);
-						if (FileExists(npcmodel,true,NULL_STRING))
+						if (!StrEqual(npccls,"monster_gargantua",false))
 						{
-							if (!IsModelPrecached(npcmodel)) PrecacheModel(npcmodel,true);
-							SetEntityModel(entity,npcmodel);
+							if (FileExists(npcmodel,true,NULL_STRING))
+							{
+								if (!IsModelPrecached(npcmodel)) PrecacheModel(npcmodel,true);
+								SetEntityModel(entity,npcmodel);
+							}
 						}
+						HookSingleEntityOutput(entity,"OnDeath",OnCDeath);
 						break;
 					}
 				}
@@ -260,6 +273,42 @@ public Action ResetThis(Handle timer, int entity)
 			CloseHandle(removal);
 		}
 	}
+}
+
+public Action OnCDeath(const char[] output, int caller, int activator, float delay)
+{
+	if (IsValidEntity(caller))
+	{
+		if (HasEntProp(caller,Prop_Data,"m_iHealth"))
+		{
+			char mdl[64];
+			GetEntPropString(caller,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+			int skin = GetEntProp(caller,Prop_Data,"m_nSkin");
+			int body = GetEntProp(caller,Prop_Data,"m_nBody");
+			int seq = GetEntProp(caller,Prop_Data,"m_nSequence");
+			SetEntProp(caller,Prop_Data,"m_nRenderMode",10);
+			float orgs[3];
+			float angs[3];
+			if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",orgs);
+			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",orgs);
+			if (HasEntProp(caller,Prop_Data,"m_angRotation")) GetEntPropVector(caller,Prop_Data,"m_angRotation",angs);
+			int generic = CreateEntityByName("generic_actor");
+			if (generic != -1)
+			{
+				DispatchKeyValue(generic,"model",mdl);
+				TeleportEntity(generic,orgs,angs,NULL_VECTOR);
+				DispatchSpawn(generic);
+				ActivateEntity(generic);
+				SetEntProp(generic,Prop_Data,"m_nSkin",skin);
+				SetEntProp(generic,Prop_Data,"m_nBody",body);
+				SetEntProp(generic,Prop_Data,"m_nSequence",seq);
+				SetVariantInt(0);
+				AcceptEntityInput(generic,"SetHealth");
+				//AcceptEntityInput(generic,"BecomeRagdoll");
+			}
+		}
+	}
+	return Plugin_Continue;
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
