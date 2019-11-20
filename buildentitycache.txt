@@ -8,7 +8,7 @@
 			"Previous"	"0.39"
 		}
 		
-		"Notes"	"Re-write of autobuildcache to OnLevelInit which is significantly faster."
+		"Notes"	"Recomp."
 	}
 	
 	"Files"
