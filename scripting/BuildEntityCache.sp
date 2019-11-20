@@ -11,7 +11,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "0.40"
+#define PLUGIN_VERSION "0.39"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -35,7 +35,7 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	Handle cvar = FindConVar("autobuildcache");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("autobuildcache", "1", "Enable automatic entity cache build on map start if none is found.", _, true, 0.0, true, 1.0);
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("autobuildcache", "0", "Enable automatic entity cache build on map start if none is found.", _, true, 0.0, true, 1.0);
 	AutoBuild = GetConVarBool(cvar);
 	HookConVarChange(cvar, autobuildch);
 	CloseHandle(cvar);
@@ -1125,6 +1125,23 @@ public void OnMapStart()
 	{
 		GetCurrentMap(curmap,sizeof(curmap));
 		Format(curmap,sizeof(curmap),"maps/%s.bsp",curmap);
+		GetCurrentMap(mapbuf,sizeof(mapbuf));
+		char contentdata[64];
+		Handle cvar = FindConVar("content_metadata");
+		if (cvar != INVALID_HANDLE)
+		{
+			GetConVarString(cvar,contentdata,sizeof(contentdata));
+			char fixuptmp[16][16];
+			ExplodeString(contentdata," ",fixuptmp,16,16,true);
+			Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+		}
+		CloseHandle(cvar);
+		if (strlen(contentdata) < 1) Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s.ent",mapbuf);
+		else Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s_%s.ent",contentdata,mapbuf);
+		if (AutoBuild)
+		{
+			CreateTimer(1.0,buildinfodelay,_,TIMER_FLAG_NO_MAPCHANGE);
+		}
 	}
 }
 
@@ -1248,33 +1265,6 @@ void buildcache(int startline, Handle mapset)
 	CloseHandle(cachefile);
 	CloseHandle(filehandle);
 	openbrackets = 0;
-}
-
-public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
-{
-	if (AutoBuild)
-	{
-		char contentdata[64];
-		char szMapNameadj[128];
-		Handle cvar = FindConVar("content_metadata");
-		if (cvar != INVALID_HANDLE)
-		{
-			GetConVarString(cvar,contentdata,sizeof(contentdata));
-			char fixuptmp[16][16];
-			ExplodeString(contentdata," ",fixuptmp,16,16,true);
-			Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
-		}
-		CloseHandle(cvar);
-		if (strlen(contentdata) < 1) Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s.ent",szMapName);
-		else Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s_%s.ent",contentdata,szMapName);
-		if (!FileExists(szMapNameadj,false))
-		{
-			Handle writefile = OpenFile(szMapNameadj,"w");
-			WriteFileString(writefile,szMapEntities,false);
-			CloseHandle(writefile);
-		}
-	}
-	return Plugin_Continue;
 }
 
 public void OnMapEnd()
