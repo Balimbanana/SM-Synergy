@@ -202,7 +202,7 @@ public void OnMapStart()
 			SQL_FastQuery(Handle_Database,Query);
 			hQuery = SQL_Query(Handle_Database,origQuery);
 			CloseHandle(hQuery);
-			PrintToServer("Q %s \nOQ %s \n map %s",Query,origQuery,MapToLoad);
+			LogToFile(logPath,"Q %s \nOQ %s \n map %s",Query,origQuery,MapToLoad);
 		}
 		
 		LogToFile(logPath, "[CMR] %s loaded after server crash.", MapToLoad);
