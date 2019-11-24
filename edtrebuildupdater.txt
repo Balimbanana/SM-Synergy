@@ -1,0 +1,19 @@
+"Updater"
+{
+	"Information"
+	{
+		"Version"
+		{
+			"Latest"  	"0.1"
+			"Previous"	"0.09"
+		}
+		
+		"Notes"	"Init."
+	}
+	
+	"Files"
+	{
+		"Plugin"	"Path_SM/plugins/edtrebuild.smx"
+		"Source"	"Path_SM/scripting/edtrebuild.sp"
+	}
+}
