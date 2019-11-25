@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.11"
-			"Previous"	"0.1"
+			"Latest"  	"0.12"
+			"Previous"	"0.11"
 		}
 		
 		"Notes"	"Added support for reading UCS 2 encoded EDT files."
