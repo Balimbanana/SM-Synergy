@@ -548,7 +548,8 @@ void ReadEDT(char[] edtfile)
 					{
 						char edtcls[64];
 						Format(edtcls,sizeof(edtcls),"%s",cls);
-						if (dbglvl) PrintToServer("Create %s at origin %s",cls,originch);
+						if (dbglvl > 0) PrintToServer("Create %s at origin %s With %i KVs",cls,originch,GetArraySize(passedarr));
+						else if (dbglvl) PrintToServer("Create %s at origin %s",cls,originch);
 						Format(edtcls,sizeof(edtcls),"classname %s",edtcls);
 						if (FindStringInArray(passedarr,edtcls) == -1) PushArrayString(passedarr,edtcls);
 						Handle dupearr = CloneArray(passedarr);
@@ -641,6 +642,8 @@ void FormatKVs(Handle arrpass, char[] passchar, char[] cls)
 	{
 		char kvs[128][256];
 		char fmt[256];
+		ReplaceStringEx(passchar,256,"	"," ");
+		ReplaceString(passchar,256,"	","");
 		ExplodeString(passchar," ",kvs,128,256);
 		int valdef = -1;
 		for (int i = 0;i<64;i++)
