@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.11"
+#define PLUGIN_VERSION "0.12"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -400,13 +400,13 @@ void ReadEDT(char[] edtfile)
 		char targn[64];
 		char originch[128];
 		Handle passedarr = CreateArray(64);
-		Handle filehandle = OpenFile(edtfile,"r",true,NULL_STRING);
+		Handle filehandle = OpenFile(edtfile,"rt",true,NULL_STRING);
 		while(ReadFileLine(filehandle,line,sizeof(line)))
 		{
 			TrimString(line);
 			if (strlen(line) > 0)
 			{
-				if (strlen(line) < 4)
+				if ((strlen(line) < 4) && (StrContains(line,"//",false) != 0) && (!StrEqual(line,"{",false)) && (!StrEqual(line,"}",false)) && (!StrEqual(line,"} }",false)))
 				{
 					char additional[32];
 					ReadFileLine(filehandle,additional,sizeof(additional));
@@ -429,11 +429,11 @@ void ReadEDT(char[] edtfile)
 						Format(line,commentpos+1,"%s",line);
 					}
 				}
-				if (StrEqual(line,"console",false))
+				if ((StrEqual(line,"console",false)) || (StrContains(line,"console",false) != -1))
 				{
 					CVars = true;
 				}
-				else if (CVars)
+				if (CVars)
 				{
 					if ((StrContains(line,"entity",false) != -1) || (StrEqual(line,"}",false)))
 					{
