@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.1"
-			"Previous"	"0.09"
+			"Latest"  	"0.11"
+			"Previous"	"0.1"
 		}
 		
-		"Notes"	"Init."
+		"Notes"	"Added support for reading UCS 2 encoded EDT files."
 	}
 	
 	"Files"
