@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.1"
+#define PLUGIN_VERSION "0.11"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -81,9 +81,9 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		}
 		ClearArray(cvaroriginals);
 	}
-	char curmap[64];
+	char curmap[128];
 	Format(curmap,sizeof(curmap),"maps/%s.edt",szMapName);
-	char curmap2[64];
+	char curmap2[128];
 	Format(curmap2,sizeof(curmap2),"maps/%s.edt2",szMapName);
 	if ((FileExists(curmap,true,NULL_STRING)) || (FileExists(curmap2,true,NULL_STRING)))
 	{
@@ -351,6 +351,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		CloseHandle(writefile);
 		return Plugin_Changed;
 	}
+	else if (dbglvl > 0) PrintToServer("No EDT found at %s or %s",curmap,curmap2);
 	ClearArray(g_DeleteClasses);
 	ClearArray(g_DeleteClassOrigin);
 	ClearArray(g_DeleteTargets);
@@ -405,6 +406,21 @@ void ReadEDT(char[] edtfile)
 			TrimString(line);
 			if (strlen(line) > 0)
 			{
+				if (strlen(line) < 4)
+				{
+					char additional[32];
+					ReadFileLine(filehandle,additional,sizeof(additional));
+					Format(line,sizeof(line),"%s%s",line,additional);
+					while (ReadFileString(filehandle,additional,sizeof(additional)) > 0)
+					{
+						if (StrEqual(additional,"\n",false))
+						{
+							ReplaceString(line,sizeof(line),"\n","");
+							break;
+						}
+						Format(line,sizeof(line),"%s%s",line,additional);
+					}
+				}
 				if (StrContains(line,"//",false) != 0)
 				{
 					int commentpos = StrContains(line,"//",false);
