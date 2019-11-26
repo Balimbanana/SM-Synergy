@@ -90,11 +90,11 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		if (FileExists(curmap2,true,NULL_STRING)) Format(curmap,sizeof(curmap),"%s",curmap2);
 		if (dbglvl) PrintToServer("EDT %s exists",curmap);
 		ReadEDT(curmap);
-		char curbuf[4096][1024];
+		char curbuf[4096][2048];
 		char rmchar[2];
 		Format(rmchar,sizeof(rmchar),"%s%s",szMapEntities[0],szMapEntities[1]);
-		ExplodeString(szMapEntities,"{",curbuf,4096,1024);
-		char tmpline[1024];
+		ExplodeString(szMapEntities,"{",curbuf,4096,2048);
+		char tmpline[2048];
 		char cls[64];
 		char clsorg[128];
 		char originch[64];
@@ -271,7 +271,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 						{
 							char edtdata[128];
 							char replacedata[128];
-							char buffadded[1024];
+							char buffadded[2048];
 							for (int j = 0;j<GetArraySize(passedarr);j++)
 							{
 								GetArrayString(passedarr,j,edtdata,sizeof(edtdata));
