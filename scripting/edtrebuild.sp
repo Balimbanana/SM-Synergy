@@ -109,7 +109,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				Handle passedarr = GetArrayCell(g_CreateEnts,k);
 				if (passedarr != INVALID_HANDLE)
 				{
-					char writer[1024];
+					char writer[4096];
 					char edtclass[64];
 					char edtclassorg[64];
 					Format(writer,sizeof(writer),"\n{");
