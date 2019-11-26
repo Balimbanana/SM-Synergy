@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.12"
+#define PLUGIN_VERSION "0.13"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -279,7 +279,9 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								char edtval[64];
 								ExplodeString(edtdata," ",tmpexpl,8,32);
 								Format(edtkey,sizeof(edtkey),"%s",tmpexpl[0]);
-								Format(edtval,sizeof(edtval),"%s",tmpexpl[1]);
+								Format(edtval,sizeof(edtval),"%s",edtdata);
+								ReplaceStringEx(edtval,sizeof(edtval),edtkey,"");
+								TrimString(edtval);
 								if (StrContains(edtkey,"\"",false) != -1) ReplaceString(edtkey,sizeof(edtkey),"\"","");
 								if (StrContains(edtval,"\"",false) != -1) ReplaceString(edtval,sizeof(edtval),"\"","");
 								int findedit = StrContains(curbuf[i],edtkey,false);
