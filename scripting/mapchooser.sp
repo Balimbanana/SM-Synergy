@@ -1038,14 +1038,14 @@ CreateNextVote()
 	ClearArray(g_NextMapList);
 	
 	char map[PLATFORM_MAX_PATH];
-	new Handle:tempMaps  = CloneArray(g_MapList);
+	Handle tempMaps  = CloneArray(g_MapList);
 	
 	GetCurrentMap(map, sizeof(map));
 	RemoveStringFromArray(tempMaps, map);
 	
 	if (g_Cvar_ExcludeMaps.IntValue && GetArraySize(tempMaps) > g_Cvar_ExcludeMaps.IntValue)
 	{
-		for (new i = 0; i < GetArraySize(g_OldMapList); i++)
+		for (int i = 0; i < GetArraySize(g_OldMapList); i++)
 		{
 			GetArrayString(g_OldMapList, i, map, sizeof(map));
 			RemoveStringFromArray(tempMaps, map);
@@ -1057,6 +1057,45 @@ CreateNextVote()
 	{
 		int b = GetRandomInt(0, GetArraySize(tempMaps) - 1);
 		GetArrayString(tempMaps, b, map, sizeof(map));
+		if (StrContains(map,"d1_town_0",false) == 0) Format(map,sizeof(map),"d1_town_01");
+		else if (StrContains(map,"d1_canals_",false) == 0) Format(map,sizeof(map),"d1_canals_01");
+		else if (StrContains(map,"d1_trainstation_06",false) == 0) Format(map,sizeof(map),"d1_trainstation_06");
+		else if (StrContains(map,"d1_trainstation_0",false) == 0) Format(map,sizeof(map),"d1_trainstation_01");
+		else if (StrContains(map,"d2_coast_0",false) == 0) Format(map,sizeof(map),"d2_coast_01");
+		else if (StrContains(map,"d2_prison_0",false) == 0) Format(map,sizeof(map),"d2_prison_01");
+		else if (StrContains(map,"d3_c17_",false) == 0) Format(map,sizeof(map),"d3_c17_01");
+		else if (StrContains(map,"bm_c",false) == 0) Format(map,sizeof(map),"bm_c0a0a");
+		else if (StrContains(map,"xen_c",false) == 0) Format(map,sizeof(map),"xen_c4a1");
+		else if (StrContains(map,"ravenholm",false) == 0) Format(map,sizeof(map),"Ravenholm00");
+		else if (StrContains(map,"cd",false) == 0) Format(map,sizeof(map),"cd0");
+		else if (StrContains(map,"ce_0",false) == 0) Format(map,sizeof(map),"ce_01");
+		else if (StrContains(map,"bonus_earlyprison_0",false) == 0) Format(map,sizeof(map),"bonus_earlyprison_01");
+		else if (StrContains(map,"leonHL2-",false) == 0) Format(map,sizeof(map),"leonHL2-2");
+		else if (StrContains(map,"lifelostprison_0",false) == 0) Format(map,sizeof(map),"lifelostprison_01");
+		else if (StrContains(map,"metastasis_",false) == 0) Format(map,sizeof(map),"metastasis_1");
+		else if (StrContains(map,"mimp",false) == 0) Format(map,sizeof(map),"mimp1");
+		else if ((StrContains(map,"mine_01_",false) == 0) || (StrContains(map,"mine01_",false) == 0)) Format(map,sizeof(map),"mine_01_00");
+		else if (StrContains(map,"mpr_0",false) == 0) Format(map,sizeof(map),"mpr_010_arrival");
+		else if (StrContains(map,"penetration0",false) == 0) Format(map,sizeof(map),"Penetration01");
+		else if (StrContains(map,"po_map",false) == 0) Format(map,sizeof(map),"po_map1");
+		else if (StrContains(map,"ptsd_festive_",false) == 0) Format(map,sizeof(map),"ptsd_festive_1");
+		else if (StrContains(map,"ptsd_",false) == 0) Format(map,sizeof(map),"ptsd_1");
+		else if (StrContains(map,"r_map",false) == 0) Format(map,sizeof(map),"r_map1");
+		else if (StrContains(map,"ra_c1l",false) == 0) Format(map,sizeof(map),"ra_c1l1");
+		else if (StrContains(map,"sh_alchemilla",false) == 0) Format(map,sizeof(map),"sh_alchemilla");
+		else if (StrContains(map,"slums_",false) == 0) Format(map,sizeof(map),"slums_1");
+		else if ((StrContains(map,"sn_level0",false) == 0) || (StrEqual(map,"sn_outro",false))) Format(map,sizeof(map),"sn_level01a");
+		else if (StrContains(map,"sp_c14_",false) == 0) Format(map,sizeof(map),"sp_c14_1");
+		else if (StrContains(map,"up_",false) == 0) Format(map,sizeof(map),"up_retreat_a");
+		else if (StrContains(map,"uw_",false) == 0) Format(map,sizeof(map),"uw_1");
+		else if (StrContains(map,"dw_ep1_",false) == 0) Format(map,sizeof(map),"dw_ep1_00");
+		else if (StrContains(map,"ep2_deepdown_",false) == 0) Format(map,sizeof(map),"ep2_deepdown_1");
+		else if (StrContains(map,"islandunderground",false) == 0) Format(map,sizeof(map),"islandunderground");
+		else if (StrContains(map,"islandplant",false) == 0) Format(map,sizeof(map),"islandplant");
+		else if (StrContains(map,"islandbuggy",false) == 0) Format(map,sizeof(map),"islandbuggy");
+		else if (StrContains(map,"islandcove",false) == 0) Format(map,sizeof(map),"islandcove");
+		else if (StrContains(map,"island",false) == 0) Format(map,sizeof(map),"islandescape");
+		else if ((StrContains(map,"dayhardpart",false) == 0) || (StrEqual(map,"redrum",false)) || (StrEqual(map,"breencave",false)) || (StrEqual(map,"Finale",false)) || (StrEqual(map,"voyage",false))) Format(map,sizeof(map),"dayhardpart1");
 		PushArrayString(g_NextMapList, map);
 		RemoveFromArray(tempMaps, b);
 	}
@@ -1527,6 +1566,10 @@ public Action GetMapTag(const char[] map)
 	else if ((StrContains(map,"az_c",false) == 0) || (StrEqual(map,"az_intro",false)))
 	{
 		Format(maptag, sizeof(maptag), "Entropy: Zero");
+	}
+	else if (StrContains(map,"oc_",false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Obsidian Conflict");
 	}
 	else if ((StrContains(map,"Uh_Prologue_",false) == 0) || (StrContains(map,"Uh_Chapter1_",false) == 0) || (StrContains(map,"Uh_Chapter2_",false) == 0) || (StrContains(map,"Uh_House_",false) == 0) || (StrContains(map,"Uh_Dreams_",false) == 0))
 	{
