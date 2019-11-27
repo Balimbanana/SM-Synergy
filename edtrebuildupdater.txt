@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.14"
-			"Previous"	"0.13"
+			"Latest"  	"0.15"
+			"Previous"	"0.14"
 		}
 		
 		"Notes"	"Fixed large deletes."
