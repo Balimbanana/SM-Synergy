@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.17"
-			"Previous"	"0.16"
+			"Latest"  	"0.18"
+			"Previous"	"0.17"
 		}
 		
 		"Notes"	"Fixed certain edit scenarios."
