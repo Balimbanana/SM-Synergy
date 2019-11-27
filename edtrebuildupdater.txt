@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.15"
-			"Previous"	"0.14"
+			"Latest"  	"0.16"
+			"Previous"	"0.15"
 		}
 		
-		"Notes"	"Fixed large deletes."
+		"Notes"	"Fixed certain edit scenarios."
 	}
 	
 	"Files"
