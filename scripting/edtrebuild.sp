@@ -592,6 +592,8 @@ void ReadEDT(char[] edtfile)
 					originch = "";
 					origindefined = false;
 					CreatingEnt = false;
+					EditingEnt = false;
+					DeletingEnt = false;
 					TargnDefined = false;
 				}
 				if ((StrContains(line,"}",false) != -1) && (EditingEnt) || (DeletingEnt))
@@ -634,7 +636,7 @@ void ReadEDT(char[] edtfile)
 							}
 						}
 					}
-					else
+					else if (strlen(targn) > 0)
 					{
 						if (DeletingEnt)
 						{
