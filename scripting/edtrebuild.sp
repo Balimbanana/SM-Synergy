@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.15"
+#define PLUGIN_VERSION "0.16"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -208,6 +208,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			{
 				originch = "";
 				cls = "";
+				targn = "";
 				//if (StrContains(curbuf[i],"",false) != -1) ReplaceString(curbuf[i],sizeof(curbuf[]),"",",");
 				Format(tmpline,sizeof(tmpline),"%s",curbuf[i]);
 				int findglobals = StrContains(curbuf[i],"\"globalname\"",false);
@@ -245,15 +246,14 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					TrimString(targn);
 				}
 				Format(clsorg,sizeof(clsorg),"%s,%s",cls,originch);
-				if ((FindStringInArray(g_DeleteClasses,cls) != -1) || (FindStringInArray(g_DeleteClassOrigin,clsorg) != -1) || (FindStringInArray(g_DeleteTargets,targn) != -1))
+				if ((FindStringInArray(g_DeleteClasses,cls) != -1) || (FindStringInArray(g_DeleteClassOrigin,clsorg) != -1) || ((FindStringInArray(g_DeleteTargets,targn) != -1) && (strlen(targn) > 0)))
 				{
 					int findprev = StrContains(szMapEntities,curbuf[i],false);
 					if (findprev != -1)
 					{
-						//char rmchar[2];
-						//Format(rmchar,sizeof(rmchar),"%s%s",szMapEntities[findprev-1],szMapEntities[findprev]);
 						Format(curbuf[i],sizeof(curbuf[]),"%s%s",rmchar,curbuf[i]);
 						ReplaceString(szMapEntities,sizeof(szMapEntities),curbuf[i],"");
+						//PrintToServer("RM %s\n%s from %s %i %i",cls,curbuf[i],clsorg,FindStringInArray(g_DeleteClassOrigin,clsorg),FindStringInArray(g_DeleteClasses,cls));
 						if (StrContains(curbuf[i],"}",false) == -1)
 						{
 							char tmpbuf[8192];
