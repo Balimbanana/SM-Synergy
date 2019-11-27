@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.16"
+#define PLUGIN_VERSION "0.17"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -55,7 +55,7 @@ public void OnPluginStart()
 	cvarmods = CreateArray(64);
 	
 	Handle cvar = FindConVar("edtdbg");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtdbg", "0", "Set debug level of EDT read.", _, true, 0.0, true, 3.0);
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtdbg", "0", "Set debug level of EDT read.", _, true, 0.0, true, 4.0);
 	dbglvl = GetConVarInt(cvar);
 	HookConVarChange(cvar,dbgch);
 	CloseHandle(cvar);
@@ -90,11 +90,14 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		if (FileExists(curmap2,true,NULL_STRING)) Format(curmap,sizeof(curmap),"%s",curmap2);
 		if (dbglvl) PrintToServer("EDT %s exists",curmap);
 		ReadEDT(curmap);
-		char curbuf[4096][1024];
+		char curbuf[4096][768];
 		char rmchar[2];
 		Format(rmchar,sizeof(rmchar),"%s%s",szMapEntities[0],szMapEntities[1]);
-		ExplodeString(szMapEntities,"{",curbuf,4096,1024);
-		char tmpline[2048];
+		ExplodeString(szMapEntities,"{",curbuf,4096,768);
+		char tmpline[8196];
+		char tmpbuf[4096];
+		char writer[4096];
+		char buffadded[8196];
 		char cls[64];
 		char clsorg[128];
 		char originch[64];
@@ -109,7 +112,6 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				Handle passedarr = GetArrayCell(g_CreateEnts,k);
 				if (passedarr != INVALID_HANDLE)
 				{
-					char writer[4096];
 					char edtclass[64];
 					char edtclassorg[64];
 					Format(writer,sizeof(writer),"\n{");
@@ -211,7 +213,18 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				targn = "";
 				//if (StrContains(curbuf[i],"",false) != -1) ReplaceString(curbuf[i],sizeof(curbuf[]),"",",");
 				Format(tmpline,sizeof(tmpline),"%s",curbuf[i]);
-				int findglobals = StrContains(curbuf[i],"\"globalname\"",false);
+				int findbufend = StrContains(szMapEntities,tmpline,false);
+				if (StrContains(tmpline,"}",false) == -1)
+				{
+					Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[findbufend+strlen(tmpline)]);
+					int findend = StrContains(tmpbuf,"}",false);
+					if (findend != -1)
+					{
+						Format(tmpbuf,findend+2,"%s",tmpbuf);
+						Format(tmpline,sizeof(tmpline),"%s%s",tmpline,tmpbuf);
+					}
+				}
+				int findglobals = StrContains(tmpline,"\"globalname\"",false);
 				if (findglobals != -1)
 				{
 					Format(globalremove,sizeof(globalremove),"%s",tmpline[findglobals]);
@@ -221,7 +234,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					Format(globalremove,sizeof(globalremove),"\"globalname\" \"%s\"",globalremove);
 					ReplaceString(szMapEntities,sizeof(szMapEntities),globalremove,"");
 				}
-				int findcls = StrContains(curbuf[i],"\"classname\" \"",false);
+				int findcls = StrContains(tmpline,"\"classname\" \"",false);
 				if (findcls != -1)
 				{
 					Format(cls,sizeof(cls),"%s",tmpline[findcls]);
@@ -229,7 +242,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					Format(cls,sizeof(cls),"%s",tmpexpl[3]);
 					TrimString(cls);
 				}
-				int findorg = StrContains(curbuf[i],"\"origin\" \"",false);
+				int findorg = StrContains(tmpline,"\"origin\" \"",false);
 				if (findorg != -1)
 				{
 					Format(originch,sizeof(originch),"%s",tmpline[findorg]);
@@ -237,7 +250,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					Format(originch,sizeof(originch),"%s",tmpexpl[3]);
 					TrimString(originch);
 				}
-				int findtargn = StrContains(curbuf[i],"\"targetname\" \"",false);
+				int findtargn = StrContains(tmpline,"\"targetname\" \"",false);
 				if (findtargn != -1)
 				{
 					Format(targn,sizeof(targn),"%s",tmpline[findtargn]);
@@ -248,15 +261,14 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				Format(clsorg,sizeof(clsorg),"%s,%s",cls,originch);
 				if ((FindStringInArray(g_DeleteClasses,cls) != -1) || (FindStringInArray(g_DeleteClassOrigin,clsorg) != -1) || ((FindStringInArray(g_DeleteTargets,targn) != -1) && (strlen(targn) > 0)))
 				{
-					int findprev = StrContains(szMapEntities,curbuf[i],false);
+					int findprev = StrContains(szMapEntities,tmpline,false);
 					if (findprev != -1)
 					{
-						Format(curbuf[i],sizeof(curbuf[]),"%s%s",rmchar,curbuf[i]);
-						ReplaceString(szMapEntities,sizeof(szMapEntities),curbuf[i],"");
-						//PrintToServer("RM %s\n%s from %s %i %i",cls,curbuf[i],clsorg,FindStringInArray(g_DeleteClassOrigin,clsorg),FindStringInArray(g_DeleteClasses,cls));
-						if (StrContains(curbuf[i],"}",false) == -1)
+						Format(tmpline,sizeof(tmpline),"%s%s",rmchar,tmpline);
+						ReplaceString(szMapEntities,sizeof(szMapEntities),tmpline,"");
+						if (dbglvl == 4) PrintToServer("Delete %s\n%s from %s %i %i",cls,tmpline,clsorg,FindStringInArray(g_DeleteClassOrigin,clsorg),FindStringInArray(g_DeleteClasses,cls));
+						if (StrContains(tmpline,"}",false) == -1)
 						{
-							char tmpbuf[8192];
 							Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[findprev-1]);
 							int findend = StrContains(tmpbuf,"}",false);
 							if (findend != -1)
@@ -283,12 +295,11 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 						{
 							char edtdata[128];
 							char replacedata[128];
-							char buffadded[2048];
 							for (int j = 0;j<GetArraySize(passedarr);j++)
 							{
 								GetArrayString(passedarr,j,edtdata,sizeof(edtdata));
 								char edtkey[64];
-								char edtval[64];
+								char edtval[128];
 								ExplodeString(edtdata," ",tmpexpl,8,128);
 								Format(edtkey,sizeof(edtkey),"%s",tmpexpl[0]);
 								Format(edtval,sizeof(edtval),"%s",edtdata);
@@ -296,10 +307,10 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								TrimString(edtval);
 								if (StrContains(edtkey,"\"",false) != -1) ReplaceString(edtkey,sizeof(edtkey),"\"","");
 								if (StrContains(edtval,"\"",false) != -1) ReplaceString(edtval,sizeof(edtval),"\"","");
-								int findedit = StrContains(curbuf[i],edtkey,false);
+								int findedit = StrContains(tmpline,edtkey,false);
 								if (StrEqual(edtkey,"edt_addedspawnflags",false))
 								{
-									findedit = StrContains(curbuf[i],"spawnflags",false);
+									findedit = StrContains(tmpline,"spawnflags",false);
 								}
 								if ((findedit != -1) && (StrContains(edtkey,"On",false) != 0) && (StrContains(edtkey,"PlayerO",false) != 0) && (StrContains(edtkey,"Pressed",false) != 0) && (StrContains(edtkey,"Unpressed",false) != 0))
 								{
@@ -307,29 +318,32 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 									ExplodeString(buffadded,"\"",tmpexpl,8,128);
 									Format(replacedata,sizeof(replacedata),"%s\" \"%s\"",tmpexpl[0],tmpexpl[2]);
 									TrimString(replacedata);
-									Format(buffadded,sizeof(buffadded),"%s",curbuf[i]);
+									Format(buffadded,sizeof(buffadded),"%s",tmpline);
 									if (StrEqual(edtkey,"edt_addedspawnflags",false))
 									{
 										Format(edtval,sizeof(edtval),"%i",StringToInt(tmpexpl[2])+StringToInt(edtval));
 										Format(edtkey,sizeof(edtkey),"spawnflags");
 									}
 									Format(edtkey,sizeof(edtkey),"%s\" \"%s\"",edtkey,edtval);
+									if (dbglvl == 4) PrintToServer("Replace %s with %s",replacedata,edtkey);
 									ReplaceString(buffadded,sizeof(buffadded),replacedata,edtkey);
-									if (StrContains(szMapEntities,curbuf[i],false) != -1)
+									if (StrContains(szMapEntities,tmpline,false) != -1)
 									{
-										ReplaceString(szMapEntities,sizeof(szMapEntities),curbuf[i],buffadded);
+										ReplaceString(szMapEntities,sizeof(szMapEntities),tmpline,buffadded);
 										//Additional replaces
-										Format(curbuf[i],sizeof(curbuf[]),"%s",buffadded);
+										Format(tmpline,sizeof(tmpline),"%s",buffadded);
 									}
 								}
-								else if (strlen(curbuf[i]) > 0)
+								else if (strlen(tmpline) > 0)
 								{
 									//{
-									Format(buffadded,sizeof(buffadded),"%s",curbuf[i]);
-									ReplaceString(buffadded,sizeof(buffadded),"\n}","");
-									Format(buffadded,sizeof(buffadded),"%s\"%s\" \"%s\"\n}\n",buffadded,edtkey,edtval);
-									ReplaceString(szMapEntities,sizeof(szMapEntities),curbuf[i],buffadded);
-									Format(curbuf[i],sizeof(curbuf[]),"%s",buffadded);
+									Format(tmpline,sizeof(tmpline),"%s%s",rmchar,tmpline);
+									Format(buffadded,sizeof(buffadded),"%s",tmpline);
+									ReplaceString(buffadded,sizeof(buffadded),"}","");
+									if (dbglvl == 4) PrintToServer("Add KV to %s %s\n%s %s",clsorg,targn,edtkey,edtval);
+									Format(buffadded,sizeof(buffadded),"%s\"%s\" \"%s\"\n}",buffadded,edtkey,edtval);
+									ReplaceString(szMapEntities,sizeof(szMapEntities),tmpline,buffadded);
+									Format(tmpline,sizeof(tmpline),"%s",buffadded);
 								}
 							}
 						}
