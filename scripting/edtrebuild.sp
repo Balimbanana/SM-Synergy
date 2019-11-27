@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.14"
+#define PLUGIN_VERSION "0.15"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -257,14 +257,13 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 						if (StrContains(curbuf[i],"}",false) == -1)
 						{
 							char tmpbuf[8192];
-							Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[findprev]);
-							PrintToServer("%s",tmpbuf);
+							Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[findprev-1]);
 							int findend = StrContains(tmpbuf,"}",false);
 							if (findend != -1)
 							{
 								Format(tmpbuf,findend+2,"%s",tmpbuf);
 							}
-							PrintToServer("%s",tmpbuf);
+							//PrintToServer("RM %s %i",tmpbuf,findend);
 							ReplaceString(szMapEntities,sizeof(szMapEntities),tmpbuf,"");
 						}
 					}
@@ -362,7 +361,10 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		if (strlen(contentdata) < 1) Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s.ent",szMapName);
 		else Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s_%s.ent",contentdata,szMapName);
 		Handle writefile = OpenFile(szMapNameadj,"wb",true,NULL_STRING);
-		WriteFileString(writefile,szMapEntities,false);
+		if (writefile != INVALID_HANDLE)
+		{
+			WriteFileString(writefile,szMapEntities,false);
+		}
 		CloseHandle(writefile);
 		return Plugin_Changed;
 	}
@@ -653,7 +655,7 @@ void ReadEDT(char[] edtfile)
 
 void FormatKVs(Handle arrpass, char[] passchar, char[] cls)
 {
-	if ((strlen(passchar) > 0) && (arrpass != INVALID_HANDLE))
+	if ((strlen(passchar) > 0) && (StrContains(passchar,"//",false) != 0) && (arrpass != INVALID_HANDLE))
 	{
 		char kvs[128][256];
 		char fmt[256];
@@ -669,6 +671,7 @@ void FormatKVs(Handle arrpass, char[] passchar, char[] cls)
 			}
 			else
 			{
+				if (StrEqual(kvs[i],"{",false)) i++;
 				if ((strlen(kvs[i]) > 0) && (strlen(kvs[i+1]) > 0))
 				{
 					if ((StrContains(passchar,"values",false) > StrContains(passchar,"classname",false)) && (StrContains(passchar,"classname",false) != -1) && (StrContains(passchar,"edit",false) != -1) && (valdef < 1))
