@@ -8,7 +8,7 @@
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 
-#define PLUGIN_VERSION "1.68"
+#define PLUGIN_VERSION "1.69"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
 public Plugin:myinfo = 
@@ -203,11 +203,22 @@ public void plymdlchk(QueryCookie cookie, int client, ConVarQueryResult result, 
 {
 	if (strlen(cvarValue) > 0)
 	{
-		char chk1[500];
-		Format(chk1,sizeof(chk1),"INSERT INTO modelloader VALUES( '%s', '%s');",SteamIDbuf[client],cvarValue);
-		SQL_Query(Handle_Database,chk1);
-		LoadClient(client);
-		CreateTimer(0.1, setmodeltimer, client);
+		if (FileExists(cvarValue,true,NULL_STRING))
+		{
+			char chk1[500];
+			Format(chk1,sizeof(chk1),"INSERT INTO modelloader VALUES( '%s', '%s');",SteamIDbuf[client],cvarValue);
+			SQL_Query(Handle_Database,chk1);
+			LoadClient(client);
+			CreateTimer(0.1, setmodeltimer, client);
+		}
+		else
+		{
+			char chk1[500];
+			Format(chk1,sizeof(chk1),"INSERT INTO modelloader VALUES( '%s', 'male_01.mdl');",SteamIDbuf[client]);
+			SQL_Query(Handle_Database,chk1);
+			LoadClient(client);
+			CreateTimer(0.1, setmodeltimer, client);
+		}
 	}
 }
 
@@ -378,6 +389,13 @@ public Action setmodel(int client, const char[] model)
 		if ((StrContains (model, "male") != -1) || (StrContains (model, "female") != -1) || (StrContains (model, "hero") != -1))
 		{
 			found++;
+		}
+		if (strlen(model) > 0)
+		{
+			if (!FileExists(model,true,NULL_STRING))
+			{
+				found = -1;
+			}
 		}
 		if ((found > -1) && (!(StrEqual(model,""))))
 		{
