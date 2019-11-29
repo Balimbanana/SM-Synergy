@@ -355,7 +355,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								if (StrContains(edtkey,"\"",false) != -1) ReplaceString(edtkey,sizeof(edtkey),"\"","");
 								if (StrContains(edtval,"\"",false) != -1) ReplaceString(edtval,sizeof(edtval),"\"","");
 								int findedit = StrContains(tmpline,edtkey,false);
-								if ((StrEqual(edtkey,"edt_addedspawnflags",false)) || (StrEqual(edtkey,"edt_removespawnflags",false)))
+								if ((StrEqual(edtkey,"edt_addspawnflags",false)) || (StrEqual(edtkey,"edt_addedspawnflags",false)) || (StrEqual(edtkey,"edt_removespawnflags",false)))
 								{
 									findedit = StrContains(tmpline,"spawnflags",false);
 								}
@@ -366,7 +366,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 									Format(replacedata,sizeof(replacedata),"%s\" \"%s\"",tmpexpl[0],tmpexpl[2]);
 									TrimString(replacedata);
 									Format(buffadded,sizeof(buffadded),"%s",tmpline);
-									if (StrEqual(edtkey,"edt_addedspawnflags",false))
+									if ((StrEqual(edtkey,"edt_addspawnflags",false)) || (StrEqual(edtkey,"edt_addedspawnflags",false)))
 									{
 										Format(edtval,sizeof(edtval),"%i",StringToInt(tmpexpl[2])+StringToInt(edtval));
 										Format(edtkey,sizeof(edtkey),"spawnflags");
