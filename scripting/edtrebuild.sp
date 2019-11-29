@@ -99,7 +99,8 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		char writer[4096];
 		char buffadded[8196];
 		char cls[64];
-		char clsorg[128];
+		char clsorg[64];
+		char clsorground[64];
 		char originch[64];
 		char globalremove[64];
 		char targn[64];
@@ -210,6 +211,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			{
 				originch = "";
 				cls = "";
+				clsorground = "";
 				targn = "";
 				//if (StrContains(curbuf[i],"",false) != -1) ReplaceString(curbuf[i],sizeof(curbuf[]),"",",");
 				Format(tmpline,sizeof(tmpline),"%s",curbuf[i]);
@@ -295,7 +297,16 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					}
 				}
 				Format(clsorg,sizeof(clsorg),"%s,%s",cls,originch);
-				if ((FindStringInArray(g_DeleteClasses,cls) != -1) || (FindStringInArray(g_DeleteClassOrigin,clsorg) != -1) || ((FindStringInArray(g_DeleteTargets,targn) != -1) && (strlen(targn) > 0)))
+				if (StrEqual(cls,"logic_auto",false))
+				{
+					float org[3];
+					ExplodeString(originch," ",tmpexpl,4,64);
+					org[0] = StringToFloat(tmpexpl[0]);
+					org[1] = StringToFloat(tmpexpl[1]);
+					org[2] = StringToFloat(tmpexpl[2]);
+					Format(clsorground,sizeof(clsorground),"%s,%i %i %i",cls,RoundFloat(org[0]),RoundFloat(org[1]),RoundFloat(org[2]));
+				}
+				if ((FindStringInArray(g_DeleteClasses,cls) != -1) || (FindStringInArray(g_DeleteClassOrigin,clsorg) != -1) || ((FindStringInArray(g_DeleteClassOrigin,clsorground) != -1) && (strlen(clsorground) > 0)) || ((FindStringInArray(g_DeleteTargets,targn) != -1) && (strlen(targn) > 0)))
 				{
 					int findprev = StrContains(szMapEntities,tmpline,false);
 					if (findprev != -1)
