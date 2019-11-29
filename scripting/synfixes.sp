@@ -46,8 +46,9 @@ bool playerteleports = false;
 bool hasread = false;
 bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
+bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.9994"
+#define PLUGIN_VERSION "1.9995"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -144,6 +145,19 @@ public void OnPluginStart()
 		cvar = CreateConVar("sm_playertriggerapply", "20", "Set player trigger amount for map adjustments such as additional vehicle spawns. 0 disables.", _, true, 0.0, true, 128.0);
 		playercapadj = GetConVarInt(cvar);
 		HookConVarChange(cvar, plytrigch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("sm_blockex");
+	if (cvar != INVALID_HANDLE)
+	{
+		BlockEx = GetConVarBool(cvar);
+		HookConVarChange(cvar, blckexch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_blockex", "1", ".", _, true, 0.0, true, 1.0);
+		BlockEx = GetConVarBool(cvar);
+		HookConVarChange(cvar, blckexch);
 	}
 	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
@@ -2028,6 +2042,7 @@ public Action cleanup(Handle timer, Handle data)
 public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 {
 	ClientCommand(client,"alias sv_shutdown \"echo nope\"");
+	if (BlockEx) ClientCommand(client,"alias exec \"echo nope\"");
 	return true;
 }
 
@@ -3014,6 +3029,14 @@ public void spawneramtresch(Handle convar, const char[] oldValue, const char[] n
 public void plytrigch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	playercapadj = StringToInt(newValue);
+}
+
+public void blckexch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		BlockEx = true;
+	else
+		BlockEx = false;
 }
 
 public void noguidech(Handle convar, const char[] oldValue, const char[] newValue)
