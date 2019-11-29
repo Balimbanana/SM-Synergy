@@ -390,13 +390,6 @@ public Action setmodel(int client, const char[] model)
 		{
 			found++;
 		}
-		if (strlen(model) > 0)
-		{
-			if (!FileExists(model,true,NULL_STRING))
-			{
-				found = -1;
-			}
-		}
 		if ((found > -1) && (!(StrEqual(model,""))))
 		{
 			int donstat = 1;
@@ -406,7 +399,7 @@ public Action setmodel(int client, const char[] model)
 			{
 				if (StrContains( model, "normal") != -1)
 				{
-					PrecacheModel(model);
+					if (!IsModelPrecached(model)) PrecacheModel(model,true);
 					ClientCommand(client, "cl_playermodel %s", model);
 					SetEntityModel(client, model);
 				}
@@ -415,7 +408,7 @@ public Action setmodel(int client, const char[] model)
 					char modeltmp[128];
 					ClientCommand(client, "cl_playermodel models/player/normal/%s", model);
 					Format(modeltmp,sizeof(modeltmp),"models/player/rebel/%s", model);
-					PrecacheModel(modeltmp);
+					if (!IsModelPrecached(modeltmp)) PrecacheModel(modeltmp,true);
 					SetEntityModel(client, modeltmp);
 				}
 			}
@@ -434,16 +427,25 @@ public Action setmodel(int client, const char[] model)
 			}
 			else if (StrContains( model, "models/player/normal") != -1)
 			{
-				PrecacheModel(model);
+				if (!FileExists(model,true,NULL_STRING))
+				{
+					Format(model,sizeof(model),"models/player/normal/male_01.mdl");
+				}
+				if (!IsModelPrecached(model)) PrecacheModel(model,true);
 				ClientCommand(client, "cl_playermodel %s", model);
 				SetEntityModel(client, model);
 			}
 			else
 			{
 				char modeltmp[128];
-				ClientCommand(client, "cl_playermodel models/player/normal/%s", model);
 				Format(modeltmp,sizeof(modeltmp),"models/player/rebel/%s", model);
-				PrecacheModel(modeltmp);
+				if (!FileExists(modeltmp,true,NULL_STRING))
+				{
+					Format(model,sizeof(model),"male_01.mdl");
+					Format(modeltmp,sizeof(modeltmp),"models/player/rebel/%s", model);
+				}
+				ClientCommand(client, "cl_playermodel models/player/normal/%s", model);
+				if (!IsModelPrecached(modeltmp)) PrecacheModel(modeltmp,true);
 				SetEntityModel(client, modeltmp);
 			}
 		}
