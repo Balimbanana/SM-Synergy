@@ -87,8 +87,10 @@ bool mapchanging = false;
 bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
 bool antlionguardhard = false;
+bool incfixer = false;
+bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.9997"
+#define PLUGIN_VERSION "1.9998"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -211,6 +213,32 @@ public void OnPluginStart()
 		cvar = CreateConVar("sm_antlionhardmode", "0", "Enables hard mode for antlion guards.", _, true, 0.0, true, 1.0);
 		antlionguardhard = GetConVarBool(cvar);
 		HookConVarChange(cvar, antliongch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("sm_incfilefixer");
+	if (cvar != INVALID_HANDLE)
+	{
+		incfixer = GetConVarBool(cvar);
+		HookConVarChange(cvar, incfixerch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_incfilefixer", "0", "Enable attempt force content mount for maps with .inc files.", _, true, 0.0, true, 1.0);
+		incfixer = GetConVarBool(cvar);
+		HookConVarChange(cvar, incfixerch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("sm_blockex");
+	if (cvar != INVALID_HANDLE)
+	{
+		BlockEx = GetConVarBool(cvar);
+		HookConVarChange(cvar, blckexch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_blockex", "1", ".", _, true, 0.0, true, 1.0);
+		BlockEx = GetConVarBool(cvar);
+		HookConVarChange(cvar, blckexch);
 	}
 	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
@@ -616,6 +644,13 @@ public void OnMapStart()
 			if (FileExists("resource/closecaption_ep2thai.txt",true,NULL_STRING)) AddFileToDownloadsTable("resource/closecaption_ep2thai.txt");
 			if (FileExists("resource/closecaption_ep2turkish.dat",true,NULL_STRING)) AddFileToDownloadsTable("resource/closecaption_ep2turkish.dat");
 			if (FileExists("resource/closecaption_ep2turkish.txt",true,NULL_STRING)) AddFileToDownloadsTable("resource/closecaption_ep2turkish.txt");
+		}
+		else if ((StrContains(mapbuf,"sp_",false) == 0) && (StrContains(mapbuf, "sp_c14_", false) == -1))
+		{
+			if (FileExists("resource/closecaption_cit2english.txt",true,NULL_STRING)) AddFileToDownloadsTable("resource/closecaption_cit2english.txt");
+			if (FileExists("resource/closecaption_cit2french.txt",true,NULL_STRING)) AddFileToDownloadsTable("resource/closecaption_cit2french.txt");
+			if (FileExists("resource/closecaption_cit2german.txt",true,NULL_STRING)) AddFileToDownloadsTable("resource/closecaption_cit2german.txt");
+			if (FileExists("resource/closecaption_cit2spanish.txt",true,NULL_STRING)) AddFileToDownloadsTable("resource/closecaption_cit2spanish.txt");
 		}
 		HookEntityOutput("trigger_changelevel","OnChangeLevel",mapendchg);
 		HookEntityOutput("func_physbox","OnPhysGunPunt",physpunt);
@@ -1154,6 +1189,7 @@ public void setpropacc(QueryCookie cookie, int client, ConVarQueryResult result,
 
 public Action admblock(int client, int args)
 {
+	if (client == 0) return Plugin_Continue;
 	if (GetUserFlagBits(client)&ADMFLAG_ROOT > 0)
 		return Plugin_Continue;
 	return Plugin_Handled;
@@ -2134,6 +2170,7 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
 			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
 			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
+			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
 			Format(restorelang[client],sizeof(restorelang[]),"%s",tmplang);
 			ClientCommand(client,"cc_lang bms%s",tmplang);
 		}
@@ -2143,6 +2180,7 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
 			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
 			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
+			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
 			ClientCommand(client,"cc_lang %s",tmplang);
 		}
 	}
@@ -2159,6 +2197,7 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
 			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
 			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
+			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
 			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
 			Format(restorelang[client],sizeof(restorelang[]),"%s",tmplang);
 			ClientCommand(client,"cc_lang ep1%s",tmplang);
@@ -2169,6 +2208,7 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
 			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
 			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
+			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
 			ClientCommand(client,"cc_lang %s",tmplang);
 		}
 	}
@@ -2186,6 +2226,7 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
 			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
 			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
+			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
 			Format(restorelang[client],sizeof(restorelang[]),"%s",tmplang);
 			ClientCommand(client,"cc_lang ep2%s",tmplang);
 		}
@@ -2194,6 +2235,35 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 			char tmplang[128];
 			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
 			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
+			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
+			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
+			ClientCommand(client,"cc_lang %s",tmplang);
+		}
+	}
+	else if (((StrContains(mapbuf,"maps/ent_cache/custom_sp_",false) == 0) || (StrContains(mapbuf,"maps/ent_cache/cit2_sp_",false) == 0) || (StrContains(mapbuf,"maps/ent_cache/ep2_sp_",false) == 0)) && (StrContains(mapbuf, "sp_c14_", false) == -1) && (FileExists("resource/closecaption_cit2english.txt",true,NULL_STRING)))
+	{
+		if (strlen(cvarValue) < 1)
+		{
+			if (!StrEqual(cvarName,"cl_language",false)) QueryClientConVar(client,"cl_language",langchk,0);
+			else ClientCommand(client,"cc_lang cit2english");
+		}
+		else if (StrContains(cvarValue,"cit",false) == -1)
+		{
+			char tmplang[128];
+			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
+			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
+			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
+			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
+			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
+			Format(restorelang[client],sizeof(restorelang[]),"%s",tmplang);
+			ClientCommand(client,"cc_lang cit2%s",tmplang);
+		}
+		else
+		{
+			char tmplang[128];
+			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
+			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
+			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
 			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
 			ClientCommand(client,"cc_lang %s",tmplang);
 		}
@@ -2403,6 +2473,41 @@ public Action mapendchg(const char[] output, int caller, int activator, float de
 			char curmapbuf[64];
 			GetCurrentMap(curmapbuf,sizeof(curmapbuf));
 			GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
+			if (incfixer)
+			{
+				char findinc[128];
+				Format(findinc,sizeof(findinc),"maps/%s.inc",maptochange);
+				if (FileExists(findinc,true,NULL_STRING))
+				{
+					char includes[32];
+					Handle incfile = OpenFile(findinc,"r",true,NULL_STRING);
+					if (incfile != INVALID_HANDLE)
+					{
+						ReadFileLine(incfile,includes,sizeof(includes));
+					}
+					CloseHandle(incfile);
+					if (strlen(includes) > 0)
+					{
+						//ServerCommand("sv_content_optional \"%s\"",includes);
+						Handle srvcvar = FindConVar("sv_content_optional");
+						if (srvcvar != INVALID_HANDLE)
+						{
+							SetConVarString(srvcvar,includes,true,false);
+						}
+						CloseHandle(srvcvar);
+					}
+				}
+				else
+				{
+					//ServerCommand("sv_content_optional \"\"");
+					Handle srvcvar = FindConVar("sv_content_optional");
+					if (srvcvar != INVALID_HANDLE)
+					{
+						SetConVarString(srvcvar,"",true,false);
+					}
+					CloseHandle(srvcvar);
+				}
+			}
 			if (rebuildnodes)
 			{
 				char findnode[128];
@@ -2429,6 +2534,42 @@ public Action resetgraphs(int client, int args)
 		char findnode[128];
 		char mapname[128];
 		GetCmdArg(1,mapname,sizeof(mapname));
+		if (args > 1) GetCmdArg(2,mapname,sizeof(mapname));
+		if (incfixer)
+		{
+			char findinc[128];
+			Format(findinc,sizeof(findinc),"maps/%s.inc",mapname);
+			if (FileExists(findinc,true,NULL_STRING))
+			{
+				char includes[32];
+				Handle incfile = OpenFile(findinc,"r",true,NULL_STRING);
+				if (incfile != INVALID_HANDLE)
+				{
+					ReadFileLine(incfile,includes,sizeof(includes));
+				}
+				CloseHandle(incfile);
+				if (strlen(includes) > 0)
+				{
+					//ServerCommand("sv_content_optional \"%s\"",includes);
+					Handle srvcvar = FindConVar("sv_content_optional");
+					if (srvcvar != INVALID_HANDLE)
+					{
+						SetConVarString(srvcvar,includes,true,false);
+					}
+					CloseHandle(srvcvar);
+				}
+			}
+			else
+			{
+				//ServerCommand("sv_content_optional \"\"");
+				Handle srvcvar = FindConVar("sv_content_optional");
+				if (srvcvar != INVALID_HANDLE)
+				{
+					SetConVarString(srvcvar,"",true,false);
+				}
+				CloseHandle(srvcvar);
+			}
+		}
 		Format(findnode,sizeof(findnode),"maps\\graphs\\%s.ain",mapname);
 		if (FileExists(findnode,false))
 		{
@@ -17809,6 +17950,7 @@ void findentlist(int ent, char[] clsname)
 public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 {
 	ClientCommand(client,"alias sv_shutdown \"echo nope\"");
+	if (BlockEx) ClientCommand(client,"alias exec \"echo nope\"");
 	return true;
 }
 
@@ -18768,6 +18910,22 @@ public void antliongch(Handle convar, const char[] oldValue, const char[] newVal
 		antlionguardhard = true;
 	else
 		antlionguardhard = false;
+}
+
+public void incfixerch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		incfixer = true;
+	else
+		incfixer = false;
+}
+
+public void blckexch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		BlockEx = true;
+	else
+		BlockEx = false;
 }
 
 public void autorebuildch(Handle convar, const char[] oldValue, const char[] newValue)
