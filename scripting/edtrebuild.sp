@@ -248,6 +248,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					}
 					else
 					{
+						Format(cls,sizeof(cls),"%s",tmpline[findcls]);
 						ExplodeString(cls,"\"",tmpexpl,4,64);
 						Format(cls,sizeof(cls),"%s",tmpexpl[3]);
 						TrimString(cls);
@@ -267,6 +268,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					}
 					else
 					{
+						Format(originch,sizeof(originch),"%s",tmpline[findorg]);
 						ExplodeString(originch,"\"",tmpexpl,4,64);
 						Format(originch,sizeof(originch),"%s",tmpexpl[3]);
 						TrimString(originch);
@@ -276,9 +278,21 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				if (findtargn != -1)
 				{
 					Format(targn,sizeof(targn),"%s",tmpline[findtargn]);
-					ExplodeString(targn,"\"",tmpexpl,4,64);
-					Format(targn,sizeof(targn),"%s",tmpexpl[3]);
-					TrimString(targn);
+					ReplaceStringEx(targn,sizeof(targn),"\"targetname\" ","");
+					int findend = StrContains(targn,"\n",false);
+					if (findend != -1)
+					{
+						Format(targn,findend,"%s",targn);
+						ReplaceString(targn,sizeof(targn),"\"","");
+						TrimString(targn);
+					}
+					else
+					{
+						Format(targn,sizeof(targn),"%s",tmpline[findtargn]);
+						ExplodeString(targn,"\"",tmpexpl,4,64);
+						Format(targn,sizeof(targn),"%s",tmpexpl[3]);
+						TrimString(targn);
+					}
 				}
 				Format(clsorg,sizeof(clsorg),"%s,%s",cls,originch);
 				if ((FindStringInArray(g_DeleteClasses,cls) != -1) || (FindStringInArray(g_DeleteClassOrigin,clsorg) != -1) || ((FindStringInArray(g_DeleteTargets,targn) != -1) && (strlen(targn) > 0)))
@@ -366,7 +380,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								else if (strlen(tmpline) > 0)
 								{
 									//{
-									Format(tmpline,sizeof(tmpline),"%s%s",rmchar,tmpline);
+									//Format(tmpline,sizeof(tmpline),"%s%s",rmchar,tmpline);
 									Format(buffadded,sizeof(buffadded),"%s",tmpline);
 									ReplaceString(buffadded,sizeof(buffadded),"}","");
 									if (dbglvl == 4) PrintToServer("Add KV to %s %s\n%s %s",clsorg,targn,edtkey,edtval);
