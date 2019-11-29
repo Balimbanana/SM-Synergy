@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.19"
-			"Previous"	"0.18"
+			"Latest"  	"0.20"
+			"Previous"	"0.19"
 		}
 		
 		"Notes"	"Fixed EDT multiple deletes and edits of same entity."
