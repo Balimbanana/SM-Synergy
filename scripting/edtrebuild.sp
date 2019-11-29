@@ -443,7 +443,7 @@ void ReadEDT(char[] edtfile)
 		while(ReadFileLine(filehandle,line,sizeof(line)) && (!IsEndOfFile(filehandle)))
 		{
 			TrimString(line);
-			linenum++;
+			linenum+=1;
 			if ((strlen(line) > 0) && (StrContains(line,"//",false) != 0))
 			{
 				if ((strlen(line) < 4) && (StrContains(line,"//",false) != 0) && (!StrEqual(line,"{",false)) && (!StrEqual(line,"}",false)) && (!StrEqual(line,"} }",false)))
@@ -538,9 +538,15 @@ void ReadEDT(char[] edtfile)
 				{
 					char removeprev[64];
 					int findclass = StrContains(line,"origin",false);
+					int containval = StrContains(line,"values",false);
 					if (findclass != -1)
 					{
-						Format(removeprev,findclass+1,"%s",line);
+						bool nosetorg = false;
+						if (containval != -1)
+						{
+							if (findclass > containval) nosetorg = true;
+						}
+						if (!nosetorg) Format(removeprev,findclass+1,"%s",line);
 					}
 					Format(originch,sizeof(originch),"%s",line);
 					if (strlen(removeprev) > 0)
