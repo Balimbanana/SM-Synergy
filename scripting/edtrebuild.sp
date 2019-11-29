@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.18"
+#define PLUGIN_VERSION "0.19"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -308,7 +308,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								if (StrContains(edtkey,"\"",false) != -1) ReplaceString(edtkey,sizeof(edtkey),"\"","");
 								if (StrContains(edtval,"\"",false) != -1) ReplaceString(edtval,sizeof(edtval),"\"","");
 								int findedit = StrContains(tmpline,edtkey,false);
-								if (StrEqual(edtkey,"edt_addedspawnflags",false))
+								if ((StrEqual(edtkey,"edt_addedspawnflags",false)) || (StrEqual(edtkey,"edt_removespawnflags",false)))
 								{
 									findedit = StrContains(tmpline,"spawnflags",false);
 								}
@@ -322,6 +322,13 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 									if (StrEqual(edtkey,"edt_addedspawnflags",false))
 									{
 										Format(edtval,sizeof(edtval),"%i",StringToInt(tmpexpl[2])+StringToInt(edtval));
+										Format(edtkey,sizeof(edtkey),"spawnflags");
+									}
+									else if (StrEqual(edtkey,"edt_removespawnflags",false))
+									{
+										int checkneg = StringToInt(tmpexpl[2])-StringToInt(edtval);
+										if (checkneg < 0) checkneg = 0;
+										Format(edtval,sizeof(edtval),"%i",checkneg);
 										Format(edtkey,sizeof(edtkey),"spawnflags");
 									}
 									Format(edtkey,sizeof(edtkey),"%s\" \"%s\"",edtkey,edtval);
@@ -426,15 +433,17 @@ void ReadEDT(char[] edtfile)
 		bool CVars = false;
 		bool origindefined = false;
 		bool TargnDefined = false;
-		char line[256];
+		char line[512];
 		char cls[128];
 		char targn[64];
 		char originch[128];
+		int linenum = 0;
 		Handle passedarr = CreateArray(64);
 		Handle filehandle = OpenFile(edtfile,"rt",true,NULL_STRING);
-		while(ReadFileLine(filehandle,line,sizeof(line)))
+		while(ReadFileLine(filehandle,line,sizeof(line)) && (!IsEndOfFile(filehandle)))
 		{
 			TrimString(line);
+			linenum++;
 			if ((strlen(line) > 0) && (StrContains(line,"//",false) != 0))
 			{
 				if ((strlen(line) < 4) && (StrContains(line,"//",false) != 0) && (!StrEqual(line,"{",false)) && (!StrEqual(line,"}",false)) && (!StrEqual(line,"} }",false)))
@@ -472,8 +481,10 @@ void ReadEDT(char[] edtfile)
 					}
 					else
 					{
-						Handle consolearr = CreateArray(8);
-						FormatKVs(consolearr,line,"");
+						Handle consolearr = CreateArray(16);
+						Handle tmphndl = FormatKVs(consolearr,line,"");
+						consolearr = CloneArray(tmphndl);
+						CloseHandle(tmphndl);
 						if (GetArraySize(consolearr) > 0)
 						{
 							for (int i = 0;i<GetArraySize(consolearr);i++)
@@ -544,7 +555,7 @@ void ReadEDT(char[] edtfile)
 					Format(originch,sizeof(originch),"%s %s %s",kvs[0],kvs[1],kvs[2]);
 					origindefined = true;
 				}
-				if ((StrContains(line,"targetname",false) != -1) && ((EditingEnt) || (DeletingEnt)))
+				if ((StrContains(line,"targetname",false) != -1) && ((EditingEnt) || (DeletingEnt)) && (!TargnDefined))
 				{
 					bool gettn = true;
 					if (StrContains(line,"values",false) != -1)
@@ -554,7 +565,9 @@ void ReadEDT(char[] edtfile)
 					if (gettn)
 					{
 						Handle tmp = CreateArray(16);
-						FormatKVs(tmp,line,"targetname");
+						Handle tmphndl = FormatKVs(tmp,line,"targetname");
+						tmp = CloneArray(tmphndl);
+						CloseHandle(tmphndl);
 						if (GetArraySize(tmp) > 0)
 						{
 							char tmparr[256];
@@ -571,7 +584,9 @@ void ReadEDT(char[] edtfile)
 				}
 				if (((CreatingEnt) || (EditingEnt) || (DeletingEnt)) && (strlen(line) > 0))
 				{
-					FormatKVs(passedarr,line,cls);
+					Handle tmphndl = FormatKVs(passedarr,line,cls);
+					passedarr = CloneArray(tmphndl);
+					CloseHandle(tmphndl);
 				}
 				if ((StrContains(line,"}",false) != -1) && (CreatingEnt))
 				{
@@ -586,6 +601,7 @@ void ReadEDT(char[] edtfile)
 						Handle dupearr = CloneArray(passedarr);
 						PushArrayCell(g_CreateEnts,dupearr);
 					}
+					else PrintToServer("EDT Error: Attempted to create entity with no classname on line %i",linenum);
 					ClearArray(passedarr);
 					cls = "";
 					targn = "";
@@ -659,21 +675,33 @@ void ReadEDT(char[] edtfile)
 					targn = "";
 					originch = "";
 					origindefined = false;
+					CreatingEnt = false;
 					EditingEnt = false;
 					DeletingEnt = false;
 					TargnDefined = false;
 				}
 			}
+			if ((view_as<int>(filehandle) == 2002874483) || (linenum > 20000))
+			{
+				PrintToServer("EDTRead Ended at line %i",linenum);
+				CloseHandle(passedarr);
+				return;
+			}
 		}
+		if (dbglvl > 1) PrintToServer("EDTRead Ended at line %i",linenum);
 		CloseHandle(passedarr);
 		CloseHandle(filehandle);
 	}
+	return;
 }
 
-void FormatKVs(Handle arrpass, char[] passchar, char[] cls)
+public Handle FormatKVs(Handle arrpass, char[] passchar, char[] cls)
 {
 	if ((strlen(passchar) > 0) && (StrContains(passchar,"//",false) != 0) && (arrpass != INVALID_HANDLE))
 	{
+		Handle passedarr = INVALID_HANDLE;
+		if (view_as<int>(arrpass) == 1634494062) passedarr = CreateArray(64);
+		else passedarr = CloneArray(arrpass);
 		char kvs[128][256];
 		char fmt[256];
 		ReplaceStringEx(passchar,256,"	"," ");
@@ -748,10 +776,13 @@ void FormatKVs(Handle arrpass, char[] passchar, char[] cls)
 						}
 						if ((strlen(key) > 0) && (StrContains(key,"//",false) != 0))
 						{
+							ReplaceString(key,sizeof(key),"\"","");
+							ReplaceString(key,sizeof(key),"{","");
+							ReplaceString(key,sizeof(key),"}","");
 							if (strlen(val) < 1) Format(val,sizeof(val),"\"\"");
 							else
 							{
-								ReplaceString(val,sizeof(val),"\"","");
+								//ReplaceString(val,sizeof(val),"\"","");
 								ReplaceString(val,sizeof(val),"}","");
 							}
 							if (StrEqual(key,"classname",false))
@@ -764,7 +795,16 @@ void FormatKVs(Handle arrpass, char[] passchar, char[] cls)
 							if (strlen(key) > 0)
 							{
 								Format(fmt,sizeof(fmt),"%s %s",key,val);
-								PushArrayString(arrpass,fmt);
+								if (view_as<int>(passedarr) != 1634494062)
+								{
+									PushArrayString(passedarr,fmt);
+								}
+								else
+								{
+									Handle tmphndl = CreateArray(64);
+									passedarr = CloneHandle(tmphndl);
+									PushArrayString(passedarr,fmt);
+								}
 							}
 						}
 						if (set == 0) i++;
@@ -773,8 +813,9 @@ void FormatKVs(Handle arrpass, char[] passchar, char[] cls)
 				}
 			}
 		}
+		return passedarr;
 	}
-	return;
+	return INVALID_HANDLE;
 }
 
 public void dbgch(Handle convar, const char[] oldValue, const char[] newValue)
