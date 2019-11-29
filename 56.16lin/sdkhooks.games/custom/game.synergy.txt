@@ -126,9 +126,9 @@
 			}
 			"Weapon_Switch"
 			{
-				"windows"	"267"
-				"linux"		"268"
-				"mac"		"268"
+				"windows"	"263"
+				"linux"		"264"
+				"mac"		"264"
 			}
 		}
 	}
