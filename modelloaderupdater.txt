@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.68"
-			"Previous"	"1.67"
+			"Latest"  	"1.69"
+			"Previous"	"1.68"
 		}
 		
-		"Notes"	"Fixed help context."
+		"Notes"	"Fixed keeping cl_playermodel cvar when model does not exist on current server."
 	}
 	
 	"Files"
