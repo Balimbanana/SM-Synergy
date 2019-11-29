@@ -429,11 +429,17 @@ public Action setmodel(int client, const char[] model)
 			{
 				if (!FileExists(model,true,NULL_STRING))
 				{
-					Format(model,sizeof(model),"models/player/normal/male_01.mdl");
+					Format(desmodel[client],sizeof(desmodel[]),"male_01.mdl");
+					if (!IsModelPrecached("models/player/normal/male_01.mdl")) PrecacheModel("models/player/normal/male_01.mdl",true);
+					ClientCommand(client, "cl_playermodel models/player/normal/male_01.mdl");
+					SetEntityModel(client, "models/player/normal/male_01.mdl");
 				}
-				if (!IsModelPrecached(model)) PrecacheModel(model,true);
-				ClientCommand(client, "cl_playermodel %s", model);
-				SetEntityModel(client, model);
+				else
+				{
+					if (!IsModelPrecached(model)) PrecacheModel(model,true);
+					ClientCommand(client, "cl_playermodel %s", model);
+					SetEntityModel(client, model);
+				}
 			}
 			else
 			{
@@ -441,7 +447,7 @@ public Action setmodel(int client, const char[] model)
 				Format(modeltmp,sizeof(modeltmp),"models/player/rebel/%s", model);
 				if (!FileExists(modeltmp,true,NULL_STRING))
 				{
-					Format(model,sizeof(model),"male_01.mdl");
+					Format(desmodel[client],sizeof(desmodel[]),"male_01.mdl");
 					Format(modeltmp,sizeof(modeltmp),"models/player/rebel/%s", model);
 				}
 				ClientCommand(client, "cl_playermodel models/player/normal/%s", model);
