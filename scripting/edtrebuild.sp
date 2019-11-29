@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.19"
+#define PLUGIN_VERSION "0.20"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -493,7 +493,7 @@ void ReadEDT(char[] edtfile)
 			linenum+=1;
 			if ((strlen(line) > 0) && (StrContains(line,"//",false) != 0))
 			{
-				if ((strlen(line) < 4) && (StrContains(line,"//",false) != 0) && (!StrEqual(line,"{",false)) && (!StrEqual(line,"}",false)) && (!StrEqual(line,"} }",false)))
+				if ((strlen(line) < 4) && (StrContains(line,"//",false) != 0) && (!StrEqual(line,"{",false)) && (!StrEqual(line,"}",false)) && (!StrEqual(line,"} }",false)) && (!StrEqual(line,"}}",false)))
 				{
 					char additional[32];
 					ReadFileLine(filehandle,additional,sizeof(additional));
