@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9997"
-			"Previous"	"1.9996"
+			"Latest"  	"1.9998"
+			"Previous"	"1.9997"
 		}
 		
-		"Notes"	"Added CVar sm_antlionhardmode which will create a poison cloud and fixes the summon counter for additional antlions. Added game_countdown_timer. Added monster_human_assassin."
+		"Notes"	"Added CVar sm_blockex default 1. Will block exec client-side. Added CVar sm_incfilefixer default 0, will add to whichever dependencies are found for the current map."
 	}
 	
 	"Files"
