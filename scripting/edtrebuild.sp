@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.22"
+#define PLUGIN_VERSION "0.23"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -355,9 +355,10 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								ReplaceStringEx(edtval,sizeof(edtval),edtkey,"");
 								TrimString(edtval);
 								if (StrContains(edtkey,"\"",false) != -1) ReplaceString(edtkey,sizeof(edtkey),"\"","");
+								Format(edtkey,sizeof(edtkey),"\"%s\"",edtkey);
 								if (StrContains(edtval,"\"",false) != -1) ReplaceString(edtval,sizeof(edtval),"\"","");
 								int findedit = StrContains(tmpline,edtkey,false);
-								if (StrEqual(edtkey,"edt_map",false))
+								if (StrEqual(edtkey,"\"edt_map\"",false))
 								{
 									findedit = StrContains(tmpline,"\"map\" \"",false);
 									if (findedit != -1)
@@ -379,7 +380,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										}
 									}
 								}
-								if (StrEqual(edtkey,"edt_landmark",false))
+								if (StrEqual(edtkey,"\"edt_landmark\"",false))
 								{
 									findedit = StrContains(tmpline,"\"landmark\" \"",false);
 									if (findedit != -1)
@@ -401,31 +402,31 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										}
 									}
 								}
-								if ((StrEqual(edtkey,"edt_addspawnflags",false)) || (StrEqual(edtkey,"edt_addedspawnflags",false)) || (StrEqual(edtkey,"edt_removespawnflags",false)))
+								if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_removespawnflags\"",false)))
 								{
 									findedit = StrContains(tmpline,"spawnflags",false);
 								}
 								//if ((findedit != -1) && (strlen(edt_landmark) > 0) && (strlen(edt_map) > 0))
-								if ((findedit != -1) && (StrContains(edtkey,"On",false) != 0) && (StrContains(edtkey,"PlayerO",false) != 0) && (StrContains(edtkey,"Pressed",false) != 0) && (StrContains(edtkey,"Unpressed",false) != 0) && (strlen(edtkey) > 0))
+								if ((findedit != -1) && (StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0) && (strlen(edtkey) > 1))
 								{
 									Format(buffadded,sizeof(buffadded),"%s",tmpline[findedit]);
 									ExplodeString(buffadded,"\"",tmpexpl,4,64);
-									Format(replacedata,sizeof(replacedata),"%s\" \"%s\"",tmpexpl[0],tmpexpl[2]);
+									Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[1],tmpexpl[3]);
 									TrimString(replacedata);
 									Format(buffadded,sizeof(buffadded),"%s",tmpline);
-									if ((StrEqual(edtkey,"edt_addspawnflags",false)) || (StrEqual(edtkey,"edt_addedspawnflags",false)))
+									if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)))
 									{
 										Format(edtval,sizeof(edtval),"%i",StringToInt(tmpexpl[2])+StringToInt(edtval));
-										Format(edtkey,sizeof(edtkey),"spawnflags");
+										Format(edtkey,sizeof(edtkey),"\"spawnflags\"");
 									}
-									else if (StrEqual(edtkey,"edt_removespawnflags",false))
+									else if (StrEqual(edtkey,"\"edt_removespawnflags\"",false))
 									{
-										int checkneg = StringToInt(tmpexpl[2])-StringToInt(edtval);
+										int checkneg = StringToInt(tmpexpl[3])-StringToInt(edtval);
 										if (checkneg < 0) checkneg = 0;
 										Format(edtval,sizeof(edtval),"%i",checkneg);
-										Format(edtkey,sizeof(edtkey),"spawnflags");
+										Format(edtkey,sizeof(edtkey),"\"spawnflags\"");
 									}
-									Format(edtkey,sizeof(edtkey),"%s\" \"%s\"",edtkey,edtval);
+									Format(edtkey,sizeof(edtkey),"%s \"%s\"",edtkey,edtval);
 									if (dbglvl >= 3) PrintToServer("Replace %s with %s",replacedata,edtkey);
 									ReplaceString(buffadded,sizeof(buffadded),replacedata,edtkey);
 									if (StrContains(szMapEntities,tmpline,false) != -1)
@@ -435,14 +436,15 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										Format(tmpline,sizeof(tmpline),"%s",buffadded);
 									}
 								}
-								else if ((strlen(tmpline) > 0) && (strlen(edtkey) > 0))
+								else if ((strlen(tmpline) > 0) && (strlen(edtkey) > 1))
 								{
 									//{
 									//Format(tmpline,sizeof(tmpline),"%s%s",rmchar,tmpline);
 									Format(buffadded,sizeof(buffadded),"%s",tmpline);
 									ReplaceString(buffadded,sizeof(buffadded),"}","");
+									if (StrContains(buffadded,"\n\n",false) != -1) ReplaceString(buffadded,sizeof(buffadded),"\n\n","\n");
 									if (dbglvl >= 3) PrintToServer("Add KV to %s %s\n%s %s",clsorg,targn,edtkey,edtval);
-									Format(buffadded,sizeof(buffadded),"%s\"%s\" \"%s\"\n}",buffadded,edtkey,edtval);
+									Format(buffadded,sizeof(buffadded),"%s%s \"%s\"\n}\n",buffadded,edtkey,edtval);
 									ReplaceString(szMapEntities,sizeof(szMapEntities),tmpline,buffadded);
 									Format(tmpline,sizeof(tmpline),"%s",buffadded);
 								}
@@ -533,7 +535,9 @@ void ReadEDT(char[] edtfile)
 		char originch[128];
 		int linenum = 0;
 		Handle passedarr = CreateArray(64);
-		Handle filehandle = OpenFile(edtfile,"rt",true,NULL_STRING);
+		Handle filehandle = INVALID_HANDLE;
+		if (FileExists(edtfile,false)) filehandle = OpenFile(edtfile,"rt",false);
+		else filehandle = OpenFile(edtfile,"rt",true,NULL_STRING);
 		while(ReadFileLine(filehandle,line,sizeof(line)) && (!IsEndOfFile(filehandle)))
 		{
 			TrimString(line);
@@ -610,7 +614,7 @@ void ReadEDT(char[] edtfile)
 					EditingEnt = true;
 				else if ((StrContains(line,"delete",false) == 0) || (StrContains(line,"delete",false) == 1))
 					DeletingEnt = true;
-				if (StrContains(line,"classname",false) != -1)
+				if ((StrContains(line,"classname",false) != -1) && (strlen(cls) < 1))
 				{
 					char removeprev[64];
 					int findclass = StrContains(line,"classname",false);
@@ -701,7 +705,7 @@ void ReadEDT(char[] edtfile)
 						Format(edtcls,sizeof(edtcls),"%s",cls);
 						if (dbglvl > 0) PrintToServer("Create %s at origin %s With %i KVs",cls,originch,GetArraySize(passedarr));
 						else if (dbglvl) PrintToServer("Create %s at origin %s",cls,originch);
-						Format(edtcls,sizeof(edtcls),"classname %s",edtcls);
+						Format(edtcls,sizeof(edtcls),"classname \"%s\"",edtcls);
 						if (FindStringInArray(passedarr,edtcls) == -1) PushArrayString(passedarr,edtcls);
 						Handle dupearr = CloneArray(passedarr);
 						PushArrayCell(g_CreateEnts,dupearr);
