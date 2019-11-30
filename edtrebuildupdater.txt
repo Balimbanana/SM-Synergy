@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.22"
-			"Previous"	"0.21"
+			"Latest"  	"0.23"
+			"Previous"	"0.22"
 		}
 		
-		"Notes"	"Added edt_map and edt_landmark specification for selecting entity."
+		"Notes"	"Added read edt from maps/mapname.edt if it exists, else read from ValveFS. Fixed problem of editing class to change to another class."
 	}
 	
 	"Files"
