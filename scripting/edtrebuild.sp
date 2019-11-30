@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.20"
+#define PLUGIN_VERSION "0.21"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -342,6 +342,8 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 						{
 							char edtdata[128];
 							char replacedata[128];
+							char edt_map[64];
+							char edt_landmark[64];
 							for (int j = 0;j<GetArraySize(passedarr);j++)
 							{
 								GetArrayString(passedarr,j,edtdata,sizeof(edtdata));
@@ -355,11 +357,56 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								if (StrContains(edtkey,"\"",false) != -1) ReplaceString(edtkey,sizeof(edtkey),"\"","");
 								if (StrContains(edtval,"\"",false) != -1) ReplaceString(edtval,sizeof(edtval),"\"","");
 								int findedit = StrContains(tmpline,edtkey,false);
+								if (StrEqual(edtkey,"edt_map",false))
+								{
+									findedit = StrContains(tmpline,"\"map\" \"",false);
+									if (findedit != -1)
+									{
+										Format(tmpbuf,sizeof(tmpbuf),"%s",tmpline[findedit]);
+										ReplaceStringEx(tmpbuf,sizeof(tmpbuf),"\"map\" ","");
+										int findend = StrContains(tmpbuf,"\n",false);
+										if (findend != -1)
+										{
+											Format(tmpbuf,findend,"%s",tmpbuf);
+											ReplaceString(tmpbuf,sizeof(tmpbuf),"\"","");
+											TrimString(tmpbuf);
+											if (StrEqual(tmpbuf,edtval,false))
+											{
+												Format(edt_map,sizeof(edt_map),"%s",edtval);
+												edtkey = "";
+											}
+											else break;
+										}
+									}
+								}
+								if (StrEqual(edtkey,"edt_landmark",false))
+								{
+									findedit = StrContains(tmpline,"\"landmark\" \"",false);
+									if (findedit != -1)
+									{
+										Format(tmpbuf,sizeof(tmpbuf),"%s",tmpline[findedit]);
+										ReplaceStringEx(tmpbuf,sizeof(tmpbuf),"\"landmark\" ","");
+										int findend = StrContains(tmpbuf,"\n",false);
+										if (findend != -1)
+										{
+											Format(tmpbuf,findend,"%s",tmpbuf);
+											ReplaceString(tmpbuf,sizeof(tmpbuf),"\"","");
+											TrimString(tmpbuf);
+											if (StrEqual(tmpbuf,edtval,false))
+											{
+												Format(edt_landmark,sizeof(edt_landmark),"%s",edtval);
+												edtkey = "";
+											}
+											else break;
+										}
+									}
+								}
 								if ((StrEqual(edtkey,"edt_addspawnflags",false)) || (StrEqual(edtkey,"edt_addedspawnflags",false)) || (StrEqual(edtkey,"edt_removespawnflags",false)))
 								{
 									findedit = StrContains(tmpline,"spawnflags",false);
 								}
-								if ((findedit != -1) && (StrContains(edtkey,"On",false) != 0) && (StrContains(edtkey,"PlayerO",false) != 0) && (StrContains(edtkey,"Pressed",false) != 0) && (StrContains(edtkey,"Unpressed",false) != 0))
+								//if ((findedit != -1) && (strlen(edt_landmark) > 0) && (strlen(edt_map) > 0))
+								if ((findedit != -1) && (StrContains(edtkey,"On",false) != 0) && (StrContains(edtkey,"PlayerO",false) != 0) && (StrContains(edtkey,"Pressed",false) != 0) && (StrContains(edtkey,"Unpressed",false) != 0) && (strlen(edtkey) > 0))
 								{
 									Format(buffadded,sizeof(buffadded),"%s",tmpline[findedit]);
 									ExplodeString(buffadded,"\"",tmpexpl,4,64);
@@ -379,7 +426,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										Format(edtkey,sizeof(edtkey),"spawnflags");
 									}
 									Format(edtkey,sizeof(edtkey),"%s\" \"%s\"",edtkey,edtval);
-									if (dbglvl == 4) PrintToServer("Replace %s with %s",replacedata,edtkey);
+									if (dbglvl >= 3) PrintToServer("Replace %s with %s",replacedata,edtkey);
 									ReplaceString(buffadded,sizeof(buffadded),replacedata,edtkey);
 									if (StrContains(szMapEntities,tmpline,false) != -1)
 									{
@@ -388,13 +435,13 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										Format(tmpline,sizeof(tmpline),"%s",buffadded);
 									}
 								}
-								else if (strlen(tmpline) > 0)
+								else if ((strlen(tmpline) > 0) && (strlen(edtkey) > 0))
 								{
 									//{
 									//Format(tmpline,sizeof(tmpline),"%s%s",rmchar,tmpline);
 									Format(buffadded,sizeof(buffadded),"%s",tmpline);
 									ReplaceString(buffadded,sizeof(buffadded),"}","");
-									if (dbglvl == 4) PrintToServer("Add KV to %s %s\n%s %s",clsorg,targn,edtkey,edtval);
+									if (dbglvl >= 3) PrintToServer("Add KV to %s %s\n%s %s",clsorg,targn,edtkey,edtval);
 									Format(buffadded,sizeof(buffadded),"%s\"%s\" \"%s\"\n}",buffadded,edtkey,edtval);
 									ReplaceString(szMapEntities,sizeof(szMapEntities),tmpline,buffadded);
 									Format(tmpline,sizeof(tmpline),"%s",buffadded);
