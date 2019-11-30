@@ -13,7 +13,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.27"
+#define PLUGIN_VERSION "1.28"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -40,6 +40,9 @@ int dmkills[MAXPLAYERS+1];
 int teamnum[MAXPLAYERS+1];
 float scoreshowcd[MAXPLAYERS+1];
 char SteamID[MAXPLAYERS+1][65];
+char g_sDMSoundTrack[128];
+int g_iDMSoundTrackVol = 80;
+int g_iDMSoundTrack = -1;
 
 bool instspawnb = false;
 bool instspawnuse = false;
@@ -133,27 +136,44 @@ public void OnPluginStart()
 	HookConVarChange(mpcvar,teambalancech);
 	if (GetConVarInt(mpcvar) == 1) teambalance = true;
 	else teambalance = false;
+	CloseHandle(mpcvar);
 	mpcvar = CreateConVar("mp_teams_unbalance_limit", "0", "Teams are unbalanced when one team has this many more players than the other team. (0 disables check)", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 0.0, true, 64.0);
 	HookConVarChange(mpcvar,teambalancelimitch);
 	teambalancelimit = GetConVarInt(mpcvar);
+	CloseHandle(mpcvar);
 	mpcvar = CreateConVar("mp_freezetime", "6", "How many seconds to keep players frozen when the round starts.", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 1.0, true, 60.0);
 	HookConVarChange(mpcvar,freezetimech);
 	endfreezetime = GetConVarFloat(mpcvar);
+	CloseHandle(mpcvar);
 	mpcvar = CreateConVar("mp_roundtime", "2.5", "How many minutes each round lasts. (0 for no time limit)", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 0.0, true, 60.0);
 	HookConVarChange(mpcvar,roundtimech);
 	roundtime = GetConVarFloat(mpcvar)*60;
+	CloseHandle(mpcvar);
 	mpcvar = CreateConVar("mp_round_restart_delay", "5.0", "Number of seconds to delay before restarting a round after a win.", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 1.0, true, 60.0);
 	HookConVarChange(mpcvar,restartdelch);
 	roundstarttime = GetConVarFloat(mpcvar);
+	CloseHandle(mpcvar);
 	mpcvar = CreateConVar("mp_disablefalldamage", "0", "Disable fall damage.", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 0.0, true, 1.0);
 	HookConVarChange(mpcvar,falldmgch);
 	if (GetConVarInt(mpcvar) == 1) falldamagedis = true;
 	else falldamagedis = false;
+	CloseHandle(mpcvar);
 	mpcvar = FindConVar("mp_fraglimit");
 	if (mpcvar == INVALID_HANDLE) mpcvar = CreateConVar("mp_fraglimit", "20", "Number kills a team has to get to win the round.", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 1.0, true, 60.0);
 	else if (GetConVarInt(mpcvar) == 0) SetConVarInt(mpcvar,20,false,false);
 	HookConVarChange(mpcvar,fraglimch);
 	fraglimit = GetConVarInt(mpcvar);
+	CloseHandle(mpcvar);
+	mpcvar = FindConVar("mp_dmsoundtrack");
+	if (mpcvar == INVALID_HANDLE) mpcvar = CreateConVar("mp_dmsoundtrack", "music/hl2_song14.mp3", "Song or sound to play every round.", FCVAR_PRINTABLEONLY);
+	HookConVarChange(mpcvar,soundtrackch);
+	GetConVarString(mpcvar,g_sDMSoundTrack,sizeof(g_sDMSoundTrack));
+	CloseHandle(mpcvar);
+	mpcvar = FindConVar("mp_dmsoundtrack_volume");
+	if (mpcvar == INVALID_HANDLE) mpcvar = CreateConVar("mp_dmsoundtrack_volume", "50", "Volume of the song to play every round. Goes from 0 to 100.", FCVAR_PRINTABLEONLY, true, 0.0, true, 100.0);
+	HookConVarChange(mpcvar,soundtrackvolch);
+	g_iDMSoundTrackVol = GetConVarInt(mpcvar);
+	CloseHandle(mpcvar);
 	Handle resetmodeh = CreateConVar("sm_resetmode", "0", "Reset mode for survival gamemode. 0 is reload checkpoint, 1 is reload map, 2 is respawn all players.", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 0.0, true, 2.0);
 	HookConVarChange(resetmodeh,resetmodech);
 	resetmode = GetConVarInt(resetmodeh);
@@ -395,6 +415,16 @@ public void falldmgch(Handle convar, const char[] oldValue, const char[] newValu
 public void fraglimch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	fraglimit = StringToInt(newValue);
+}
+
+public void soundtrackch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	Format(g_sDMSoundTrack,sizeof(g_sDMSoundTrack),"%s",newValue);
+}
+
+public void soundtrackvolch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	g_iDMSoundTrackVol = StringToInt(newValue);
 }
 
 public void resetmodech(Handle convar, const char[] oldValue, const char[] newValue)
@@ -1303,6 +1333,7 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 				char nick[64];
 				GetClientName(killid,nick,sizeof(nick));
 				PrintCenterTextAll("%s Wins!",nick);
+				PrintToChatAll("%s Wins!",nick);
 				canceltimer++;
 			}
 			else if (blueteamkills >= fraglimit)
@@ -1313,6 +1344,7 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 				SetEventString(endround,"message","FragLimit Reached");
 				FireEvent(endround,false);
 				PrintCenterTextAll("Blue Team Wins!");
+				PrintToChatAll("Blue Team Wins!");
 				canceltimer++;
 			}
 			else if (redteamkills >= fraglimit)
@@ -1323,6 +1355,7 @@ public Action Event_SynKilled(Handle event, const char[] name, bool Broadcast)
 				SetEventString(endround,"message","FragLimit Reached");
 				FireEvent(endround,false);
 				PrintCenterTextAll("Red Team Wins!");
+				PrintToChatAll("Red Team Wins!");
 				canceltimer++;
 			}
 			return Plugin_Changed;
@@ -2752,10 +2785,61 @@ public Action nextroundrelease(Handle timer)
 	DispatchSpawn(loginp);
 	ActivateEntity(loginp);
 	roundstartedat = GetTickedTime()+roundtime;
+	if (strlen(g_sDMSoundTrack) > 0)
+	{
+		char sndchk[128];
+		Format(sndchk,sizeof(sndchk),"sound/%s",g_sDMSoundTrack);
+		if (FileExists(sndchk,true,NULL_STRING))
+		{
+			if ((IsValidEntity(g_iDMSoundTrack)) && (g_iDMSoundTrack != 0))
+			{
+				if (HasEntProp(g_iDMSoundTrack,Prop_Data,"m_iszSound"))
+				{
+					char tmpchk[128];
+					GetEntPropString(g_iDMSoundTrack,Prop_Data,"m_iszSound",tmpchk,sizeof(tmpchk));
+					if (!StrEqual(g_sDMSoundTrack,tmpchk,false))
+					{
+						SetEntPropString(g_iDMSoundTrack,Prop_Data,"m_iszSound",g_sDMSoundTrack);
+					}
+				}
+				if (HasEntProp(g_iDMSoundTrack,Prop_Data,"m_iSoundLevel"))
+				{
+					int cursndlvl = GetEntProp(g_iDMSoundTrack,Prop_Data,"m_iSoundLevel");
+					if (cursndlvl != g_iDMSoundTrackVol)
+					{
+						SetEntProp(g_iDMSoundTrack,Prop_Data,"m_iSoundLevel",g_iDMSoundTrackVol);
+					}
+				}
+				AcceptEntityInput(g_iDMSoundTrack,"PlaySound");
+			}
+			else
+			{
+				g_iDMSoundTrack = CreateEntityByName("ambient_generic");
+				if (g_iDMSoundTrack != -1)
+				{
+					DispatchKeyValue(g_iDMSoundTrack,"message",g_sDMSoundTrack);
+					DispatchKeyValue(g_iDMSoundTrack,"health","10");
+					DispatchKeyValue(g_iDMSoundTrack,"spawnflags","1");
+					DispatchSpawn(g_iDMSoundTrack);
+					ActivateEntity(g_iDMSoundTrack);
+					SetEntProp(g_iDMSoundTrack,Prop_Data,"m_iSoundLevel",g_iDMSoundTrackVol);
+					AcceptEntityInput(g_iDMSoundTrack,"PlaySound");
+				}
+			}
+		}
+		else
+		{
+			PrintToServer("Deathmatch song %s does not exist",g_sDMSoundTrack);
+		}
+	}
 }
 
 public Action roundintermission(Handle event, const char[] name, bool dontBroadcast)
 {
+	if ((IsValidEntity(g_iDMSoundTrack)) && (g_iDMSoundTrack != 0))
+	{
+		AcceptEntityInput(g_iDMSoundTrack,"StopSound");
+	}
 	float plyeyeang[3];
 	float nullvec[3];
 	for (int i = 1;i<MaxClients+1;i++)
@@ -2853,6 +2937,16 @@ public Action nextroundstart(Handle timer)
 	for (int i = 1;i<MaxClients+1;i++)
 	{
 		dmkills[i] = 0;
+		if (IsValidEntity(i))
+		{
+			if ((IsClientInGame(i)) && (IsPlayerAlive(i)))
+			{
+				if (HasEntProp(i,Prop_Data,"m_iFrags"))
+				{
+					SetEntProp(i,Prop_Data,"m_iFrags",0);
+				}
+			}
+		}
 	}
 	redteamkills = 0;
 	blueteamkills = 0;
@@ -2881,7 +2975,60 @@ public Action roundtimeout(Handle timer)
 			SetEventInt(endround,"reason",0);
 			SetEventString(endround,"message","Round Timed Out");
 			FireEvent(endround,false);
-			PrintCenterTextAll("Nobody Wins");
+			int topscore = 0;
+			char winners[128];
+			char clname[64];
+			Handle arrayoftop = CreateArray(65);
+			for (int i = 1;i<MaxClients+1;i++)
+			{
+				if (IsValidEntity(i))
+				{
+					if ((IsClientConnected(i)) && (IsClientInGame(i)))
+					{
+						if ((dmkills[i] >= topscore) && (dmkills[i] > 0))
+						{
+							if (dmkills[i] > topscore) ClearArray(arrayoftop);
+							if (FindValueInArray(arrayoftop,i) == -1) PushArrayCell(arrayoftop,i);
+							topscore = dmkills[i];
+						}
+					}
+				}
+			}
+			if (GetArraySize(arrayoftop) > 0)
+			{
+				for (int i = 0;i<GetArraySize(arrayoftop);i++)
+				{
+					int j = GetArrayCell(arrayoftop,i);
+					if (IsValidEntity(j))
+					{
+						if ((IsClientConnected(j)) && (IsClientInGame(j)))
+						{
+							GetClientName(j,clname,sizeof(clname));
+							Format(winners,sizeof(winners),"%s%s ",winners,clname);
+						}
+					}
+				}
+			}
+			if (strlen(winners) > 0)
+			{
+				TrimString(winners);
+				if (GetArraySize(arrayoftop) > 1)
+				{
+					PrintCenterTextAll("%s\nTied For First Place",winners);
+					PrintToChatAll("%s\nTied For First Place",winners);
+				}
+				else
+				{
+					PrintCenterTextAll("%s Wins",winners);
+					PrintToChatAll("%s Wins",winners);
+				}
+			}
+			else
+			{
+				PrintCenterTextAll("Nobody Wins");
+				PrintToChatAll("Nobody Wins");
+			}
+			CloseHandle(arrayoftop);
 			roundstartedat = Time + 999.0;
 		}
 		else if (RoundFloat(1.0*(roundstartedat-Time)) == 10)
@@ -3159,6 +3306,7 @@ public void OnMapStart()
 	WeapList = -1;
 	scoreshow = -1;
 	scoreshowstat = -1;
+	g_iDMSoundTrack = -1;
 	canceltimer = 0;
 	hasstarted = true;
 	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigsaves);
