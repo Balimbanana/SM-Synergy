@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.21"
-			"Previous"	"0.20"
+			"Latest"  	"0.22"
+			"Previous"	"0.21"
 		}
 		
 		"Notes"	"Added edt_map and edt_landmark specification for selecting entity."
