@@ -604,11 +604,11 @@ void ReadEDT(char[] edtfile)
 						CloseHandle(consolearr);
 					}
 				}
-				if (StrContains(line,"create",false) == 0)
+				if ((StrContains(line,"create",false) == 0) || (StrContains(line,"create",false) == 1))
 					CreatingEnt = true;
-				else if (StrContains(line,"edit",false) == 0)
+				else if ((StrContains(line,"edit",false) == 0) || (StrContains(line,"edit",false) == 1))
 					EditingEnt = true;
-				else if (StrContains(line,"delete",false) == 0)
+				else if ((StrContains(line,"delete",false) == 0) || (StrContains(line,"delete",false) == 1))
 					DeletingEnt = true;
 				if (StrContains(line,"classname",false) != -1)
 				{
@@ -621,12 +621,19 @@ void ReadEDT(char[] edtfile)
 					Format(cls,sizeof(cls),"%s",line);
 					if (strlen(removeprev) > 0)
 						ReplaceString(cls,sizeof(cls),removeprev,"");
+					if (StrContains(cls,"\"",false) != -1)
+					{
+						ReplaceString(cls,sizeof(cls),"\"","");
+					}
+					ReplaceString(cls,sizeof(cls),"}","");
+					ReplaceStringEx(cls,sizeof(cls),"classname","");
 					TrimString(cls);
+					/*
 					char kvs[64][64];
 					ExplodeString(cls," ",kvs,64,64);
 					Format(cls,sizeof(cls),"%s",kvs[1]);
 					ReplaceString(cls,sizeof(cls),"\"","");
-					ReplaceString(cls,sizeof(cls),"}","");
+					*/
 				}
 				if ((StrContains(line,"origin",false) != -1) && (!origindefined))
 				{
