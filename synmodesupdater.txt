@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.27"
-			"Previous"	"1.26"
+			"Latest"  	"1.28"
+			"Previous"	"1.27"
 		}
 		
-		"Notes"	"Removed unecessary cvar change on different spawn modes. Fixed ID array size."
+		"Notes"	"Added mp_dmsoundtrack and mp_dmsoundtrack_volume which will play when a DM or TDM round starts. Fixed winner of rounds and added tied message."
 	}
 	
 	"Files"
