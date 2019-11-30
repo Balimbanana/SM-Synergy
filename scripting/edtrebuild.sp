@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.21"
+#define PLUGIN_VERSION "0.22"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -628,12 +628,10 @@ void ReadEDT(char[] edtfile)
 					ReplaceString(cls,sizeof(cls),"}","");
 					ReplaceStringEx(cls,sizeof(cls),"classname","");
 					TrimString(cls);
-					/*
 					char kvs[64][64];
 					ExplodeString(cls," ",kvs,64,64);
-					Format(cls,sizeof(cls),"%s",kvs[1]);
-					ReplaceString(cls,sizeof(cls),"\"","");
-					*/
+					Format(cls,sizeof(cls),"%s",kvs[0]);
+					TrimString(cls);
 				}
 				if ((StrContains(line,"origin",false) != -1) && (!origindefined))
 				{
