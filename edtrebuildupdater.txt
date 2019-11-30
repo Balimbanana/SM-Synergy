@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.20"
-			"Previous"	"0.19"
+			"Latest"  	"0.21"
+			"Previous"	"0.20"
 		}
 		
-		"Notes"	"Fixed EDT multiple deletes and edits of same entity."
+		"Notes"	"Added edt_map and edt_landmark specification for selecting entity."
 	}
 	
 	"Files"
