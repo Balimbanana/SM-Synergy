@@ -90,7 +90,7 @@ bool antlionguardhard = false;
 bool incfixer = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.9998"
+#define PLUGIN_VERSION "1.99981"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2795,6 +2795,25 @@ public Action clticks(Handle timer)
 							TR_TraceRayFilter(plypos,angs,MASK_SHOT,RayType_Infinite,TraceEntityFilter,i);
 							TR_GetEndPosition(trpos);
 							ShowPointMessages(-1,i,plypos,trpos,-1,999.0,-1);
+						}
+						if (HasEntProp(i,Prop_Data,"m_hViewEntity"))
+						{
+							int ViewEnt = GetEntPropEnt(i,Prop_Data,"m_hViewEntity");
+							int hudset = GetEntProp(i,Prop_Data,"m_iHideHUD");
+							if ((ViewEnt > MaxClients) && (IsValidEntity(ViewEnt)))
+							{
+								char cls[25];
+								GetEntityClassname(ViewEnt,cls,sizeof(cls));
+								if (StrEqual(cls,"point_viewcontrol",false))
+								{
+									if (hudset != 2072) SetEntProp(i,Prop_Data,"m_iHideHUD",2072);
+								}
+								else if (hudset == 2072) SetEntProp(i,Prop_Data,"m_iHideHUD",2048);
+							}
+							else if (!IsValidEntity(ViewEnt))
+							{
+								if (hudset == 2072) SetEntProp(i,Prop_Data,"m_iHideHUD",2048);
+							}
 						}
 					}
 				}
@@ -9780,9 +9799,9 @@ public Action resetmdl(Handle timer, Handle dp)
 			char clsname[32];
 			GetEntityClassname(ent,clsname,sizeof(clsname));
 			if (!StrEqual(clsname,clschk,false)) return Plugin_Handled;
+			if (!IsModelPrecached(mdl)) PrecacheModel(mdl,true);
 			SetEntPropString(ent,Prop_Data,"m_ModelName",mdl);
 			DispatchKeyValue(ent,"model",mdl);
-			if (!IsModelPrecached(mdl)) PrecacheModel(mdl,true);
 			if (StrEqual(mdl,"models/zombies/zombie_sci.mdl",false))
 			{
 				SetVariantString("headcrab1");
