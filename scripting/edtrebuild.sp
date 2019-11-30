@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.23"
+#define PLUGIN_VERSION "0.24"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -233,8 +233,9 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					ExplodeString(globalremove,"\"",tmpexpl,4,64);
 					Format(globalremove,sizeof(globalremove),"%s",tmpexpl[3]);
 					TrimString(globalremove);
-					Format(globalremove,sizeof(globalremove),"\"globalname\" \"%s\"",globalremove);
+					Format(globalremove,sizeof(globalremove),"\"globalname\" \"%s\"\n",globalremove);
 					ReplaceString(szMapEntities,sizeof(szMapEntities),globalremove,"");
+					ReplaceString(tmpline,sizeof(tmpline),globalremove,"");
 				}
 				int findcls = StrContains(tmpline,"\"classname\" \"",false);
 				if (findcls != -1)
@@ -411,22 +412,30 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								{
 									Format(buffadded,sizeof(buffadded),"%s",tmpline[findedit]);
 									ExplodeString(buffadded,"\"",tmpexpl,4,64);
-									Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[1],tmpexpl[3]);
+									if (strlen(tmpexpl[1]) < 3) Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[2]);
+									else Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[1],tmpexpl[3]);
 									TrimString(replacedata);
 									Format(buffadded,sizeof(buffadded),"%s",tmpline);
 									if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)))
 									{
-										Format(edtval,sizeof(edtval),"%i",StringToInt(tmpexpl[2])+StringToInt(edtval));
+										int curval = 0;
+										if (strlen(tmpexpl[2]) > 0) curval = StringToInt(tmpexpl[2]);
+										else curval = StringToInt(tmpexpl[3]);
+										Format(edtval,sizeof(edtval),"%i",curval+StringToInt(edtval));
 										Format(edtkey,sizeof(edtkey),"\"spawnflags\"");
 									}
 									else if (StrEqual(edtkey,"\"edt_removespawnflags\"",false))
 									{
-										int checkneg = StringToInt(tmpexpl[3])-StringToInt(edtval);
+										int checkneg = 0;
+										if (strlen(tmpexpl[2]) > 0) checkneg = StringToInt(tmpexpl[2]);
+										else checkneg = StringToInt(tmpexpl[3]);
+										checkneg = checkneg-StringToInt(edtval);
 										if (checkneg < 0) checkneg = 0;
 										Format(edtval,sizeof(edtval),"%i",checkneg);
 										Format(edtkey,sizeof(edtkey),"\"spawnflags\"");
 									}
 									Format(edtkey,sizeof(edtkey),"%s \"%s\"",edtkey,edtval);
+									if (StrEqual(edtkey,replacedata,false)) continue;
 									if (dbglvl >= 3) PrintToServer("Replace %s with %s",replacedata,edtkey);
 									ReplaceString(buffadded,sizeof(buffadded),replacedata,edtkey);
 									if (StrContains(szMapEntities,tmpline,false) != -1)
