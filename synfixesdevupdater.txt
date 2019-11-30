@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9998"
-			"Previous"	"1.9997"
+			"Latest"  	"1.99981"
+			"Previous"	"1.9998"
 		}
 		
-		"Notes"	"Added CVar sm_blockex default 1. Will block exec client-side. Added CVar sm_incfilefixer default 0, will add to whichever dependencies are found for the current map."
+		"Notes"	"Added HUD hide when in a point_viewcontrol."
 	}
 	
 	"Files"
