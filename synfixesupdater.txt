@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.9995"
-			"Previous"	"1.9994"
+			"Latest"  	"1.99951"
+			"Previous"	"1.9995"
 		}
 		
-		"Notes"	"Added CVar sm_blockex default 1. Will block exec client-side."
+		"Notes"	"Apply func_door lift fix to ep1_citadel_03."
 	}
 	
 	"Files"
