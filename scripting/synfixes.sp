@@ -48,7 +48,7 @@ bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.9995"
+#define PLUGIN_VERSION "1.99951"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -238,6 +238,11 @@ public void OnMapStart()
 		HookEntityOutput("instanced_scripted_scene","OnStart",trigout);
 		if (StrContains(mapbuf,"bm_c",false) == -1)
 			HookEntityOutput("func_tracktrain","OnStart",elevatorstart);
+		HookEntityOutput("func_door","OnOpen",createelev);
+		HookEntityOutput("func_door","OnClose",createelev);
+	}
+	if (StrEqual(mapbuf,"ep1_citadel_03",false))
+	{
 		HookEntityOutput("func_door","OnOpen",createelev);
 		HookEntityOutput("func_door","OnClose",createelev);
 	}
