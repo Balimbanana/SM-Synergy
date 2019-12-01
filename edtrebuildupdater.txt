@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.25"
-			"Previous"	"0.24"
+			"Latest"  	"0.26"
+			"Previous"	"0.25"
 		}
 		
 		"Notes"	"Fixed UCS-2 encoding read again."
