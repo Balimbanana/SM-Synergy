@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.25"
+#define PLUGIN_VERSION "0.26"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -41,19 +41,8 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	g_DeleteClasses = CreateArray(128);
-	g_DeleteClassOrigin = CreateArray(128);
-	g_DeleteTargets = CreateArray(128);
-	g_EditClasses = CreateArray(128);
-	g_EditClassOrigin = CreateArray(128);
-	g_EditTargets = CreateArray(128);
-	g_EditClassesData = CreateArray(128);
-	g_EditClassOrgData = CreateArray(128);
-	g_EditTargetsData = CreateArray(128);
-	g_CreateEnts = CreateArray(128);
 	cvaroriginals = CreateArray(64);
 	cvarmods = CreateArray(64);
-	
 	Handle cvar = FindConVar("edtdbg");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtdbg", "0", "Set debug level of EDT read.", _, true, 0.0, true, 4.0);
 	dbglvl = GetConVarInt(cvar);
@@ -71,6 +60,16 @@ public void OnLibraryAdded(const char[] name)
 
 public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 {
+	g_DeleteClasses = CreateArray(128);
+	g_DeleteClassOrigin = CreateArray(128);
+	g_DeleteTargets = CreateArray(128);
+	g_EditClasses = CreateArray(128);
+	g_EditClassOrigin = CreateArray(128);
+	g_EditTargets = CreateArray(128);
+	g_EditClassesData = CreateArray(128);
+	g_EditClassOrgData = CreateArray(128);
+	g_EditTargetsData = CreateArray(128);
+	g_CreateEnts = CreateArray(128);
 	if (GetArraySize(cvaroriginals) > 0)
 	{
 		for (int i = 0;i<GetArraySize(cvaroriginals);i++)
@@ -79,7 +78,8 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			GetArrayString(cvaroriginals,i,tmparr,sizeof(tmparr));
 			ServerCommand(tmparr);
 		}
-		ClearArray(cvaroriginals);
+		CloseHandle(cvaroriginals);
+		cvaroriginals = CreateArray(64);
 	}
 	char curmap[128];
 	Format(curmap,sizeof(curmap),"maps/%s.edt",szMapName);
@@ -568,16 +568,19 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			}
 			else break;
 		}
-		ClearArray(g_DeleteClasses);
-		ClearArray(g_DeleteClassOrigin);
-		ClearArray(g_DeleteTargets);
-		ClearArray(g_EditClasses);
-		ClearArray(g_EditClassOrigin);
-		ClearArray(g_EditTargets);
-		ClearArray(g_EditClassesData);
-		ClearArray(g_EditTargetsData);
-		ClearArray(g_EditClassOrgData);
-		ClearArray(g_CreateEnts);
+		ClearArrayHandles(g_EditClassesData);
+		ClearArrayHandles(g_EditTargetsData);
+		ClearArrayHandles(g_EditClassOrgData);
+		CloseHandle(g_DeleteClasses);
+		CloseHandle(g_DeleteClassOrigin);
+		CloseHandle(g_DeleteTargets);
+		CloseHandle(g_EditClasses);
+		CloseHandle(g_EditClassOrigin);
+		CloseHandle(g_EditTargets);
+		CloseHandle(g_EditClassesData);
+		CloseHandle(g_EditTargetsData);
+		CloseHandle(g_EditClassOrgData);
+		CloseHandle(g_CreateEnts);
 		char szMapNameadj[64];
 		char contentdata[64];
 		Handle cvar = FindConVar("content_metadata");
@@ -601,17 +604,35 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		return Plugin_Changed;
 	}
 	else if (dbglvl > 0) PrintToServer("No EDT found at %s or %s",curmap,curmap2);
-	ClearArray(g_DeleteClasses);
-	ClearArray(g_DeleteClassOrigin);
-	ClearArray(g_DeleteTargets);
-	ClearArray(g_EditClasses);
-	ClearArray(g_EditClassOrigin);
-	ClearArray(g_EditTargets);
-	ClearArray(g_EditClassesData);
-	ClearArray(g_EditTargetsData);
-	ClearArray(g_EditClassOrgData);
-	ClearArray(g_CreateEnts);
+	CloseHandle(g_DeleteClasses);
+	CloseHandle(g_DeleteClassOrigin);
+	CloseHandle(g_DeleteTargets);
+	CloseHandle(g_EditClasses);
+	CloseHandle(g_EditClassOrigin);
+	CloseHandle(g_EditTargets);
+	CloseHandle(g_EditClassesData);
+	CloseHandle(g_EditTargetsData);
+	CloseHandle(g_EditClassOrgData);
+	CloseHandle(g_CreateEnts);
 	return Plugin_Continue;
+}
+
+void ClearArrayHandles(Handle array)
+{
+	if (array != INVALID_HANDLE)
+	{
+		if (view_as<int>(array) != 1634494062)
+		{
+			if (GetArraySize(array) > 0)
+			{
+				for (int i = 0;i<GetArraySize(array);i++)
+				{
+					Handle closearr = GetArrayCell(array,i);
+					if (closearr != INVALID_HANDLE) CloseHandle(closearr);
+				}
+			}
+		}
+	}
 }
 
 public int Updater_OnPluginUpdated()
@@ -630,7 +651,8 @@ public void OnMapStart()
 			GetArrayString(cvarmods,i,tmparr,sizeof(tmparr));
 			ServerCommand("%s",tmparr);
 		}
-		ClearArray(cvarmods);
+		CloseHandle(cvarmods);
+		cvarmods = CreateArray(64);
 	}
 }
 
@@ -710,9 +732,12 @@ void ReadEDT(char[] edtfile)
 					else
 					{
 						Handle consolearr = CreateArray(16);
+						FormatKVs(consolearr,line,"");
+						/*
 						Handle tmphndl = FormatKVs(consolearr,line,"");
 						consolearr = CloneArray(tmphndl);
 						CloseHandle(tmphndl);
+						*/
 						if (GetArraySize(consolearr) > 0)
 						{
 							for (int i = 0;i<GetArraySize(consolearr);i++)
@@ -804,9 +829,12 @@ void ReadEDT(char[] edtfile)
 					if (gettn)
 					{
 						Handle tmp = CreateArray(16);
+						FormatKVs(tmp,line,"targetname");
+						/*
 						Handle tmphndl = FormatKVs(tmp,line,"targetname");
 						tmp = CloneArray(tmphndl);
 						CloseHandle(tmphndl);
+						*/
 						if (GetArraySize(tmp) > 0)
 						{
 							char tmparr[256];
@@ -823,9 +851,12 @@ void ReadEDT(char[] edtfile)
 				}
 				if (((CreatingEnt) || (EditingEnt) || (DeletingEnt)) && (strlen(line) > 0))
 				{
+					FormatKVs(passedarr,line,cls);
+					/*
 					Handle tmphndl = FormatKVs(passedarr,line,cls);
 					passedarr = CloneArray(tmphndl);
 					CloseHandle(tmphndl);
+					*/
 				}
 				if ((StrContains(line,"}",false) != -1) && (CreatingEnt))
 				{
@@ -933,14 +964,16 @@ void ReadEDT(char[] edtfile)
 	}
 	return;
 }
-
-public Handle FormatKVs(Handle arrpass, char[] passchar, char[] cls)
+//public Handle FormatKVs(Handle arrpass, char[] passchar, char[] cls)
+void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 {
-	if ((strlen(passchar) > 0) && (StrContains(passchar,"//",false) != 0) && (arrpass != INVALID_HANDLE))
+	if ((strlen(passchar) > 0) && (StrContains(passchar,"//",false) != 0) && (passedarr != INVALID_HANDLE))
 	{
+		/*
 		Handle passedarr = INVALID_HANDLE;
 		if (view_as<int>(arrpass) == 1634494062) passedarr = CreateArray(64);
 		else passedarr = CloneArray(arrpass);
+		*/
 		char kvs[128][256];
 		char fmt[256];
 		ReplaceStringEx(passchar,256,"	"," ");
@@ -1038,12 +1071,14 @@ public Handle FormatKVs(Handle arrpass, char[] passchar, char[] cls)
 								{
 									PushArrayString(passedarr,fmt);
 								}
+								/*
 								else
 								{
 									Handle tmphndl = CreateArray(64);
 									passedarr = CloneHandle(tmphndl);
 									PushArrayString(passedarr,fmt);
 								}
+								*/
 							}
 						}
 						if (set == 0) i++;
@@ -1052,9 +1087,11 @@ public Handle FormatKVs(Handle arrpass, char[] passchar, char[] cls)
 				}
 			}
 		}
-		return passedarr;
+		//return passedarr;
+		return;
 	}
-	return INVALID_HANDLE;
+	//return INVALID_HANDLE;
+	return;
 }
 
 public void dbgch(Handle convar, const char[] oldValue, const char[] newValue)
