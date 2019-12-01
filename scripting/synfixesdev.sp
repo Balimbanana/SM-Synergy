@@ -90,7 +90,7 @@ bool antlionguardhard = false;
 bool incfixer = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99981"
+#define PLUGIN_VERSION "1.99982"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -550,6 +550,11 @@ public void OnMapStart()
 				HookEntityOutput("func_door","OnOpen",createelev);
 				HookEntityOutput("func_door","OnClose",createelev);
 			}
+		}
+		if (StrEqual(mapbuf,"ep1_citadel_03",false))
+		{
+			HookEntityOutput("func_door","OnOpen",createelev);
+			HookEntityOutput("func_door","OnClose",createelev);
 		}
 		if (StrContains(mapbuf,"ep1_",false) == 0)
 		{
