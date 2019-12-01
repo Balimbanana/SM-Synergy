@@ -9,7 +9,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.23"
+#define PLUGIN_VERSION "1.24"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -336,11 +336,11 @@ public Action CreateStuffThere(int client, int args)
 		TR_TraceRay(Location,clangles,MASK_SHOT,RayType_Infinite);
 		TR_GetEndPosition(fhitpos,hhitpos);
 		//To ensure they spawn above the ground
-		fhitpos[2] = (fhitpos[2] + 15);
+		fhitpos[2]+=15.0;
 		if (StrEqual(ent,"npc_strider",false))
 			fhitpos[2] = (fhitpos[2] + 165);
 		else if ((StrEqual(ent,"npc_houndeye",false)) || (StrEqual(ent,"npc_bullsquid",false)))
-			fhitpos[2] = (fhitpos[2] + 10);
+			fhitpos[2]+=20.0;
 		CloseHandle(hhitpos);
 		int stuff = CreateEntityByName(ent);
 		if (StrEqual(ent,"jalopy",false))
@@ -593,6 +593,18 @@ public Action cinp(int client, int args)
 	}
 	else if ((strlen(firstarg) > 0) && (args > 1) && (StringToInt(firstarg) == 0))
 	{
+		if (StrContains(firstarg,"*",false) == 0)
+		{
+			char tmp[64];
+			Format(tmp,sizeof(tmp),"%s",firstarg);
+			ReplaceStringEx(tmp,sizeof(tmp),"*","");
+			if (StrContains(tmp,"*",false) > 0)
+			{
+				PrintToConsole(client,"Unable to select multiple * at the moment.");
+				CloseHandle(arr);
+				return Plugin_Handled;
+			}
+		}
 		findentsarrtarg(arr,firstarg);
 		//Checks must be separate
 		if (arr == INVALID_HANDLE)
@@ -891,8 +903,55 @@ public Handle findentsarrtarg(Handle arr, char[] namechk)
 				char fname[128];
 				GetEntPropString(i,Prop_Data,"m_iName",fname,sizeof(fname));
 				if (StrContains(fname,"\"",false) != -1) ReplaceString(fname,sizeof(fname),"\"","");
-				if (StrEqual(fname,namechk,false))
-					PushArrayCell(arr, i);
+				if ((StrContains(namechk,"*",false) > 0) && (StrContains(namechk,"*",false) != 0))
+				{
+					char tmppass[64];
+					Format(tmppass,sizeof(tmppass),"%s",namechk);
+					ReplaceString(tmppass,sizeof(tmppass),"*","");
+					if (StrContains(fname,tmppass,false) != -1)
+					{
+						if (FindValueInArray(arr,i) == -1) PushArrayCell(arr,i);
+					}
+				}
+				else if ((StrContains(namechk,"*",false) == 0) && (StrContains(namechk,"*",false) > 0))
+				{
+					char tmppass[64];
+					Format(tmppass,sizeof(tmppass),"%s",namechk);
+					ReplaceString(tmppass,sizeof(tmppass),"*","");
+					if (StrContains(fname,tmppass,false) != -1)
+					{
+						if (FindValueInArray(arr,i) == -1) PushArrayCell(arr,i);
+					}
+				}
+				else if (StrContains(namechk,"*",false) == 0)
+				{
+					char tmppass[64];
+					char tmpend[64];
+					char tmpchar[16];
+					Format(tmppass,sizeof(tmppass),"%s",namechk);
+					ReplaceString(tmppass,sizeof(tmppass),"*","");
+					int endpos = StrContains(fname,tmppass,false);
+					if (endpos != -1)
+					{
+						Format(tmpchar,endpos+1,"%s",fname);
+						if (strlen(tmpchar) < 1)
+						{
+							if (FindValueInArray(arr,i) == -1) PushArrayCell(arr,i);
+						}
+						else
+						{
+							Format(tmpend,sizeof(tmpend),"%s",fname);
+							ReplaceStringEx(tmpend,sizeof(tmpend),tmpchar,"");
+							ReplaceStringEx(tmpend,sizeof(tmpend),tmppass,"");
+							if (strlen(tmpend) < 1)
+							{
+								if (FindValueInArray(arr,i) == -1) PushArrayCell(arr,i);
+							}
+						}
+					}
+				}
+				if ((StrEqual(fname,namechk,false)) && (FindValueInArray(arr,i) == -1))
+					PushArrayCell(arr,i);
 			}
 		}
 	}
@@ -995,7 +1054,7 @@ public Action listents(int client, int args)
 							GetEntPropString(parent,Prop_Data,"m_iName",parentname,sizeof(parentname));
 						char parentcls[32];
 						GetEntityClassname(parent,parentcls,sizeof(parentcls));
-						Format(stateinf,sizeof(stateinf),"%sParented to %i %s %s",stateinf,parent,parentname,parentcls);
+						Format(stateinf,sizeof(stateinf),"%sParented to %i %s %s ",stateinf,parent,parentname,parentcls);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_flRefireTime"))
 					{
@@ -1495,6 +1554,7 @@ public Action getinf(int client, int args)
 		char exprsc[24];
 		char exprtargname[64];
 		int exprsci;
+		int collgroup = -1;
 		GetEntityClassname(targ, ent, sizeof(ent));
 		GetEntPropString(targ,Prop_Data,"m_iName",targname,sizeof(targname));
 		if (HasEntProp(targ,Prop_Data,"m_iGlobalname"))
@@ -1517,6 +1577,8 @@ public Action getinf(int client, int args)
 					GetEntPropString(exprsci,Prop_Data,"m_iName",exprtargname,sizeof(exprtargname));
 			}
 		}
+		if (HasEntProp(targ,Prop_Data,"m_CollisionGroup"))
+			collgroup = GetEntProp(targ,Prop_Data,"m_CollisionGroup");
 		char cmodel[64];
 		GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 		int spawnflagsi = GetEntityFlags(targ);
@@ -1544,6 +1606,8 @@ public Action getinf(int client, int args)
 			Format(inf,sizeof(inf),"%s\nOrigin %i %i %i",inf,RoundFloat(vec[0]),RoundFloat(vec[1]),RoundFloat(vec[2]));
 		if (angs[0] != -1.1)
 			Format(inf,sizeof(inf),"%s Ang: %i %i %i",inf,RoundFloat(angs[0]),RoundFloat(angs[1]),RoundFloat(angs[2]));
+		if (collgroup != -1)
+			Format(inf,sizeof(inf),"%s CollisionGroup %i",inf,collgroup);
 		if (strlen(exprsc) > 0)
 			Format(inf,sizeof(inf),"%s\nTarget: %s %i %s",inf,exprsc,exprsci,exprtargname);
 		if (HasEntProp(targ,Prop_Data,"m_vehicleScript"))
