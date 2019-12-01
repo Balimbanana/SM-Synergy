@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.24"
+#define PLUGIN_VERSION "0.25"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -212,6 +212,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 						}
 					}
 					Format(tmpbuf,sizeof(tmpbuf),"%s\n}",tmpbuf);
+					if (dbglvl == 4) PrintToServer("Create %s",tmpbuf);
 					StrCat(szMapEntities,sizeof(szMapEntities),tmpbuf);
 					CloseHandle(passedarr);
 				}
@@ -643,6 +644,8 @@ void ReadEDT(char[] edtfile)
 		bool CVars = false;
 		bool origindefined = false;
 		bool TargnDefined = false;
+		bool ReadString = false;
+		bool reading = true;
 		char line[512];
 		char cls[128];
 		char targn[64];
@@ -652,26 +655,39 @@ void ReadEDT(char[] edtfile)
 		Handle filehandle = INVALID_HANDLE;
 		if (FileExists(edtfile,false)) filehandle = OpenFile(edtfile,"rt",false);
 		else filehandle = OpenFile(edtfile,"rt",true,NULL_STRING);
-		while(ReadFileLine(filehandle,line,sizeof(line)) && (!IsEndOfFile(filehandle)))
+		while(reading && (!IsEndOfFile(filehandle)))
 		{
+			if (!ReadString) reading = ReadFileLine(filehandle,line,sizeof(line));
+			else
+			{
+				int readstatus = ReadFileString(filehandle,line,sizeof(line));
+				if (readstatus == -1)
+				{
+					reading = false;
+					break;
+				}
+				else reading = true;
+			}
 			TrimString(line);
 			linenum+=1;
-			if ((strlen(line) > 0) && (StrContains(line,"//",false) != 0))
+			if (((strlen(line) > 0) || (ReadString)) && (StrContains(line,"//",false) != 0))
 			{
 				if ((strlen(line) < 4) && (StrContains(line,"//",false) != 0) && (!StrEqual(line,"{",false)) && (!StrEqual(line,"}",false)) && (!StrEqual(line,"} }",false)) && (!StrEqual(line,"}}",false)))
 				{
 					char additional[32];
-					ReadFileLine(filehandle,additional,sizeof(additional));
+					ReadFileString(filehandle,additional,sizeof(additional));
 					Format(line,sizeof(line),"%s%s",line,additional);
 					while (ReadFileString(filehandle,additional,sizeof(additional)) > 0)
 					{
 						if (StrEqual(additional,"\n",false))
 						{
 							ReplaceString(line,sizeof(line),"\n","");
+							ReadString = true;
 							break;
 						}
 						Format(line,sizeof(line),"%s%s",line,additional);
 					}
+					TrimString(line);
 				}
 				if (StrContains(line,"//",false) != 0)
 				{
@@ -911,7 +927,7 @@ void ReadEDT(char[] edtfile)
 				return;
 			}
 		}
-		if (dbglvl > 1) PrintToServer("EDTRead Ended at line %i",linenum);
+		if (dbglvl > 1) PrintToServer("EDTRead Ended at line %i",linenum+1);
 		CloseHandle(passedarr);
 		CloseHandle(filehandle);
 	}
