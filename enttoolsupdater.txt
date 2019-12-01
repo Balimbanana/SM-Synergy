@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.23"
-			"Previous"	"1.22"
+			"Latest"  	"1.24"
+			"Previous"	"1.23"
 		}
 		
-		"Notes"	"Added !mywep to sm_sep for your current weapon. Changed a few prints to console instead of chat for some games."
+		"Notes"	"Added better detection of *name and name*. Added collision group to gi."
 	}
 	
 	"Files"
