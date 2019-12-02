@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99983"
-			"Previous"	"1.99982"
+			"Latest"  	"1.99984"
+			"Previous"	"1.99983"
 		}
 		
-		"Notes"	"Apply func_door lift fix to ep1_citadel_03."
+		"Notes"	"Added flush and default vote binds on first load in."
 	}
 	
 	"Files"
