@@ -93,7 +93,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		char curbuf[4096][512];
 		char rmchar[2];
 		Format(rmchar,sizeof(rmchar),"%s%s",szMapEntities[0],szMapEntities[1]);
-		ExplodeString(szMapEntities,"{",curbuf,4096,512);
+		int lastarr = ExplodeString(szMapEntities,"{",curbuf,4096,512);
 		char tmpline[6148];
 		char tmpbuf[4096];
 		char buffadded[6148];
@@ -110,7 +110,19 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		char edt_landmark[64];
 		char edtkey[128];
 		char edtval[128];
-		if (StrContains(szMapEntities[strlen(szMapEntities)-2],"}",false) == -1) StrCat(szMapEntities,sizeof(szMapEntities),"\n}");
+		Format(tmpline,sizeof(tmpline),"%s",curbuf[lastarr-1]);
+		int findbufend = StrContains(szMapEntities,tmpline,false);
+		if (StrContains(tmpline,"}",false) == -1)
+		{
+			Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[findbufend+strlen(tmpline)]);
+			int findend = StrContains(tmpbuf,"}",false);
+			if (findend != -1)
+			{
+				Format(tmpbuf,findend+2,"%s",tmpbuf);
+				Format(tmpline,sizeof(tmpline),"%s%s",tmpline,tmpbuf);
+			}
+		}
+		if (StrContains(tmpline,"}",false) == -1) StrCat(szMapEntities,sizeof(szMapEntities),"}");
 		bool CheckDelClasses,CheckEdClasses,CheckDelClassorg,CheckDelTargets,CheckEdClassOrg,CheckEdTargets;
 		if (GetArraySize(g_DeleteTargets) > 0) CheckDelTargets = true;
 		if (GetArraySize(g_EditClassOrigin) > 0) CheckEdClassOrg = true;
@@ -224,7 +236,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			if (strlen(curbuf[i]) > 0)
 			{
 				Format(tmpline,sizeof(tmpline),"%s",curbuf[i]);
-				int findbufend = StrContains(szMapEntities,tmpline,false);
+				findbufend = StrContains(szMapEntities,tmpline,false);
 				if (StrContains(tmpline,"}",false) == -1)
 				{
 					Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[findbufend+strlen(tmpline)]);
