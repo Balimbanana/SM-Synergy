@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.26"
-			"Previous"	"0.25"
+			"Latest"  	"0.27"
+			"Previous"	"0.26"
 		}
 		
-		"Notes"	"Fixed UCS-2 encoding read again."
+		"Notes"	"Add ending brace if not found in cache."
 	}
 	
 	"Files"
