@@ -90,7 +90,7 @@ bool antlionguardhard = false;
 bool incfixer = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99982"
+#define PLUGIN_VERSION "1.99983"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -443,7 +443,9 @@ public void OnMapStart()
 		ClearArray(physboxharr);
 		ClearArray(elevlist);
 		ClearArray(inputsarrorigincls);
-		ClearArray(restorecustoments);
+		ClearArrayHandles(restorecustoments);
+		CloseHandle(restorecustoments);
+		restorecustoments = CreateArray(256);
 		ClearArray(hounds);
 		ClearArray(houndsmdl);
 		ClearArray(squids);
@@ -469,7 +471,9 @@ public void OnMapStart()
 		ClearArray(passedstrings);
 		ClearArray(globalsarr);
 		ClearArray(merchantscr);
-		ClearArray(merchantscrd);
+		ClearArrayHandles(merchantscrd);
+		CloseHandle(merchantscrd);
+		merchantscrd = CreateArray(32);
 		//ClearArray(nextweapreset);
 		FindGlobals(-1);
 		for (int i = 1;i<MaxClients+1;i++)
@@ -999,6 +1003,24 @@ public void OnMapStart()
 			HookEntityOutput("env_entity_maker","OnEntitySpawned",ptadditionalspawn);
 		}
 		PrecacheSound("npc\\roller\\code2.wav",true);
+	}
+}
+
+void ClearArrayHandles(Handle array)
+{
+	if (array != INVALID_HANDLE)
+	{
+		if (view_as<int>(array) != 1634494062)
+		{
+			if (GetArraySize(array) > 0)
+			{
+				for (int i = 0;i<GetArraySize(array);i++)
+				{
+					Handle closearr = GetArrayCell(array,i);
+					if (closearr != INVALID_HANDLE) CloseHandle(closearr);
+				}
+			}
+		}
 	}
 }
 
@@ -13212,7 +13234,9 @@ void resetvehicles(float delay)
 	}
 	//if (customents)
 	//Function now includes global name recreation
-	ClearArray(restorecustoments);
+	ClearArrayHandles(restorecustoments);
+	CloseHandle(restorecustoments);
+	restorecustoments = CreateArray(256);
 	findcustoments();
 }
 
