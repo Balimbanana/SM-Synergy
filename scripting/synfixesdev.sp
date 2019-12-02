@@ -307,6 +307,7 @@ public void OnPluginStart()
 	RegConsoleCmd("mm_message",cmdblock);
 	RegConsoleCmd("mm_stats",cmdblock);
 	RegConsoleCmd("mm_select_session",cmdblock);
+	RegConsoleCmd("flushfix",ReallowFlush);
 	RegConsoleCmd("changelevel",resetgraphs);
 	Handle autorebuildh = CreateConVar("rebuildents","0","Set auto rebuild of custom entities, 1 is dynamic, 2 is static npc list.",_,true,0.0,true,2.0);
 	autorebuild = GetConVarInt(autorebuildh);
@@ -2048,14 +2049,12 @@ public Action clspawnpost(Handle timer, int client)
 		}
 		SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 		SDKHook(client, SDKHook_WeaponSwitch, OnWeaponUse);
-		Handle cvar = FindConVar("sv_cheats");
-		if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"1");
-		CloseHandle(cvar);
 		//Rebinds for default applications
 		ClientCommand(client,"bind f1 vote_yes");
 		ClientCommand(client,"bind f2 vote_no");
-		ClientCommand(client,"snd_restart");
 		CreateTimer(0.1,restoresound,client,TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(0.5,ResetFlush,client,TIMER_FLAG_NO_MAPCHANGE);
+		ClientCommand(client,"snd_restart");
 		char briefing[128];
 		char mapname[64];
 		GetCurrentMap(mapname,sizeof(mapname));
@@ -2071,17 +2070,33 @@ public Action clspawnpost(Handle timer, int client)
 	}
 }
 
+public Action ReallowFlush(int client, int args)
+{
+	Handle cvar = FindConVar("sv_cheats");
+	if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"1");
+	CloseHandle(cvar);
+	ClientCommand(client,"flush");
+	CreateTimer(0.1,ResetCvar,client,TIMER_FLAG_NO_MAPCHANGE);
+	return Plugin_Handled;
+}
+
+public Action ResetFlush(Handle timer, int client)
+{
+	if (IsValidEntity(client))
+	{
+		if (IsClientConnected(client))
+		{
+			ReallowFlush(client,0);
+		}
+	}
+}
+
 public Action restoresound(Handle timer, int client)
 {
 	if (IsValidEntity(client))
 	{
 		if (IsClientConnected(client))
 		{
-			Handle cvar = FindConVar("sv_cheats");
-			if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"1");
-			CloseHandle(cvar);
-			ClientCommand(client,"flush");
-			CreateTimer(1.5,ResetCvar,client,TIMER_FLAG_NO_MAPCHANGE);
 			if (IsPlayerAlive(client))
 			{
 				if (GetArraySize(delayedsounds) > 0)
