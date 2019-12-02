@@ -90,7 +90,7 @@ bool antlionguardhard = false;
 bool incfixer = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99983"
+#define PLUGIN_VERSION "1.99984"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -732,6 +732,12 @@ public void OnMapStart()
 		{
 			SetCommandFlags("thirdperson", (cvarmodefl & ~FCVAR_CHEAT));
 			SetCommandFlags("thirdperson", (cvarmodefl & ~FCVAR_SPONLY));
+		}
+		cvarmodefl = GetCommandFlags("flush");
+		if (cvarmodefl != INVALID_FCVAR_FLAGS)
+		{
+			SetCommandFlags("flush", (cvarmodefl & ~FCVAR_CHEAT));
+			SetCommandFlags("flush", (cvarmodefl & ~FCVAR_SPONLY));
 		}
 		findstraymdl(-1,"prop_dynamic");
 		findstraymdl(-1,"point_template");
@@ -2042,6 +2048,12 @@ public Action clspawnpost(Handle timer, int client)
 		}
 		SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 		SDKHook(client, SDKHook_WeaponSwitch, OnWeaponUse);
+		Handle cvar = FindConVar("sv_cheats");
+		if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"1");
+		CloseHandle(cvar);
+		//Rebinds for default applications
+		ClientCommand(client,"bind f1 vote_yes");
+		ClientCommand(client,"bind f2 vote_no");
 		ClientCommand(client,"snd_restart");
 		CreateTimer(0.1,restoresound,client,TIMER_FLAG_NO_MAPCHANGE);
 		char briefing[128];
@@ -2065,6 +2077,11 @@ public Action restoresound(Handle timer, int client)
 	{
 		if (IsClientConnected(client))
 		{
+			Handle cvar = FindConVar("sv_cheats");
+			if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"1");
+			CloseHandle(cvar);
+			ClientCommand(client,"flush");
+			CreateTimer(1.5,ResetCvar,client,TIMER_FLAG_NO_MAPCHANGE);
 			if (IsPlayerAlive(client))
 			{
 				if (GetArraySize(delayedsounds) > 0)
@@ -2170,6 +2187,19 @@ public Action restoresound(Handle timer, int client)
 					CloseHandle(removal);
 				}
 			}
+		}
+	}
+}
+
+public Action ResetCvar(Handle timer, int client)
+{
+	if (IsValidEntity(client))
+	{
+		if (IsClientConnected(client))
+		{
+			Handle cvar = FindConVar("sv_cheats");
+			if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"0");
+			CloseHandle(cvar);
 		}
 	}
 }
@@ -3557,6 +3587,7 @@ public Action SetupMine(int mine)
 					if (GetConVarInt(cvar) < 1) SetConVarInt(cvar,250,false,false);
 					GetConVarString(cvar,radius,sizeof(radius));
 				}
+				CloseHandle(cvar);
 				cvar = FindConVar("sk_npc_dmg_tripmine");
 				if (cvar != INVALID_HANDLE)
 				{
