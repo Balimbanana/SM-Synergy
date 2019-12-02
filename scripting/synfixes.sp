@@ -48,7 +48,7 @@ bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99951"
+#define PLUGIN_VERSION "1.99952"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1047,6 +1047,8 @@ public Action clspawnpost(Handle timer, int client)
 		}
 		SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 		SDKHook(client, SDKHook_WeaponSwitch, OnWeaponUse);
+		ClientCommand(client,"bind f1 vote_yes");
+		ClientCommand(client,"bind f2 vote_no");
 	}
 	else if (IsClientConnected(client))
 	{
