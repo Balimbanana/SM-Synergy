@@ -27,7 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 
-#define PLUGIN_VERSION "0.26"
+#define PLUGIN_VERSION "0.27"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -110,6 +110,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		char edt_landmark[64];
 		char edtkey[128];
 		char edtval[128];
+		if (StrContains(szMapEntities[strlen(szMapEntities)-2],"}",false) == -1) StrCat(szMapEntities,sizeof(szMapEntities),"\n}");
 		bool CheckDelClasses,CheckEdClasses,CheckDelClassorg,CheckDelTargets,CheckEdClassOrg,CheckEdTargets;
 		if (GetArraySize(g_DeleteTargets) > 0) CheckDelTargets = true;
 		if (GetArraySize(g_EditClassOrigin) > 0) CheckEdClassOrg = true;
@@ -719,7 +720,7 @@ void ReadEDT(char[] edtfile)
 						Format(line,commentpos+1,"%s",line);
 					}
 				}
-				if ((StrEqual(line,"console",false)) || (StrContains(line,"console",false) != -1))
+				if ((StrEqual(line,"console",false)) || ((StrContains(line,"console",false) <= 1) && (StrContains(line,"console",false) != -1)))
 				{
 					CVars = true;
 				}
