@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99982"
-			"Previous"	"1.99981"
+			"Latest"  	"1.99983"
+			"Previous"	"1.99982"
 		}
 		
 		"Notes"	"Apply func_door lift fix to ep1_citadel_03."
