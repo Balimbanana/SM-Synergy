@@ -30,7 +30,7 @@ int method = 0;
 bool VintageMode = false;
 bool AntirushDisable = false;
 
-#define PLUGIN_VERSION "0.30"
+#define PLUGIN_VERSION "0.31"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -282,15 +282,25 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			{
 				int finder = -1;
 				int finderorg = -1;
+				int finderorground = -1;
 				int findend = -1;
+				char clsorground[32];
 				for (int i = 0;i<GetArraySize(g_DeleteClassOrigin);i++)
 				{
 					GetArrayString(g_DeleteClassOrigin,i,cls,sizeof(cls));
 					ExplodeString(cls,",",tmpexpl,4,64);
 					Format(cls,sizeof(cls),"\"classname\" \"%s\"",tmpexpl[0]);
 					Format(clsorg,sizeof(clsorg),"\"origin\" \"%s\"",tmpexpl[1]);
+					float org[3];
+					ExplodeString(tmpexpl[1]," ",tmpexpl,4,64);
+					org[0] = StringToFloat(tmpexpl[0]);
+					org[1] = StringToFloat(tmpexpl[1]);
+					org[2] = StringToFloat(tmpexpl[2]);
+					Format(clsorground,sizeof(clsorground),"%i %i %i",RoundFloat(org[0]),RoundFloat(org[1]),RoundFloat(org[2]));
 					finder = StrContains(szMapEntities,cls,false);
 					finderorg = StrContains(szMapEntities,clsorg,false);
+					finderorground = StrContains(szMapEntities,clsorg,false);
+					if ((finderorg == -1) && (finderorground != -1)) finderorg = finderorground;
 					if ((finder != -1) && (finderorg != -1))
 					{
 						Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finderorg]);
@@ -390,15 +400,17 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										{
 											Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
 											ExplodeString(tmpbuf,"\n",tmpexpl,4,64);
-											ExplodeString(tmpexpl[0]," ",tmpexpl,4,64);
+											Format(tmpexpl[1],sizeof(tmpexpl[]),"%s",tmpexpl[0]);
 											findend = StrContains(tmpexpl[0]," ",false);
 											if (findend != -1)
 											{
 												Format(tmpexpl[0],findend+1,"%s",tmpbuf);
+												TrimString(tmpexpl[0]);
 											}
 											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),tmpexpl[0],"");
 											ReplaceString(tmpexpl[0],sizeof(tmpexpl[]),"\"","");
 											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),"\"","");
+											TrimString(tmpexpl[1]);
 											if (strlen(tmpexpl[1]) < 3) Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
 											else Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
 											TrimString(replacedata);
@@ -862,17 +874,18 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										{
 											Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
 											ExplodeString(tmpbuf,"\n",tmpexpl,4,64);
-											ExplodeString(tmpexpl[0]," ",tmpexpl,4,64);
+											//ExplodeString(tmpexpl[0]," ",tmpexpl,4,64);
 											findend = StrContains(tmpexpl[0]," ",false);
 											if (findend != -1)
 											{
-												Format(tmpexpl[0],findend+1,"%s",tmpbuf);
+												Format(replacedata,findend+1,"%s",tmpexpl[0]);
+												Format(tmpexpl[1],sizeof(tmpexpl[]),"%s",tmpexpl[0]);
 											}
-											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),tmpexpl[0],"");
-											ReplaceString(tmpexpl[0],sizeof(tmpexpl[]),"\"","");
+											ReplaceString(replacedata,sizeof(replacedata),"\"","");
+											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),replacedata,"");
 											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),"\"","");
-											if (strlen(tmpexpl[1]) < 3) Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
-											else Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
+											TrimString(tmpexpl[1]);
+											Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",replacedata,tmpexpl[1]);
 											TrimString(replacedata);
 											Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff);
 											if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)))
