@@ -27,8 +27,10 @@ Handle g_CreateEnts = INVALID_HANDLE;
 
 int dbglvl = 0;
 int method = 0;
+bool VintageMode = false;
+bool AntirushDisable = false;
 
-#define PLUGIN_VERSION "0.28"
+#define PLUGIN_VERSION "0.29"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -53,6 +55,16 @@ public void OnPluginStart()
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtmethod", "1", "Set method of EntityCache modify.", _, true, 0.0, true, 3.0);
 	method = GetConVarInt(cvar);
 	HookConVarChange(cvar,methodch);
+	CloseHandle(cvar);
+	cvar = FindConVar("mp_vintage_mode");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("mp_vintage_mode", "0", "Remove most modifications and additions while maintaining core functionality and support.", _, true, 0.0, true, 1.0);
+	VintageMode = GetConVarBool(cvar);
+	HookConVarChange(cvar,vintagech);
+	CloseHandle(cvar);
+	cvar = FindConVar("mp_antirush_disable");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("mp_antirush_disable", "0", "Disable progression prevention methods at the end of applicable levels.", _, true, 0.0, true, 1.0);
+	AntirushDisable = GetConVarBool(cvar);
+	HookConVarChange(cvar,antirushch);
 	CloseHandle(cvar);
 }
 
@@ -1731,14 +1743,48 @@ void ReadEDT(char[] edtfile)
 				{
 					if (strlen(cls) > 0)
 					{
-						char edtcls[64];
-						Format(edtcls,sizeof(edtcls),"%s",cls);
-						if (dbglvl > 0) PrintToServer("Create %s at origin %s With %i KVs",cls,originch,GetArraySize(passedarr));
-						else if (dbglvl) PrintToServer("Create %s at origin %s",cls,originch);
-						Format(edtcls,sizeof(edtcls),"classname \"%s\"",edtcls);
-						if (FindStringInArray(passedarr,edtcls) == -1) PushArrayString(passedarr,edtcls);
-						Handle dupearr = CloneArray(passedarr);
-						PushArrayCell(g_CreateEnts,dupearr);
+						bool DelEnt = false;
+						if ((AntirushDisable) || (VintageMode))
+						{
+							if (GetArraySize(passedarr) > 0)
+							{
+								for (int i = 0;i<GetArraySize(passedarr);i++)
+								{
+									char tmparr[128];
+									GetArrayString(passedarr,i,tmparr,sizeof(tmparr));
+									if (StrContains(tmparr,"targetname",false) != -1)
+									{
+										if (AntirushDisable)
+										{
+											if (StrContains(tmparr,"syn_antirush",false) != -1)
+											{
+												DelEnt = true;
+												break;
+											}
+										}
+										if (VintageMode)
+										{
+											if (StrContains(tmparr,"syn_vint",false) != -1)
+											{
+												DelEnt = true;
+												break;
+											}
+										}
+									}
+								}
+							}
+						}
+						if (!DelEnt)
+						{
+							char edtcls[64];
+							Format(edtcls,sizeof(edtcls),"%s",cls);
+							if (dbglvl > 0) PrintToServer("Create %s at origin %s With %i KVs",cls,originch,GetArraySize(passedarr));
+							else if (dbglvl) PrintToServer("Create %s at origin %s",cls,originch);
+							Format(edtcls,sizeof(edtcls),"classname \"%s\"",edtcls);
+							if (FindStringInArray(passedarr,edtcls) == -1) PushArrayString(passedarr,edtcls);
+							Handle dupearr = CloneArray(passedarr);
+							PushArrayCell(g_CreateEnts,dupearr);
+						}
 					}
 					else PrintToServer("EDT Error: Attempted to create entity with no classname on line %i",linenum);
 					ClearArray(passedarr);
@@ -1971,4 +2017,227 @@ public void dbgch(Handle convar, const char[] oldValue, const char[] newValue)
 public void methodch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	method = StringToInt(newValue);
+}
+
+public void vintagech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) != StringToInt(oldValue))
+	{
+		if (StringToInt(newValue) > 0)
+		{
+			VintageMode = true;
+			Handle arr = CreateArray(128);
+			findentsarrtarg(arr,"syn_vint*");
+			if (arr != INVALID_HANDLE)
+			{
+				if (view_as<int>(arr) != 1634494062)
+				{
+					if (GetArraySize(arr) > 0)
+					{
+						for (int i = 0;i<GetArraySize(arr);i++)
+						{
+							int entity = GetArrayCell(arr,i);
+							if ((IsValidEntity(entity)) && (entity != 0))
+							{
+								AcceptEntityInput(entity,"kill");
+							}
+						}
+					}
+				}
+			}
+			CloseHandle(arr);
+		}
+		else
+		{
+			VintageMode = false;
+		}
+	}
+}
+
+public void antirushch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) != StringToInt(oldValue))
+	{
+		if (StringToInt(newValue) > 0)
+		{
+			AntirushDisable = true;
+			Handle arr = CreateArray(128);
+			findentsarrtarg(arr,"syn_vint*");
+			if (arr != INVALID_HANDLE)
+			{
+				if (view_as<int>(arr) != 1634494062)
+				{
+					if (GetArraySize(arr) > 0)
+					{
+						char cls[42];
+						for (int i = 0;i<GetArraySize(arr);i++)
+						{
+							int entity = GetArrayCell(arr,i);
+							if ((IsValidEntity(entity)) && (entity != 0))
+							{
+								AcceptEntityInput(entity,"Disable");
+								GetEntityClassname(entity,cls,sizeof(cls));
+								if (StrEqual(cls,"syn_antirush_wall",false))
+								{
+									if (HasEntProp(entity,Prop_Data,"m_CollisionGroup")) SetEntProp(entity,Prop_Data,"m_CollisionGroup",5);
+								}
+								else if (HasEntProp(entity,Prop_Data,"m_ModelName"))
+								{
+									GetEntPropString(entity,Prop_Data,"m_ModelName",cls,sizeof(cls));
+									if (StrEqual(cls,"models/synergy/tools/syn_transition.mdl",false))
+									{
+										if (HasEntProp(entity,Prop_Data,"m_CollisionGroup")) SetEntProp(entity,Prop_Data,"m_CollisionGroup",5);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			CloseHandle(arr);
+		}
+		else
+		{
+			AntirushDisable = false;
+			Handle arr = CreateArray(128);
+			findentsarrtarg(arr,"syn_vint*");
+			if (arr != INVALID_HANDLE)
+			{
+				if (view_as<int>(arr) != 1634494062)
+				{
+					if (GetArraySize(arr) > 0)
+					{
+						char cls[42];
+						for (int i = 0;i<GetArraySize(arr);i++)
+						{
+							int entity = GetArrayCell(arr,i);
+							if ((IsValidEntity(entity)) && (entity != 0))
+							{
+								AcceptEntityInput(entity,"Enable");
+								GetEntityClassname(entity,cls,sizeof(cls));
+								if (StrEqual(cls,"syn_antirush_wall",false))
+								{
+									if (HasEntProp(entity,Prop_Data,"m_CollisionGroup")) SetEntProp(entity,Prop_Data,"m_CollisionGroup",0);
+								}
+								else if (HasEntProp(entity,Prop_Data,"m_ModelName"))
+								{
+									GetEntPropString(entity,Prop_Data,"m_ModelName",cls,sizeof(cls));
+									if (StrEqual(cls,"models/synergy/tools/syn_transition.mdl",false))
+									{
+										if (HasEntProp(entity,Prop_Data,"m_CollisionGroup")) SetEntProp(entity,Prop_Data,"m_CollisionGroup",0);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			CloseHandle(arr);
+		}
+	}
+}
+
+public Handle findentsarrtarg(Handle arr, char[] namechk)
+{
+	if (arr == INVALID_HANDLE) return INVALID_HANDLE;
+	for (int i = 1;i<2048;i++)
+	{
+		if (IsValidEntity(i) && IsEntNetworkable(i))
+		{
+			char clsname[64];
+			GetEntityClassname(i,clsname,sizeof(clsname));
+			if ((StrEqual(clsname,namechk,false)) && (FindValueInArray(arr,i) == -1))
+				PushArrayCell(arr, i);
+			if ((HasEntProp(i,Prop_Data,"m_iName")) && (FindValueInArray(arr,i) == -1))
+			{
+				char fname[128];
+				GetEntPropString(i,Prop_Data,"m_iName",fname,sizeof(fname));
+				if (StrContains(fname,"\"",false) != -1) ReplaceString(fname,sizeof(fname),"\"","");
+				if ((StrContains(namechk,"*",false) > 0) && (StrContains(namechk,"*",false) != 0))
+				{
+					char tmppass[64];
+					Format(tmppass,sizeof(tmppass),"%s",namechk);
+					ReplaceString(tmppass,sizeof(tmppass),"*","");
+					if (StrContains(fname,tmppass,false) != -1)
+					{
+						if (FindValueInArray(arr,i) == -1) PushArrayCell(arr,i);
+					}
+				}
+				else if ((StrContains(namechk,"*",false) == 0) && (StrContains(namechk,"*",false) > 0))
+				{
+					char tmppass[64];
+					Format(tmppass,sizeof(tmppass),"%s",namechk);
+					ReplaceString(tmppass,sizeof(tmppass),"*","");
+					if (StrContains(fname,tmppass,false) != -1)
+					{
+						if (FindValueInArray(arr,i) == -1) PushArrayCell(arr,i);
+					}
+				}
+				else if (StrContains(namechk,"*",false) == 0)
+				{
+					char tmppass[64];
+					char tmpend[64];
+					char tmpchar[16];
+					Format(tmppass,sizeof(tmppass),"%s",namechk);
+					ReplaceString(tmppass,sizeof(tmppass),"*","");
+					int endpos = StrContains(fname,tmppass,false);
+					if (endpos != -1)
+					{
+						Format(tmpchar,endpos+1,"%s",fname);
+						if (strlen(tmpchar) < 1)
+						{
+							if (FindValueInArray(arr,i) == -1) PushArrayCell(arr,i);
+						}
+						else
+						{
+							Format(tmpend,sizeof(tmpend),"%s",fname);
+							ReplaceStringEx(tmpend,sizeof(tmpend),tmpchar,"");
+							ReplaceStringEx(tmpend,sizeof(tmpend),tmppass,"");
+							if (strlen(tmpend) < 1)
+							{
+								if (FindValueInArray(arr,i) == -1) PushArrayCell(arr,i);
+							}
+						}
+					}
+				}
+				if ((StrEqual(fname,namechk,false)) && (FindValueInArray(arr,i) == -1))
+					PushArrayCell(arr,i);
+			}
+		}
+	}
+	if (GetArraySize(arr) < 1)
+	{
+		findentsarrtargsub(arr,-1,namechk,"logic_*");
+		findentsarrtargsub(arr,-1,namechk,"env_*");
+		findentsarrtargsub(arr,-1,namechk,"filter_*");
+		findentsarrtargsub(arr,-1,namechk,"point_template");
+		findentsarrtargsub(arr,-1,namechk,"info_vehicle_spawn");
+		findentsarrtargsub(arr,-1,namechk,"math_counter");
+	}
+	if (arr != INVALID_HANDLE)
+		if (GetArraySize(arr) > 0) return arr;
+	return INVALID_HANDLE;
+}
+
+public Handle findentsarrtargsub(Handle arr, int ent, char[] namechk, char[] clsname)
+{
+	if (arr == INVALID_HANDLE) return INVALID_HANDLE;
+	int thisent = FindEntityByClassname(ent,clsname);
+	if (IsValidEntity(thisent))
+	{
+		if ((StrEqual(clsname,namechk,false)) && (FindValueInArray(arr,thisent) == -1))
+			PushArrayCell(arr, thisent);
+		if ((HasEntProp(thisent,Prop_Data,"m_iName")) && (FindValueInArray(arr,thisent) == -1))
+		{
+			char fname[128];
+			GetEntPropString(thisent,Prop_Data,"m_iName",fname,sizeof(fname));
+			if (StrContains(fname,"\"",false) != -1) ReplaceString(fname,sizeof(fname),"\"","");
+			if (StrEqual(fname,namechk,false))
+				PushArrayCell(arr, thisent);
+		}
+		findentsarrtargsub(arr,thisent++,namechk,clsname);
+	}
+	if (arr != INVALID_HANDLE)
+		if (GetArraySize(arr) > 0) return arr;
+	return INVALID_HANDLE;
 }
