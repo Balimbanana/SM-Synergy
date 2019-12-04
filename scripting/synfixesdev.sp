@@ -3626,6 +3626,7 @@ public Action SetupMine(int mine)
 				ChangeEdictState(mine);
 			}
 		}
+		if (FindValueInArray(tripmines,mine) == -1) PushArrayCell(tripmines,mine);
 		SDKHookEx(mine,SDKHook_OnTakeDamage,TripMineTKdmg);
 		if (FileExists("sound/weapons/tripmine/activate.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\tripmine\\activate.wav", mine, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
 	}
