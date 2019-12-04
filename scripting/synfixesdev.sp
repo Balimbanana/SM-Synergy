@@ -90,7 +90,7 @@ bool antlionguardhard = false;
 bool incfixer = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99985"
+#define PLUGIN_VERSION "1.99986"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2077,7 +2077,7 @@ public Action ReallowFlush(int client, int args)
 	if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"1");
 	CloseHandle(cvar);
 	ClientCommand(client,"flush");
-	CreateTimer(0.1,ResetCvar,client,TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(0.2,ResetCvar,client,TIMER_FLAG_NO_MAPCHANGE);
 	return Plugin_Handled;
 }
 
@@ -10728,7 +10728,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				EmitSoundToAll(snd, killed, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
 				viccol = -16732161;
 			}
-			if (((FindStringInArray(customentlist,clsname) != -1) || (StrEqual(clsname,"npc_ichthyosaur",false))) && (!StrEqual(clsname,"monster_alien_grunt",false)) && (StrEqual(clsname,"monster_gargantua",false)))
+			if (((FindStringInArray(customentlist,clsname) != -1) || (StrEqual(clsname,"npc_ichthyosaur",false))) && (!StrEqual(clsname,"monster_alien_grunt",false)) && (!StrEqual(clsname,"monster_gargantua",false)))
 			{
 				//-6921216 is blue -16083416 is green -16777041 is red -1052689 is white -3644216 is purple -16732161 is yellow
 				Handle entkilled = CreateEvent("synergy_entity_death");
