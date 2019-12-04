@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.28"
-			"Previous"	"0.27"
+			"Latest"  	"0.29"
+			"Previous"	"0.28"
 		}
 		
-		"Notes"	"Added edtmethod defautl 1. Sets method of modifying entity cache."
+		"Notes"	"Added mp_antirush_disable and mp_vintage_mode setups."
 	}
 	
 	"Files"
