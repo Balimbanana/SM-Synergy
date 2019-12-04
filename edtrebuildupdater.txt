@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.30"
-			"Previous"	"0.29"
+			"Latest"  	"0.31"
+			"Previous"	"0.30"
 		}
 		
-		"Notes"	"Fixed delete multiple targets."
+		"Notes"	"Fixed certain edit scenarios on method 1."
 	}
 	
 	"Files"
