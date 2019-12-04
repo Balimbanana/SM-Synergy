@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99984"
-			"Previous"	"1.99983"
+			"Latest"  	"1.99985"
+			"Previous"	"1.99984"
 		}
 		
-		"Notes"	"Added flush and default vote binds on first load in."
+		"Notes"	"Added read to .ent2 if exists."
 	}
 	
 	"Files"
