@@ -161,12 +161,12 @@ public OnPluginStart()
 			HookEvent("round_end", Event_RoundEnd);
 		}
 	}
-	
+	/*
 	if (g_Cvar_Fraglimit)
 	{
 		HookEvent("player_death", Event_PlayerDeath);		
 	}
-	
+	*/
 	AutoExecConfig(true, "mapchooser");
 	
 	//Change the mp_bonusroundtime max so that we have time to display the vote
