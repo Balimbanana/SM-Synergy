@@ -10766,6 +10766,8 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 					Format(weap,sizeof(weap),"grenade_frag");
 				}
 				if (StrEqual(weap,"crossbow",false)) Format(weap,sizeof(weap),"crossbow_bolt");
+				else if (StrEqual(weap,"glock",false)) Format(weap,sizeof(weap),"pistol");
+				else if (StrEqual(weap,"mp5",false)) Format(weap,sizeof(weap),"smg1");
 				SetEventString(entkilled,"weapon",weap);
 				SetEventInt(entkilled,"killerID",attacker);
 				SetEventInt(entkilled,"victimID",killed);
@@ -16428,6 +16430,10 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 						AcceptEntityInput(sprite,"SetParent",ent);
 					}
 					HookSingleEntityOutput(ent,"OnUser1",MerchantUse);
+				}
+				else if ((StrEqual(clsname,"npc_human_security",false)) || (StrEqual(clsname,"npc_human_scientist",false)) || (StrEqual(clsname,"npc_human_scientist_female",false)))
+				{
+					DispatchKeyValue(ent,"citizentype","4");
 				}
 				DispatchSpawn(ent);
 				ActivateEntity(ent);
