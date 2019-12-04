@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99985"
-			"Previous"	"1.99984"
+			"Latest"  	"1.99986"
+			"Previous"	"1.99985"
 		}
 		
-		"Notes"	"Added read to .ent2 if exists."
+		"Notes"	"Fixed custom ent death feed."
 	}
 	
 	"Files"
