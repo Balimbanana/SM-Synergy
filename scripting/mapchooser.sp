@@ -1391,7 +1391,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Calamity");
 	}
-	else if (StrContains(map, "sp_", false) == 0)
+	else if ((StrEqual(map, "sp_canal1", false)) || (StrEqual(map, "sp_canal2", false)) || (StrEqual(map, "sp_base", false)) || (StrEqual(map, "sp_canyon", false)) || (StrEqual(map, "sp_casino", false)) || (StrEqual(map, "sp_casino2", false)) || (StrEqual(map, "sp_ending", false)) || (StrEqual(map, "sp_intro", false)) || (StrEqual(map, "sp_postsquare", false)) || (StrEqual(map, "sp_precasino", false)) || (StrEqual(map, "sp_presquare", false)) || (StrEqual(map, "sp_square", false)) || (StrContains(map, "sp_streetwar", false) == 0) || (StrEqual(map, "sp_waterplant", false)) || (StrEqual(map, "sp_waterplant2", false)))
 	{
 		Format(maptag, sizeof(maptag), "The Citizen Returns");
 	}

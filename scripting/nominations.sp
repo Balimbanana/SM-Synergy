@@ -846,7 +846,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Calamity");
 	}
-	else if (StrContains(map,"sp_",false) == 0)
+	else if ((StrEqual(map, "sp_canal1", false)) || (StrEqual(map, "sp_canal2", false)) || (StrEqual(map, "sp_base", false)) || (StrEqual(map, "sp_canyon", false)) || (StrEqual(map, "sp_casino", false)) || (StrEqual(map, "sp_casino2", false)) || (StrEqual(map, "sp_ending", false)) || (StrEqual(map, "sp_intro", false)) || (StrEqual(map, "sp_postsquare", false)) || (StrEqual(map, "sp_precasino", false)) || (StrEqual(map, "sp_presquare", false)) || (StrEqual(map, "sp_square", false)) || (StrContains(map, "sp_streetwar", false) == 0) || (StrEqual(map, "sp_waterplant", false)) || (StrEqual(map, "sp_waterplant2", false)))
 	{
 		Format(modname, sizeof(modname), "The Citizen Returns");
 	}
@@ -1021,6 +1021,10 @@ public Action GetMapTag(const char[] map)
 	else if ((StrContains(map,"az_c",false) == 0) || (StrEqual(map,"az_intro",false)))
 	{
 		Format(modname, sizeof(modname), "Entropy: Zero");
+	}
+	else if (StrContains(map,"oc_",false) == 0)
+	{
+		Format(modname, sizeof(modname), "Obsidian Conflict");
 	}
 	else if ((StrContains(map,"Uh_Prologue_",false) == 0) || (StrContains(map,"Uh_Chapter1_",false) == 0) || (StrContains(map,"Uh_Chapter2_",false) == 0) || (StrContains(map,"Uh_House_",false) == 0) || (StrContains(map,"Uh_Dreams_",false) == 0))
 	{
