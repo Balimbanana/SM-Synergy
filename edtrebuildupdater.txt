@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.27"
-			"Previous"	"0.26"
+			"Latest"  	"0.28"
+			"Previous"	"0.27"
 		}
 		
-		"Notes"	"Add ending brace if not found in cache."
+		"Notes"	"Added edtmethod defautl 1. Sets method of modifying entity cache."
 	}
 	
 	"Files"
