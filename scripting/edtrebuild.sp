@@ -30,7 +30,7 @@ int method = 0;
 bool VintageMode = false;
 bool AntirushDisable = false;
 
-#define PLUGIN_VERSION "0.29"
+#define PLUGIN_VERSION "0.30"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -253,9 +253,9 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			if (GetArraySize(g_DeleteTargets) > 0)
 			{
 				int finder = -1;
-				for (int i = 0;i<GetArraySize(g_DeleteClasses);i++)
+				for (int i = 0;i<GetArraySize(g_DeleteTargets);i++)
 				{
-					GetArrayString(g_DeleteClasses,i,cls,sizeof(cls));
+					GetArrayString(g_DeleteTargets,i,cls,sizeof(cls));
 					Format(cls,sizeof(cls),"\"targetname\" \"%s\"",cls);
 					bool endofcache = false;
 					while (!endofcache)
