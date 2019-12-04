@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99986"
-			"Previous"	"1.99985"
+			"Latest"  	"1.99987"
+			"Previous"	"1.99986"
 		}
 		
 		"Notes"	"Fixed custom ent death feed."
