@@ -90,7 +90,7 @@ bool antlionguardhard = false;
 bool incfixer = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99986"
+#define PLUGIN_VERSION "1.99987"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -13789,6 +13789,11 @@ public Action custent(Handle timer, int entity)
 		char entcls[128];
 		if (HasEntProp(entity,Prop_Data,"m_iName")) GetEntPropString(entity,Prop_Data,"m_iName",cls,sizeof(cls));
 		GetEntityClassname(entity,entcls,sizeof(entcls));
+		if (StrEqual(entcls,"npc_barnacle",false))
+		{
+			SetVariantString("npc_ichthyosaur D_LI 99");
+			AcceptEntityInput(entity,"SetRelationship");
+		}
 		if ((StrEqual(entcls,"npc_snark",false)) || (StrEqual(entcls,"monster_snark",false)) || (StrEqual(entcls,"npc_babycrab",false)))
 		{
 			Format(cls,sizeof(cls),"%s",entcls);
