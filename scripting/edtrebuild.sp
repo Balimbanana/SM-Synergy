@@ -1456,11 +1456,13 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		CloseHandle(cvar);
 		if (strlen(contentdata) < 1) Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s.ent",szMapName);
 		else Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s_%s.ent",contentdata,szMapName);
+		/*
 		if (FileExists(szMapNameadj,true,NULL_STRING))
 		{
 			DeleteFile(szMapNameadj,true,NULL_STRING);
 			ReplaceStringEx(szMapNameadj,sizeof(szMapNameadj),".ent",".ent2");
 		}
+		*/
 		Handle writefile = OpenFile(szMapNameadj,"wb",true,NULL_STRING);
 		if (writefile != INVALID_HANDLE)
 		{
