@@ -90,7 +90,7 @@ bool antlionguardhard = false;
 bool incfixer = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99984"
+#define PLUGIN_VERSION "1.99985"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -665,7 +665,7 @@ public void OnMapStart()
 		HookEntityOutput("trigger_changelevel","OnChangeLevel",mapendchg);
 		HookEntityOutput("func_physbox","OnPhysGunPunt",physpunt);
 		HookUserMessage(GetUserMessageId("Fade"),blockfade,true);
-		Format(mapbuf,sizeof(mapbuf),"_%s.ent",mapbuf);
+		Format(mapbuf,sizeof(mapbuf),"_%s.ent2",mapbuf);
 		char contentdata[64];
 		Handle cvar = FindConVar("content_metadata");
 		if (cvar != INVALID_HANDLE)
@@ -679,6 +679,7 @@ public void OnMapStart()
 		if (strlen(contentdata) > 1)
 		{
 			Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s%s",contentdata,mapbuf);
+			if (!FileExists(mapbuf,true,NULL_STRING)) ReplaceStringEx(mapbuf,sizeof(mapbuf),".ent2",".ent");
 		}
 		if (!FileExists(mapbuf,true,NULL_STRING))
 		{
@@ -11419,7 +11420,7 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 			for (int i = 0;i<GetArraySize(tmpremove);i++)
 			{
 				int j = GetArrayCell(tmpremove,i);
-				RemoveFromArray(inputsarrorigincls,j);
+				RemoveFromArray(inputsarrorigincls,j-i);
 				UnhookSingleEntityOutput(caller,output,trigtp);
 			}
 		}
