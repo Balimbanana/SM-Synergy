@@ -29,8 +29,9 @@ int dbglvl = 0;
 int method = 0;
 bool VintageMode = false;
 bool AntirushDisable = false;
+bool GenerateEnt2 = false;
 
-#define PLUGIN_VERSION "0.31"
+#define PLUGIN_VERSION "0.32"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -65,6 +66,11 @@ public void OnPluginStart()
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("mp_antirush_disable", "0", "Disable progression prevention methods at the end of applicable levels.", _, true, 0.0, true, 1.0);
 	AntirushDisable = GetConVarBool(cvar);
 	HookConVarChange(cvar,antirushch);
+	CloseHandle(cvar);
+	cvar = FindConVar("edtgenerateent2");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtgenerateent2", "0", "Generate .ent2 instead of .ent cache files.", _, true, 0.0, true, 1.0);
+	GenerateEnt2 = GetConVarBool(cvar);
+	HookConVarChange(cvar,generateent2ch);
 	CloseHandle(cvar);
 }
 
@@ -352,6 +358,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				Handle passedarr = INVALID_HANDLE;
 				for (int i = 0;i<GetArraySize(g_EditClasses);i++)
 				{
+					bool lastent = false;
 					GetArrayString(g_EditClasses,i,cls,sizeof(cls));
 					Format(cls,sizeof(cls),"\"classname\" \"%s\"",cls);
 					finder = StrContains(szMapEntities,cls,false);
@@ -531,16 +538,17 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 									findend = findstartpos;
 									Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[findend]);
 									finder = StrContains(szMapEntitiesbuff,"}",false);
-									if (finder != -1)
+									if ((finder != -1) && (!lastent))
 									{
 										if (finder > 2000) finder+=1000;
 										finder+=findend;
 										Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder+3]);
 										finder = StrContains(szMapEntitiesbuff,cls,false);
+										//PrintToServer("%i %s",finder,szMapEntitiesbuff);
 										if (finder != -1)
 										{
 											findend = StrContains(szMapEntitiesbuff,"{",false);
-											while ((findend < finder) && (finder != -1) && (finder != -1))
+											while ((findend < finder) && (finder != -1) && (findend != -1))
 											{
 												Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntitiesbuff[findend+2]);
 												finder = StrContains(szMapEntitiesbuff,cls,false);
@@ -552,11 +560,12 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 												if (finder != -1)
 												{
 													Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder--]);
+													if (StrContains(szMapEntitiesbuff,"{",false) == -1) lastent = true;
 													while (StrContains(szMapEntitiesbuff,"{",false) != 0)
 													{
 														if (finder-1 != -1) Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder--]);
 														else break;
-														//PrintToServer("Pos %i",StrContains(szMapEntitiesbuff,"{",false));
+														//PrintToServer("Pos %i %i",StrContains(szMapEntitiesbuff,"{",false),finder);
 													}
 												}
 											}
@@ -1481,13 +1490,14 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		CloseHandle(cvar);
 		if (strlen(contentdata) < 1) Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s.ent",szMapName);
 		else Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s_%s.ent",contentdata,szMapName);
-		/*
-		if (FileExists(szMapNameadj,true,NULL_STRING))
+		if (GenerateEnt2)
 		{
-			DeleteFile(szMapNameadj,true,NULL_STRING);
-			ReplaceStringEx(szMapNameadj,sizeof(szMapNameadj),".ent",".ent2");
+			if (FileExists(szMapNameadj,true,NULL_STRING))
+			{
+				DeleteFile(szMapNameadj,true,NULL_STRING);
+				ReplaceStringEx(szMapNameadj,sizeof(szMapNameadj),".ent",".ent2");
+			}
 		}
-		*/
 		Handle writefile = OpenFile(szMapNameadj,"wb",true,NULL_STRING);
 		if (writefile != INVALID_HANDLE)
 		{
@@ -1497,7 +1507,29 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		if (dbglvl > 0) PrintToServer("Finished EntCache Rebuild");
 		return Plugin_Changed;
 	}
-	else if (dbglvl > 0) PrintToServer("No EDT found at %s or %s",curmap,curmap2);
+	else if (dbglvl > 0)
+	{
+		PrintToServer("No EDT found at %s or %s",curmap,curmap2);
+		char szMapNameadj[64];
+		char contentdata[64];
+		Handle cvar = FindConVar("content_metadata");
+		if (cvar != INVALID_HANDLE)
+		{
+			GetConVarString(cvar,contentdata,sizeof(contentdata));
+			char fixuptmp[16][16];
+			ExplodeString(contentdata," ",fixuptmp,16,16,true);
+			Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+		}
+		CloseHandle(cvar);
+		if (strlen(contentdata) < 1) Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s.ent",szMapName);
+		else Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s_%s.ent",contentdata,szMapName);
+		Handle writefile = OpenFile(szMapNameadj,"wb",true,NULL_STRING);
+		if (writefile != INVALID_HANDLE)
+		{
+			WriteFileString(writefile,szMapEntities,false);
+		}
+		CloseHandle(writefile);
+	}
 	CloseHandle(g_DeleteClasses);
 	CloseHandle(g_DeleteClassOrigin);
 	CloseHandle(g_DeleteTargets);
@@ -2030,6 +2062,12 @@ public void dbgch(Handle convar, const char[] oldValue, const char[] newValue)
 public void methodch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	method = StringToInt(newValue);
+}
+
+public void generateent2ch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0) GenerateEnt2 = true;
+	else GenerateEnt2 = false;
 }
 
 public void vintagech(Handle convar, const char[] oldValue, const char[] newValue)
