@@ -2236,10 +2236,10 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 		{
 			char tmplang[128];
 			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
-			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
-			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
-			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
-			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
+			if (StrContains(tmplang,"ep1",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
+			if (StrContains(tmplang,"ep2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
+			if (StrContains(tmplang,"bms",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
+			if (StrContains(tmplang,"cit2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
 			Format(restorelang[client],sizeof(restorelang[]),"%s",tmplang);
 			ClientCommand(client,"cc_lang bms%s",tmplang);
 		}
@@ -2247,9 +2247,9 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 		{
 			char tmplang[128];
 			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
-			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
-			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
-			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
+			if (StrContains(tmplang,"ep1",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
+			if (StrContains(tmplang,"ep2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
+			if (StrContains(tmplang,"cit2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
 			ClientCommand(client,"cc_lang %s",tmplang);
 		}
 	}
@@ -2264,10 +2264,10 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 		{
 			char tmplang[128];
 			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
-			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
-			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
-			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
-			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
+			if (StrContains(tmplang,"ep1",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
+			if (StrContains(tmplang,"ep2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
+			if (StrContains(tmplang,"cit2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
+			if (StrContains(tmplang,"bms",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
 			Format(restorelang[client],sizeof(restorelang[]),"%s",tmplang);
 			ClientCommand(client,"cc_lang ep1%s",tmplang);
 		}
@@ -2275,9 +2275,9 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 		{
 			char tmplang[128];
 			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
-			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
-			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
-			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
+			if (StrContains(tmplang,"ep2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
+			if (StrContains(tmplang,"bms",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
+			if (StrContains(tmplang,"cit2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
 			ClientCommand(client,"cc_lang %s",tmplang);
 		}
 	}
@@ -2292,10 +2292,10 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 		{
 			char tmplang[128];
 			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
-			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
-			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
-			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
-			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
+			if (StrContains(tmplang,"ep1",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
+			if (StrContains(tmplang,"ep2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
+			if (StrContains(tmplang,"bms",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
+			if (StrContains(tmplang,"cit2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
 			Format(restorelang[client],sizeof(restorelang[]),"%s",tmplang);
 			ClientCommand(client,"cc_lang ep2%s",tmplang);
 		}
@@ -2303,9 +2303,9 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 		{
 			char tmplang[128];
 			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
-			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
-			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
-			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
+			if (StrContains(tmplang,"ep1",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
+			if (StrContains(tmplang,"bms",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
+			if (StrContains(tmplang,"cit2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
 			ClientCommand(client,"cc_lang %s",tmplang);
 		}
 	}
@@ -2320,10 +2320,10 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 		{
 			char tmplang[128];
 			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
-			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
-			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
-			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
-			if (StrContains(tmplang,"cit2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
+			if (StrContains(tmplang,"ep1",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
+			if (StrContains(tmplang,"ep2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
+			if (StrContains(tmplang,"bms",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
+			if (StrContains(tmplang,"cit2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"cit2","");
 			Format(restorelang[client],sizeof(restorelang[]),"%s",tmplang);
 			ClientCommand(client,"cc_lang cit2%s",tmplang);
 		}
@@ -2331,9 +2331,9 @@ public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, co
 		{
 			char tmplang[128];
 			Format(tmplang,sizeof(tmplang),"%s",cvarValue);
-			if (StrContains(tmplang,"ep1",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
-			if (StrContains(tmplang,"ep2",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
-			if (StrContains(tmplang,"bms",false) == -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
+			if (StrContains(tmplang,"ep1",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep1","");
+			if (StrContains(tmplang,"ep2",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"ep2","");
+			if (StrContains(tmplang,"bms",false) != -1) ReplaceString(tmplang,sizeof(tmplang),"bms","");
 			ClientCommand(client,"cc_lang %s",tmplang);
 		}
 	}
