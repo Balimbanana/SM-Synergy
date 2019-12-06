@@ -90,7 +90,7 @@ bool antlionguardhard = false;
 bool incfixer = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99988"
+#define PLUGIN_VERSION "1.99989"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -308,6 +308,7 @@ public void OnPluginStart()
 	RegConsoleCmd("mm_stats",cmdblock);
 	RegConsoleCmd("mm_select_session",cmdblock);
 	RegConsoleCmd("flushfix",ReallowFlush);
+	AddCommandListener(flushcmd,"blckreset");
 	RegConsoleCmd("changelevel",resetgraphs);
 	Handle autorebuildh = CreateConVar("rebuildents","0","Set auto rebuild of custom entities, 1 is dynamic, 2 is static npc list.",_,true,0.0,true,2.0);
 	autorebuild = GetConVarInt(autorebuildh);
@@ -2077,7 +2078,15 @@ public Action ReallowFlush(int client, int args)
 	if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"1");
 	CloseHandle(cvar);
 	ClientCommand(client,"flush");
-	CreateTimer(0.2,ResetCvar,client,TIMER_FLAG_NO_MAPCHANGE);
+	ClientCommand(client,"blckreset");
+	return Plugin_Handled;
+}
+
+public Action flushcmd(int client, const char[] command, int argc)
+{
+	Handle cvar = FindConVar("sv_cheats");
+	if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"0");
+	CloseHandle(cvar);
 	return Plugin_Handled;
 }
 
@@ -2203,19 +2212,6 @@ public Action restoresound(Handle timer, int client)
 					CloseHandle(removal);
 				}
 			}
-		}
-	}
-}
-
-public Action ResetCvar(Handle timer, int client)
-{
-	if (IsValidEntity(client))
-	{
-		if (IsClientConnected(client))
-		{
-			Handle cvar = FindConVar("sv_cheats");
-			if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"0");
-			CloseHandle(cvar);
 		}
 	}
 }
@@ -11611,6 +11607,8 @@ void readoutputsforinputs()
 					ReplaceStringEx(ChapterTitle,sizeof(ChapterTitle),"EP1_","episodic_",-1,-1,false);
 					if ((StrContains(ChapterTitle,"episodic_",false) == -1) && (StrContains(ChapterTitle,"Chapter",false) != -1)) Format(ChapterTitle,sizeof(ChapterTitle),"episodic_%s",ChapterTitle);
 				}
+				else if (StrContains(mapbuf,"bms_bm_c",false) != -1)
+					Format(ChapterTitle,sizeof(ChapterTitle),"BMS_%s",tmpexpl[1]);
 				else
 					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
 				if (StrEqual(ChapterTitle,PreviousTitle,false)) ChapterTitle = "";
