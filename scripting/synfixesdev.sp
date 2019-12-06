@@ -90,7 +90,7 @@ bool antlionguardhard = false;
 bool incfixer = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99987"
+#define PLUGIN_VERSION "1.99988"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2054,7 +2054,7 @@ public Action clspawnpost(Handle timer, int client)
 		ClientCommand(client,"bind f1 vote_yes");
 		ClientCommand(client,"bind f2 vote_no");
 		CreateTimer(0.1,restoresound,client,TIMER_FLAG_NO_MAPCHANGE);
-		CreateTimer(0.5,ResetFlush,client,TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(1.5,ResetFlush,client,TIMER_FLAG_NO_MAPCHANGE);
 		ClientCommand(client,"snd_restart");
 		char briefing[128];
 		char mapname[64];
@@ -2067,7 +2067,7 @@ public Action clspawnpost(Handle timer, int client)
 	}
 	else if (IsClientConnected(client))
 	{
-		CreateTimer(0.5,clspawnpost,client);
+		CreateTimer(0.5,clspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
 
@@ -4189,6 +4189,7 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			readoutputstp(caller,targn,tmpout,"SetMass",origin,actmod);
 			readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
 			readoutputstp(caller,targn,tmpout,"EquipAllPlayers",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"SetCheckPoint",origin,actmod);
 		}
 		else
 		{
@@ -4224,6 +4225,7 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			readoutputstp(caller,targn,tmpout,"SetMass",origin,actmod);
 			readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
 			readoutputstp(caller,targn,tmpout,"EquipAllPlayers",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"SetCheckPoint",origin,actmod);
 		}
 	}
 }
@@ -10867,7 +10869,13 @@ public Action Event_SynEntityKilled(Handle event, const char[] name, bool Broadc
 						}
 					}
 					int damagetype = GetEntProp(attacker,Prop_Data,"m_bitsDamageInflict");
-					if (damagetype == 256) Format(clsname,sizeof(clsname),"Shock");
+					if (damagetype == 1) Format(clsname,sizeof(clsname),"Crushed");
+					else if (damagetype == 4) Format(clsname,sizeof(clsname),"Sliced");
+					else if (damagetype == 8) Format(clsname,sizeof(clsname),"Fire");
+					else if (damagetype == 16) Format(clsname,sizeof(clsname),"Frozen");
+					else if (damagetype == 32) Format(clsname,sizeof(clsname),"Gravity");
+					else if (damagetype == 64) Format(clsname,sizeof(clsname),"Blast");
+					else if (damagetype == 256) Format(clsname,sizeof(clsname),"Shock");
 					else if (damagetype == 512) Format(clsname,sizeof(clsname),"Sonic");
 					else if (damagetype == 1024) Format(clsname,sizeof(clsname),"Energy Beam");
 					else if (damagetype == 16384) Format(clsname,sizeof(clsname),"Drown");
@@ -10876,6 +10884,8 @@ public Action Event_SynEntityKilled(Handle event, const char[] name, bool Broadc
 					else if (damagetype == 131072) Format(clsname,sizeof(clsname),"Poison");
 					else if (damagetype == 262144) Format(clsname,sizeof(clsname),"Radiation");
 					else if (damagetype == 1048576) Format(clsname,sizeof(clsname),"Chemical");
+					else if (damagetype == 2097152) Format(clsname,sizeof(clsname),"Slow Burn");
+					else if (damagetype == 4194304) Format(clsname,sizeof(clsname),"Slow Freeze");
 				}
 			}
 			int viccol = -1052689;
@@ -11311,6 +11321,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								logmerches(-1,activator,input,lineorgrescom[0],lineorgrescom[2],delay);
 							}
+							else if (StrEqual(input,"SetCheckPoint",false))
+							{
+								spawnpointstates(lineorgrescom[2],delay);
+							}
 							int findignore = FindValueInArray(ignoretrigs,caller);
 							if (findignore != -1)
 							{
@@ -11403,6 +11417,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								logmerches(-1,activator,input,lineorgrescom[0],lineorgrescom[2],delay);
 							}
+							else if (StrEqual(input,"SetCheckPoint",false))
+							{
+								spawnpointstates(lineorgrescom[2],delay);
+							}
 							int findignore = FindValueInArray(ignoretrigs,caller);
 							if (findignore != -1)
 							{
@@ -11467,6 +11485,7 @@ void readoutputsforinputs()
 		PushArrayString(inputs,",EquipAllPlayers,,");
 		PushArrayString(inputs,",SetMass,");
 		PushArrayString(inputs,",Fade,,");
+		PushArrayString(inputs,",SetCheckPoint,");
 		if (customents)
 		{
 			PushArrayString(inputs,",ForceSpawn,,");
@@ -12713,6 +12732,56 @@ void findgfollow(int ent, char[] targn)
 		WritePackCell(data, aiglent);
 		WritePackString(data, "ai_goal_follow");
 		CreateTimer(0.1,cleanup,data,TIMER_FLAG_NO_MAPCHANGE);
+	}
+}
+
+void spawnpointstates(char[] targn, float delay)
+{
+	Handle arr = CreateArray(64);
+	FindAllByClassname(arr,-1,"info_player_coop");
+	if (GetArraySize(arr) > 0)
+	{
+		for (int i = 0;i<GetArraySize(arr);i++)
+		{
+			int ent = GetArrayCell(arr,i);
+			if (IsValidEntity(ent))
+			{
+				if (HasEntProp(ent,Prop_Data,"m_iName"))
+				{
+					char enttargn[64];
+					GetEntPropString(ent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
+					if (StrEqual(targn,enttargn,false))
+					{
+						if (delay > 0.1) CreateTimer(delay,spawnpointstatesdelay,ent,TIMER_FLAG_NO_MAPCHANGE);
+						else CreateTimer(0.1,spawnpointstatesdelay,ent,TIMER_FLAG_NO_MAPCHANGE);
+						break;
+					}
+				}
+			}
+		}
+	}
+	CloseHandle(arr);
+}
+
+public Action spawnpointstatesdelay(Handle timer, int entity)
+{
+	if (IsValidEntity(entity))
+	{
+		Handle arr = CreateArray(64);
+		FindAllByClassname(arr,-1,"info_player_coop");
+		if (GetArraySize(arr) > 0)
+		{
+			for (int i = 0;i<GetArraySize(arr);i++)
+			{
+				int ent = GetArrayCell(arr,i);
+				if (IsValidEntity(ent))
+				{
+					if (HasEntProp(ent,Prop_Data,"m_bDisabled")) SetEntProp(ent,Prop_Data,"m_bDisabled",1);
+				}
+			}
+		}
+		CloseHandle(arr);
+		if (HasEntProp(entity,Prop_Data,"m_bDisabled")) SetEntProp(entity,Prop_Data,"m_bDisabled",0);
 	}
 }
 
