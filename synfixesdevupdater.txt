@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99988"
-			"Previous"	"1.99987"
+			"Latest"  	"1.99989"
+			"Previous"	"1.99988"
 		}
 		
-		"Notes"	"Fixed custom ent death feed."
+		"Notes"	"Fixed flush exec on callback. Fixed Black Mesa chapter titles."
 	}
 	
 	"Files"
