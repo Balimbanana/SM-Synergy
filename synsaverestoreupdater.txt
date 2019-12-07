@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.11"
-			"Previous"	"2.10"
+			"Latest"  	"2.12"
+			"Previous"	"2.11"
 		}
 		
-		"Notes"	"Added force NewLevelUnit to connect overwrite which should prevent pSaveData crash attempting to read/write from old saves."
+		"Notes"	"Prevent transitioning a couple more entities."
 	}
 	
 	"Files"
