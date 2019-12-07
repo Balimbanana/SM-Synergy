@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.92"
+#define PLUGIN_VERSION "1.93"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin myinfo = 
@@ -449,9 +449,7 @@ public Action cleararr(Handle timer)
 	addht("monster_nihilanth");
 	for (int i = 0;i<GetArraySize(airelarr);i++)
 	{
-		char itmp[32];
-		GetArrayString(airelarr, i, itmp, sizeof(itmp));
-		int rel = StringToInt(itmp);
+		int rel = GetArrayCell(airelarr, i);
 		if (IsValidEntity(rel))
 		{
 			char clsnamechk[16];
@@ -479,6 +477,21 @@ public Action cleararr(Handle timer)
 					}
 					if (FindStringInArray(liarr,subj) == -1)
 						PushArrayString(liarr,subj);
+				}
+				else if ((StrContains(subj,"player",false) != -1) && (disp == 1) && (act != 0))
+				{
+					addht(targ);
+				}
+				else if ((StrContains(subj,"player",false) != -1) && (disp == 3) && (act != 0))
+				{
+					//PrintToServer("Rem %s %i",targ,disp);
+					int find = FindStringInArray(htarr,targ);
+					if (find != -1)
+					{
+						RemoveFromArray(htarr,find);
+					}
+					if (FindStringInArray(liarr,targ) == -1)
+						PushArrayString(liarr,targ);
 				}
 			}
 		}
@@ -602,7 +615,7 @@ public Action ShowTimer(Handle timer)
 								}
 							}
 						}
-						if ((StrEqual(clsname,"npc_zombie",false)) || (StrEqual(clsname,"npc_metropolice",false)) || (StrEqual(clsname,"npc_combine_s",false)))
+						if ((StrEqual(clsname,"npc_zombie",false)) || (StrEqual(clsname,"npc_metropolice",false)) || (StrEqual(clsname,"npc_combine_s",false)) || (StrEqual(clsname,"monster_gargantua",false)) || (StrEqual(clsname,"npc_antlionguard",false)))
 						{
 							char targn[64];
 							if (HasEntProp(targ,Prop_Data,"m_iszResponseContext"))
@@ -674,6 +687,8 @@ public Action ShowTimer(Handle timer)
 										GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 										if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
 											Format(clsname,sizeof(clsname),"Combine Elite");
+										else if (StrContains(cmodel,"models/sttr_easyrider",false) == 0)
+											Format(clsname,sizeof(clsname),"Easy Rider");
 										else if (GetEntProp(targ,Prop_Data,"m_nSkin") == 1)
 											Format(clsname,sizeof(clsname),"Combine Shotgunner");
 										else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
@@ -695,6 +710,8 @@ public Action ShowTimer(Handle timer)
 										else if (StrContains(targn,"anne",false) != -1) Format(clsname,sizeof(clsname),"Anne");
 										else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Arthur");
 										else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Sarah");
+										else if (StrContains(targn,"mary",false) != -1) Format(clsname,sizeof(clsname),"Mary");
+										else if (StrContains(targn,"matt",false) != -1) Format(clsname,sizeof(clsname),"Matt");
 										else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Mina");
 										else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"John");
 										else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Mitch");
@@ -702,6 +719,9 @@ public Action ShowTimer(Handle timer)
 										else if (StrContains(targn,"oleg",false) != -1) Format(clsname,sizeof(clsname),"Oleg");
 										else if (StrEqual(targn,"Richard",false)) Format(clsname,sizeof(clsname),"Richard");
 										else if (StrEqual(targn,"laura",false)) Format(clsname,sizeof(clsname),"Laura");
+										else if (StrEqual(targn,"winston",false)) Format(clsname,sizeof(clsname),"Winston");
+										else if (StrEqual(targn,"stanley",false)) Format(clsname,sizeof(clsname),"Stanley");
+										else if (StrEqual(targn,"tobias",false)) Format(clsname,sizeof(clsname),"Laszlo Tobias");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
 									}
@@ -786,6 +806,8 @@ public Action ShowTimer(Handle timer)
 									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 									if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
 										Format(clsname,sizeof(clsname),"Combine Elite");
+									else if (StrContains(cmodel,"models/sttr_easyrider",false) == 0)
+										Format(clsname,sizeof(clsname),"Easy Rider");
 									else if (GetEntProp(targ,Prop_Data,"m_nSkin") == 1)
 											Format(clsname,sizeof(clsname),"Combine Shotgunner");
 									else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
@@ -807,11 +829,16 @@ public Action ShowTimer(Handle timer)
 									else if (StrContains(targn,"anne",false) != -1) Format(clsname,sizeof(clsname),"Anne");
 									else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Arthur");
 									else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Sarah");
+									else if (StrContains(targn,"mary",false) != -1) Format(clsname,sizeof(clsname),"Mary");
+									else if (StrContains(targn,"matt",false) != -1) Format(clsname,sizeof(clsname),"Matt");
 									else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Mina");
 									else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
 									else if (StrEqual(targn,"oleg",false)) Format(clsname,sizeof(clsname),"Oleg");
 									else if (StrEqual(targn,"Richard",false)) Format(clsname,sizeof(clsname),"Richard");
 									else if (StrEqual(targn,"laura",false)) Format(clsname,sizeof(clsname),"Laura");
+									else if (StrEqual(targn,"winston",false)) Format(clsname,sizeof(clsname),"Winston");
+									else if (StrEqual(targn,"stanley",false)) Format(clsname,sizeof(clsname),"Stanley");
+									else if (StrEqual(targn,"tobias",false)) Format(clsname,sizeof(clsname),"Laszlo Tobias");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 									else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
 								}
@@ -923,6 +950,7 @@ public void PrintTheMsg(int client, int curh, int maxh, char clsname[32], bool f
 	else if (StrEqual(clsname,"combinegunship",false)) Format(clsname,sizeof(clsname),"Combine Gunship");
 	else if (StrEqual(clsname,"prop_vehicle_apc",false)) Format(clsname,sizeof(clsname),"Combine APC");
 	else if (StrEqual(clsname,"npc_fastzombie",false)) Format(clsname,sizeof(clsname),"Fast Zombie");
+	else if (StrEqual(clsname,"npc_fastzombie_torso",false)) Format(clsname,sizeof(clsname),"Fast Zombie Torso");
 	else if (StrEqual(clsname,"npc_headcrab_fast",false)) Format(clsname,sizeof(clsname),"Fast Headcrab");
 	else if (StrEqual(clsname,"npc_headcrab_poison",false)) Format(clsname,sizeof(clsname),"Poison Headcrab");
 	else if (StrEqual(clsname,"npc_headcrab_black",false)) Format(clsname,sizeof(clsname),"Black Headcrab");
@@ -995,6 +1023,8 @@ public void PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int t
 			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 			if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
 				Format(clsname,sizeof(clsname),"Friend: Combine Elite");
+			else if (StrContains(cmodel,"models/sttr_easyrider",false) == 0)
+				Format(clsname,sizeof(clsname),"Friend: Easy Rider");
 			else if (GetEntProp(targ,Prop_Data,"m_nSkin") == 1)
 				Format(clsname,sizeof(clsname),"Friend: Combine Shotgunner");
 			else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
@@ -1008,6 +1038,8 @@ public void PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int t
 		else if (StrEqual(targn,"anne",false)) Format(clsname,sizeof(clsname),"Friend: Anne");
 		else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Friend: Arthur");
 		else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Friend: Sarah");
+		else if (StrContains(targn,"mary",false) != -1) Format(clsname,sizeof(clsname),"Friend: Mary");
+		else if (StrContains(targn,"matt",false) != -1) Format(clsname,sizeof(clsname),"Friend: Matt");
 		else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Friend: Mina");
 		else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"Friend: John");
 		else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Friend: Mitch");
@@ -1015,6 +1047,9 @@ public void PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int t
 		else if (StrContains(targn,"oleg",false) != -1) Format(clsname,sizeof(clsname),"Friend: Oleg");
 		else if (StrEqual(targn,"Richard",false)) Format(clsname,sizeof(clsname),"Friend: Richard");
 		else if (StrEqual(targn,"laura",false)) Format(clsname,sizeof(clsname),"Friend: Laura");
+		else if (StrEqual(targn,"winston",false)) Format(clsname,sizeof(clsname),"Friend: Winston");
+		else if (StrEqual(targn,"stanley",false)) Format(clsname,sizeof(clsname),"Friend: Stanley");
+		else if (StrEqual(targn,"tobias",false)) Format(clsname,sizeof(clsname),"Friend: Laszlo Tobias");
 		else if (StrEqual(clsname,"npc_citizen",false))
 		{
 			char cmodel[64];
@@ -1064,6 +1099,7 @@ public void PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int t
 		else if (StrEqual(clsname,"prop_vehicle_apc",false)) Format(clsname,sizeof(clsname),"Friend: Combine APC");
 		else if (StrEqual(clsname,"npc_gman",false)) Format(clsname,sizeof(clsname),"Government Man");
 		else if (StrEqual(clsname,"npc_fastzombie",false)) Format(clsname,sizeof(clsname),"Friend: Fast Zombie");
+		else if (StrEqual(clsname,"npc_fastzombie_torso",false)) Format(clsname,sizeof(clsname),"Friend: Fast Zombie Torso");
 		else if (StrEqual(clsname,"npc_poisonzombie",false)) Format(clsname,sizeof(clsname),"Friend: Poison Zombie");
 		else if (StrEqual(clsname,"npc_headcrab_fast",false)) Format(clsname,sizeof(clsname),"Friend: Fast Headcrab");
 		else if (StrEqual(clsname,"npc_headcrab_poison",false)) Format(clsname,sizeof(clsname),"Friend: Poison Headcrab");
@@ -1095,6 +1131,8 @@ public void PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int t
 			GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 			if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
 				Format(clsname,sizeof(clsname),"Enemy: Combine Elite");
+			else if (StrContains(cmodel,"models/sttr_easyrider",false) == 0)
+				Format(clsname,sizeof(clsname),"Enemy: Easy Rider");
 			else if (GetEntProp(targ,Prop_Data,"m_nSkin") == 1)
 				Format(clsname,sizeof(clsname),"Enemy: Combine Shotgunner");
 			else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
@@ -1151,6 +1189,7 @@ public void PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int t
 		else if (StrEqual(clsname,"prop_vehicle_apc",false)) Format(clsname,sizeof(clsname),"Enemy: Combine APC");
 		else if (StrEqual(clsname,"npc_gman",false)) Format(clsname,sizeof(clsname),"Government Man");
 		else if (StrEqual(clsname,"npc_fastzombie",false)) Format(clsname,sizeof(clsname),"Enemy: Fast Zombie");
+		else if (StrEqual(clsname,"npc_fastzombie_torso",false)) Format(clsname,sizeof(clsname),"Enemy: Fast Zombie Torso");
 		else if (StrEqual(clsname,"npc_poisonzombie",false)) Format(clsname,sizeof(clsname),"Enemy: Poison Zombie");
 		else if (StrEqual(clsname,"npc_headcrab_fast",false)) Format(clsname,sizeof(clsname),"Enemy: Fast Headcrab");
 		else if (StrEqual(clsname,"npc_headcrab_poison",false)) Format(clsname,sizeof(clsname),"Enemy: Poison Headcrab");
@@ -1384,9 +1423,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("monster_nihilanth");
 		for (int i = 0;i<GetArraySize(airelarr);i++)
 		{
-			char itmp[32];
-			GetArrayString(airelarr, i, itmp, sizeof(itmp));
-			int rel = StringToInt(itmp);
+			int rel = GetArrayCell(airelarr, i);
 			if (IsValidEntity(rel))
 			{
 				char clsnamechk[16];
@@ -1493,9 +1530,7 @@ public Action findairel(int ent, char[] clsname)
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
-		char prevtmp[16];
-		Format(prevtmp, sizeof(prevtmp), "%i", thisent);
-		if((thisent >= 0) && (FindStringInArray(airelarr, prevtmp) == -1))
+		if((thisent >= 0) && (FindValueInArray(airelarr, thisent) == -1))
 		{
 			char subj[32];
 			GetEntPropString(thisent,Prop_Data,"m_iszSubject",subj,sizeof(subj));
@@ -1503,7 +1538,7 @@ public Action findairel(int ent, char[] clsname)
 			int recip = GetEntProp(thisent,Prop_Data,"m_bReciprocal");
 			if ((StrContains(subj,"player",false) == -1) && (act != 0) && (recip == 1))
 			{
-				PushArrayString(airelarr, prevtmp);
+				PushArrayCell(airelarr, thisent);
 			}
 		}
 		findairel(thisent++,clsname);
