@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.93"
+#define PLUGIN_VERSION "1.94"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin myinfo = 
@@ -463,9 +463,11 @@ public Action cleararr(Handle timer)
 				int disp = GetEntProp(rel,Prop_Data,"m_iDisposition");
 				int act = GetEntProp(rel,Prop_Data,"m_bIsActive");
 				//disp 1 = D_HT // 2 = D_NT // 3 = D_LI // 4 = D_FR
+				//PrintToServer("sub %s targ %s disp %i act %i",subj,targ,disp,act);
 				if ((StrContains(targ,"player",false) != -1) && (disp == 1) && (act != 0))
 				{
-					addht(subj);
+					if (FindStringInArray(htarr,targ) == -1)
+						addht(subj);
 				}
 				else if ((StrContains(targ,"player",false) != -1) && (disp == 3) && (act != 0))
 				{
@@ -480,7 +482,8 @@ public Action cleararr(Handle timer)
 				}
 				else if ((StrContains(subj,"player",false) != -1) && (disp == 1) && (act != 0))
 				{
-					addht(targ);
+					if (FindStringInArray(htarr,targ) == -1)
+						addht(targ);
 				}
 				else if ((StrContains(subj,"player",false) != -1) && (disp == 3) && (act != 0))
 				{
@@ -489,6 +492,11 @@ public Action cleararr(Handle timer)
 					if (find != -1)
 					{
 						RemoveFromArray(htarr,find);
+						find = FindStringInArray(htarr,targ);
+						if (find != -1)
+						{
+							RemoveFromArray(htarr,find);
+						}
 					}
 					if (FindStringInArray(liarr,targ) == -1)
 						PushArrayString(liarr,targ);
@@ -1005,8 +1013,10 @@ public void PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int t
 {
 	bool targetally = false;
 	if (StrEqual(clsname,"npc_metropolice",false))
-		if (GetCopAlly()) Format(clsname,sizeof(clsname),"Friend: Metropolice");
+	{
+		if ((GetCopAlly()) || (FindStringInArray(liarr,clsname) != -1)) Format(clsname,sizeof(clsname),"Friend: Metropolice");
 		else Format(clsname,sizeof(clsname),"Enemy: Metropolice");
+	}
 	char targn[32];
 	if (HasEntProp(targ,Prop_Data,"m_iName"))
 	{
@@ -1452,6 +1462,27 @@ bool GetNPCAlly(char[] clsname, int entchk)
 						if (FindStringInArray(liarr,subj) == -1)
 							PushArrayString(liarr,subj);
 					}
+					else if ((StrContains(subj,"player",false) != -1) && (disp == 1) && (act != 0))
+					{
+						if (FindStringInArray(htarr,targ) == -1)
+							addht(targ);
+					}
+					else if ((StrContains(subj,"player",false) != -1) && (disp == 3) && (act != 0))
+					{
+						//PrintToServer("Rem %s %i",targ,disp);
+						int find = FindStringInArray(htarr,targ);
+						if (find != -1)
+						{
+							RemoveFromArray(htarr,find);
+							find = FindStringInArray(htarr,targ);
+							if (find != -1)
+							{
+								RemoveFromArray(htarr,find);
+							}
+						}
+						if (FindStringInArray(liarr,targ) == -1)
+							PushArrayString(liarr,targ);
+					}
 				}
 			}
 			else
@@ -1534,9 +1565,11 @@ public Action findairel(int ent, char[] clsname)
 		{
 			char subj[32];
 			GetEntPropString(thisent,Prop_Data,"m_iszSubject",subj,sizeof(subj));
+			char targ[32];
+			GetEntPropString(thisent,Prop_Data,"m_target",targ,sizeof(targ));
 			int act = GetEntProp(thisent,Prop_Data,"m_bIsActive");
 			int recip = GetEntProp(thisent,Prop_Data,"m_bReciprocal");
-			if ((StrContains(subj,"player",false) == -1) && (act != 0) && (recip == 1))
+			if (((StrContains(subj,"player",false) != -1) || (StrContains(targ,"player",false) != -1)) && (act != 0) && (recip == 1))
 			{
 				PushArrayCell(airelarr, thisent);
 			}
