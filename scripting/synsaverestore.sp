@@ -58,7 +58,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.11"
+#define PLUGIN_VERSION "2.12"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2578,6 +2578,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		char maptochange[64];
 		GetCurrentMap(prevmap,sizeof(prevmap));
 		if (validchange) GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
+		if (StrEqual(maptochange,"sp_ending",false)) return Plugin_Continue;
 		if ((StrEqual(prevmap,"d1_town_03",false)) && (StrEqual(maptochange,"d1_town_02",false)))
 		{
 			enterfrom03pb = true;
@@ -2734,6 +2735,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			landmarkorigin[2] = 0.0;
 		}
 	}
+	return Plugin_Continue;
 }
 
 void findlandmark(int ent,char[] classname)
@@ -2933,7 +2935,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 				if ((alwaystransition) || ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]) && (IsValidEntity(i))))
 				{
 					//Add func_tracktrain check if exists on next map OnTransition might not fire
-					if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"light_dynamic",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"predicted_viewmodel",false)))
+					if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_barnacle_tongue_tip",false)) && (!StrEqual(clsname,"light_dynamic",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"predicted_viewmodel",false)))
 					{
 						if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 						if (StrContains(mdl,"*",false) != -1)
