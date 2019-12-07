@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.18"
-			"Previous"	"1.17"
+			"Latest"  	"1.19"
+			"Previous"	"1.18"
 		}
 		
-		"Notes"	"Added check for spawn in vehicle to not place players in vehicles until they have at least one weapon in their inventory."
+		"Notes"	"Added CVar sm_spawninvehicles_collisionset default 0. Will remove collisions between vehicles spawned with players inside when 1."
 	}
 	
 	"Files"
