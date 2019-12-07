@@ -10,12 +10,13 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.18"
+#define PLUGIN_VERSION "1.19"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
 bool vehiclemaphook = false;
 bool spawninvehicles = true;
+bool SetColl = false;
 int spawninthisvehicle = -1;
 //int collisiongroup = -1;
 int WeapList = -1;
@@ -37,6 +38,11 @@ public void OnPluginStart()
 	spawninvehicles = GetConVarBool(spawninvehiclesh);
 	HookConVarChange(spawninvehiclesh, vehiclespawnch);
 	CloseHandle(spawninvehiclesh);
+	Handle cvar = FindConVar("sm_spawninvehicles_collisionset");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sm_spawninvehicles_collisionset", "0", "Removes collision between vehicles when spawned in to.", _, true, 0.0, true, 1.0);
+	SetColl = GetConVarBool(cvar);
+	HookConVarChange(cvar,collsetch);
+	CloseHandle(cvar);
 	spawnplayers = CreateArray(MAXPLAYERS+1);
 	RegConsoleCmd("stuck",stuckblck);
 }
@@ -188,7 +194,11 @@ void setupvehicle(int vehicle, int client, bool enterexit)
 	}
 	else if ((enterexit) && (IsValidEntity(vehicle)) && (IsValidEntity(client)))
 	{
-		if (HasEntProp(vehicle,Prop_Data,"m_CollisionGroup")) SetEntProp(vehicle,Prop_Data,"m_CollisionGroup",5);
+		if (SetColl)
+		{
+			if (HasEntProp(vehicle,Prop_Data,"m_CollisionGroup")) SetEntProp(vehicle,Prop_Data,"m_CollisionGroup",5);
+			CreateTimer(2.0,resetcollision,vehicle,TIMER_REPEAT);
+		}
 		//SetEntData(vehicle,collisiongroup,5,4,true);
 		if (HasEntProp(vehicle,Prop_Data,"m_hPlayer")) SetEntPropEnt(vehicle,Prop_Data,"m_hPlayer",client);
 		if (HasEntProp(vehicle,Prop_Data,"m_hMoveChild")) SetEntPropEnt(vehicle,Prop_Data,"m_hMoveChild",client);
@@ -199,7 +209,6 @@ void setupvehicle(int vehicle, int client, bool enterexit)
 		if (HasEntProp(vehicle,Prop_Data,"bRunningEnterExit")) SetEntProp(vehicle,Prop_Data,"bRunningEnterExit",0);
 		if (HasEntProp(vehicle,Prop_Data,"m_controls.handbrake")) SetEntProp(vehicle,Prop_Data,"m_controls.handbrake",0);
 		HookSingleEntityOutput(vehicle,"PlayerOff",exitspawnvehicle,true);
-		CreateTimer(2.0,resetcollision,vehicle,TIMER_REPEAT);
 	}
 }
 
@@ -350,37 +359,41 @@ public Action resetcollision(Handle timer, int vehicle)
 	{
 		char cls[32];
 		GetEntityClassname(vehicle,cls,sizeof(cls));
-		float vehicleorg[3];
-		if (HasEntProp(vehicle,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(vehicle,Prop_Data,"m_vecAbsOrigin",vehicleorg);
-		Handle arr = CreateArray(65);
-		bool resetcoll = true;
-		findcolliding(-1,cls,vehicle,arr);
-		if (GetArraySize(arr) > 0)
+		if (StrContains(cls,"vehicle",false) != -1)
 		{
-			for (int i = 0;i<GetArraySize(arr);i++)
+			float vehicleorg[3];
+			if (HasEntProp(vehicle,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(vehicle,Prop_Data,"m_vecAbsOrigin",vehicleorg);
+			Handle arr = CreateArray(65);
+			bool resetcoll = true;
+			findcolliding(-1,cls,vehicle,arr);
+			if (GetArraySize(arr) > 0)
 			{
-				int j = GetArrayCell(arr,i);
-				if (IsValidEntity(j))
+				for (int i = 0;i<GetArraySize(arr);i++)
 				{
-					float orgs[3];
-					if (HasEntProp(j,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(j,Prop_Data,"m_vecAbsOrigin",orgs);
-					float chkdist = GetVectorDistance(orgs,vehicleorg);
-					if (chkdist < 150.0)
+					int j = GetArrayCell(arr,i);
+					if (IsValidEntity(j))
 					{
-						resetcoll = false;
+						float orgs[3];
+						if (HasEntProp(j,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(j,Prop_Data,"m_vecAbsOrigin",orgs);
+						float chkdist = GetVectorDistance(orgs,vehicleorg);
+						if (chkdist < 150.0)
+						{
+							resetcoll = false;
+						}
 					}
 				}
 			}
-		}
-		CloseHandle(arr);
-		if (resetcoll)
-		{
-			if (HasEntProp(vehicle,Prop_Data,"m_CollisionGroup"))
+			CloseHandle(arr);
+			if (resetcoll)
 			{
-				SetEntProp(vehicle,Prop_Data,"m_CollisionGroup",7);
+				if (HasEntProp(vehicle,Prop_Data,"m_CollisionGroup"))
+				{
+					SetEntProp(vehicle,Prop_Data,"m_CollisionGroup",7);
+				}
+				KillTimer(timer);
 			}
-			KillTimer(timer);
 		}
+		else KillTimer(timer);
 	}
 	else KillTimer(timer);
 }
@@ -771,4 +784,12 @@ public void vehiclespawnch(Handle convar, const char[] oldValue, const char[] ne
 		spawninvehicles = true;
 	else
 		spawninvehicles = false;
+}
+
+public void collsetch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		SetColl = true;
+	else
+		SetColl = false;
 }
