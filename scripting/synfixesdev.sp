@@ -2077,7 +2077,7 @@ public Action ReallowFlush(int client, int args)
 	Handle cvar = FindConVar("sv_cheats");
 	if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"1");
 	CloseHandle(cvar);
-	ClientCommand(client,"flush");
+	ClientCommand(client,"flush;cl_soundscape_flush");
 	ClientCommand(client,"blckreset");
 	return Plugin_Handled;
 }
@@ -10994,7 +10994,6 @@ void readoutputs(int scriptent, char[] targn)
 	Handle filehandle = OpenFile(mapbuf,"r",true,NULL_STRING);
 	if (filehandle != INVALID_HANDLE)
 	{
-		hasreadscriptents = true;
 		char line[128];
 		char lineoriginfixup[128];
 		char kvs[128][64];
@@ -11006,6 +11005,10 @@ void readoutputs(int scriptent, char[] targn)
 		float fileorigin[3];
 		char clsscript[32];
 		GetEntityClassname(scriptent,clsscript,sizeof(clsscript));
+		if (!StrEqual(clsscript,"ai_goal_follow",false))
+		{
+			hasreadscriptents = true;
+		}
 		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
 		{
 			TrimString(line);
@@ -11039,10 +11042,14 @@ void readoutputs(int scriptent, char[] targn)
 			}
 			if ((StrEqual(targn,lineoriginfixup,false)) && (reverse))
 			{
-				int linepos = FilePosition(filehandle);
-				if (debuglvl == 3) PrintToServer("Found matching %s on line %i",targn,linepos);
-				reverse = false;
-				createent = true;
+				if (!findtargn(targn))
+				{
+					int linepos = FilePosition(filehandle);
+					if (debuglvl == 3) PrintToServer("Found matching %s on line %i",targn,linepos);
+					reverse = false;
+					createent = true;
+				}
+				else hasreadscriptents = true;
 			}
 			if ((!StrEqual(line,"}",false)) || (!StrEqual(line,"{",false)) || (!StrEqual(line,"}{",false)))
 			{
@@ -11068,9 +11075,13 @@ void readoutputs(int scriptent, char[] targn)
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
 				if (passvars)
 				{
-					PushArrayString(passedarr,kvs[1]);
-					PushArrayString(passedarr,kvs[3]);
+					if (FindStringInArray(passedarr,kvs[1]) == -1)
+					{
+						PushArrayString(passedarr,kvs[1]);
+						PushArrayString(passedarr,kvs[3]);
+					}
 				}
+				else if (ent != -1) DispatchKeyValue(ent,kvs[1],kvs[3]);
 			}
 			if (((StrEqual(line,"{",false)) || (StrEqual(line,"}",false)) || (StrEqual(line,"}{",false))) && (ent == -1))
 			{
@@ -11188,10 +11199,18 @@ void readoutputs(int scriptent, char[] targn)
 				else if ((ent == -1) && (strlen(cls) > 0))
 				{
 					if (StrEqual(cls,"worldspawn",false)) break;
-					ent = CreateEntityByName(cls);
-					if (debuglvl == 3) PrintToServer("Created Ent as %s",cls);
-					if (FindValueInArray(entlist,ent) == -1)
-						PushArrayCell(entlist,ent);
+					else if (StrEqual(cls,"ai_goal_actbusy",false))
+					{
+						createent = false;
+						ClearArray(passedarr);
+					}
+					else
+					{
+						ent = CreateEntityByName(cls);
+						if (debuglvl == 3) PrintToServer("Created Ent as %s",cls);
+						if (FindValueInArray(entlist,ent) == -1)
+							PushArrayCell(entlist,ent);
+					}
 				}
 			}
 		}
