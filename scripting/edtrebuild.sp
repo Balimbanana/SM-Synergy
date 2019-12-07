@@ -31,7 +31,7 @@ bool VintageMode = false;
 bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 
-#define PLUGIN_VERSION "0.32"
+#define PLUGIN_VERSION "0.33"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -289,8 +289,12 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				int finder = -1;
 				int finderorg = -1;
 				int finderorground = -1;
+				int finderorground2dec = -1;
 				int findend = -1;
 				char clsorground[32];
+				char clsorground2dec[32];
+				char orgexpl[4096][32];
+				int arrsize = ExplodeString(szMapEntities,"\n\"origin\" \"",orgexpl,4096,32);
 				for (int i = 0;i<GetArraySize(g_DeleteClassOrigin);i++)
 				{
 					GetArrayString(g_DeleteClassOrigin,i,cls,sizeof(cls));
@@ -303,10 +307,37 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					org[1] = StringToFloat(tmpexpl[1]);
 					org[2] = StringToFloat(tmpexpl[2]);
 					Format(clsorground,sizeof(clsorground),"%i %i %i",RoundFloat(org[0]),RoundFloat(org[1]),RoundFloat(org[2]));
+					Format(clsorground2dec,sizeof(clsorground2dec),"%1.2f %1.2f %1.2f",org[0],org[1],org[2]);
+					ReplaceString(clsorground2dec,sizeof(clsorground2dec),".00","");
 					finder = StrContains(szMapEntities,cls,false);
 					finderorg = StrContains(szMapEntities,clsorg,false);
-					finderorground = StrContains(szMapEntities,clsorg,false);
+					finderorground = StrContains(szMapEntities,clsorground,false);
+					finderorground2dec = StrContains(szMapEntities,clsorground2dec,false);
+					if ((finderorg == -1) && (finderorground == -1) && (finderorground2dec == -1))
+					{
+						char orgoriginal[32];
+						for (int j = 0;j<arrsize;j++)
+						{
+							ExplodeString(orgexpl[j],"\n",tmpexpl,4,32);
+							ReplaceString(tmpexpl[0],sizeof(tmpexpl[]),"\"","");
+							Format(orgoriginal,sizeof(orgoriginal),"%s",tmpexpl[0]);
+							ExplodeString(tmpexpl[0]," ",tmpexpl,4,32);
+							org[0] = StringToFloat(tmpexpl[0]);
+							org[1] = StringToFloat(tmpexpl[1]);
+							org[2] = StringToFloat(tmpexpl[2]);
+							Format(tmpbuf,sizeof(tmpbuf),"%1.2f %1.2f %1.2f",org[0],org[1],org[2]);
+							ReplaceString(tmpbuf,sizeof(tmpbuf),".00","");
+							finderorground2dec = StrContains(tmpbuf,clsorground2dec,false);
+							if (finderorground2dec != -1)
+							{
+								Format(orgoriginal,sizeof(orgoriginal),"\"origin\" \"%s\"",orgoriginal);
+								finderorground2dec = StrContains(szMapEntities,orgoriginal,false);
+								break;
+							}
+						}
+					}
 					if ((finderorg == -1) && (finderorground != -1)) finderorg = finderorground;
+					else if ((finderorg == -1) && (finderorground2dec != -1)) finderorg = finderorground2dec;
 					if ((finder != -1) && (finderorg != -1))
 					{
 						Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finderorg]);
