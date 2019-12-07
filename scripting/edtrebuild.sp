@@ -31,7 +31,7 @@ bool VintageMode = false;
 bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 
-#define PLUGIN_VERSION "0.33"
+#define PLUGIN_VERSION "0.34"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -137,6 +137,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					{
 						char edtclass[64];
 						char edtclassorg[64];
+						bool ItemClassSpecified = false;
 						Format(tmpwriter,sizeof(tmpwriter),"%s{",tmpwriter);
 						for (int j = 0;j<GetArraySize(passedarr);j++)
 						{
@@ -155,6 +156,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								TrimString(second);
 								if (StrEqual(first,"edt_getbspmodelfor_targetname",false))
 								{
+									Format(tmpwriter,sizeof(tmpwriter),"%s\n\"%s\" \"%s\"",tmpwriter,first,second);
 									char findtn[128];
 									Format(findtn,sizeof(findtn),"\"targetname\" \"%s\"",second);
 									int findorg = StrContains(szMapEntities,findtn,false);
@@ -181,15 +183,21 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								if (StrEqual(first,"edt_getbspmodelfor_classname",false))
 								{
 									Format(edtclass,sizeof(edtclass),"%s",second);
+									Format(tmpwriter,sizeof(tmpwriter),"%s\n\"%s\" \"%s\"",tmpwriter,first,second);
 								}
 								else if (StrEqual(first,"edt_getbspmodelfor_origin",false))
 								{
 									Format(edtclassorg,sizeof(edtclassorg),"%s",second);
+									Format(tmpwriter,sizeof(tmpwriter),"%s\n\"%s\" \"%s\"",tmpwriter,first,second);
 								}
 								else Format(tmpwriter,sizeof(tmpwriter),"%s\n\"%s\" \"%s\"",tmpwriter,first,second);
 								if (StrEqual(first,"classname",false))
 								{
 									Format(cls,sizeof(cls),"%s",second);
+								}
+								if (StrEqual(first,"ItemClass",false))
+								{
+									ItemClassSpecified = true;
 								}
 							}
 						}
@@ -222,6 +230,10 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								else PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
 							}
 							else PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+						}
+						if ((StrEqual(cls,"item_item_crate",false)) && (!ItemClassSpecified))
+						{
+							Format(tmpwriter,sizeof(tmpwriter),"%s\n\"ItemClass\" \"item_dynamic_resupply\"",tmpwriter);
 						}
 						Format(tmpwriter,sizeof(tmpwriter),"%s\n}\n",tmpwriter);
 						if (dbglvl == 4) PrintToServer("Create %s",cls);
