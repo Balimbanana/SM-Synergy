@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.34"
-			"Previous"	"0.33"
+			"Latest"  	"0.35"
+			"Previous"	"0.34"
 		}
 		
-		"Notes"	"Added delete origin to 2 decimal places."
+		"Notes"	"Added rounded origins as well as 2 decimal."
 	}
 	
 	"Files"
