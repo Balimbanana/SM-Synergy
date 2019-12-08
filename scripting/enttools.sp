@@ -9,7 +9,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.24"
+#define PLUGIN_VERSION "1.25"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -210,6 +210,7 @@ public Action CreateStuff(int client, int args)
 			PrintToConsole(client,"Unable to create entity %s",ent);
 			return Plugin_Handled;
 		}
+		Handle passedarr = CreateArray(64);
 		char fullstr[512];
 		Format(fullstr,sizeof(fullstr),"%s",ent);
 		for (int v = 0; v<args+1; v++)
@@ -271,10 +272,20 @@ public Action CreateStuff(int client, int args)
 						{
 							Format(tmp2,sizeof(tmp2),"%1.f %1.f %1.f",Angles[0],Angles[1],Angles[2]);
 						}
+						else
+						{
+							char tmpexpl[4][32];
+							ExplodeString(tmp2," ",tmpexpl,4,32);
+							Angles[0] = StringToFloat(tmpexpl[0]);
+							Angles[1] = StringToFloat(tmpexpl[1]);
+							Angles[2] = StringToFloat(tmpexpl[2]);
+						}
 					}
 					if (StrEqual(tmp,"targetname",false))
 						if (targnamedefined)
 							Format(tmp2,sizeof(tmp2),"%s%s",ent,tmp2);
+					PushArrayString(passedarr,tmp);
+					PushArrayString(passedarr,tmp2);
 					DispatchKeyValue(stuff,tmp,tmp2);
 					if (StrEqual(tmp,"origin",false))
 					{
@@ -289,6 +300,39 @@ public Action CreateStuff(int client, int args)
 				v++;
 			}
 		}
+		if (StrEqual(ent,"prop_vehicle_crane",false))
+		{
+			if (!vehiclescriptdefined) DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/crane.txt");
+			if (!vehiclemodeldefined) DispatchKeyValue(stuff,"model","models/Cranes/crane_docks.mdl");
+			if (FindStringInArray(passedarr,"magnetname") == -1)
+			{
+				char newmag[32];
+				Format(newmag,sizeof(newmag),"cranemag%i",stuff);
+				int magcreate = CreateEntityByName("phys_magnet");
+				if (magcreate != -1)
+				{
+					DispatchKeyValue(magcreate,"targetname",newmag);
+					DispatchKeyValue(magcreate,"skin","0");
+					DispatchKeyValue(magcreate,"overridescript","damping,0.2,rotdamping,0.2,inertia,0.3");
+					DispatchKeyValue(magcreate,"model","models/props_wasteland/cranemagnet01a.mdl");
+					DispatchKeyValue(magcreate,"massScale","1000");
+					DispatchKeyValue(magcreate,"disableshadows","0");
+					float magorigin[3];
+					if (FindStringInArray(passedarr,"angles") == -1) Angles[1] = 90.0;
+					else Angles[1]+=90.0;
+					magorigin[0] = (PlayerOrigin[0] + (834 * Cosine(DegToRad(Angles[1]))));
+					magorigin[1] = (PlayerOrigin[1] + (834 * Sine(DegToRad(Angles[1]))));
+					magorigin[2] = (PlayerOrigin[2] + 700);
+					Angles[1]-=90.0;
+					TeleportEntity(magcreate,magorigin,NULL_VECTOR,NULL_VECTOR);
+					DispatchSpawn(magcreate);
+					ActivateEntity(magcreate);
+				}
+				DispatchKeyValue(stuff,"magnetname",newmag);
+			}
+			vehiclescriptdefined = true;
+			vehiclemodeldefined = true;
+		}
 		if (((StrContains(ent,"prop_vehicle",false) != -1) || (StrEqual(ent,"generic_actor",false)) || (StrEqual(ent,"monster_generic",false))) && (!vehiclemodeldefined))
 		{
 			PrintToConsole(client,"Model must be defined for this type of entity.");
@@ -301,6 +345,7 @@ public Action CreateStuff(int client, int args)
 			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
 		}
 		TeleportEntity(stuff, PlayerOrigin, NULL_VECTOR, NULL_VECTOR);
+		CloseHandle(passedarr);
 		PrintToConsole(client,"%s",fullstr);
 		DispatchSpawn(stuff);
 		ActivateEntity(stuff);
@@ -428,6 +473,7 @@ public Action CreateStuffThere(int client, int args)
 		}
 		char fullstr[512];
 		Format(fullstr,sizeof(fullstr),"%s",ent);
+		Handle passedarr = CreateArray(64);
 		for (int v = 0; v<args+1; v++)
 		{
 			if (v > 1)
@@ -481,9 +527,26 @@ public Action CreateStuffThere(int client, int args)
 							Format(tmp2,sizeof(tmp2),"scripts/vehicles/jeep_test.txt");
 						}
 					}
+					else if (StrEqual(tmp,"angles",false))
+					{
+						if ((StrEqual(tmp2,"myangles",false)) || (StrEqual(tmp2,"myangs",false)))
+						{
+							Format(tmp2,sizeof(tmp2),"%1.f %1.f %1.f",clangles[0],clangles[1],clangles[2]);
+						}
+						else
+						{
+							char tmpexpl[4][32];
+							ExplodeString(tmp2," ",tmpexpl,4,32);
+							clangles[0] = StringToFloat(tmpexpl[0]);
+							clangles[1] = StringToFloat(tmpexpl[1]);
+							clangles[2] = StringToFloat(tmpexpl[2]);
+						}
+					}
 					if (StrEqual(tmp,"targetname",false))
 						if (targnamedefined)
 							Format(tmp2,sizeof(tmp2),"%s%s",ent,tmp2);
+					PushArrayString(passedarr,tmp);
+					PushArrayString(passedarr,tmp2);
 					DispatchKeyValue(stuff,tmp,tmp2);
 					if (StrEqual(tmp,"origin",false))
 					{
@@ -498,6 +561,40 @@ public Action CreateStuffThere(int client, int args)
 				v++;
 			}
 		}
+		if (StrEqual(ent,"prop_vehicle_crane",false))
+		{
+			if (!vehiclescriptdefined) DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/crane.txt");
+			if (!vehiclemodeldefined) DispatchKeyValue(stuff,"model","models/Cranes/crane_docks.mdl");
+			if (FindStringInArray(passedarr,"magnetname") == -1)
+			{
+				fhitpos[2]+=10.0;
+				char newmag[32];
+				Format(newmag,sizeof(newmag),"cranemag%i",stuff);
+				int magcreate = CreateEntityByName("phys_magnet");
+				if (magcreate != -1)
+				{
+					DispatchKeyValue(magcreate,"targetname",newmag);
+					DispatchKeyValue(magcreate,"skin","0");
+					DispatchKeyValue(magcreate,"overridescript","damping,0.2,rotdamping,0.2,inertia,0.3");
+					DispatchKeyValue(magcreate,"model","models/props_wasteland/cranemagnet01a.mdl");
+					DispatchKeyValue(magcreate,"massScale","1000");
+					DispatchKeyValue(magcreate,"disableshadows","0");
+					float magorigin[3];
+					if (FindStringInArray(passedarr,"angles") == -1) clangles[1] = 90.0;
+					else clangles[1]+=90.0;
+					magorigin[0] = (fhitpos[0] + (834 * Cosine(DegToRad(clangles[1]))));
+					magorigin[1] = (fhitpos[1] + (834 * Sine(DegToRad(clangles[1]))));
+					magorigin[2] = (fhitpos[2] + 700);
+					clangles[1]-=90.0;
+					TeleportEntity(magcreate,magorigin,NULL_VECTOR,NULL_VECTOR);
+					DispatchSpawn(magcreate);
+					ActivateEntity(magcreate);
+				}
+				DispatchKeyValue(stuff,"magnetname",newmag);
+			}
+			vehiclescriptdefined = true;
+			vehiclemodeldefined = true;
+		}
 		if (((StrContains(ent,"prop_vehicle",false) != -1) || (StrEqual(ent,"generic_actor",false)) || (StrEqual(ent,"monster_generic",false))) && (!vehiclemodeldefined))
 		{
 			PrintToConsole(client,"Model must be defined for this type of entity.");
@@ -509,6 +606,7 @@ public Action CreateStuffThere(int client, int args)
 			PrintToConsole(client,"VehicleScript was not defined, defaulting to \"scripts/vehicles/jeep_test.txt\"");
 			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
 		}
+		CloseHandle(passedarr);
 		PrintToConsole(client,"%s",fullstr);
 		TeleportEntity(stuff, fhitpos, NULL_VECTOR, NULL_VECTOR);
 		DispatchSpawn(stuff);
