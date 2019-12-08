@@ -31,7 +31,7 @@ bool VintageMode = false;
 bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 
-#define PLUGIN_VERSION "0.34"
+#define PLUGIN_VERSION "0.35"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -327,7 +327,8 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					finderorground2dec = StrContains(szMapEntities,clsorground2dec,false);
 					if ((finderorg == -1) && (finderorground == -1) && (finderorground2dec == -1))
 					{
-						char orgoriginal[32];
+						char orgoriginal[48];
+						char orgrounded[48];
 						for (int j = 0;j<arrsize;j++)
 						{
 							ExplodeString(orgexpl[j],"\n",tmpexpl,4,32);
@@ -338,9 +339,11 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 							org[1] = StringToFloat(tmpexpl[1]);
 							org[2] = StringToFloat(tmpexpl[2]);
 							Format(tmpbuf,sizeof(tmpbuf),"%1.2f %1.2f %1.2f",org[0],org[1],org[2]);
+							Format(orgrounded,sizeof(orgrounded),"%i %i %i",RoundFloat(org[0]),RoundFloat(org[1]),RoundFloat(org[2]));
 							ReplaceString(tmpbuf,sizeof(tmpbuf),".00","");
 							finderorground2dec = StrContains(tmpbuf,clsorground2dec,false);
-							if (finderorground2dec != -1)
+							finderorground = StrContains(orgrounded,clsorground,false);
+							if ((finderorground2dec != -1) || (finderorground != -1))
 							{
 								Format(orgoriginal,sizeof(orgoriginal),"\"origin\" \"%s\"",orgoriginal);
 								finderorground2dec = StrContains(szMapEntities,orgoriginal,false);
@@ -348,8 +351,8 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 							}
 						}
 					}
-					if ((finderorg == -1) && (finderorground != -1)) finderorg = finderorground;
-					else if ((finderorg == -1) && (finderorground2dec != -1)) finderorg = finderorground2dec;
+					if ((finderorg == -1) && (finderorground2dec != -1)) finderorg = finderorground2dec;
+					else if ((finderorg == -1) && (finderorground != -1)) finderorg = finderorground;
 					if ((finder != -1) && (finderorg != -1))
 					{
 						Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finderorg]);
