@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.984"
+#define PLUGIN_VERSION "0.985"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -93,72 +93,97 @@ public void OnPluginStart()
 	HookEvent("player_spawn",OnPlayerSpawn,EventHookMode_Post);
 	Handle cvar = FindConVar("sk_flaregun_ignighttime");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_flaregun_ignighttime", "10", "Time to ignight for.", _, true, 1.0, true, 99.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_immolator_ignighttime");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_immolator_ignighttime", "10", "Time to ignight for.", _, true, 1.0, true, 99.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_max_flaregun");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_max_flaregun", "20", "Maximum ammo for the flaregun.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_max_manhackgun");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_max_manhackgun", "3", "Maximum ammo for the manhack gun.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_max_energy");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_max_energy", "100", "Maximum ammo for the gluon and tau cannon.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_max_hivehand");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_max_hivehand", "100", "Maximum ammo for the hivehand.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_plr_dmg_gluon");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_gluon", "30.0", "Damage per tick for the gluon gun.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_plr_dmg_sl8");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_sl8", "8.0", "Damage for the SL8 weapon.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_plr_dmg_oicw");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_oicw", "15.0", "Damage for the OICW.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_plr_dmg_tau");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_tau", "20.0", "Damage for the Tau cannon.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_plr_dmg_axe");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_axe", "20.0", "Damage for the FireAxe.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_plr_dmg_m4");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_m4", "9.0", "Damage for the M4.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_plr_dmg_g36c");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_g36c", "11.0", "Damage for the M4.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_tripmine_radius");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_tripmine_radius", "200", "Explosion radius of player tripmines.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_plr_dmg_tripmine");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_tripmine", "150", "Explosion damage of player tripmines.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_satchel_radius");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_satchel_radius", "150", "Explosion radius of player satchels.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_plr_dmg_satchel");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_satchel", "150", "Explosion damage of player satchels.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_plr_dmg_glock");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_glock", "8", "Damage for the glock.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_plr_dmg_sniperrifle");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_sniperrifle", "80", "Damage for the sniper rifle.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_plr_dmg_uzi");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_uzi", "8", "Damage for the uzi.", _, true, 1.0, true, 999.0);
+	CloseHandle(cvar);
 	cvar = FindConVar("syn_tauknockback");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("syn_tauknockback", "0", "Enables knock back effect for players from Tau cannon charged shots.", _, true, 0.0, true, 1.0);
 	tauknockback = GetConVarBool(cvar);
 	HookConVarChange(cvar, tauknockch);
+	CloseHandle(cvar);
 	cvar = FindConVar("sk_npc_head");
 	if (cvar != INVALID_HANDLE)
 	{
 		headgroup = GetConVarInt(cvar);
 		HookConVarChange(cvar, headgrpch);
 	}
+	CloseHandle(cvar);
 	cvar = FindConVar("mp_friendlyfire");
 	if (cvar != INVALID_HANDLE)
 	{
 		friendlyfire = GetConVarBool(cvar);
 		HookConVarChange(cvar, ffhch);
 	}
+	CloseHandle(cvar);
 	cvar = FindConVar("skill");
 	if (cvar != INVALID_HANDLE)
 	{
 		difficulty = GetConVarInt(cvar);
 		HookConVarChange(cvar, difficultych);
 	}
+	CloseHandle(cvar);
 	cvar = FindConVar("sv_weapon_lower_sprint");
 	if (cvar != INVALID_HANDLE)
 	{
 		loweredsprint = GetConVarBool(cvar);
 		HookConVarChange(cvar, weploweredch);
 	}
+	CloseHandle(cvar);
 	cvar = FindConVar("synsweps_spawnwith");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("synsweps_spawnwith", "", "Change what custom weapons you can spawn with. Separate each with a space.");
 	GetConVarString(cvar,equipper,sizeof(equipper));
@@ -5134,7 +5159,6 @@ public Action spawnpost(Handle timer, int client)
 	{
 		if (IsPlayerAlive(client))
 		{
-			PrintHintText(client,"Use !inventory for sweps");
 			int weapon = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
 			if (IsValidEntity(weapon)) OnWeaponUse(client,weapon);
 		}
@@ -5472,6 +5496,7 @@ public Action OnWeaponUse(int client, int weapon)
 					char searchprecache[128];
 					Format(searchprecache,sizeof(searchprecache),"sound/weapons/sl8/");
 					recursion(searchprecache);
+					PrecacheSound("weapons/smg1/smg1_fire1.wav",true);
 					PushArrayString(precachedarr,"weapon_sl8");
 				}
 				if (FindStringInArray(precachedarr,"weapon_oicw") == -1)
@@ -5479,6 +5504,7 @@ public Action OnWeaponUse(int client, int weapon)
 					char searchprecache[128];
 					Format(searchprecache,sizeof(searchprecache),"sound/weapons/oicw/");
 					recursion(searchprecache);
+					PrecacheSound("weapons/smg1/smg1_fire1.wav",true);
 					PushArrayString(precachedarr,"weapon_oicw");
 				}
 				SetEntProp(weapon,Prop_Data,"m_fEffects",129);
