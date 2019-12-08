@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.36"
-			"Previous"	"0.35"
+			"Latest"  	"0.37"
+			"Previous"	"0.36"
 		}
 		
-		"Notes"	"Added rounded origins as well as 2 decimal."
+		"Notes"	"Fixed replacing data where the value contains part of the key."
 	}
 	
 	"Files"
