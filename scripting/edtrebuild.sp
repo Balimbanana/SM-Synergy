@@ -30,8 +30,9 @@ int method = 0;
 bool VintageMode = false;
 bool AntirushDisable = false;
 bool GenerateEnt2 = false;
+bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.35"
+#define PLUGIN_VERSION "0.36"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -71,6 +72,11 @@ public void OnPluginStart()
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtgenerateent2", "0", "Generate .ent2 instead of .ent cache files.", _, true, 0.0, true, 1.0);
 	GenerateEnt2 = GetConVarBool(cvar);
 	HookConVarChange(cvar,generateent2ch);
+	CloseHandle(cvar);
+	cvar = FindConVar("edtremoveglobals");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtremoveglobals", "0", "Remove global names from all entities.", _, true, 0.0, true, 1.0);
+	RemoveGlobals = GetConVarBool(cvar);
+	HookConVarChange(cvar,rmglobalsch);
 	CloseHandle(cvar);
 }
 
@@ -833,6 +839,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				int finder = -1;
 				int findend = -1;
 				int findstartpos = -1;
+				bool lastent = false;
 				Handle passedarr = INVALID_HANDLE;
 				for (int i = 0;i<GetArraySize(g_EditTargets);i++)
 				{
@@ -988,13 +995,15 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 									findend+=findstartpos+strlen(szMapEntitiesbuff)+2;
 									Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[findend]);
 									finder = StrContains(szMapEntitiesbuff,cls,false);
-									if (finder != -1)
+									//PrintToServer("%i %i %s",findend,finder,szMapEntitiesbuff);
+									if ((finder != -1) && (!lastent))
 									{
 										if (finder > 2000) finder+=1000;
 										finder+=findend;
 										Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder]);
 										findend = StrContains(szMapEntitiesbuff,"}",false);
 										if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s\n",szMapEntitiesbuff);
+										if (StrContains(szMapEntitiesbuff,"{",false) == -1) lastent = true;
 										while (StrContains(szMapEntitiesbuff,"{",false) != 0)
 										{
 											if (finder-1 != -1) Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder--]);
@@ -1010,6 +1019,37 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								else endofcache = true;
 							}
 						}
+					}
+				}
+			}
+			if (RemoveGlobals)
+			{
+				char globalremove[64];
+				int findglobals = StrContains(szMapEntities,"\"globalname\" \"",false);
+				if (findglobals != -1)
+				{
+					Format(globalremove,sizeof(globalremove),"%s",szMapEntities[findglobals]);
+					ExplodeString(globalremove,"\n",tmpexpl,4,64);
+					Format(globalremove,sizeof(globalremove),"%s",tmpexpl[0]);
+					TrimString(globalremove);
+					Format(globalremove,sizeof(globalremove),"%s",globalremove);
+					ReplaceString(szMapEntities,sizeof(szMapEntities),globalremove,"");
+					if (dbglvl > 2) PrintToServer("Removed global name %s",globalremove);
+					bool endofcache = false;
+					while (!endofcache)
+					{
+						findglobals = StrContains(szMapEntities,"\"globalname\" \"",false);
+						if (findglobals != -1)
+						{
+							Format(globalremove,sizeof(globalremove),"%s",szMapEntities[findglobals]);
+							ExplodeString(globalremove,"\n",tmpexpl,4,64);
+							Format(globalremove,sizeof(globalremove),"%s",tmpexpl[0]);
+							TrimString(globalremove);
+							Format(globalremove,sizeof(globalremove),"%s",globalremove);
+							ReplaceString(szMapEntities,sizeof(szMapEntities),globalremove,"");
+							if (dbglvl > 2) PrintToServer("Removed global name %s",globalremove);
+						}
+						else endofcache = true;
 					}
 				}
 			}
@@ -1269,16 +1309,19 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 						clsorground = "";
 						targn = "";
 						//if (StrContains(curbuf[i],"",false) != -1) ReplaceString(curbuf[i],sizeof(curbuf[]),"",",");
-						int findglobals = StrContains(tmpline,"\"globalname\"",false);
-						if (findglobals != -1)
+						if (RemoveGlobals)
 						{
-							Format(globalremove,sizeof(globalremove),"%s",tmpline[findglobals]);
-							ExplodeString(globalremove,"\"",tmpexpl,4,64);
-							Format(globalremove,sizeof(globalremove),"%s",tmpexpl[3]);
-							TrimString(globalremove);
-							Format(globalremove,sizeof(globalremove),"\"globalname\" \"%s\"\n",globalremove);
-							ReplaceString(szMapEntities,sizeof(szMapEntities),globalremove,"");
-							ReplaceString(tmpline,sizeof(tmpline),globalremove,"");
+							int findglobals = StrContains(tmpline,"\"globalname\"",false);
+							if (findglobals != -1)
+							{
+								Format(globalremove,sizeof(globalremove),"%s",tmpline[findglobals]);
+								ExplodeString(globalremove,"\"",tmpexpl,4,64);
+								Format(globalremove,sizeof(globalremove),"%s",tmpexpl[3]);
+								TrimString(globalremove);
+								Format(globalremove,sizeof(globalremove),"\"globalname\" \"%s\"\n",globalremove);
+								ReplaceString(szMapEntities,sizeof(szMapEntities),globalremove,"");
+								ReplaceString(tmpline,sizeof(tmpline),globalremove,"");
+							}
 						}
 						int findcls = StrContains(tmpline,"\"classname\" \"",false);
 						if (findcls != -1)
@@ -2114,6 +2157,12 @@ public void generateent2ch(Handle convar, const char[] oldValue, const char[] ne
 {
 	if (StringToInt(newValue) > 0) GenerateEnt2 = true;
 	else GenerateEnt2 = false;
+}
+
+public void rmglobalsch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0) RemoveGlobals = true;
+	else RemoveGlobals = false;
 }
 
 public void vintagech(Handle convar, const char[] oldValue, const char[] newValue)
