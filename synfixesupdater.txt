@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99952"
-			"Previous"	"1.99951"
+			"Latest"  	"1.99953"
+			"Previous"	"1.99952"
 		}
 		
-		"Notes"	"Added default vote binds on first load in."
+		"Notes"	"Added sm_instantswitch 2 which will apply to all weapons (default 1). Added prop_vehicle* fixes for non-initialized vehicles."
 	}
 	
 	"Files"
