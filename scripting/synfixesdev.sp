@@ -65,6 +65,7 @@ int mdlus3 = -1;
 int longjumpactive = false;
 int autorebuild = 0;
 int playercapadj = 20;
+int instswitch = 1;
 bool rebuildnodes = false;
 bool allownoguide = true;
 bool guiderocket[65];
@@ -72,7 +73,6 @@ bool isfading[65];
 bool restrictact = false;
 bool friendlyfire = false;
 bool seqenablecheck = true;
-bool instswitch = true;
 bool forcehdr = false;
 bool mapchoosercheck = false;
 //bool linact = false;
@@ -148,8 +148,8 @@ public void OnPluginStart()
 	Handle pushh = FindConVar("sv_player_push");
 	if (pushh != INVALID_HANDLE) HookConVarChange(pushh, pushch);
 	CloseHandle(pushh);
-	Handle instphyswitch = CreateConVar("sm_instantswitch", "1", "Allow instant weapon switch for physcannon.", _, true, 0.0, true, 1.0);
-	instswitch = GetConVarBool(instphyswitch);
+	Handle instphyswitch = CreateConVar("sm_instantswitch", "1", "Allow instant weapon switch for physcannon. 2 is for every weapon.", _, true, 0.0, true, 2.0);
+	instswitch = GetConVarInt(instphyswitch);
 	HookConVarChange(instphyswitch, instphych);
 	CloseHandle(instphyswitch);
 	Handle forcehdrh = CreateConVar("sm_forcehdr", "1", "Force clients to use HDR (fixes fullbright).", _, true, 0.0, true, 1.0);
@@ -2055,7 +2055,7 @@ public Action clspawnpost(Handle timer, int client)
 		ClientCommand(client,"bind f1 vote_yes");
 		ClientCommand(client,"bind f2 vote_no");
 		CreateTimer(0.1,restoresound,client,TIMER_FLAG_NO_MAPCHANGE);
-		CreateTimer(1.5,ResetFlush,client,TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(3.5,ResetFlush,client,TIMER_FLAG_NO_MAPCHANGE);
 		ClientCommand(client,"snd_restart");
 		char briefing[128];
 		char mapname[64];
@@ -2875,13 +2875,25 @@ public Action clticks(Handle timer)
 								GetEntityClassname(ViewEnt,cls,sizeof(cls));
 								if (StrEqual(cls,"point_viewcontrol",false))
 								{
-									if (hudset != 2072) SetEntProp(i,Prop_Data,"m_iHideHUD",2072);
+									if (hudset != 2072)
+									{
+										SetEntProp(i,Prop_Data,"m_iHideHUD",2072);
+										ChangeEdictState(i);
+									}
 								}
-								else if (hudset == 2072) SetEntProp(i,Prop_Data,"m_iHideHUD",2048);
+								else if (hudset == 2072)
+								{
+									SetEntProp(i,Prop_Data,"m_iHideHUD",2048);
+									ChangeEdictState(i);
+								}
 							}
 							else if (!IsValidEntity(ViewEnt))
 							{
-								if (hudset == 2072) SetEntProp(i,Prop_Data,"m_iHideHUD",2048);
+								if (hudset == 2072)
+								{
+									SetEntProp(i,Prop_Data,"m_iHideHUD",2048);
+									ChangeEdictState(i);
+								}
 							}
 						}
 					}
@@ -13881,6 +13893,59 @@ public Action custent(Handle timer, int entity)
 			SetVariantString("npc_ichthyosaur D_LI 99");
 			AcceptEntityInput(entity,"SetRelationship");
 		}
+		else if (StrContains(entcls,"prop_vehicle",false) == 0)
+		{
+			if (HasEntProp(entity,Prop_Data,"m_vehicleScript"))
+			{
+				char curscr[64];
+				GetEntPropString(entity,Prop_Data,"m_vehicleScript",curscr,sizeof(curscr));
+				if (strlen(curscr) < 2)
+				{
+					if (StrEqual(entcls,"prop_vehicle_airboat",false)) SetEntPropString(entity,Prop_Data,"m_vehicleScript","scripts/vehicles/airboat.txt");
+					else if (StrEqual(entcls,"prop_vehicle_prisoner_pod",false)) SetEntPropString(entity,Prop_Data,"m_vehicleScript","scripts/vehicles/prisoner_pod.txt");
+					else SetEntPropString(entity,Prop_Data,"m_vehicleScript","scripts/vehicles/jeep_test.txt");
+				}
+			}
+			if (HasEntProp(entity,Prop_Data,"m_ModelName"))
+			{
+				char curmdl[64];
+				GetEntPropString(entity,Prop_Data,"m_ModelName",curmdl,sizeof(curmdl));
+				if (strlen(curmdl) > 1)
+				{
+					if (FileExists(curmdl,true,NULL_STRING))
+					{
+						if (!IsModelPrecached(curmdl)) PrecacheModel(curmdl,true);
+					}
+					else
+					{
+						PrintToServer("Vehicle %s spawned with invalid model: %s",entcls,curmdl);
+						AcceptEntityInput(entity,"kill");
+						return Plugin_Handled;
+					}
+				}
+				else
+				{
+					PrintToServer("Vehicle %s spawned without model!",entcls);
+					if (StrEqual(entcls,"prop_vehicle_airboat",false))
+					{
+						PrintToServer("Set airboat to default mdl");
+						if (!IsModelPrecached("models/airboat.mdl")) PrecacheModel("models/airboat.mdl",true);
+						SetEntityModel(entity,"models/airboat.mdl");
+					}
+					else if (StrEqual(entcls,"prop_vehicle_jeep",false))
+					{
+						PrintToServer("Set jeep to default mdl");
+						if (!IsModelPrecached("models/buggy.mdl")) PrecacheModel("models/buggy.mdl",true);
+						SetEntityModel(entity,"models/buggy.mdl");
+					}
+					else
+					{
+						AcceptEntityInput(entity,"kill");
+						return Plugin_Handled;
+					}
+				}
+			}
+		}
 		if ((StrEqual(entcls,"npc_snark",false)) || (StrEqual(entcls,"monster_snark",false)) || (StrEqual(entcls,"npc_babycrab",false)))
 		{
 			Format(cls,sizeof(cls),"%s",entcls);
@@ -17650,13 +17715,13 @@ public Action StartTouchprop(int entity, int other)
 
 public Action OnWeaponUse(int client, int weapon)
 {
-	if (instswitch)
+	if (instswitch > 0)
 	{
 		if ((IsValidEntity(weapon)) && (weapon != -1))
 		{
 			char weapname[32];
 			GetEntityClassname(weapon,weapname,sizeof(weapname));
-			if (StrEqual(weapname,"weapon_physcannon",false))
+			if ((StrEqual(weapname,"weapon_physcannon",false)) || (instswitch == 2))
 			{
 				Handle data;
 				data = CreateDataPack();
@@ -19010,8 +19075,7 @@ public void ffhch(Handle convar, const char[] oldValue, const char[] newValue)
 
 public void instphych(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	if (StringToInt(newValue) == 1) instswitch = true;
-	else instswitch = false;
+	instswitch = StringToInt(newValue);
 }
 
 public void forcehdrch(Handle convar, const char[] oldValue, const char[] newValue)
