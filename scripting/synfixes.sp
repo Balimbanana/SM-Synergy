@@ -32,12 +32,12 @@ int clrocket[64];
 int longjumpactive = false;
 int slavezap = 10;
 int playercapadj = 20;
+int instswitch = 1;
 bool allownoguide = true;
 bool guiderocket[64];
 bool restrictact = false;
 bool friendlyfire = false;
 bool seqenablecheck = true;
-bool instswitch = true;
 bool forcehdr = false;
 bool mapchoosercheck = false;
 bool syn56act = false;
@@ -48,7 +48,7 @@ bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99952"
+#define PLUGIN_VERSION "1.99953"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -103,8 +103,8 @@ public void OnPluginStart()
 	Handle pushh = FindConVar("sv_player_push");
 	if (pushh != INVALID_HANDLE) HookConVarChange(pushh, pushch);
 	CloseHandle(pushh);
-	Handle instphyswitch = CreateConVar("sm_instantswitch", "1", "Allow instant weapon switch for physcannon.", _, true, 0.0, true, 1.0);
-	instswitch = GetConVarBool(instphyswitch);
+	Handle instphyswitch = CreateConVar("sm_instantswitch", "1", "Allow instant weapon switch for physcannon. 2 is for every weapon.", _, true, 0.0, true, 2.0);
+	instswitch = GetConVarInt(instphyswitch);
 	HookConVarChange(instphyswitch, instphych);
 	CloseHandle(instphyswitch);
 	Handle forcehdrh = CreateConVar("sm_forcehdr", "0", "Force clients to use HDR (fixes fullbright).", _, true, 0.0, true, 1.0);
@@ -2551,7 +2551,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 	if ((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false)) && (!StrEqual(classname,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(classname,"npc_bullseye",false)) && (FindValueInArray(entlist,entity) == -1))
 	{
 		PushArrayCell(entlist,entity);
-		if ((StrEqual(classname,"npc_citizen",false)) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
+		if (((StrEqual(classname,"npc_citizen",false)) || (StrEqual(classname,"npc_alyx",false))) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
 		if ((StrEqual(classname,"npc_vortigaunt",false)) || (StrEqual(classname,"npc_dog",false)) || (StrEqual(classname,"npc_gman",false)) || (StrEqual(classname,"npc_monk",false)))
 		{
 			int flageffects = GetEntProp(entity,Prop_Data,"m_iEFlags");
@@ -2578,15 +2578,42 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		CreateTimer(1.0,rechkcol,entity);
 	}
-	if (StrEqual(classname,"phys_bone_follower",false))
+	if ((StrEqual(classname,"phys_bone_follower",false)) || (StrEqual(classname,"entityflame",false)) || (StrEqual(classname,"_firesmoke",false)) || (StrEqual(classname,"env_fire",false)))
 	{
 		if (GetEntityCount() > 2000) AcceptEntityInput(entity,"kill");
+	}
+	else if (GetEntityCount() >= 2000)
+	{
+		int findrope = FindEntityByClassname(-1,"move_rope");
+		if (findrope != -1) AcceptEntityInput(findrope,"kill");
+		else
+		{
+			findrope = FindEntityByClassname(-1,"keyframe_rope");
+			if (findrope != -1) AcceptEntityInput(findrope,"kill");
+			else
+			{
+				findrope = FindEntityByClassname(-1,"entityflame");
+				if (findrope != -1) AcceptEntityInput(findrope,"kill");
+				else
+				{
+					findrope = FindEntityByClassname(-1,"_firesmoke");
+					if (findrope != -1) AcceptEntityInput(findrope,"kill");
+				}
+			}
+		}
 	}
 	if (StrEqual(classname,"rpg_missile",false))
 	{
 		if (IsValidEntity(entity))
 		{
 			CreateTimer(0.3,resetown,entity);
+		}
+	}
+	else if (IsValidEntity(entity))
+	{
+		if (HasEntProp(entity,Prop_Data,"m_iName"))
+		{
+			CreateTimer(0.1,custent,entity,TIMER_FLAG_NO_MAPCHANGE);
 		}
 	}
 }
@@ -2633,6 +2660,74 @@ public Action StartTouchRPG(int entity, int other)
 				SetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity",effectchk);
 		}
 	}
+}
+
+public Action custent(Handle timer, int entity)
+{
+	if (IsValidEntity(entity))
+	{
+		char entcls[128];
+		GetEntityClassname(entity,entcls,sizeof(entcls));
+		if (StrEqual(entcls,"npc_barnacle",false))
+		{
+			SetVariantString("npc_ichthyosaur D_LI 99");
+			AcceptEntityInput(entity,"SetRelationship");
+		}
+		else if (StrContains(entcls,"prop_vehicle",false) == 0)
+		{
+			if (HasEntProp(entity,Prop_Data,"m_vehicleScript"))
+			{
+				char curscr[64];
+				GetEntPropString(entity,Prop_Data,"m_vehicleScript",curscr,sizeof(curscr));
+				if (strlen(curscr) < 2)
+				{
+					if (StrEqual(entcls,"prop_vehicle_airboat",false)) SetEntPropString(entity,Prop_Data,"m_vehicleScript","scripts/vehicles/airboat.txt");
+					else if (StrEqual(entcls,"prop_vehicle_prisoner_pod",false)) SetEntPropString(entity,Prop_Data,"m_vehicleScript","scripts/vehicles/prisoner_pod.txt");
+					else SetEntPropString(entity,Prop_Data,"m_vehicleScript","scripts/vehicles/jeep_test.txt");
+				}
+			}
+			if (HasEntProp(entity,Prop_Data,"m_ModelName"))
+			{
+				char curmdl[64];
+				GetEntPropString(entity,Prop_Data,"m_ModelName",curmdl,sizeof(curmdl));
+				if (strlen(curmdl) > 1)
+				{
+					if (FileExists(curmdl,true,NULL_STRING))
+					{
+						if (!IsModelPrecached(curmdl)) PrecacheModel(curmdl,true);
+					}
+					else
+					{
+						PrintToServer("Vehicle %s spawned with invalid model: %s",entcls,curmdl);
+						AcceptEntityInput(entity,"kill");
+						return Plugin_Handled;
+					}
+				}
+				else
+				{
+					PrintToServer("Vehicle %s spawned without model!",entcls);
+					if (StrEqual(entcls,"prop_vehicle_airboat",false))
+					{
+						PrintToServer("Set airboat to default mdl");
+						if (!IsModelPrecached("models/airboat.mdl")) PrecacheModel("models/airboat.mdl",true);
+						SetEntityModel(entity,"models/airboat.mdl");
+					}
+					else if (StrEqual(entcls,"prop_vehicle_jeep",false))
+					{
+						PrintToServer("Set jeep to default mdl");
+						if (!IsModelPrecached("models/buggy.mdl")) PrecacheModel("models/buggy.mdl",true);
+						SetEntityModel(entity,"models/buggy.mdl");
+					}
+					else
+					{
+						AcceptEntityInput(entity,"kill");
+						return Plugin_Handled;
+					}
+				}
+			}
+		}
+	}
+	return Plugin_Handled;
 }
 
 public Action rechkcol(Handle timer, int logent)
@@ -2698,13 +2793,13 @@ public Action StartTouchprop(int entity, int other)
 
 public Action OnWeaponUse(int client, int weapon)
 {
-	if (instswitch)
+	if (instswitch > 0)
 	{
 		if ((IsValidEntity(weapon)) && (weapon != -1))
 		{
 			char weapname[32];
 			GetEntityClassname(weapon,weapname,sizeof(weapname));
-			if (StrEqual(weapname,"weapon_physcannon",false))
+			if ((StrEqual(weapname,"weapon_physcannon",false)) || (instswitch == 2))
 			{
 				Handle data;
 				data = CreateDataPack();
@@ -2961,8 +3056,7 @@ public void ffhch(Handle convar, const char[] oldValue, const char[] newValue)
 
 public void instphych(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	if (StringToInt(newValue) == 1) instswitch = true;
-	else instswitch = false;
+	instswitch = StringToInt(newValue);
 }
 
 public void forcehdrch(Handle convar, const char[] oldValue, const char[] newValue)
