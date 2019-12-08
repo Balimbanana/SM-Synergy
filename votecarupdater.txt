@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.12"
-			"Previous"	"1.11"
+			"Latest"  	"1.13"
+			"Previous"	"1.12"
 		}
 		
-		"Notes"	"Init updater."
+		"Notes"	"Update to new declarations."
 	}
 	
 	"Files"
