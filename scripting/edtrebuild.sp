@@ -32,7 +32,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.36"
+#define PLUGIN_VERSION "0.37"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -466,7 +466,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 												Format(tmpexpl[0],findend+1,"%s",tmpbuf);
 												TrimString(tmpexpl[0]);
 											}
-											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),tmpexpl[0],"");
+											ReplaceStringEx(tmpexpl[1],sizeof(tmpexpl[]),tmpexpl[0],"");
 											ReplaceString(tmpexpl[0],sizeof(tmpexpl[]),"\"","");
 											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),"\"","");
 											TrimString(tmpexpl[1]);
@@ -537,7 +537,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 											{
 												Format(tmpexpl[0],findend+1,"%s",tmpbuf);
 											}
-											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),tmpexpl[0],"");
+											ReplaceStringEx(tmpexpl[1],sizeof(tmpexpl[]),tmpexpl[0],"");
 											ReplaceString(tmpexpl[0],sizeof(tmpexpl[]),"\"","");
 											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),"\"","");
 											if (strlen(tmpexpl[1]) < 3) Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
@@ -752,7 +752,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 													Format(tmpexpl[0],findend+1,"%s",tmpbuf);
 													TrimString(tmpexpl[0]);
 												}
-												ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),tmpexpl[0],"");
+												ReplaceStringEx(tmpexpl[1],sizeof(tmpexpl[]),tmpexpl[0],"");
 												ReplaceString(tmpexpl[0],sizeof(tmpexpl[]),"\"","");
 												ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),"\"","");
 												TrimString(tmpexpl[1]);
@@ -944,7 +944,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 												Format(tmpexpl[1],sizeof(tmpexpl[]),"%s",tmpexpl[0]);
 											}
 											ReplaceString(replacedata,sizeof(replacedata),"\"","");
-											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),replacedata,"");
+											ReplaceStringEx(tmpexpl[1],sizeof(tmpexpl[]),replacedata,"");
 											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),"\"","");
 											TrimString(tmpexpl[1]);
 											Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",replacedata,tmpexpl[1]);
