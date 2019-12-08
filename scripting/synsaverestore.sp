@@ -58,7 +58,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.12"
+#define PLUGIN_VERSION "2.13"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2093,19 +2093,24 @@ public void OnMapStart()
 							SearchForClass(tptarg,returnarr);
 							if (GetArraySize(returnarr) > 0)
 							{
-								int dupeent = GetArrayCell(returnarr,0);
-								if (IsValidEntity(dupeent))
+								for (int k = 0;k<GetArraySize(returnarr);k++)
 								{
-									char dupecls[64];
-									GetEntityClassname(dupeent,dupecls,sizeof(dupecls));
-									if (StrEqual(dupecls,clsname,false))
+									int dupeent = GetArrayCell(returnarr,k);
+									if (IsValidEntity(dupeent))
 									{
-										float dupepos[3];
-										if (HasEntProp(dupeent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(dupeent,Prop_Data,"m_vecAbsOrigin",dupepos);
-										else if (HasEntProp(dupeent,Prop_Send,"m_vecOrigin")) GetEntPropVector(dupeent,Prop_Send,"m_vecOrigin",dupepos);
-										if (GetVectorDistance(porigin,dupepos,false) > 9.0) ent = CreateEntityByName(clsname);
+										char dupecls[64];
+										GetEntityClassname(dupeent,dupecls,sizeof(dupecls));
+										if (StrEqual(dupecls,"prop_dynamic",false)) Format(dupecls,sizeof(dupecls),"prop_dynamic_override");
+										if (StrEqual(dupecls,"prop_physics",false)) Format(dupecls,sizeof(dupecls),"prop_physics_override");
+										if (StrEqual(dupecls,clsname,false))
+										{
+											float dupepos[3];
+											if (HasEntProp(dupeent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(dupeent,Prop_Data,"m_vecAbsOrigin",dupepos);
+											else if (HasEntProp(dupeent,Prop_Send,"m_vecOrigin")) GetEntPropVector(dupeent,Prop_Send,"m_vecOrigin",dupepos);
+											if (GetVectorDistance(porigin,dupepos,false) > 9.0) ent = CreateEntityByName(clsname);
+										}
+										else ent = CreateEntityByName(clsname);
 									}
-									else ent = CreateEntityByName(clsname);
 								}
 							}
 							else ent = CreateEntityByName(clsname);
