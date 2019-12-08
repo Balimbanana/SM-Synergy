@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99989"
-			"Previous"	"1.99988"
+			"Latest"  	"1.99990"
+			"Previous"	"1.99989"
 		}
 		
-		"Notes"	"Fixed flush exec on callback. Fixed Black Mesa chapter titles."
+		"Notes"	"Increased CL flush delay. Added sm_instantswitch 2 which will attempt fast switch of all weapons. Added fallbacks to a couple vehicle types."
 	}
 	
 	"Files"
