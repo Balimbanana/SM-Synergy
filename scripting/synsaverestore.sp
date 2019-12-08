@@ -3128,6 +3128,12 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 									GetEntPropVector(i,Prop_Data,"m_angGoal",angax);
 									Format(scriptinf,sizeof(scriptinf),"%sm_angGoal \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
 								}
+								if (HasEntProp(i,Prop_Data,"m_iszMagnetName"))
+								{
+									char magname[64];
+									GetEntPropString(i,Prop_Data,"m_iszMagnetName",magname,sizeof(magname));
+									Format(scriptinf,sizeof(scriptinf),"%sm_iszMagnetName %s ",scriptinf,magname);
+								}
 								if ((HasEntProp(i,Prop_Data,"m_iszEffectName")) && (strlen(mdl) < 1))
 								{
 									GetEntPropString(i,Prop_Data,"m_iszEffectName",mdl,sizeof(mdl));
@@ -3575,6 +3581,12 @@ void transitionthisent(int i)
 		float angax[3];
 		GetEntPropVector(i,Prop_Data,"m_angGoal",angax);
 		Format(scriptinf,sizeof(scriptinf),"%sm_angGoal \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+	}
+	if (HasEntProp(i,Prop_Data,"m_iszMagnetName"))
+	{
+		char magname[64];
+		GetEntPropString(i,Prop_Data,"m_iszMagnetName",magname,sizeof(magname));
+		Format(scriptinf,sizeof(scriptinf),"%sm_iszMagnetName %s ",scriptinf,magname);
 	}
 	if (HasEntProp(i,Prop_Data,"m_nSolidType"))
 	{
