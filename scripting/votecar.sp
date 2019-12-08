@@ -7,6 +7,8 @@
 #tryinclude <updater>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
+#pragma semicolon 1;
+#pragma newdecls required;
 
 Handle globalsarr = INVALID_HANDLE;
 Handle vehiclecustomdir = INVALID_HANDLE;
@@ -52,12 +54,12 @@ enum voteType
 	question
 }
 
-new voteType:g_voteType = voteType:question;
+voteType g_voteType = question;
 
-#define PLUGIN_VERSION "1.12"
+#define PLUGIN_VERSION "1.13"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/votecarupdater.txt"
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name = "CCreateVehicle",
 	author = "Balimbanana",
@@ -112,10 +114,10 @@ public void OnPluginStart()
 	carwalldist = GetConVarInt(vcarrmresh);
 	HookConVarChange(vcarrmresh, restrictvehdistch);
 	CloseHandle(vcarrmresh);
-	HookEntityOutput("prop_vehicle_jeep","PlayerOn",EntityOutput:playeron);
-	HookEntityOutput("prop_vehicle_jeep_episodic","PlayerOn",EntityOutput:playeron);
-	HookEntityOutput("prop_vehicle_airboat","PlayerOn",EntityOutput:playeron);
-	HookEntityOutput("prop_vehicle_mp","PlayerOn",EntityOutput:playeron);
+	HookEntityOutput("prop_vehicle_jeep","PlayerOn",playeron);
+	HookEntityOutput("prop_vehicle_jeep_episodic","PlayerOn",playeron);
+	HookEntityOutput("prop_vehicle_airboat","PlayerOn",playeron);
+	HookEntityOutput("prop_vehicle_mp","PlayerOn",playeron);
 	AutoExecConfig(true, "votecar");
 }
 
@@ -147,7 +149,7 @@ public void OnMapStart()
 		plyvehicle[i] = 0;
 }
 
-public OnLibraryAdded(const char[] name)
+public void OnLibraryAdded(const char[] name)
 {
 	if (StrEqual(name,"updater",false))
 	{
@@ -155,7 +157,7 @@ public OnLibraryAdded(const char[] name)
 	}
 }
 
-public Updater_OnPluginUpdated()
+public int Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
@@ -250,7 +252,7 @@ public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 			vehiclemdltype[param1] = 100;
 		if (CCreateVehicle(param1,info))
 		{
-			new String:buff[PLATFORM_MAX_PATH];
+			char buff[PLATFORM_MAX_PATH];
 			char nick[PLATFORM_MAX_PATH];
 			GetClientName(param1,nick,sizeof(nick));
 			if (vehiclemdltype[param1] == 1)
@@ -301,8 +303,8 @@ public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 			if (strlen(buff) > 1)
 			{
 				clused = param1;
-				g_voteType = voteType:question;
-				g_hVoteMenu = CreateMenu(Handler_VoteCallback, MenuAction:MENU_ACTIONS_ALL);
+				g_voteType = question;
+				g_hVoteMenu = CreateMenu(Handler_VoteCallback, MENU_ACTIONS_ALL);
 				g_hVoteMenu.SetTitle(buff);
 				g_hVoteMenu.AddItem(VOTE_YES, "Yes");
 				g_hVoteMenu.AddItem(VOTE_NO, "No");
@@ -335,7 +337,7 @@ public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 	return 0;
 }
 
-public recursion(const String:sbuf[128])
+public void recursion(const char sbuf[128])
 {
 	char buff[128];
 	Handle msubdirlisting = OpenDirectory(sbuf, false);
@@ -357,7 +359,7 @@ public recursion(const String:sbuf[128])
 	CloseHandle(msubdirlisting);
 }
 
-public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
+public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int param2)
 {
 	if (action == MenuAction_End)
 	{
@@ -365,26 +367,19 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 	}
 	else if (action == MenuAction_Display)
 	{
-	 	if (g_voteType != voteType:question)
+	 	if (g_voteType != question)
 	 	{
-			char title[64];
-			menu.GetTitle(title, sizeof(title));
-			
-	 		char buffer[255];
-			Format(buffer, sizeof(buffer), "%s", param1);
-
-			Panel panel = Panel:param2;
-			panel.SetTitle(buffer);
+			return 0;
 		}
 	}
 	else if (action == MenuAction_DisplayItem)
 	{
-		decl String:display[64];
+		char display[64];
 		menu.GetItem(param2, "", 0, _, display, sizeof(display));
 	 
 	 	if (strcmp(display, "No") == 0 || strcmp(display, "Yes") == 0)
 	 	{
-			decl String:buffer[255];
+			char buffer[255];
 			Format(buffer, sizeof(buffer), "%s", display);
 
 			return RedrawMenuItem(buffer);
@@ -410,7 +405,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 			votes = totalVotes - votes; // Reverse the votes to be in relation to the Yes option.
 		}
 		
-		percent = GetVotePercent(votes, totalVotes);
+		percent = float(votes)/float(totalVotes);
 
 		// A multi-argument vote is "always successful", but have to check if its a Yes/No vote.
 		//PrintToServer("%f %f %i",percent,perclimit,FloatCompare(percent,perclimit));
@@ -434,7 +429,7 @@ public Handler_VoteCallback(Menu menu, MenuAction action, param1, param2)
 	return 0;
 }
 
-bool CCreateVehicle(client,char[] vehiclemodel)
+bool CCreateVehicle(int client, char[] vehiclemodel)
 {
 	if (client == 0)
 		return false;
@@ -590,7 +585,7 @@ bool CCreateVehicle(client,char[] vehiclemodel)
 	return false;
 }
 
-public restrictvehch(Handle convar, const char[] oldValue, const char[] newValue)
+public void restrictvehch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1)
 	{
@@ -612,38 +607,38 @@ public restrictvehch(Handle convar, const char[] oldValue, const char[] newValue
 	}
 }
 
-public restrictvehpercch(Handle convar, const char[] oldValue, const char[] newValue)
+public void restrictvehpercch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	perclimit = StringToFloat(newValue);
 }
 
-public restrictvehdelch(Handle convar, const char[] oldValue, const char[] newValue)
+public void restrictvehdelch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	delaylimit = StringToFloat(newValue);
 }
 
-public restrictvehownch(Handle convar, const char[] oldValue, const char[] newValue)
+public void restrictvehownch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	int nval = StringToInt(newValue);
 	if ((nval < 2) && (nval > -1))
 		vehsetown = nval;
 }
 
-public restrictvehrmresch(Handle convar, const char[] oldValue, const char[] newValue)
+public void restrictvehrmresch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	int nval = StringToInt(newValue);
 	if ((nval < 2) && (nval > -1))
 		restrictrm = nval;
 }
 
-public restrictvehdistch(Handle convar, const char[] oldValue, const char[] newValue)
+public void restrictvehdistch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	carwalldist = StringToInt(newValue);
 }
 
-bool:IsInView(client)
+bool IsInView(int client)
 {
-	new m_hViewEntity = GetEntPropEnt(client, Prop_Data, "m_hViewEntity");
+	int m_hViewEntity = GetEntPropEnt(client, Prop_Data, "m_hViewEntity");
 	char classname[20];
 	if (IsValidEdict(m_hViewEntity) && GetEdictClassname(m_hViewEntity, classname, sizeof(classname)))
 		if(StrEqual(classname, "point_viewcontrol"))
@@ -651,7 +646,7 @@ bool:IsInView(client)
 	return false;
 }
 
-CreateVehicle(client)
+void CreateVehicle(int client)
 {
 	if (clused != 0)
 	{
@@ -844,12 +839,12 @@ public Action findglobals(int ent, char[] clsname)
 	return Plugin_Handled;
 }
 
-public OnClientDisconnect(int client)
+public void OnClientDisconnect(int client)
 {
 	initcl(client);
 }
 
-public initcl(client)
+void initcl(int client)
 {
 	vehspawnposx[client] = 0.0;
 	vehspawnposy[client] = 0.0;
@@ -878,7 +873,7 @@ public Action removeclvehicle(int client, int args)
 	return Plugin_Handled;
 }
 
-remvh(int client, int ent)
+void remvh(int client, int ent)
 {
 	if ((ent != 0) && IsValidEntity(ent) && IsEntNetworkable(ent))
 	{
@@ -913,12 +908,7 @@ remvh(int client, int ent)
 	}
 }
 
-Float:GetVotePercent(votes, totalVotes)
-{
-	return FloatDiv(float(votes),float(totalVotes));
-}
-
-VoteMenuClose()
+void VoteMenuClose()
 {
 	delete g_hVoteMenu;
 	g_hVoteMenu = null;
