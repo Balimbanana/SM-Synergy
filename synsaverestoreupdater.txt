@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.12"
-			"Previous"	"2.11"
+			"Latest"  	"2.13"
+			"Previous"	"2.12"
 		}
 		
 		"Notes"	"Prevent transitioning a couple more entities."
