@@ -32,7 +32,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.37"
+#define PLUGIN_VERSION "0.38"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -124,7 +124,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		{
 			char szMapEntitiesbuff[2097152];
 			char tmpbuf[8196];
-			char tmpwriter[32784];
+			char tmpwriter[131136];
 			char cls[64];
 			char clsorg[64];
 			char tmpexpl[4][64];
