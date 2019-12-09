@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.19"
+#define PLUGIN_VERSION "1.20"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -94,6 +94,7 @@ public Action waitforlive(Handle timer, int client)
 		if (WeapList != -1)
 		{
 			char clschk[32];
+			int curweps = 0;
 			for (int l; l<104; l += 4)
 			{
 				int tmpi = GetEntDataEnt2(client,WeapList + l);
@@ -102,8 +103,12 @@ public Action waitforlive(Handle timer, int client)
 					GetEntityClassname(tmpi,clschk,sizeof(clschk));
 					if (strlen(clschk) > 1)
 					{
-						hasweapons = true;
-						break;
+						curweps++;
+						if (curweps > 2)
+						{
+							hasweapons = true;
+							break;
+						}
 					}
 				}
 			}
