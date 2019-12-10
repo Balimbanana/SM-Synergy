@@ -51,6 +51,7 @@ Handle restorecustoments = INVALID_HANDLE;
 Handle ignoretrigs = INVALID_HANDLE;
 Handle spawnerswait = INVALID_HANDLE;
 Handle globalsarr = INVALID_HANDLE;
+Handle dctimeoutarr = INVALID_HANDLE;
 //Handle nextweapreset = INVALID_HANDLE;
 float entrefresh = 0.0;
 float removertimer = 30.0;
@@ -89,8 +90,10 @@ bool appliedlargeplayeradj = false;
 bool antlionguardhard = false;
 bool incfixer = false;
 bool BlockEx = true;
+bool RestartedMap = false;
+bool AutoFixEp2Req = false;
 
-#define PLUGIN_VERSION "1.99990"
+#define PLUGIN_VERSION "1.99991"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -241,12 +244,26 @@ public void OnPluginStart()
 		HookConVarChange(cvar, blckexch);
 	}
 	CloseHandle(cvar);
+	cvar = FindConVar("sm_autofixreq_ep2");
+	if (cvar != INVALID_HANDLE)
+	{
+		AutoFixEp2Req = GetConVarBool(cvar);
+		HookConVarChange(cvar, ep2reqch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_autofixreq_ep2", "0", "When map starts, it will be checked for episodic entities and whether or not Ep2 is mounted. If there are Ep2 entities and Ep2 is not mounted, sv_content_optional will be used and the map will restart automatically.", _, true, 0.0, true, 1.0);
+		AutoFixEp2Req = GetConVarBool(cvar);
+		HookConVarChange(cvar, ep2reqch);
+	}
+	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
 	HookEventEx("player_spawn",OnPlayerSpawn,EventHookMode_Post);
 	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
 	HookEventEx("synergy_entity_death",Event_SynEntityKilled,EventHookMode_Pre);
+	HookEventEx("player_disconnect",Event_PlayerDisconnect,EventHookMode_Post);
 	equiparr = CreateArray(32);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	entlist = CreateArray(1024);
@@ -273,6 +290,7 @@ public void OnPluginStart()
 	ignoretrigs = CreateArray(1024);
 	spawnerswait = CreateArray(256);
 	globalsarr = CreateArray(32);
+	dctimeoutarr = CreateArray(MAXPLAYERS+1);
 	precachedarr = CreateArray(128);
 	customentlist = CreateArray(128);
 	conveyors = CreateArray(128);
@@ -434,6 +452,57 @@ public void OnMapStart()
 	}
 	if (GetMapHistorySize() > 0)
 	{
+		GetCurrentMap(mapbuf,sizeof(mapbuf));
+		if (AutoFixEp2Req)
+		{
+			char mdl[64];
+			Handle ep2ents = CreateArray(32);
+			FindAllByClassname(ep2ents,-1,"npc_zombine");
+			FindAllByClassname(ep2ents,-1,"npc_maker");
+			if (GetArraySize(ep2ents) > 0)
+			{
+				for (int i = 0;i<GetArraySize(ep2ents);i++)
+				{
+					int ent = GetArrayCell(ep2ents,i);
+					if (IsValidEntity(ent))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_ModelName"))
+						{
+							GetEntPropString(ent,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+							if ((StrEqual(mdl,"models/error.mdl",false)) || (!FileExists(mdl,true,NULL_STRING)))
+							{
+								RestartedMap = true;
+								break;
+							}
+						}
+						if (HasEntProp(ent,Prop_Data,"m_iszNPCClassname"))
+						{
+							GetEntPropString(ent,Prop_Data,"m_iszNPCClassname",mdl,sizeof(mdl));
+							if (StrEqual(mdl,"npc_zombine",false))
+							{
+								if (!FileExists("models/zombie/zombie_soldier.mdl",true,NULL_STRING))
+								{
+									RestartedMap = true;
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+			CloseHandle(ep2ents);
+			if (RestartedMap)
+			{
+				Handle srvcvar = FindConVar("sv_content_optional");
+				if (srvcvar != INVALID_HANDLE)
+				{
+					SetConVarString(srvcvar,"ep2 ep1",true,false);
+				}
+				CloseHandle(srvcvar);
+				ServerCommand("changelevel %s",mapbuf);
+			}
+			else RestartedMap = false;
+		}
 		int rellogsv = CreateEntityByName("logic_auto");
 		if ((rellogsv != -1) && (IsValidEntity(rellogsv)))
 		{
@@ -515,7 +584,6 @@ public void OnMapStart()
 		}
 		char gamedescoriginal[24];
 		GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
-		GetCurrentMap(mapbuf,sizeof(mapbuf));
 		bool rebuildentsset = false;
 		//if (StrEqual(mapbuf,"bm_c2a4c",false))
 		//{
@@ -1414,124 +1482,127 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 
 public void OnClientPutInServer(int client)
 {
-	centnextatk[client] = 0.0;
-	CreateTimer(0.5,clspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
-	CreateTimer(1.0,ReBuildClientCustoms,_,TIMER_FLAG_NO_MAPCHANGE);
-	if (forcehdr) QueryClientConVar(client,"mat_hdr_level",hdrchk,0);
-	QueryClientConVar(client,"cc_lang",langchk,0);
-	showcc[client] = false;
-	QueryClientConVar(client,"closecaption",checkccsettings,0);
-	if ((GetClientCount(true) >= playercapadj) && (!appliedlargeplayeradj) && (playercapadj > 0))
+	if (!IsFakeClient(client))
 	{
-		appliedlargeplayeradj = true;
-		reloadaftersetup = true;
-		Handle spawns = CreateArray(32);
-		FindAllByClassname(spawns,-1,"info_vehicle_spawn");
-		if (GetArraySize(spawns) > 0)
+		centnextatk[client] = 0.0;
+		CreateTimer(0.5,clspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(1.0,ReBuildClientCustoms,_,TIMER_FLAG_NO_MAPCHANGE);
+		if (forcehdr) QueryClientConVar(client,"mat_hdr_level",hdrchk,0);
+		QueryClientConVar(client,"cc_lang",langchk,0);
+		showcc[client] = false;
+		QueryClientConVar(client,"closecaption",checkccsettings,0);
+		if ((GetClientCount(true) >= playercapadj) && (!appliedlargeplayeradj) && (playercapadj > 0))
 		{
-			for (int i = 0;i<GetArraySize(spawns);i++)
+			appliedlargeplayeradj = true;
+			reloadaftersetup = true;
+			Handle spawns = CreateArray(32);
+			FindAllByClassname(spawns,-1,"info_vehicle_spawn");
+			if (GetArraySize(spawns) > 0)
 			{
-				int ent = GetArrayCell(spawns,i);
-				if (IsValidEntity(ent))
+				for (int i = 0;i<GetArraySize(spawns);i++)
 				{
-					float origin[3];
-					float angs[3];
-					float loc[3];
-					if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-					if (HasEntProp(ent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",origin);
-					else if (HasEntProp(ent,Prop_Send,"m_vecOrigin")) GetEntPropVector(ent,Prop_Send,"m_vecOrigin",origin);
-					//horizontal right check
-					angs[1]-=90.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					loc[2] = origin[2];
-					if (CheckBounds(loc,angs))
+					int ent = GetArrayCell(spawns,i);
+					if (IsValidEntity(ent))
 					{
-						//get original just in case
+						float origin[3];
+						float angs[3];
+						float loc[3];
 						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					//horizontal left check
-					angs[1]+=180.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					if (CheckBounds(loc,angs))
-					{
+						if (HasEntProp(ent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",origin);
+						else if (HasEntProp(ent,Prop_Send,"m_vecOrigin")) GetEntPropVector(ent,Prop_Send,"m_vecOrigin",origin);
+						//horizontal right check
+						angs[1]-=90.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						loc[2] = origin[2];
+						if (CheckBounds(loc,angs))
+						{
+							//get original just in case
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//horizontal left check
+						angs[1]+=180.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						if (CheckBounds(loc,angs))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//forward check
+						angs[1]-=90.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						if (CheckBounds(loc,angs))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//backwards check
+						angs[1]-=180.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						if (CheckBounds(loc,angs))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						
+						//run all over again with +50 z
+						origin[2]+=50.0;
 						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					//forward check
-					angs[1]-=90.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					if (CheckBounds(loc,angs))
-					{
-						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					//backwards check
-					angs[1]-=180.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					if (CheckBounds(loc,angs))
-					{
-						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					
-					//run all over again with +50 z
-					origin[2]+=50.0;
-					if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-					//horizontal right check
-					angs[1]-=90.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					loc[2] = origin[2];
-					if (CheckBounds(loc,angs))
-					{
-						//get original just in case
-						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					//horizontal left check
-					angs[1]+=180.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					if (CheckBounds(loc,angs))
-					{
-						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					//forward check
-					angs[1]-=90.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					if (CheckBounds(loc,angs))
-					{
-						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					//backwards check
-					angs[1]-=180.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					if (CheckBounds(loc,angs))
-					{
-						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
+						//horizontal right check
+						angs[1]-=90.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						loc[2] = origin[2];
+						if (CheckBounds(loc,angs))
+						{
+							//get original just in case
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//horizontal left check
+						angs[1]+=180.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						if (CheckBounds(loc,angs))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//forward check
+						angs[1]-=90.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						if (CheckBounds(loc,angs))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//backwards check
+						angs[1]-=180.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						if (CheckBounds(loc,angs))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
 					}
 				}
 			}
+			CloseHandle(spawns);
 		}
-		CloseHandle(spawns);
 	}
 }
 
@@ -1741,112 +1812,115 @@ public Action everyspawnpost(Handle timer, int client)
 {
 	if (IsValidEntity(client) && IsPlayerAlive(client))
 	{
-		if (longjumpactive)
+		if (!IsFakeClient(client))
 		{
-			int hudhint = CreateEntityByName("env_hudhint");
-			if (hudhint != -1)
+			if (longjumpactive)
 			{
-				char msg[64];
-				Format(msg,sizeof(msg),"Ctrl + Jump LONG JUMP");
-				DispatchKeyValue(hudhint,"spawnflags","0");
-				DispatchKeyValue(hudhint,"message",msg);
-				DispatchSpawn(hudhint);
-				ActivateEntity(hudhint);
-				AcceptEntityInput(hudhint,"ShowHudHint",client);
-				Handle dp = CreateDataPack();
-				WritePackCell(dp,hudhint);
-				WritePackString(dp,"env_hudhint");
-				CreateTimer(0.5,cleanup,dp);
-			}
-		}
-		if (GetArraySize(equiparr) > 0)
-		{
-			float clorigin[3];
-			GetClientAbsOrigin(client,clorigin);
-			clorigin[2]+=10.0;
-			for (int j; j<GetArraySize(equiparr); j++)
-			{
-				int jtmp = GetArrayCell(equiparr, j);
-				if (IsValidEntity(jtmp))
+				int hudhint = CreateEntityByName("env_hudhint");
+				if (hudhint != -1)
 				{
-					if (HasEntProp(jtmp,Prop_Data,"m_iszResponseContext"))
+					char msg[64];
+					Format(msg,sizeof(msg),"Ctrl + Jump LONG JUMP");
+					DispatchKeyValue(hudhint,"spawnflags","0");
+					DispatchKeyValue(hudhint,"message",msg);
+					DispatchSpawn(hudhint);
+					ActivateEntity(hudhint);
+					AcceptEntityInput(hudhint,"ShowHudHint",client);
+					Handle dp = CreateDataPack();
+					WritePackCell(dp,hudhint);
+					WritePackString(dp,"env_hudhint");
+					CreateTimer(0.5,cleanup,dp);
+				}
+			}
+			if (GetArraySize(equiparr) > 0)
+			{
+				float clorigin[3];
+				GetClientAbsOrigin(client,clorigin);
+				clorigin[2]+=10.0;
+				for (int j; j<GetArraySize(equiparr); j++)
+				{
+					int jtmp = GetArrayCell(equiparr, j);
+					if (IsValidEntity(jtmp))
 					{
-						char additionalweaps[256];
-						GetEntPropString(jtmp,Prop_Data,"m_iszResponseContext",additionalweaps,sizeof(additionalweaps));
-						if (strlen(additionalweaps) > 0)
+						if (HasEntProp(jtmp,Prop_Data,"m_iszResponseContext"))
 						{
-							char additionalweap[64][64];
-							char basecls[64];
-							ExplodeString(additionalweaps," ",additionalweap,64,64,true);
-							for (int k = 0;k<64;k++)
+							char additionalweaps[256];
+							GetEntPropString(jtmp,Prop_Data,"m_iszResponseContext",additionalweaps,sizeof(additionalweaps));
+							if (strlen(additionalweaps) > 0)
 							{
-								if (strlen(additionalweap[k]) > 0)
+								char additionalweap[64][64];
+								char basecls[64];
+								ExplodeString(additionalweaps," ",additionalweap,64,64,true);
+								for (int k = 0;k<64;k++)
 								{
-									TrimString(additionalweap[k]);
-									bool addweap = true;
-									if (WeapList == -1) WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
-									if (WeapList != -1)
+									if (strlen(additionalweap[k]) > 0)
 									{
-										char clschk[32];
-										for (int l; l<104; l += 4)
+										TrimString(additionalweap[k]);
+										bool addweap = true;
+										if (WeapList == -1) WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
+										if (WeapList != -1)
 										{
-											int tmpi = GetEntDataEnt2(client,WeapList + l);
-											if ((tmpi != 0) && (IsValidEntity(tmpi)))
+											char clschk[32];
+											for (int l; l<104; l += 4)
 											{
-												GetEntityClassname(tmpi,clschk,sizeof(clschk));
-												if (StrEqual(clschk,additionalweap[k],false)) addweap = false;
+												int tmpi = GetEntDataEnt2(client,WeapList + l);
+												if ((tmpi != 0) && (IsValidEntity(tmpi)))
+												{
+													GetEntityClassname(tmpi,clschk,sizeof(clschk));
+													if (StrEqual(clschk,additionalweap[k],false)) addweap = false;
+												}
 											}
 										}
-									}
-									if (addweap)
-									{
-										Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
-										if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
-										else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
-										else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-										else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-										else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-										else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
-										else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
-										else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
-										else if (StrContains(basecls,"customweapons",false) != -1)
+										if (addweap)
 										{
-											char findpath[64];
-											Format(findpath,sizeof(findpath),"scripts/%s.txt",basecls);
-											if (FileExists(findpath,true,NULL_STRING))
+											Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
+											if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
+											else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
+											else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+											else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+											else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+											else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+											else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
+											else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
+											else if (StrContains(basecls,"customweapons",false) != -1)
 											{
-												Handle filehandlesub = OpenFile(findpath,"r",true,NULL_STRING);
-												if (filehandlesub != INVALID_HANDLE)
+												char findpath[64];
+												Format(findpath,sizeof(findpath),"scripts/%s.txt",basecls);
+												if (FileExists(findpath,true,NULL_STRING))
 												{
-													char scrline[128];
-													while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
+													Handle filehandlesub = OpenFile(findpath,"r",true,NULL_STRING);
+													if (filehandlesub != INVALID_HANDLE)
 													{
-														TrimString(scrline);
-														if (StrContains(scrline,"\"anim_prefix\"",false) != -1)
+														char scrline[128];
+														while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
 														{
-															ReplaceStringEx(scrline,sizeof(scrline),"\"anim_prefix\"","",_,_,false);
-															ReplaceString(scrline,sizeof(scrline),"\"","");
 															TrimString(scrline);
-															if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
-															else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
-															else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
-															else if (StrEqual(scrline,"grenade",false)) Format(scrline,sizeof(scrline),"crowbar");
-															Format(scrline,sizeof(scrline),"weapon_%s",scrline);
-															Format(basecls,sizeof(basecls),"%s",scrline);
-															break;
+															if (StrContains(scrline,"\"anim_prefix\"",false) != -1)
+															{
+																ReplaceStringEx(scrline,sizeof(scrline),"\"anim_prefix\"","",_,_,false);
+																ReplaceString(scrline,sizeof(scrline),"\"","");
+																TrimString(scrline);
+																if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
+																else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
+																else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
+																else if (StrEqual(scrline,"grenade",false)) Format(scrline,sizeof(scrline),"crowbar");
+																Format(scrline,sizeof(scrline),"weapon_%s",scrline);
+																Format(basecls,sizeof(basecls),"%s",scrline);
+																break;
+															}
 														}
 													}
+													CloseHandle(filehandlesub);
 												}
-												CloseHandle(filehandlesub);
 											}
-										}
-										int ent = CreateEntityByName(basecls);
-										if (ent != -1)
-										{
-											TeleportEntity(ent,clorigin,NULL_VECTOR,NULL_VECTOR);
-											DispatchKeyValue(ent,"classname",additionalweap[k]);
-											DispatchSpawn(ent);
-											ActivateEntity(ent);
+											int ent = CreateEntityByName(basecls);
+											if (ent != -1)
+											{
+												TeleportEntity(ent,clorigin,NULL_VECTOR,NULL_VECTOR);
+												DispatchKeyValue(ent,"classname",additionalweap[k]);
+												DispatchSpawn(ent);
+												ActivateEntity(ent);
+											}
 										}
 									}
 								}
@@ -1855,12 +1929,12 @@ public Action everyspawnpost(Handle timer, int client)
 					}
 				}
 			}
+			else
+			{
+				findent(MaxClients+1,"info_player_equip");
+			}
+			if ((strlen(ChapterTitle) > 0) && (!DisplayedChapterTitle[client])) CreateTimer(5.0,DisplayChapterTitle,client,TIMER_FLAG_NO_MAPCHANGE);
 		}
-		else
-		{
-			findent(MaxClients+1,"info_player_equip");
-		}
-		if ((strlen(ChapterTitle) > 0) && (!DisplayedChapterTitle[client])) CreateTimer(5.0,DisplayChapterTitle,client,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	else if (IsClientConnected(client)) CreateTimer(0.1,everyspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
 }
@@ -1899,106 +1973,109 @@ public Action clspawnpost(Handle timer, int client)
 {
 	if (IsValidEntity(client) && IsPlayerAlive(client))
 	{
-		float clorigin[3], vMins[3], vMaxs[3];
-		GetClientAbsOrigin(client,clorigin);
-		GetEntPropVector(0, Prop_Data, "m_WorldMins", vMins);
-		GetEntPropVector(0, Prop_Data, "m_WorldMaxs", vMaxs);
-		if (debugoowlvl)
+		if (!IsFakeClient(client))
 		{
-			PrintToServer("%N spawned in at %1.f %1.f %1.f\nWorldMins: %1.f %1.f %1.f\nWorldMaxs %1.f %1.f %1.f",client,clorigin[0],clorigin[1],clorigin[2],vMins[0],vMins[1],vMins[2],vMaxs[0],vMaxs[1],vMaxs[2]);
-		}
-		if (StrContains(mapbuf,"bm_c2a5c",false) == -1)
-		{
-			if ((clorigin[0] < vMins[0]) || (clorigin[1] < vMins[1]) || (clorigin[2] < vMins[2]) || (clorigin[0] > vMaxs[0]) || (clorigin[1] > vMaxs[1]) || (clorigin[2] > vMaxs[2]) || (TR_PointOutsideWorld(clorigin)))
+			float clorigin[3], vMins[3], vMaxs[3];
+			GetClientAbsOrigin(client,clorigin);
+			GetEntPropVector(0, Prop_Data, "m_WorldMins", vMins);
+			GetEntPropVector(0, Prop_Data, "m_WorldMaxs", vMaxs);
+			if (debugoowlvl)
 			{
-				if (debugoowlvl) PrintToServer("%N spawned out of map, moving to active checkpoint.",client);
-				findspawnpos(client);
+				PrintToServer("%N spawned in at %1.f %1.f %1.f\nWorldMins: %1.f %1.f %1.f\nWorldMaxs %1.f %1.f %1.f",client,clorigin[0],clorigin[1],clorigin[2],vMins[0],vMins[1],vMins[2],vMaxs[0],vMaxs[1],vMaxs[2]);
 			}
-		}
-		if (GetArraySize(equiparr) < 1)
-			findent(MaxClients+1,"info_player_equip");
-		Handle weaparr = CreateArray(32);
-		if (WeapList != -1)
-		{
-			for (int j; j<104; j += 4)
+			if (StrContains(mapbuf,"bm_c2a5c",false) == -1)
 			{
-				int tmp = GetEntDataEnt2(client,WeapList + j);
-				if (tmp != -1)
+				if ((clorigin[0] < vMins[0]) || (clorigin[1] < vMins[1]) || (clorigin[2] < vMins[2]) || (clorigin[0] > vMaxs[0]) || (clorigin[1] > vMaxs[1]) || (clorigin[2] > vMaxs[2]) || (TR_PointOutsideWorld(clorigin)))
 				{
-					char name[24];
-					GetEntityClassname(tmp,name,sizeof(name));
-					PushArrayString(weaparr,name);
+					if (debugoowlvl) PrintToServer("%N spawned out of map, moving to active checkpoint.",client);
+					findspawnpos(client);
 				}
 			}
-		}
-		int vck = -1;
-		if (HasEntProp(client,Prop_Send,"m_hVehicle")) vck = GetEntProp(client, Prop_Send, "m_hVehicle");
-		if ((vck == -1) && ((FindStringInArray(weaparr,"weapon_physcannon") == -1) || (GetEntProp(client,Prop_Send,"m_bWearingSuit") > 0)))
-		{
-			for (int j; j<GetArraySize(equiparr); j++)
+			if (GetArraySize(equiparr) < 1)
+				findent(MaxClients+1,"info_player_equip");
+			Handle weaparr = CreateArray(32);
+			if (WeapList != -1)
 			{
-				int jtmp = GetArrayCell(equiparr, j);
-				if (IsValidEntity(jtmp))
+				for (int j; j<104; j += 4)
 				{
-					AcceptEntityInput(jtmp,"EquipPlayer",client);
-				}
-			}
-		}
-		if (GetArraySize(equiparr) > 0) //Run additional weapons separate
-		{
-			clorigin[2]+=10.0;
-			for (int j; j<GetArraySize(equiparr); j++)
-			{
-				int jtmp = GetArrayCell(equiparr, j);
-				if (IsValidEntity(jtmp))
-				{
-					if (HasEntProp(jtmp,Prop_Data,"m_iszResponseContext"))
+					int tmp = GetEntDataEnt2(client,WeapList + j);
+					if (tmp != -1)
 					{
-						char additionalweaps[256];
-						GetEntPropString(jtmp,Prop_Data,"m_iszResponseContext",additionalweaps,sizeof(additionalweaps));
-						if (strlen(additionalweaps) > 0)
+						char name[24];
+						GetEntityClassname(tmp,name,sizeof(name));
+						PushArrayString(weaparr,name);
+					}
+				}
+			}
+			int vck = -1;
+			if (HasEntProp(client,Prop_Send,"m_hVehicle")) vck = GetEntProp(client, Prop_Send, "m_hVehicle");
+			if ((vck == -1) && ((FindStringInArray(weaparr,"weapon_physcannon") == -1) || (GetEntProp(client,Prop_Send,"m_bWearingSuit") > 0)))
+			{
+				for (int j; j<GetArraySize(equiparr); j++)
+				{
+					int jtmp = GetArrayCell(equiparr, j);
+					if (IsValidEntity(jtmp))
+					{
+						AcceptEntityInput(jtmp,"EquipPlayer",client);
+					}
+				}
+			}
+			if (GetArraySize(equiparr) > 0) //Run additional weapons separate
+			{
+				clorigin[2]+=10.0;
+				for (int j; j<GetArraySize(equiparr); j++)
+				{
+					int jtmp = GetArrayCell(equiparr, j);
+					if (IsValidEntity(jtmp))
+					{
+						if (HasEntProp(jtmp,Prop_Data,"m_iszResponseContext"))
 						{
-							char additionalweap[64][64];
-							char basecls[64];
-							ExplodeString(additionalweaps," ",additionalweap,64,64,true);
-							for (int k = 0;k<64;k++)
+							char additionalweaps[256];
+							GetEntPropString(jtmp,Prop_Data,"m_iszResponseContext",additionalweaps,sizeof(additionalweaps));
+							if (strlen(additionalweaps) > 0)
 							{
-								if (strlen(additionalweap[k]) > 0)
+								char additionalweap[64][64];
+								char basecls[64];
+								ExplodeString(additionalweaps," ",additionalweap,64,64,true);
+								for (int k = 0;k<64;k++)
 								{
-									TrimString(additionalweap[k]);
-									bool addweap = true;
-									if (WeapList == -1) WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
-									if (WeapList != -1)
+									if (strlen(additionalweap[k]) > 0)
 									{
-										char clschk[32];
-										for (int l; l<104; l += 4)
+										TrimString(additionalweap[k]);
+										bool addweap = true;
+										if (WeapList == -1) WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
+										if (WeapList != -1)
 										{
-											int tmpi = GetEntDataEnt2(client,WeapList + l);
-											if ((tmpi != 0) && (IsValidEntity(tmpi)))
+											char clschk[32];
+											for (int l; l<104; l += 4)
 											{
-												GetEntityClassname(tmpi,clschk,sizeof(clschk));
-												if (StrEqual(clschk,additionalweap[k],false)) addweap = false;
+												int tmpi = GetEntDataEnt2(client,WeapList + l);
+												if ((tmpi != 0) && (IsValidEntity(tmpi)))
+												{
+													GetEntityClassname(tmpi,clschk,sizeof(clschk));
+													if (StrEqual(clschk,additionalweap[k],false)) addweap = false;
+												}
 											}
 										}
-									}
-									if (addweap)
-									{
-										Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
-										if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
-										else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
-										else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-										else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-										else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_m4",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_g36c",false)) || (StrEqual(basecls,"weapon_oicw",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-										else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
-										else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
-										else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
-										int ent = CreateEntityByName(basecls);
-										if (ent != -1)
+										if (addweap)
 										{
-											TeleportEntity(ent,clorigin,NULL_VECTOR,NULL_VECTOR);
-											DispatchKeyValue(ent,"classname",additionalweap[k]);
-											DispatchSpawn(ent);
-											ActivateEntity(ent);
+											Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
+											if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
+											else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
+											else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+											else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+											else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_m4",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_g36c",false)) || (StrEqual(basecls,"weapon_oicw",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+											else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+											else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
+											else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
+											int ent = CreateEntityByName(basecls);
+											if (ent != -1)
+											{
+												TeleportEntity(ent,clorigin,NULL_VECTOR,NULL_VECTOR);
+												DispatchKeyValue(ent,"classname",additionalweap[k]);
+												DispatchSpawn(ent);
+												ActivateEntity(ent);
+											}
 										}
 									}
 								}
@@ -2007,20 +2084,35 @@ public Action clspawnpost(Handle timer, int client)
 					}
 				}
 			}
-		}
-		CloseHandle(weaparr);
-		ClearArray(equiparr);
-		if (HasEntProp(client,Prop_Data,"m_bPlayerUnderwater"))
-		{
-			SetEntProp(client,Prop_Data,"m_bPlayerUnderwater",1);
-			SetEntProp(client,Prop_Data,"m_bPlayerUnderwater",0);
-		}
-		int ViewEnt = GetEntPropEnt(client, Prop_Data, "m_hViewEntity");
-		if (ViewEnt > MaxClients)
-		{
-			char cls[25];
-			GetEntityClassname(ViewEnt, cls, sizeof(cls));
-			if (!StrEqual(cls, "point_viewcontrol", false))
+			CloseHandle(weaparr);
+			ClearArray(equiparr);
+			if (HasEntProp(client,Prop_Data,"m_bPlayerUnderwater"))
+			{
+				SetEntProp(client,Prop_Data,"m_bPlayerUnderwater",1);
+				SetEntProp(client,Prop_Data,"m_bPlayerUnderwater",0);
+			}
+			int ViewEnt = GetEntPropEnt(client, Prop_Data, "m_hViewEntity");
+			if (ViewEnt > MaxClients)
+			{
+				char cls[25];
+				GetEntityClassname(ViewEnt, cls, sizeof(cls));
+				if (!StrEqual(cls, "point_viewcontrol", false))
+				{
+					float PlayerOrigin[3];
+					float PlyAng[3];
+					GetClientAbsOrigin(client, PlayerOrigin);
+					GetClientEyeAngles(client, PlyAng);
+					int cam = CreateEntityByName("point_viewcontrol");
+					TeleportEntity(cam, PlayerOrigin, PlyAng, NULL_VECTOR);
+					DispatchKeyValue(cam, "spawnflags","1");
+					DispatchSpawn(cam);
+					ActivateEntity(cam);
+					AcceptEntityInput(cam,"Enable",client);
+					AcceptEntityInput(cam,"Disable",client);
+					AcceptEntityInput(cam,"Kill");
+				}
+			}
+			else
 			{
 				float PlayerOrigin[3];
 				float PlyAng[3];
@@ -2035,56 +2127,45 @@ public Action clspawnpost(Handle timer, int client)
 				AcceptEntityInput(cam,"Disable",client);
 				AcceptEntityInput(cam,"Kill");
 			}
-		}
-		else
-		{
-			float PlayerOrigin[3];
-			float PlyAng[3];
-			GetClientAbsOrigin(client, PlayerOrigin);
-			GetClientEyeAngles(client, PlyAng);
-			int cam = CreateEntityByName("point_viewcontrol");
-			TeleportEntity(cam, PlayerOrigin, PlyAng, NULL_VECTOR);
-			DispatchKeyValue(cam, "spawnflags","1");
-			DispatchSpawn(cam);
-			ActivateEntity(cam);
-			AcceptEntityInput(cam,"Enable",client);
-			AcceptEntityInput(cam,"Disable",client);
-			AcceptEntityInput(cam,"Kill");
-		}
-		SetEntProp(client,Prop_Data,"m_bPlayerUnderwater",1);
-		if (longjumpactive)
-		{
-			int hudhint = CreateEntityByName("env_hudhint");
-			if (hudhint != -1)
+			SetEntProp(client,Prop_Data,"m_bPlayerUnderwater",1);
+			if (longjumpactive)
 			{
-				char msg[64];
-				Format(msg,sizeof(msg),"Ctrl + Jump LONG JUMP");
-				DispatchKeyValue(hudhint,"spawnflags","0");
-				DispatchKeyValue(hudhint,"message",msg);
-				DispatchSpawn(hudhint);
-				ActivateEntity(hudhint);
-				AcceptEntityInput(hudhint,"ShowHudHint",client);
-				Handle dp = CreateDataPack();
-				WritePackCell(dp,hudhint);
-				WritePackString(dp,"env_hudhint");
-				CreateTimer(0.5,cleanup,dp);
+				int hudhint = CreateEntityByName("env_hudhint");
+				if (hudhint != -1)
+				{
+					char msg[64];
+					Format(msg,sizeof(msg),"Ctrl + Jump LONG JUMP");
+					DispatchKeyValue(hudhint,"spawnflags","0");
+					DispatchKeyValue(hudhint,"message",msg);
+					DispatchSpawn(hudhint);
+					ActivateEntity(hudhint);
+					AcceptEntityInput(hudhint,"ShowHudHint",client);
+					Handle dp = CreateDataPack();
+					WritePackCell(dp,hudhint);
+					WritePackString(dp,"env_hudhint");
+					CreateTimer(0.5,cleanup,dp);
+				}
 			}
-		}
-		SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
-		SDKHook(client, SDKHook_WeaponSwitch, OnWeaponUse);
-		//Rebinds for default applications
-		ClientCommand(client,"bind f1 vote_yes");
-		ClientCommand(client,"bind f2 vote_no");
-		CreateTimer(0.1,restoresound,client,TIMER_FLAG_NO_MAPCHANGE);
-		CreateTimer(3.5,ResetFlush,client,TIMER_FLAG_NO_MAPCHANGE);
-		ClientCommand(client,"snd_restart");
-		char briefing[128];
-		char mapname[64];
-		GetCurrentMap(mapname,sizeof(mapname));
-		Format(briefing,sizeof(briefing),"maps/cfg/%s_briefing.txt",mapname);
-		if (FileExists(briefing,true,NULL_STRING))
-		{
-			ShowMOTDPanel(client,mapname,briefing,MOTDPANEL_TYPE_FILE);
+			SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+			SDKHook(client, SDKHook_WeaponSwitch, OnWeaponUse);
+			//Rebinds for default applications
+			ClientCommand(client,"bind f1 vote_yes");
+			ClientCommand(client,"bind f2 vote_no");
+			CreateTimer(0.1,restoresound,client,TIMER_FLAG_NO_MAPCHANGE);
+			char SteamID[64];
+			GetClientAuthId(client,AuthId_Steam3,SteamID,sizeof(SteamID));
+			int findid = FindStringInArray(dctimeoutarr,SteamID);
+			if ((findid == -1) && (syn56act)) CreateTimer(4.5,ResetFlush,client,TIMER_FLAG_NO_MAPCHANGE);
+			else if (findid != -1) RemoveFromArray(dctimeoutarr,findid);
+			ClientCommand(client,"snd_restart");
+			char briefing[128];
+			char mapname[64];
+			GetCurrentMap(mapname,sizeof(mapname));
+			Format(briefing,sizeof(briefing),"maps/cfg/%s_briefing.txt",mapname);
+			if (FileExists(briefing,true,NULL_STRING))
+			{
+				ShowMOTDPanel(client,mapname,briefing,MOTDPANEL_TYPE_FILE);
+			}
 		}
 	}
 	else if (IsClientConnected(client))
@@ -2621,101 +2702,56 @@ public Action resetgraphs(int client, int args)
 {
 	if ((client == 0) && (args > 0))
 	{
-		char findnode[128];
-		char mapname[128];
-		GetCmdArg(1,mapname,sizeof(mapname));
-		if (args > 1) GetCmdArg(2,mapname,sizeof(mapname));
-		if (incfixer)
+		if (!RestartedMap)
 		{
-			char findinc[128];
-			Format(findinc,sizeof(findinc),"maps/%s.inc",mapname);
-			if (FileExists(findinc,true,NULL_STRING))
+			char findnode[128];
+			char mapname[128];
+			GetCmdArg(1,mapname,sizeof(mapname));
+			if (args > 1) GetCmdArg(2,mapname,sizeof(mapname));
+			if (strlen(mapname) > 0) TrimString(mapname);
+			if (incfixer)
 			{
-				char includes[32];
-				Handle incfile = OpenFile(findinc,"r",true,NULL_STRING);
-				if (incfile != INVALID_HANDLE)
+				char findinc[128];
+				Format(findinc,sizeof(findinc),"maps/%s.inc",mapname);
+				if (FileExists(findinc,true,NULL_STRING))
 				{
-					ReadFileLine(incfile,includes,sizeof(includes));
+					char includes[32];
+					Handle incfile = OpenFile(findinc,"r",true,NULL_STRING);
+					if (incfile != INVALID_HANDLE)
+					{
+						ReadFileLine(incfile,includes,sizeof(includes));
+					}
+					CloseHandle(incfile);
+					if (strlen(includes) > 0)
+					{
+						//ServerCommand("sv_content_optional \"%s\"",includes);
+						Handle srvcvar = FindConVar("sv_content_optional");
+						if (srvcvar != INVALID_HANDLE)
+						{
+							SetConVarString(srvcvar,includes,true,false);
+						}
+						CloseHandle(srvcvar);
+					}
 				}
-				CloseHandle(incfile);
-				if (strlen(includes) > 0)
+				else
 				{
-					//ServerCommand("sv_content_optional \"%s\"",includes);
+					//ServerCommand("sv_content_optional \"\"");
 					Handle srvcvar = FindConVar("sv_content_optional");
 					if (srvcvar != INVALID_HANDLE)
 					{
-						SetConVarString(srvcvar,includes,true,false);
+						SetConVarString(srvcvar,"",true,false);
 					}
 					CloseHandle(srvcvar);
 				}
 			}
-			else
-			{
-				//ServerCommand("sv_content_optional \"\"");
-				Handle srvcvar = FindConVar("sv_content_optional");
-				if (srvcvar != INVALID_HANDLE)
-				{
-					SetConVarString(srvcvar,"",true,false);
-				}
-				CloseHandle(srvcvar);
-			}
-		}
-		Format(findnode,sizeof(findnode),"maps\\graphs\\%s.ain",mapname);
-		if (FileExists(findnode,false))
-		{
-			DeleteFile(findnode);
-			PrintToServer("Removed ain for %s",mapname);
-		}
-		//if (StrEqual(mapname,"bm_c2a4e",false))
-		//{
-		//	if (FileExists("maps\\ent_cache\\bms_bm_c2a4e.ent",false))
-		//		DeleteFile("maps\\ent_cache\\bms_bm_c2a4e.ent");
-		//}
-		/*
-		if (StrEqual(mapname,"bm_c2a4f",false))
-		{
+			Format(findnode,sizeof(findnode),"maps\\graphs\\%s.ain",mapname);
 			if (FileExists(findnode,false))
 			{
-				int size = FileSize(findnode,false);
-				if (size > 100)
-				{
-					DeleteFile(findnode);
-					PrintToServer("Removed cache for %s",mapname);
-				}
-			}
-			Format(findnode,sizeof(findnode),"maps\\%s.edt",mapname);
-			if (FileExists(findnode,false))
-			{
-				char resetnode[128];
-				Format(resetnode,sizeof(resetnode),"maps\\%s.edt2",mapname);
-				RenameFile(resetnode,findnode,false);
-				//Handle resetfi = OpenFile(findnode,"r+",false);
-				//FlushFile(resetfi);
-				//CloseHandle(resetfi);
-			}
-			Format(findnode,sizeof(findnode),"maps\\ent_cache\\bms_%s.ent",mapname);
-			if (!FileExists(findnode,false))
-			{
-				Handle resetfi = OpenFile(findnode,"w",false);
-				if (resetfi != INVALID_HANDLE)
-				{
-					WriteFileLine(resetfi,"{");
-					WriteFileLine(resetfi,"\"world_maxs\" \"4360 2865 800\"");
-					WriteFileLine(resetfi,"\"world_mins\" \"-2004 -5088 -472\"");
-					WriteFileLine(resetfi,"\"underwaterparticle\" \"Rubish\"");
-					WriteFileLine(resetfi,"\"skyname\" \"sky_st_day_01\"");
-					WriteFileLine(resetfi,"\"maxpropscreenwidth\" \"-1\"");
-					WriteFileLine(resetfi,"\"detailvbsp\" \"detail.vbsp\"");
-					WriteFileLine(resetfi,"\"detailmaterial\" \"detail/detailsprites\"");
-					WriteFileLine(resetfi,"\"classname\" \"worldspawn\"");
-					WriteFileLine(resetfi,"\"mapversion\" \"2306\"");
-					WriteFileLine(resetfi,"\"hammerid\" \"1\"");
-					WriteFileLine(resetfi,"}");
-				}
-				CloseHandle(resetfi);
+				DeleteFile(findnode);
+				PrintToServer("Removed ain for %s",mapname);
 			}
 		}
-		*/
+		else RestartedMap = false;
 	}
 	return Plugin_Continue;
 }
@@ -10992,6 +11028,22 @@ public Action Event_SynEntityKilled(Handle event, const char[] name, bool Broadc
 	return Plugin_Continue;
 }
 
+public Action Event_PlayerDisconnect( Handle event, const char[] name, bool dontBroadcast )
+{
+	/*
+	"userid"	"short"		// user ID on server
+	"reason"	"string"	// "self", "kick", "ban", "cheat", "error"
+	"name"		"string"	// player name
+	"networkid"	"string"	// player network (i.e steam) id
+	"bot"		"short"		// is a bot
+	*/
+	char dcchar[256];
+	char netid[64];
+	GetEventString(event,"reason",dcchar,sizeof(dcchar));
+	GetEventString(event,"networkid",netid,sizeof(netid));
+	if (StrContains(dcchar,"timed out",false) != -1) PushArrayString(dctimeoutarr,netid);
+}
+
 public Action checkvalidity(Handle timer, int client)
 {
 	if ((!IsValidEntity(client)) && (!IsClientInGame(client)) && (IsClientConnected(client)) && (StrContains(mapbuf,"bm_c",false) != -1))
@@ -13913,6 +13965,40 @@ public Action custent(Handle timer, int entity)
 		{
 			SetVariantString("npc_ichthyosaur D_LI 99");
 			AcceptEntityInput(entity,"SetRelationship");
+		}
+		else if (StrEqual(entcls,"prop_physics",false))
+		{
+			if ((HasEntProp(entity,Prop_Data,"m_ModelName")) && (HasEntProp(entity,Prop_Data,"m_iszOverrideScript")))
+			{
+				char mdl[64];
+				GetEntPropString(entity,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+				if (StrEqual(mdl,"models/props/metal_box.mdl",false))
+				{
+					GetEntPropString(entity,Prop_Data,"m_iszOverrideScript",mdl,sizeof(mdl));
+					if (strlen(mdl) < 1)
+					{
+						GetEntPropString(entity,Prop_Data,"m_iName",mdl,sizeof(mdl));
+						float orgs[3];
+						if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",orgs);
+						else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",orgs);
+						float angs[3];
+						GetEntPropVector(entity,Prop_Data,"m_angRotation",angs);
+						int recreate = CreateEntityByName("prop_physics");
+						if (recreate != -1)
+						{
+							DispatchKeyValue(recreate,"targetname",mdl);
+							DispatchKeyValue(recreate,"overridescript","mass,35");
+							DispatchKeyValue(recreate,"model","models/props/metal_box.mdl");
+							DispatchKeyValue(recreate,"solid","6");
+							TeleportEntity(recreate,orgs,angs,NULL_VECTOR);
+							AcceptEntityInput(entity,"kill");
+							DispatchSpawn(recreate);
+							ActivateEntity(recreate);
+							return Plugin_Handled;
+						}
+					}
+				}
+			}
 		}
 		else if (StrContains(entcls,"prop_vehicle",false) == 0)
 		{
@@ -19204,6 +19290,14 @@ public void blckexch(Handle convar, const char[] oldValue, const char[] newValue
 		BlockEx = true;
 	else
 		BlockEx = false;
+}
+
+public void ep2reqch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		AutoFixEp2Req = true;
+	else
+		AutoFixEp2Req = false;
 }
 
 public void autorebuildch(Handle convar, const char[] oldValue, const char[] newValue)
