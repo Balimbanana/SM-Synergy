@@ -32,7 +32,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.38"
+#define PLUGIN_VERSION "0.39"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -839,10 +839,10 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				int finder = -1;
 				int findend = -1;
 				int findstartpos = -1;
-				bool lastent = false;
 				Handle passedarr = INVALID_HANDLE;
 				for (int i = 0;i<GetArraySize(g_EditTargets);i++)
 				{
+					bool lastent = false;
 					GetArrayString(g_EditTargets,i,cls,sizeof(cls));
 					Format(cls,sizeof(cls),"\"targetname\" \"%s\"",cls);
 					finder = StrContains(szMapEntities,cls,false);
@@ -992,15 +992,14 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								findstartpos = StrContains(szMapEntities,szMapEntitiesbuff,false);
 								if (findstartpos != -1)
 								{
-									findend+=findstartpos+strlen(szMapEntitiesbuff)+2;
+									findend = findstartpos+strlen(szMapEntitiesbuff);
 									Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[findend]);
 									finder = StrContains(szMapEntitiesbuff,cls,false);
-									//PrintToServer("%i %i %s",findend,finder,szMapEntitiesbuff);
+									//PrintToServer("Contain %s %i %i",cls,findend,finder);
 									if ((finder != -1) && (!lastent))
 									{
-										if (finder > 2000) finder+=1000;
 										finder+=findend;
-										Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder]);
+										Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder+1]);
 										findend = StrContains(szMapEntitiesbuff,"}",false);
 										if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s\n",szMapEntitiesbuff);
 										if (StrContains(szMapEntitiesbuff,"{",false) == -1) lastent = true;
