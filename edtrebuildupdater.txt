@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.41"
-			"Previous"	"0.40"
+			"Latest"  	"0.42"
+			"Previous"	"0.41"
 		}
 		
-		"Notes"	"Added modifycase to EDT functionality to modify any that match or all if by *."
+		"Notes"	"Added cfg/globaledt.edt configuration which will apply to all maps."
 	}
 	
 	"Files"
