@@ -32,7 +32,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.39"
+#define PLUGIN_VERSION "0.40"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -599,7 +599,9 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										//PrintToServer("%i %s",finder,szMapEntitiesbuff);
 										if (finder != -1)
 										{
+											if (finder > 2000) Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntitiesbuff[finder-1000]);
 											findend = StrContains(szMapEntitiesbuff,"{",false);
+											//PrintToServer("%i %i",finder,findend);
 											while ((findend < finder) && (finder != -1) && (findend != -1))
 											{
 												Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntitiesbuff[findend+2]);
