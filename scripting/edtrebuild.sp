@@ -24,6 +24,7 @@ Handle g_EditClassesData = INVALID_HANDLE;
 Handle g_EditClassOrgData = INVALID_HANDLE;
 Handle g_EditTargetsData = INVALID_HANDLE;
 Handle g_CreateEnts = INVALID_HANDLE;
+Handle g_ModifyCase = INVALID_HANDLE;
 
 int dbglvl = 0;
 int method = 0;
@@ -32,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.40"
+#define PLUGIN_VERSION "0.41"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -100,6 +101,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 	g_EditClassOrgData = CreateArray(128);
 	g_EditTargetsData = CreateArray(128);
 	g_CreateEnts = CreateArray(128);
+	g_ModifyCase = CreateArray(128);
 	if (GetArraySize(cvaroriginals) > 0)
 	{
 		for (int i = 0;i<GetArraySize(cvaroriginals);i++)
@@ -134,6 +136,88 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			char edt_landmark[64];
 			char edtkey[128];
 			char edtval[128];
+			if (GetArraySize(g_ModifyCase) > 0)
+			{
+				for (int k = 0;k<GetArraySize(g_ModifyCase);k++)
+				{
+					Handle passedarr = GetArrayCell(g_ModifyCase,k);
+					if (passedarr != INVALID_HANDLE)
+					{
+						for (int j = 0;j<GetArraySize(passedarr);j++)
+						{
+							char first[128];
+							GetArrayString(passedarr,j,first,sizeof(first));
+							j++;
+							if (j >= GetArraySize(passedarr)) break;
+							char second[128];
+							GetArrayString(passedarr,j,second,sizeof(second));
+							bool ReplaceWildCard = false;
+							ReplaceString(first,sizeof(first),"\"","");
+							ReplaceString(second,sizeof(second),"\"","");
+							TrimString(first);
+							TrimString(second);
+							int finder = StrContains(first," ",false);
+							if (finder != -1)
+							{
+								Format(cls,finder+1,"%s",first);
+								Format(edtkey,sizeof(edtkey),"%s",first);
+								ReplaceString(edtkey,sizeof(edtkey),cls,"");
+								TrimString(edtkey);
+								if (StrEqual(edtkey,"*",false))
+								{
+									ReplaceWildCard = true;
+									Format(first,sizeof(first),"\"%s\" \"",cls);
+								}
+								else Format(first,sizeof(first),"\"%s\" \"%s\"",cls,edtkey);
+							}
+							finder = StrContains(second," ",false);
+							if (finder != -1)
+							{
+								Format(cls,finder+1,"%s",second);
+								Format(edtkey,sizeof(edtkey),"%s",second);
+								ReplaceString(edtkey,sizeof(edtkey),cls,"");
+								TrimString(edtkey);
+								Format(second,sizeof(second),"\"%s\" \"%s\"",cls,edtkey);
+							}
+							if (dbglvl > 1) PrintToServer("ModifyCase Replace %s with %s",first,second);
+							if (ReplaceWildCard)
+							{
+								char removerchar[64];
+								int findpos = StrContains(szMapEntities,first,false);
+								if (findpos != -1)
+								{
+									Format(removerchar,sizeof(removerchar),"%s",szMapEntities[findpos]);
+									ExplodeString(removerchar,"\n",tmpexpl,4,64);
+									Format(removerchar,sizeof(removerchar),"%s",tmpexpl[0]);
+									TrimString(removerchar);
+									ReplaceString(szMapEntities,sizeof(szMapEntities),removerchar,second,false);
+									Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[findpos]);
+									if (dbglvl > 2) PrintToServer("Replaced %s with %s",removerchar,second);
+									bool endofcache = false;
+									while (!endofcache)
+									{
+										findpos = StrContains(szMapEntitiesbuff,first,false);
+										if (findpos != -1)
+										{
+											Format(removerchar,sizeof(removerchar),"%s",szMapEntitiesbuff[findpos]);
+											ExplodeString(removerchar,"\n",tmpexpl,4,64);
+											Format(removerchar,sizeof(removerchar),"%s",tmpexpl[0]);
+											TrimString(removerchar);
+											Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[findpos+StrContains(szMapEntities,szMapEntitiesbuff,false)+strlen(removerchar)]);
+											ReplaceString(szMapEntities,sizeof(szMapEntities),removerchar,second,false);
+											if (dbglvl > 2) PrintToServer("Replaced %s with %s",removerchar,second);
+										}
+										else endofcache = true;
+									}
+								}
+							}
+							else ReplaceString(szMapEntities,sizeof(szMapEntities),first,second,false);
+						}
+					}
+					CloseHandle(passedarr);
+				}
+			}
+			CloseHandle(g_ModifyCase);
 			if (GetArraySize(g_CreateEnts) > 0)
 			{
 				for (int k = 0;k<GetArraySize(g_CreateEnts);k++)
@@ -1033,7 +1117,6 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					ExplodeString(globalremove,"\n",tmpexpl,4,64);
 					Format(globalremove,sizeof(globalremove),"%s",tmpexpl[0]);
 					TrimString(globalremove);
-					Format(globalremove,sizeof(globalremove),"%s",globalremove);
 					ReplaceString(szMapEntities,sizeof(szMapEntities),globalremove,"");
 					if (dbglvl > 2) PrintToServer("Removed global name %s",globalremove);
 					bool endofcache = false;
@@ -1046,7 +1129,6 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 							ExplodeString(globalremove,"\n",tmpexpl,4,64);
 							Format(globalremove,sizeof(globalremove),"%s",tmpexpl[0]);
 							TrimString(globalremove);
-							Format(globalremove,sizeof(globalremove),"%s",globalremove);
 							ReplaceString(szMapEntities,sizeof(szMapEntities),globalremove,"");
 							if (dbglvl > 2) PrintToServer("Removed global name %s",globalremove);
 						}
@@ -1679,6 +1761,7 @@ void ReadEDT(char[] edtfile)
 		bool CreatingEnt = false;
 		bool EditingEnt = false;
 		bool DeletingEnt = false;
+		bool ModifyCase = false;
 		bool CVars = false;
 		bool origindefined = false;
 		bool TargnDefined = false;
@@ -1785,6 +1868,8 @@ void ReadEDT(char[] edtfile)
 					EditingEnt = true;
 				else if ((StrContains(line,"delete",false) == 0) || (StrContains(line,"delete",false) == 1))
 					DeletingEnt = true;
+				else if ((StrContains(line,"modifycase",false) == 0) || (StrContains(line,"modifycase",false) == 1))
+					ModifyCase = true;
 				if ((StrContains(line,"classname",false) != -1) && (strlen(cls) < 1))
 				{
 					char removeprev[64];
@@ -1865,7 +1950,7 @@ void ReadEDT(char[] edtfile)
 						CloseHandle(tmp);
 					}
 				}
-				if (((CreatingEnt) || (EditingEnt) || (DeletingEnt)) && (strlen(line) > 0))
+				if (((CreatingEnt) || (EditingEnt) || (DeletingEnt) || (ModifyCase)) && (strlen(line) > 0))
 				{
 					FormatKVs(passedarr,line,cls);
 					/*
@@ -1930,11 +2015,20 @@ void ReadEDT(char[] edtfile)
 					CreatingEnt = false;
 					EditingEnt = false;
 					DeletingEnt = false;
+					ModifyCase = false;
 					TargnDefined = false;
 				}
-				if ((StrContains(line,"}",false) != -1) && (EditingEnt) || (DeletingEnt))
+				if ((StrContains(line,"}",false) != -1) && ((EditingEnt) || (DeletingEnt) || (ModifyCase)))
 				{
-					if ((origindefined) && (strlen(cls) > 0))
+					if (ModifyCase)
+					{
+						if (GetArraySize(passedarr) > 1)
+						{
+							Handle dupearr = CloneArray(passedarr);
+							PushArrayCell(g_ModifyCase,dupearr);
+						}
+					}
+					else if ((origindefined) && (strlen(cls) > 0))
 					{
 						if (DeletingEnt)
 						{
@@ -1998,6 +2092,7 @@ void ReadEDT(char[] edtfile)
 					CreatingEnt = false;
 					EditingEnt = false;
 					DeletingEnt = false;
+					ModifyCase = false;
 					TargnDefined = false;
 				}
 			}
