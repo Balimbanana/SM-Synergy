@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.41"
+#define PLUGIN_VERSION "0.42"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -117,6 +117,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 	Format(curmap,sizeof(curmap),"maps/%s.edt",szMapName);
 	char curmap2[128];
 	Format(curmap2,sizeof(curmap2),"maps/%s.edt2",szMapName);
+	if (FileExists("cfg/globaledt.edt",false)) ReadEDT("cfg/globaledt.edt");
 	if ((FileExists(curmap,true,NULL_STRING)) || (FileExists(curmap2,true,NULL_STRING)))
 	{
 		if (FileExists(curmap2,true,NULL_STRING)) Format(curmap,sizeof(curmap),"%s",curmap2);
