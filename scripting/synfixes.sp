@@ -34,7 +34,7 @@ int slavezap = 10;
 int playercapadj = 20;
 int instswitch = 1;
 bool allownoguide = true;
-bool guiderocket[64];
+bool guiderocket[65];
 bool restrictact = false;
 bool friendlyfire = false;
 bool seqenablecheck = true;
@@ -48,7 +48,7 @@ bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99953"
+#define PLUGIN_VERSION "1.99954"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -73,7 +73,7 @@ public Plugin myinfo =
 
 float perclimit = 0.66;
 float delaylimit = 66.0;
-float votetime[64];
+float votetime[65];
 int clused = 0;
 int voteact = 0;
 
@@ -197,7 +197,7 @@ public void OnPluginStart()
 
 public void OnMapStart()
 {
-	for (int i = 1;i<MaxClients+1;i++)
+	for (int i = 1;i<65;i++)
 	{
 		guiderocket[i] = true;
 	}
@@ -269,7 +269,7 @@ public void OnMapStart()
 	CloseHandle(mdirlisting);
 	
 	FindSaveTPHooks();
-	CreateTimer(0.1,rehooksaves);
+	CreateTimer(0.1,rehooksaves,_,TIMER_FLAG_NO_MAPCHANGE);
 	
 	collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 	for (int i = 1;i<MaxClients+1;i++)
@@ -277,7 +277,7 @@ public void OnMapStart()
 		DisplayedChapterTitle[i] = false;
 		if (IsClientConnected(i) && !IsFakeClient(i))
 		{
-			CreateTimer(1.0,clspawnpost,i);
+			CreateTimer(1.0,clspawnpost,i,TIMER_FLAG_NO_MAPCHANGE);
 		}
 	}
 	findentlist(MaxClients+1,"npc_template_maker");
@@ -2568,15 +2568,15 @@ public void OnEntityCreated(int entity, const char[] classname)
 		data = CreateDataPack();
 		WritePackCell(data, entity);
 		WritePackString(data, classname);
-		CreateTimer(removertimer,cleanup,data);
+		CreateTimer(removertimer,cleanup,data,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	if (StrEqual(classname,"logic_auto",false))
 	{
-		CreateTimer(1.0,rechk,entity);
+		CreateTimer(1.0,rechk,entity,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	if (StrEqual(classname,"npc_vortigaunt",false))
 	{
-		CreateTimer(1.0,rechkcol,entity);
+		CreateTimer(1.0,rechkcol,entity,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	if ((StrEqual(classname,"phys_bone_follower",false)) || (StrEqual(classname,"entityflame",false)) || (StrEqual(classname,"_firesmoke",false)) || (StrEqual(classname,"env_fire",false)))
 	{
@@ -2606,7 +2606,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		if (IsValidEntity(entity))
 		{
-			CreateTimer(0.3,resetown,entity);
+			CreateTimer(0.3,resetown,entity,TIMER_FLAG_NO_MAPCHANGE);
 		}
 	}
 	else if (IsValidEntity(entity))
@@ -2736,9 +2736,13 @@ public Action rechkcol(Handle timer, int logent)
 	{
 		char entname[32];
 		if (HasEntProp(logent,Prop_Data,"m_iName")) GetEntPropString(logent,Prop_Data,"m_iName",entname,sizeof(entname));
-		if (StrEqual(entname,"vort",false))
+		if (collisiongroup == -1) collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
+		if (collisiongroup != -1)
 		{
-			SetEntData(logent, collisiongroup, 5, 4, true);
+			if (StrEqual(entname,"vort",false))
+			{
+				SetEntData(logent, collisiongroup, 5, 4, true);
+			}
 		}
 	}
 }
