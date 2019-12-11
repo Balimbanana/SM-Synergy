@@ -599,7 +599,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										//PrintToServer("%i %s",finder,szMapEntitiesbuff);
 										if (finder != -1)
 										{
-											if (finder > 2000) Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntitiesbuff[finder-1000]);
+											if (finder > 2000) Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntitiesbuff[finder-1500]);
 											findend = StrContains(szMapEntitiesbuff,"{",false);
 											//PrintToServer("%i %i",finder,findend);
 											while ((findend < finder) && (finder != -1) && (findend != -1))
