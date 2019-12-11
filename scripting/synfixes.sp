@@ -55,13 +55,6 @@ Menu g_hVoteMenu = null;
 #define VOTE_NO "###no###"
 #define VOTE_YES "###yes###"
 
-enum voteType
-{
-	question
-}
-
-voteType g_voteType = question;
-
 public Plugin myinfo =
 {
 	name = "SynFixes",
@@ -501,7 +494,6 @@ public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 		if (StrEqual(info,"tptocl",false))
 		{
 			clused = param1;
-			g_voteType = question;
 			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MENU_ACTIONS_ALL);
 			char buff[64];
 			Format(buff,sizeof(buff),"Teleport Alyx to %N?",param1);
@@ -516,7 +508,6 @@ public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 		if (StrEqual(info,"tpbarntocl",false))
 		{
 			clused = param1;
-			g_voteType = question;
 			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MENU_ACTIONS_ALL);
 			char buff[64];
 			Format(buff,sizeof(buff),"Teleport Barney to %N?",param1);
@@ -541,20 +532,6 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 	if (action == MenuAction_End)
 	{
 		return 0;
-	}
-	else if (action == MenuAction_Display)
-	{
-	 	if (g_voteType != question)
-	 	{
-			char title[64];
-			menu.GetTitle(title, sizeof(title));
-			
-	 		char buffer[255];
-			Format(buffer, sizeof(buffer), "%s", param1);
-
-			//Panel panel = param2;
-			//panel.SetTitle(buffer);
-		}
 	}
 	else if (action == MenuAction_DisplayItem)
 	{
@@ -584,7 +561,7 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 		{
 			votes = totalVotes - votes;
 		}
-		percent = FloatDiv(float(votes),float(totalVotes));
+		percent = float(votes)/float(totalVotes);
 		if ((strcmp(item, VOTE_YES) == 0 && FloatCompare(percent,perclimit) < 0 && param1 == 0) || (strcmp(item, VOTE_NO) == 0 && param1 == 1))
 		{
 			PrintToChatAll("%t","Vote Failed", RoundToNearest(100.0*perclimit), RoundToNearest(100.0*percent), totalVotes);
