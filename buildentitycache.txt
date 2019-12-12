@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.40"
-			"Previous"	"0.39"
+			"Latest"  	"0.41"
+			"Previous"	"0.40"
 		}
 		
-		"Notes"	"Recomp."
+		"Notes"	"Reconfigured a few buffers and settings. Added OnLevelInit for autobuild for faster generation. Added Steam game buildedt all support if contentloader is already written."
 	}
 	
 	"Files"
