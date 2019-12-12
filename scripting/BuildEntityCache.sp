@@ -11,17 +11,19 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "0.41"
+#define PLUGIN_VERSION "0.42"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
 bool startedreading = false;
 bool WriteCache = false;
 bool Reverse = false;
+bool MapSetInProgress = false;
 char mapbuf[64];
 char curmap[64];
 char globaldots[48];
 int openbrackets = 0;
+Handle carriedoverweapons = INVALID_HANDLE;
 
 public Plugin myinfo =
 {
@@ -382,6 +384,7 @@ public Action BuildEDTFor(int client, int args)
 						{
 							globaldots = "";
 							Reverse = false;
+							MapSetInProgress = true;
 							ReadPackString(curmappass,curmap,sizeof(curmap));
 							PrintToServer("WriteTo %s\nRead %s",mapbuf,curmap);
 							buildcache(0,curmappass);
@@ -438,7 +441,7 @@ public Action BuildLoaderFor(int client, int args)
 	if (!IsValidEntity(client)) return Plugin_Handled;
 	if (args < 3)
 	{
-		PrintToConsole(client,"Syntax: buildloader <contenttag> <loaderfilename> <sourcemods directory>");
+		PrintToConsole(client,"Syntax: buildloader <contenttag> <loaderfilename> <sourcemods or game directory>");
 		return Plugin_Handled;
 	}
 	if (args >= 3)
@@ -450,6 +453,8 @@ public Action BuildLoaderFor(int client, int args)
 		char titlepath[128];
 		char gameurl[72];
 		char deps[32];
+		char appid[32];
+		char subdir[64];
 		GetCmdArg(1,newtag,sizeof(newtag));
 		GetCmdArg(2,loadername,sizeof(loadername));
 		GetCmdArg(3,sourcemod,sizeof(sourcemod));
@@ -463,8 +468,44 @@ public Action BuildLoaderFor(int client, int args)
 		Format(sourcemodpath,sizeof(sourcemodpath),"..\\..\\..\\sourcemods\\%s\\maps",sourcemod);
 		if (!DirExists(sourcemodpath,true,NULL_STRING))
 		{
-			PrintToConsole(client,"Could not determine sourcemod path");
-			return Plugin_Handled;
+			Format(sourcemodpath,sizeof(sourcemodpath),"..\\..\\%s",sourcemod);
+			if (DirExists(sourcemodpath,true,NULL_STRING))
+			{
+				char steam_appidfind[128];
+				char sourcemodpathsub[128];
+				Handle msubdirlisting = OpenDirectory(sourcemodpath,true,NULL_STRING);
+				if (msubdirlisting != INVALID_HANDLE)
+				{
+					while (ReadDirEntry(msubdirlisting, subdir, sizeof(subdir)))
+					{
+						if ((!StrEqual(subdir,".",false)) && (!StrEqual(subdir,"..",false)) && (!StrEqual(subdir,"episodic",false)) && (!StrEqual(subdir,"ep2",false)) && (!StrEqual(subdir,"hl2",false)))
+						{
+							Format(sourcemodpathsub,sizeof(sourcemodpathsub),"%s\\%s\\gameinfo.txt",sourcemodpath,subdir);
+							if (FileExists(sourcemodpathsub,true,NULL_STRING))
+							{
+								PrintToServer("Found game at dir %s",sourcemodpathsub);
+								Format(titlepath,sizeof(titlepath),"%s",sourcemodpathsub);
+								Format(sourcemodpath,sizeof(sourcemodpath),"%s\\%s\\maps",sourcemodpath,subdir);
+								break;
+							}
+						}
+					}
+				}
+				CloseHandle(msubdirlisting);
+				Format(steam_appidfind,sizeof(steam_appidfind),"..\\..\\%s\\steam_appid.txt",sourcemod);
+				Handle appidf = OpenFile(steam_appidfind,"r",true,NULL_STRING);
+				if (appidf != INVALID_HANDLE)
+				{
+					ReadFileLine(appidf,appid,sizeof(appid));
+					TrimString(appid);
+				}
+				CloseHandle(appidf);
+			}
+			else
+			{
+				PrintToConsole(client,"Could not determine sourcemod path");
+				return Plugin_Handled;
+			}
 		}
 		if (FileExists(titlepath,true,NULL_STRING))
 		{
@@ -486,6 +527,8 @@ public Action BuildLoaderFor(int client, int args)
 							ReplaceString(line,sizeof(line),"game","");
 							ReplaceString(line,sizeof(line),"\"","");
 							TrimString(line);
+							int commentpos = StrContains(line,"//",false);
+							if (commentpos != -1) Format(line,commentpos+1,"%s",line);
 							Format(titlepath,sizeof(titlepath),"%s",line);
 							foundname = true;
 						}
@@ -518,6 +561,7 @@ public Action BuildLoaderFor(int client, int args)
 			}
 			CloseHandle(filehandle);
 		}
+		else return Plugin_Handled;
 		Handle regularmaps = CreateArray(64);
 		Handle backgroundmaps = CreateArray(32);
 		Handle mdirlisting = OpenDirectory(sourcemodpath,true,NULL_STRING);
@@ -565,7 +609,13 @@ public Action BuildLoaderFor(int client, int args)
 			WriteFileLine(loaderdat,"{");
 			WriteFileLine(loaderdat,"	\"tag\"	\"%s\"",newtag);
 			WriteFileLine(loaderdat,"	\"web\"	\"%s\"",gameurl);
-			WriteFileLine(loaderdat,"	\"path\"	\"%s\"",sourcemod);
+			if (strlen(appid) > 0)
+			{
+				WriteFileLine(loaderdat,"	\"id\"	\"%s\"",appid);
+				WriteFileLine(loaderdat,"	\"root\"	\"%s\"",sourcemod);
+				WriteFileLine(loaderdat,"	\"path\"	\"%s\"",subdir);
+			}
+			else WriteFileLine(loaderdat,"	\"path\"	\"%s\"",sourcemod);
 			WriteFileLine(loaderdat,"	\"sup\"	\"2\"");
 			if (strlen(deps) > 1) WriteFileLine(loaderdat,"	\"deps\"	\"%s\"",deps);
 			WriteFileLine(loaderdat,"	");
@@ -639,7 +689,7 @@ void ReadCache(char[] cache, char[] mapedt)
 	Handle filehandle = OpenFile(cache,"r",true,NULL_STRING);
 	if (filehandle != INVALID_HANDLE)
 	{
-		char line[172];
+		char line[256];
 		char origin[64];
 		char originalorgs[64];
 		char angs[64];
@@ -649,13 +699,13 @@ void ReadCache(char[] cache, char[] mapedt)
 		float orgpos[3];
 		bool ismain = false;
 		bool WriteEnt = false;
-		Handle itemsarr = CreateArray(64);
 		Handle logicautos = CreateArray(64);
 		Handle hudtimer = CreateArray(64);
 		Handle mainspawn = CreateArray(64);
 		Handle passedarr = CreateArray(64);
 		Handle equipsarrays = CreateArray(64);
 		Handle mapremovals = CreateArray(64);
+		Handle itemsarr = CreateArray(64);
 		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
 		{
 			TrimString(line);
@@ -677,25 +727,35 @@ void ReadCache(char[] cache, char[] mapedt)
 			if ((!StrEqual(line,"}",false)) || (!StrEqual(line,"{",false)) || (!StrEqual(line,"}{",false)))
 			{
 				char kvs[128][128];
-				char lineedt[256];
+				char lineedt[512];
 				Format(lineedt,sizeof(lineedt),line);
 				ExplodeString(lineedt, "\"", kvs, 128, 128, true);
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
 				Format(lineedt,sizeof(lineedt),"%s \"%s\"",kvs[1],kvs[3]);
-				if (((StrContains(line,",Lock,,",false) != -1) || (StrContains(line,",Reload,,",false) != -1)) && (!StrEqual(cls,"logic_auto",false)) && (!StrEqual(cls,"hud_timer",false)) && (!WriteEnt))
+				if (((StrContains(kvs[3],",Lock,,",false) != -1) || (StrContains(kvs[3],",Reload,,",false) != -1) || (StrContains(kvs[3],",Strip,,",false) != -1) || (StrContains(kvs[3],",StripWeaponsAndSuit,,",false) != -1)) && (!StrEqual(cls,"logic_auto",false)) && (!StrEqual(cls,"hud_timer",false)) && (!WriteEnt))
 				{
 					WriteEnt = true;
 					char deletion[128];
-					if (StrContains(line,",Reload,,",false) != -1)
+					if (StrContains(kvs[3],",Reload,,",false) != -1)
 					{
 						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains Reload Input",cls,origin);
 						StrCat(lineedt,sizeof(lineedt),"//May need to edit this Reload");
 					}
-					else if (StrContains(line,",Lock,,",false) != -1)
+					else if (StrContains(kvs[3],",Lock,,",false) != -1)
 					{
 						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains Lock Input",cls,origin);
 						StrCat(lineedt,sizeof(lineedt),"//May need to edit this Lock");
+						PrintToServer("kv1 %s kv3 %s",kvs[1],kvs[3]);
+					}
+					else if ((StrContains(kvs[3],",Strip,,",false) != -1) || (StrContains(kvs[3],",StripWeaponsAndSuit,,",false) != -1))
+					{
+						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains WeaponRemoval Input",cls,origin);
+						char output[128];
+						Format(output,sizeof(output),"%s",kvs[1]);
+						ExplodeString(kvs[3], ",", kvs, 128, 128, true);
+						Format(output,sizeof(output),"\n				%s \"info_player_equip,Disable,,%s,%s\"",output,kvs[3],kvs[4]);
+						StrCat(lineedt,sizeof(lineedt),output);
 					}
 					WriteFileLine(edtfile,deletion);
 					
@@ -982,7 +1042,7 @@ void ReadCache(char[] cache, char[] mapedt)
 			WriteFileLine(edtfile,"			}");
 			WriteFileLine(edtfile,"		}");
 		}
-		if (GetArraySize(itemsarr) > 0)
+		if ((GetArraySize(itemsarr) > 0) || (GetArraySize(carriedoverweapons) > 0))
 		{
 			WriteFileLine(edtfile,"		create {classname \"info_player_equip\"");
 			WriteFileLine(edtfile,"			values");
@@ -990,6 +1050,64 @@ void ReadCache(char[] cache, char[] mapedt)
 			WriteFileLine(edtfile,"				targetname \"syn_equipment_base\"");
 			SortADTArray(itemsarr,Sort_Ascending,Sort_String);
 			Handle duplicates = CreateArray(64);
+			if (GetArraySize(carriedoverweapons) > 0)
+			{
+				SortADTArray(carriedoverweapons,Sort_Ascending,Sort_String);
+				for (int i = 0;i<GetArraySize(carriedoverweapons);i++)
+				{
+					char tmparr[128];
+					GetArrayString(carriedoverweapons,i,tmparr,sizeof(tmparr));
+					if (FindStringInArray(duplicates,tmparr) == -1)
+					{
+						PushArrayString(duplicates,tmparr);
+						if (StrEqual(tmparr,"item_box_buckshot",false)) Format(tmparr,sizeof(tmparr),"ammo_buckshot \"6\"");
+						else if (StrEqual(tmparr,"item_rpg_round",false)) Format(tmparr,sizeof(tmparr),"ammo_rpg_round \"2\"");
+						else if (StrEqual(tmparr,"item_battery",false)) Format(tmparr,sizeof(tmparr),"item_armor \"15\"");
+						else if (StrEqual(tmparr,"item_ar2_grenade",false)) Format(tmparr,sizeof(tmparr),"ammo_ar2_altfire \"1\"");
+						else if (StrEqual(tmparr,"item_box_mrounds",false)) Format(tmparr,sizeof(tmparr),"ammo_smg1 \"90\"");
+						else if (StrEqual(tmparr,"item_box_srounds",false)) Format(tmparr,sizeof(tmparr),"ammo_pistol \"36\""); //But also sniper rounds
+						else if (StrEqual(tmparr,"item_box_lrounds",false)) Format(tmparr,sizeof(tmparr),"ammo_ar2 \"30\"");
+						else
+						{
+							if (StrEqual(tmparr,"item_suit",false))
+							{
+								char deletion[72];
+								Format(deletion,sizeof(deletion),"%s\" %s}",tmparr,origin);
+								if (FindStringInArray(mapremovals,deletion) == -1) PushArrayString(mapremovals,deletion);
+							}
+							if ((StrContains(tmparr,"item_ammo",false) == 0) && (!StrEqual(tmparr,"item_suit",false)))
+							{
+								ReplaceStringEx(tmparr,sizeof(tmparr),"item_","");
+								if (StrContains(tmparr,"grenade",false) != -1) StrCat(tmparr,sizeof(tmparr)," \"3\"");
+								else StrCat(tmparr,sizeof(tmparr)," \"12\"");
+							}
+							else
+							{
+								StrCat(tmparr,sizeof(tmparr)," \"1\"");
+							}
+						}
+						char ammtype[32];
+						Format(ammtype,sizeof(ammtype),"%s",tmparr);
+						int findend = StrContains(ammtype," ",false);
+						if (findend != -1) Format(ammtype,findend+1,"%s",ammtype);
+						ReplaceStringEx(ammtype,sizeof(ammtype),"weapon_","sk_max_");
+						ReplaceString(ammtype,sizeof(ammtype),"\"","");
+						if (StrEqual(ammtype,"sk_max_shotgun",false)) Format(ammtype,sizeof(ammtype),"sk_max_buckshot");
+						int ammamount = 1;
+						Handle cvarchk = FindConVar(ammtype);
+						if (cvarchk != INVALID_HANDLE) ammamount = GetConVarInt(cvarchk)/4;
+						CloseHandle(cvarchk);
+						ReplaceStringEx(ammtype,sizeof(ammtype),"sk_max_","ammo_");
+						if (StrEqual(ammtype,"ammo_rpg",false)) Format(ammtype,sizeof(ammtype),"ammo_rpg_round");
+						else if (StrEqual(ammtype,"ammo_frag",false)) Format(ammtype,sizeof(ammtype),"ammo_grenade");
+						else if (StrEqual(ammtype,"ammo_shotgun",false)) Format(ammtype,sizeof(ammtype),"ammo_buckshot");
+						else if (StrEqual(ammtype,"ammo_crossbow",false)) Format(ammtype,sizeof(ammtype),"ammo_xbowbolt");
+						else if ((StrEqual(ammtype,"ammo_crowbar",false)) || (StrEqual(ammtype,"ammo_physcannon",false)) || (StrEqual(ammtype,"ammo_portalgun",false)) || (StrEqual(ammtype,"ammo_suit",false))) ammtype = "";
+						WriteFileLine(edtfile,"				%s",tmparr);
+						if (strlen(ammtype) > 1) WriteFileLine(edtfile,"					%s \"%i\"",ammtype,ammamount);
+					}
+				}
+			}
 			for (int i = 0;i<GetArraySize(itemsarr);i++)
 			{
 				char tmparr[128];
@@ -1090,6 +1208,7 @@ void ReadCache(char[] cache, char[] mapedt)
 				ExplodeString(largerline, " ", kvs, 128, 128, true);
 				char ammtype[32];
 				Format(ammtype,sizeof(ammtype),"%s",kvs[0]);
+				if (FindStringInArray(carriedoverweapons,ammtype) == -1) PushArrayString(carriedoverweapons,ammtype);
 				ReplaceStringEx(ammtype,sizeof(ammtype),"weapon_","sk_max_");
 				ReplaceString(ammtype,sizeof(ammtype),"\"","");
 				if (StrEqual(ammtype,"sk_max_shotgun",false)) Format(ammtype,sizeof(ammtype),"sk_max_buckshot");
@@ -1112,6 +1231,7 @@ void ReadCache(char[] cache, char[] mapedt)
 		CloseHandle(mainspawn);
 		CloseHandle(logicautos);
 		CloseHandle(hudtimer);
+		if (!MapSetInProgress) CloseHandle(carriedoverweapons);
 		CloseHandle(itemsarr);
 		CloseHandle(equipsarrays);
 		CloseHandle(mapremovals);
@@ -1135,6 +1255,8 @@ public void OnMapStart()
 		CreateDirectory("maps/ent_cache",511);
 	}
 	CloseHandle(mdirlisting);
+	CloseHandle(carriedoverweapons);
+	carriedoverweapons = CreateArray(64);
 	globaldots = "";
 	Reverse = false;
 	if (GetMapHistorySize() > 0)
@@ -1290,12 +1412,14 @@ void buildcache(int startline, Handle mapset)
 								{
 									PrintToServer("Finished writing map set");
 									CloseHandle(mapset);
+									MapSetInProgress = false;
 									break;
 								}
 							}
 							else
 							{
 								CloseHandle(mapset);
+								MapSetInProgress = false;
 							}
 							globaldots = "";
 							Reverse = false;
