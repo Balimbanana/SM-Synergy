@@ -667,6 +667,7 @@ void ReadCache(char[] cache, char[] mapedt)
 				ExplodeString(clschk, "\"", kvs, 4, 128, true);
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
+				ReplaceString(kvs[3],sizeof(kvs[]),"\"","",false);
 				Format(cls,sizeof(cls),"%s",kvs[3]);
 				if ((StrEqual(kvs[3],"info_player_start")) || (StrEqual(kvs[3],"logic_auto",false)) || (StrEqual(kvs[3],"prop_vehicle_jeep",false)) || (StrEqual(kvs[3],"prop_vehicle_airboat",false)) || (StrContains(kvs[3],"weapon_",false) == 0) || (StrContains(kvs[3],"item_",false) == 0))
 				{
