@@ -296,8 +296,8 @@ public Action BuildEDTFor(int client, int args)
 						if (StrContains(line,"tag",false) != -1)
 						{
 							ReplaceString(line,sizeof(line),"	","");
-							char fixuptmp[16][16];
-							ExplodeString(line,"\"\"",fixuptmp,16,16,true);
+							char fixuptmp[4][16];
+							ExplodeString(line,"\"\"",fixuptmp,4,16,true);
 							Format(maptag,sizeof(maptag),"%s",fixuptmp[1]);
 							ReplaceString(maptag,sizeof(maptag),"\"","");
 							PrintToServer("Found tag %s",maptag);
@@ -305,8 +305,8 @@ public Action BuildEDTFor(int client, int args)
 						else if (StrContains(line,"path",false) != -1)
 						{
 							ReplaceString(line,sizeof(line),"	","");
-							char fixuptmp[16][16];
-							ExplodeString(line,"\"\"",fixuptmp,16,16,true);
+							char fixuptmp[4][64];
+							ExplodeString(line,"\"\"",fixuptmp,4,64,true);
 							Format(modpath,sizeof(modpath),"..\\..\\..\\sourcemods\\%s\\maps",fixuptmp[1]);
 							ReplaceString(modpath,sizeof(modpath),"\"","");
 							PrintToServer("Found path %s",modpath);
@@ -400,8 +400,8 @@ public Action BuildEDTFor(int client, int args)
 		if (cvar != INVALID_HANDLE)
 		{
 			GetConVarString(cvar,contentdata,sizeof(contentdata));
-			char fixuptmp[16][16];
-			ExplodeString(contentdata," ",fixuptmp,16,16,true);
+			char fixuptmp[4][16];
+			ExplodeString(contentdata," ",fixuptmp,4,16,true);
 			Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
 		}
 		CloseHandle(cvar);
@@ -649,8 +649,8 @@ void ReadCache(char[] cache, char[] mapedt)
 			{
 				char clschk[172];
 				Format(clschk,sizeof(clschk),line);
-				char kvs[128][128];
-				ExplodeString(clschk, "\"", kvs, 128, 128, true);
+				char kvs[4][128];
+				ExplodeString(clschk, "\"", kvs, 4, 128, true);
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
 				Format(cls,sizeof(cls),"%s",kvs[3]);
@@ -778,11 +778,11 @@ void ReadCache(char[] cache, char[] mapedt)
 									WriteFileLine(edtfile,"				OnTrigger \"syn_viewcontrol,Enable,,0,-1\"");
 									WriteFileLine(edtfile,"			}");
 									WriteFileLine(edtfile,"		}");
-									char kvs[128][128];
+									char kvs[6][128];
 									char lineedt[128];
 									Format(lineedt,sizeof(lineedt),origin);
-									ExplodeString(lineedt, "\"", kvs, 128, 128, true);
-									ExplodeString(kvs[1], " ", kvs, 128, 128, true);
+									ExplodeString(lineedt, "\"", kvs, 6, 128, true);
+									ExplodeString(kvs[1], " ", kvs, 6, 128, true);
 									orgpos[0] = StringToFloat(kvs[0]);
 									orgpos[1] = StringToFloat(kvs[1]);
 									orgpos[2] = StringToFloat(kvs[2]);
@@ -825,11 +825,11 @@ void ReadCache(char[] cache, char[] mapedt)
 						}
 						else if ((StrContains(cls,"weapon_",false) == 0) || (StrContains(cls,"item_",false) == 0))
 						{
-							char kvs[128][128];
+							char kvs[6][128];
 							char lineedt[128];
 							Format(lineedt,sizeof(lineedt),origin);
-							ExplodeString(lineedt, "\"", kvs, 128, 128, true);
-							ExplodeString(kvs[1], " ", kvs, 128, 128, true);
+							ExplodeString(lineedt, "\"", kvs, 6, 128, true);
+							ExplodeString(kvs[1], " ", kvs, 6, 128, true);
 							Format(lineedt,sizeof(lineedt),"%s,%s %s %s",cls,kvs[0],kvs[1],kvs[2]);
 							PushArrayString(itemsarr,lineedt);
 						}
@@ -902,11 +902,11 @@ void ReadCache(char[] cache, char[] mapedt)
 				WriteFileLine(edtfile,"				OnTrigger \"syn_viewcontrol,Enable,,0,-1\"");
 				WriteFileLine(edtfile,"			}");
 				WriteFileLine(edtfile,"		}");
-				char kvs[128][128];
+				char kvs[6][128];
 				char lineedt[128];
 				Format(lineedt,sizeof(lineedt),originalorgs);
-				ExplodeString(lineedt, "\"", kvs, 128, 128, true);
-				ExplodeString(kvs[1], " ", kvs, 128, 128, true);
+				ExplodeString(lineedt, "\"", kvs, 6, 128, true);
+				ExplodeString(kvs[1], " ", kvs, 6, 128, true);
 				orgpos[0] = StringToFloat(kvs[0]);
 				orgpos[1] = StringToFloat(kvs[1]);
 				orgpos[2] = StringToFloat(kvs[2]);
@@ -979,7 +979,7 @@ void ReadCache(char[] cache, char[] mapedt)
 			{
 				char tmparr[128];
 				GetArrayString(itemsarr,i,tmparr,sizeof(tmparr));
-				char kvs2[128][64];
+				char kvs2[64][128];
 				ExplodeString(tmparr, ",", kvs2, 64, 128, true);
 				Format(tmparr,sizeof(tmparr),"%s",kvs2[0]);
 				ExplodeString(kvs2[1], " ", kvs2, 64, 128, true);
@@ -1138,11 +1138,44 @@ public void OnMapStart()
 		CloseHandle(cvar);
 		if (strlen(contentdata) < 1) Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s.ent",mapbuf);
 		else Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s_%s.ent",contentdata,mapbuf);
+		/*
 		if (AutoBuild)
 		{
 			CreateTimer(1.0,buildinfodelay,_,TIMER_FLAG_NO_MAPCHANGE);
 		}
+		*/
 	}
+}
+
+public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
+{
+	if (AutoBuild)
+	{
+		char contentdata[64];
+		char szMapNameadj[64];
+		Handle cvar = FindConVar("content_metadata");
+		if (cvar != INVALID_HANDLE)
+		{
+			GetConVarString(cvar,contentdata,sizeof(contentdata));
+			char fixuptmp[16][16];
+			ExplodeString(contentdata," ",fixuptmp,16,16,true);
+			Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+		}
+		CloseHandle(cvar);
+		if (strlen(contentdata) < 1) Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s.ent",szMapName);
+		else Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s_%s.ent",contentdata,szMapName);
+		if (!FileExists(szMapNameadj,false))
+		{
+			Handle writefile = OpenFile(szMapNameadj,"wb",true,NULL_STRING);
+			if (writefile != INVALID_HANDLE)
+			{
+				ReplaceString(szMapEntities,sizeof(szMapEntities),"",",",false);
+				WriteFileString(writefile,szMapEntities,false);
+			}
+			CloseHandle(writefile);
+		}
+	}
+	return Plugin_Continue;
 }
 
 public Action buildinfodelay(Handle timer)
