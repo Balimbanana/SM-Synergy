@@ -1090,6 +1090,7 @@ void ReadCache(char[] cache, char[] mapedt)
 				char ammtype[32];
 				Format(ammtype,sizeof(ammtype),"%s",kvs[0]);
 				ReplaceStringEx(ammtype,sizeof(ammtype),"weapon_","sk_max_");
+				ReplaceString(ammtype,sizeof(ammtype),"\"","");
 				if (StrEqual(ammtype,"sk_max_shotgun",false)) Format(ammtype,sizeof(ammtype),"sk_max_buckshot");
 				int ammamount = 1;
 				Handle cvarchk = FindConVar(ammtype);
