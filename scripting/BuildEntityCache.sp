@@ -11,7 +11,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "0.40"
+#define PLUGIN_VERSION "0.41"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -286,6 +286,7 @@ public Action BuildEDTFor(int client, int args)
 				bool readuntilnext = false;
 				char maptag[32];
 				char modpath[128];
+				Format(modpath,sizeof(modpath),"..\\sourcemods");
 				char line[128];
 				Handle filehandle = OpenFile(contentdat,"r",true,NULL_STRING);
 				if (filehandle != INVALID_HANDLE)
@@ -302,15 +303,28 @@ public Action BuildEDTFor(int client, int args)
 							ReplaceString(maptag,sizeof(maptag),"\"","");
 							PrintToServer("Found tag %s",maptag);
 						}
+						else if (StrContains(line,"root",false) != -1)
+						{
+							ReplaceString(line,sizeof(line),"	","");
+							char fixuptmp[4][64];
+							ExplodeString(line,"\"\"",fixuptmp,4,64,true);
+							Format(modpath,sizeof(modpath),"%s",fixuptmp[1]);
+						}
 						else if (StrContains(line,"path",false) != -1)
 						{
 							ReplaceString(line,sizeof(line),"	","");
 							char fixuptmp[4][64];
 							ExplodeString(line,"\"\"",fixuptmp,4,64,true);
-							Format(modpath,sizeof(modpath),"..\\..\\..\\sourcemods\\%s\\maps",fixuptmp[1]);
+							Format(modpath,sizeof(modpath),"..\\..\\%s\\%s\\maps",modpath,fixuptmp[1]);
 							ReplaceString(modpath,sizeof(modpath),"\"","");
-							PrintToServer("Found path %s",modpath);
-							if (DirExists(modpath,true,NULL_STRING)) PrintToServer("ModPath Exists");
+							if (DirExists(modpath,true,NULL_STRING))
+							{
+								PrintToServer("Found path %s",modpath);
+							}
+							else
+							{
+								PrintToServer("Could not find mod at path %s",modpath);
+							}
 						}
 						else if (StrContains(line,"maps",false) != -1)
 						{
