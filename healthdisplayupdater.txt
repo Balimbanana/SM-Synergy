@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.94"
-			"Previous"	"1.93"
+			"Latest"  	"1.95"
+			"Previous"	"1.94"
 		}
 		
-		"Notes"	"Added a few more NPC names. Added setup for subject/target reversal in relation."
+		"Notes"	"Fixed targetmode 2 not correctly skipping func_clip types when TR works, but aimtarget doesn't."
 	}
 	
 	"Files"
