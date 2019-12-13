@@ -93,7 +93,7 @@ bool BlockEx = true;
 bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 
-#define PLUGIN_VERSION "1.99992"
+#define PLUGIN_VERSION "1.99993"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -659,7 +659,7 @@ public void OnMapStart()
 			HookEntityOutput("func_door","OnOpen",createelev);
 			HookEntityOutput("func_door","OnClose",createelev);
 		}
-		HookEntityOutput("prop_vehicle_jeep_episodic","PlayerOn",PlyEnterJalopy);
+		if ((!StrEqual(mapbuf,"ep2_outland_12",false)) && (!StrEqual(mapbuf,"ep2_outland_06",false))) HookEntityOutput("prop_vehicle_jeep_episodic","PlayerOn",PlyEnterJalopy);
 		if (StrContains(mapbuf,"ep1_",false) == 0)
 		{
 			if (FileExists("resource/closecaption_ep1bulgarian.dat",true,NULL_STRING)) AddFileToDownloadsTable("resource/closecaption_ep1bulgarian.dat");
