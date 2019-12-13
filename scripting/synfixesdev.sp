@@ -93,7 +93,7 @@ bool BlockEx = true;
 bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 
-#define PLUGIN_VERSION "1.99991"
+#define PLUGIN_VERSION "1.99992"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -590,9 +590,11 @@ public void OnMapStart()
 		//	if (FileExists("maps\\ent_cache\\bms_bm_c2a4e.ent",false))
 		//		DeleteFile("maps\\ent_cache\\bms_bm_c2a4e.ent");
 		//}
+		bool syn1810act = false;
 		if (StrEqual(gamedescoriginal,"synergy 56.16",false))
 		{
 			syn56act = true;
+			syn1810act = false;
 			if ((StrContains(mapbuf,"bm_c",false) != -1) || (StrContains(mapbuf,"xen_c",false) == 0) || (StrContains(mapbuf,"hls0",false) == 0) || (StrContains(mapbuf,"hls1",false) == 0))
 			{
 				Handle ragdollchk = FindConVar("ai_force_serverside_ragdoll");
@@ -618,6 +620,12 @@ public void OnMapStart()
 				}
 				CloseHandle(cvar);
 			}
+		}
+		else if (StrEqual(gamedescoriginal,"synergy 18.10",false))
+		{
+			syn1810act = true;
+			syn56act = false;
+			if (StrContains(mapbuf,"testchmb_",false) == 0) rebuildentsset = true;
 		}
 		else syn56act = false;
 		if (restrictmode == 1)
@@ -651,6 +659,7 @@ public void OnMapStart()
 			HookEntityOutput("func_door","OnOpen",createelev);
 			HookEntityOutput("func_door","OnClose",createelev);
 		}
+		HookEntityOutput("prop_vehicle_jeep_episodic","PlayerOn",PlyEnterJalopy);
 		if (StrContains(mapbuf,"ep1_",false) == 0)
 		{
 			if (FileExists("resource/closecaption_ep1bulgarian.dat",true,NULL_STRING)) AddFileToDownloadsTable("resource/closecaption_ep1bulgarian.dat");
@@ -810,7 +819,7 @@ public void OnMapStart()
 		{
 			if (IsClientConnected(i) && !IsFakeClient(i))
 			{
-				CreateTimer(1.0,clspawnpost,i);
+				CreateTimer(1.0,clspawnpost,i,TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 		int cvarmodefl = GetCommandFlags("firstperson");
@@ -993,7 +1002,8 @@ public void OnMapStart()
 		PushArrayString(customentlist,"logic_merchant_relay");
 		PushArrayString(customentlist,"npc_merchant");
 		PushArrayString(customentlist,"game_countdown_timer");
-		if ((!autorebuild) && (!rebuildentsset)) CreateTimer(0.1,rehooksaves);
+		if (syn1810act) PushArrayString(customentlist,"point_energy_ball_launcher");
+		if ((!autorebuild) && (!rebuildentsset)) CreateTimer(0.1,rehooksaves,_,TIMER_FLAG_NO_MAPCHANGE);
 		if ((rebuildentsset) && (!customents))
 		{
 			char mapspec[128];
@@ -2176,11 +2186,14 @@ public Action clspawnpost(Handle timer, int client)
 
 public Action ReallowFlush(int client, int args)
 {
+	/*
 	Handle cvar = FindConVar("sv_cheats");
 	if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"1");
 	CloseHandle(cvar);
 	ClientCommand(client,"flush;cl_soundscape_flush");
 	ClientCommand(client,"blckreset");
+	*/
+	ClientCommand(client,"r_flushlod");
 	return Plugin_Handled;
 }
 
@@ -4409,6 +4422,44 @@ public Action createelev(const char[] output, int caller, int activator, float d
 	}
 }
 
+public Action PlyEnterJalopy(const char[] output, int caller, int activator, float delay)
+{
+	if (IsValidEntity(caller))
+	{
+		if (HasEntProp(caller,Prop_Data,"m_iName"))
+		{
+			char targn[32];
+			GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
+			if (StrEqual(targn,"jeep",false))
+			{
+				Handle arr = CreateArray(32);
+				FindAllByClassname(arr,-1,"npc_alyx");
+				if (GetArraySize(arr) > 0)
+				{
+					for (int i = 0;i<GetArraySize(arr);i++)
+					{
+						int ent = GetArrayCell(arr,i);
+						if (IsValidEntity(ent))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_iName"))
+							{
+								GetEntPropString(ent,Prop_Data,"m_iName",targn,sizeof(targn));
+								if (StrEqual(targn,"alyx",false))
+								{
+									SetVariantString("jeep");
+									AcceptEntityInput(ent,"EnterVehicle");
+									break;
+								}
+							}
+						}
+					}
+				}
+				CloseHandle(arr);
+			}
+		}
+	}
+}
+
 public Action rebuildents(int client, int args)
 {
 	if (args == 1)
@@ -4820,6 +4871,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
 				if ((StrEqual(kvs[1],"OnStartPortal",false)) || (StrEqual(kvs[1],"OnFinishPortal",false))) Format(kvs[1],sizeof(kvs[]),"OnUser2");
 				else if (StrEqual(kvs[1],"OnDetonate",false)) Format(kvs[1],sizeof(kvs[]),"OnUser2");
+				else if (StrEqual(kvs[1],"OnPostSpawnBall",false)) Format(kvs[1],sizeof(kvs[]),"OnUser2");
 				if (StrEqual(kvs[1],"AdditionalEquipment",false))
 				{
 					if (StrEqual(kvs[3],"weapon_glock",false)) Format(kvs[3],sizeof(kvs[]),"weapon_pistol");
@@ -6085,6 +6137,19 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						}
 						PushArrayString(passedarr,"TimerType");
 						PushArrayString(passedarr,"1");
+					}
+					else if (StrEqual(cls,"point_energy_ball_launcher",false))
+					{
+						Format(cls,sizeof(cls),"point_combine_ball_launcher");
+						int find = FindStringInArray(passedarr,"classname");
+						if (find != -1)
+						{
+							RemoveFromArray(passedarr,find);
+							find++;
+							RemoveFromArray(passedarr,find);
+						}
+						PushArrayString(passedarr,"maxballbounces");
+						PushArrayString(passedarr,"8");
 					}
 					else if (StrEqual(cls,"npc_merchant",false))
 					{
@@ -13965,40 +14030,6 @@ public Action custent(Handle timer, int entity)
 		{
 			SetVariantString("npc_ichthyosaur D_LI 99");
 			AcceptEntityInput(entity,"SetRelationship");
-		}
-		else if (StrEqual(entcls,"prop_physics",false))
-		{
-			if ((HasEntProp(entity,Prop_Data,"m_ModelName")) && (HasEntProp(entity,Prop_Data,"m_iszOverrideScript")))
-			{
-				char mdl[64];
-				GetEntPropString(entity,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-				if (StrEqual(mdl,"models/props/metal_box.mdl",false))
-				{
-					GetEntPropString(entity,Prop_Data,"m_iszOverrideScript",mdl,sizeof(mdl));
-					if (strlen(mdl) < 1)
-					{
-						GetEntPropString(entity,Prop_Data,"m_iName",mdl,sizeof(mdl));
-						float orgs[3];
-						if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",orgs);
-						else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",orgs);
-						float angs[3];
-						GetEntPropVector(entity,Prop_Data,"m_angRotation",angs);
-						int recreate = CreateEntityByName("prop_physics");
-						if (recreate != -1)
-						{
-							DispatchKeyValue(recreate,"targetname",mdl);
-							DispatchKeyValue(recreate,"overridescript","mass,35");
-							DispatchKeyValue(recreate,"model","models/props/metal_box.mdl");
-							DispatchKeyValue(recreate,"solid","6");
-							TeleportEntity(recreate,orgs,angs,NULL_VECTOR);
-							AcceptEntityInput(entity,"kill");
-							DispatchSpawn(recreate);
-							ActivateEntity(recreate);
-							return Plugin_Handled;
-						}
-					}
-				}
-			}
 		}
 		else if (StrContains(entcls,"prop_vehicle",false) == 0)
 		{
