@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99992"
-			"Previous"	"1.99991"
+			"Latest"  	"1.99993"
+			"Previous"	"1.99992"
 		}
 		
-		"Notes"	"Changed flush to r_flushlod."
+		"Notes"	"Added fallback to get Alyx to enter jalopy if parameters are correct."
 	}
 	
 	"Files"
