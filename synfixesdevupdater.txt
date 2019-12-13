@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99991"
-			"Previous"	"1.99990"
+			"Latest"  	"1.99992"
+			"Previous"	"1.99991"
 		}
 		
-		"Notes"	"Disabled a few checks for fake clients. Added CVar sm_autofixreq_ep2 default 0, scans map for Ep2 entities on start and checks if required content is mounted."
+		"Notes"	"Changed flush to r_flushlod."
 	}
 	
 	"Files"
