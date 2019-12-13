@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.94"
+#define PLUGIN_VERSION "1.95"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin myinfo = 
@@ -569,7 +569,38 @@ public Action ShowTimer(Handle timer)
 					TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
 					int tmptarg = TR_GetEntityIndex(hhitpos);
 					targ = GetClientAimTarget(client,false);
-					if (targ != tmptarg) targ = -1;
+					if (targ != tmptarg)
+					{
+						if (IsValidEntity(targ))
+						{
+							char clsname[32];
+							GetEntityClassname(targ,clsname,sizeof(clsname));
+							int vck = GetEntProp(client,Prop_Send,"m_hVehicle");
+							if ((StrContains(clsname,"clip",false) != -1) || ((StrContains(clsname,"prop_vehicle",false) != -1) && (vck != -1)))
+							{
+								PlayerOrigin[0] = (Location[0] + (60 * Cosine(DegToRad(clang[1]))));
+								PlayerOrigin[1] = (Location[1] + (60 * Sine(DegToRad(clang[1]))));
+								PlayerOrigin[2] = (Location[2] + 10);
+								Location[0] = (PlayerOrigin[0] + (10 * Cosine(DegToRad(clang[1]))));
+								Location[1] = (PlayerOrigin[1] + (10 * Sine(DegToRad(clang[1]))));
+								Location[2] = (PlayerOrigin[2] + 10);
+								if (vck != -1)
+								{
+									Location[0] = (PlayerOrigin[0] - (10 * Cosine(DegToRad(clang[1]))));
+									Location[1] = (PlayerOrigin[1] - (10 * Sine(DegToRad(clang[1]))));
+									Location[2] = (PlayerOrigin[2] - 10);
+								}
+								Handle hhitposthrough = INVALID_HANDLE;
+								TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
+								targ = TR_GetEntityIndex(hhitposthrough);
+								CloseHandle(hhitposthrough);
+								if (targ != -1)
+									GetEntityClassname(targ,clsname,sizeof(clsname));
+							}
+							else targ = -1;
+						}
+						else targ = -1;
+					}
 				}
 				else
 				{
@@ -721,6 +752,7 @@ public Action ShowTimer(Handle timer)
 										else if (StrContains(targn,"mary",false) != -1) Format(clsname,sizeof(clsname),"Mary");
 										else if (StrContains(targn,"matt",false) != -1) Format(clsname,sizeof(clsname),"Matt");
 										else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Mina");
+										else if (StrEqual(targn,"arlene",false)) Format(clsname,sizeof(clsname),"Arlene");
 										else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"John");
 										else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Mitch");
 										else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
@@ -840,6 +872,7 @@ public Action ShowTimer(Handle timer)
 									else if (StrContains(targn,"mary",false) != -1) Format(clsname,sizeof(clsname),"Mary");
 									else if (StrContains(targn,"matt",false) != -1) Format(clsname,sizeof(clsname),"Matt");
 									else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Mina");
+									else if (StrEqual(targn,"arlene",false)) Format(clsname,sizeof(clsname),"Arlene");
 									else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
 									else if (StrEqual(targn,"oleg",false)) Format(clsname,sizeof(clsname),"Oleg");
 									else if (StrEqual(targn,"Richard",false)) Format(clsname,sizeof(clsname),"Richard");
@@ -986,7 +1019,7 @@ public void PrintTheMsg(int client, int curh, int maxh, char clsname[32], bool f
 		Format(hudbuf,sizeof(hudbuf),"%s (%i HP)",clsname,curh);
 	else
 	{
-		float perch = FloatDiv(float(curh),float(maxh))*100;
+		float perch = (float(curh)/float(maxh))*100;
 		if (perch < 1.0)
 			perch = 1.0;
 		Format(hudbuf,sizeof(hudbuf),"%s (%1.f%%)",clsname,perch);
@@ -1051,6 +1084,7 @@ public void PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int t
 		else if (StrContains(targn,"mary",false) != -1) Format(clsname,sizeof(clsname),"Friend: Mary");
 		else if (StrContains(targn,"matt",false) != -1) Format(clsname,sizeof(clsname),"Friend: Matt");
 		else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Friend: Mina");
+		else if (StrEqual(targn,"arlene",false)) Format(clsname,sizeof(clsname),"Friend: Arlene");
 		else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"Friend: John");
 		else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Friend: Mitch");
 		else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Friend: Argento");
@@ -1234,7 +1268,7 @@ public void PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int t
 		Format(hudbuf,sizeof(hudbuf),"%s (%i HP)",clsname,curh);
 	else
 	{
-		float perch = FloatDiv(float(curh),float(maxh))*100;
+		float perch = (float(curh)/float(maxh))*100;
 		if (perch < 1.0)
 			perch = 1.0;
 		Format(hudbuf,sizeof(hudbuf),"%s (%1.f%%)",clsname,perch);
