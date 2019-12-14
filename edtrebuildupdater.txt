@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.42"
-			"Previous"	"0.41"
+			"Latest"  	"0.43"
+			"Previous"	"0.42"
 		}
 		
 		"Notes"	"Added cfg/globaledt.edt configuration which will apply to all maps."
