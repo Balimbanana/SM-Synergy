@@ -93,7 +93,7 @@ bool BlockEx = true;
 bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 
-#define PLUGIN_VERSION "1.99993"
+#define PLUGIN_VERSION "1.99994"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -328,10 +328,6 @@ public void OnPluginStart()
 	RegConsoleCmd("flushfix",ReallowFlush);
 	AddCommandListener(flushcmd,"blckreset");
 	RegConsoleCmd("changelevel",resetgraphs);
-	Handle autorebuildh = CreateConVar("rebuildents","0","Set auto rebuild of custom entities, 1 is dynamic, 2 is static npc list.",_,true,0.0,true,2.0);
-	autorebuild = GetConVarInt(autorebuildh);
-	HookConVarChange(autorebuildh,autorebuildch);
-	CloseHandle(autorebuildh);
 	Handle rebuildnodesh = CreateConVar("rebuildnodes","0","Set force rebuild ai nodes on every map (not nav_generate).",_,true,0.0,true,1.0);
 	rebuildnodes = GetConVarBool(rebuildnodesh);
 	HookConVarChange(rebuildnodesh,rebuildnodeshch);
@@ -340,11 +336,15 @@ public void OnPluginStart()
 	allownoguide = GetConVarBool(noguidecv);
 	HookConVarChange(noguidecv,noguidech);
 	CloseHandle(noguidecv);
+	AutoExecConfig(true, "synfixes");
+	Handle autorebuildh = CreateConVar("rebuildents","0","Set auto rebuild of custom entities, 1 is dynamic, 2 is static npc list.",_,true,0.0,true,2.0);
+	autorebuild = GetConVarInt(autorebuildh);
+	HookConVarChange(autorebuildh,autorebuildch);
+	CloseHandle(autorebuildh);
 	RegAdminCmd("sm_rebuildents",rebuildents,ADMFLAG_ROOT,".");
 	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
 	CreateTimer(0.5,resetclanim,_,TIMER_REPEAT);
 	CreateTimer(0.1,clticks,_,TIMER_REPEAT);
-	AutoExecConfig(true, "synfixes");
 	CreateTimer(0.1,bmcvars);
 	AddAmbientSoundHook(customsoundchecks);
 	AddNormalSoundHook(customsoundchecksnorm);
@@ -1613,6 +1613,12 @@ public void OnClientPutInServer(int client)
 			}
 			CloseHandle(spawns);
 		}
+		char SteamID[64];
+		GetClientAuthId(client,AuthId_Steam3,SteamID,sizeof(SteamID));
+		int findid = FindStringInArray(dctimeoutarr,SteamID);
+		//CreateTimer(4.5,ResetFlush,client,TIMER_FLAG_NO_MAPCHANGE);
+		if ((findid == -1) && (syn56act)) ClientCommand(client,"r_flushlod");
+		else if (findid != -1) RemoveFromArray(dctimeoutarr,findid);
 	}
 }
 
@@ -2162,11 +2168,6 @@ public Action clspawnpost(Handle timer, int client)
 			ClientCommand(client,"bind f1 vote_yes");
 			ClientCommand(client,"bind f2 vote_no");
 			CreateTimer(0.1,restoresound,client,TIMER_FLAG_NO_MAPCHANGE);
-			char SteamID[64];
-			GetClientAuthId(client,AuthId_Steam3,SteamID,sizeof(SteamID));
-			int findid = FindStringInArray(dctimeoutarr,SteamID);
-			if ((findid == -1) && (syn56act)) CreateTimer(4.5,ResetFlush,client,TIMER_FLAG_NO_MAPCHANGE);
-			else if (findid != -1) RemoveFromArray(dctimeoutarr,findid);
 			ClientCommand(client,"snd_restart");
 			char briefing[128];
 			char mapname[64];
