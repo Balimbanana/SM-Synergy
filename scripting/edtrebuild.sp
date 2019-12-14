@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.42"
+#define PLUGIN_VERSION "0.43"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -1939,14 +1939,21 @@ void ReadEDT(char[] edtfile)
 						*/
 						if (GetArraySize(tmp) > 0)
 						{
-							char tmparr[256];
-							GetArrayString(tmp,0,tmparr,sizeof(tmparr));
-							char kvs[64][64];
-							ExplodeString(tmparr," ",kvs,64,64);
-							Format(targn,sizeof(targn),"%s",kvs[0]);
-							ReplaceString(targn,sizeof(targn),"\"","");
-							ReplaceString(targn,sizeof(targn),"}","");
-							if (strlen(targn) > 0) TargnDefined = true;
+							for (int ikvs = 0;ikvs<GetArraySize(tmp);ikvs++)
+							{
+								char tmparr[256];
+								GetArrayString(tmp,ikvs,tmparr,sizeof(tmparr));
+								char kvs[64][64];
+								ExplodeString(tmparr," ",kvs,64,64);
+								Format(targn,sizeof(targn),"%s",kvs[0]);
+								ReplaceString(targn,sizeof(targn),"\"","");
+								ReplaceString(targn,sizeof(targn),"}","");
+								if ((strlen(targn) > 0) && (!StrEqual(targn,"classname",false)))
+								{
+									TargnDefined = true;
+									break;
+								}
+							}
 						}
 						CloseHandle(tmp);
 					}
