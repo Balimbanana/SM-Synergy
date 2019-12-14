@@ -1616,7 +1616,6 @@ public void OnClientPutInServer(int client)
 		char SteamID[64];
 		GetClientAuthId(client,AuthId_Steam3,SteamID,sizeof(SteamID));
 		int findid = FindStringInArray(dctimeoutarr,SteamID);
-		//CreateTimer(4.5,ResetFlush,client,TIMER_FLAG_NO_MAPCHANGE);
 		if ((findid == -1) && (syn56act)) ClientCommand(client,"r_flushlod");
 		else if (findid != -1) RemoveFromArray(dctimeoutarr,findid);
 	}
@@ -2187,14 +2186,11 @@ public Action clspawnpost(Handle timer, int client)
 
 public Action ReallowFlush(int client, int args)
 {
-	/*
 	Handle cvar = FindConVar("sv_cheats");
 	if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"1");
 	CloseHandle(cvar);
 	ClientCommand(client,"flush;cl_soundscape_flush");
 	ClientCommand(client,"blckreset");
-	*/
-	ClientCommand(client,"r_flushlod");
 	return Plugin_Handled;
 }
 
@@ -2204,17 +2200,6 @@ public Action flushcmd(int client, const char[] command, int argc)
 	if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"0");
 	CloseHandle(cvar);
 	return Plugin_Handled;
-}
-
-public Action ResetFlush(Handle timer, int client)
-{
-	if (IsValidEntity(client))
-	{
-		if (IsClientConnected(client))
-		{
-			ReallowFlush(client,0);
-		}
-	}
 }
 
 public Action restoresound(Handle timer, int client)
