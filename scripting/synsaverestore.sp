@@ -58,7 +58,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.13"
+#define PLUGIN_VERSION "2.14"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2136,6 +2136,14 @@ public void OnMapStart()
 							}
 							if (StrEqual(clsname,"prop_vehicle_jeep_episodic",false))
 							{
+								if (StrEqual(targn,"jeep",false))
+								{
+									char tmp[128];
+									Format(tmp,sizeof(tmp),"alyx,EnterVehicle,%s,0,-1",targn);
+									DispatchKeyValue(ent,"PlayerOn",tmp);
+									Format(tmp,sizeof(tmp),"alyx,ExitVehicle,,0,-1");
+									DispatchKeyValue(ent,"PlayerOff",tmp);
+								}
 								alyxenter = true;
 								aljeepchkj[0] = porigin[0];
 								aljeepchkj[1] = porigin[1];
