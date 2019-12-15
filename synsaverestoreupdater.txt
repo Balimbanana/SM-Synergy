@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.13"
-			"Previous"	"2.12"
+			"Latest"  	"2.14"
+			"Previous"	"2.13"
 		}
 		
-		"Notes"	"Prevent transitioning a couple more entities."
+		"Notes"	"Added outputs of PlayerOn and PlayerOff for Jalopy when named jeep over transition for Alyx entering/exiting."
 	}
 	
 	"Files"
