@@ -1,7 +1,5 @@
 "VGUI_Screens"
 {
-	// This name here can be referenced from within a 
-	// vgui_screen entity to select this vgui panel
 	"vgui_test_screen"
 	{
 		// The type indicates which type of panel to create
@@ -37,4 +35,30 @@
 		"resfile"		"scripts/screens/jalopy_radar_panel.res"
 	}
 
+	"slideshow_display_screen"
+	{
+		"type"		"slideshow_display_screen"
+		"pixelswide"	256
+		"pixelshigh"	128
+		"acceptsinput"  0
+		"resfile"	"scripts/screens/slideshow_display_screen.res"
+	}
+
+	"mortar_control_screen"
+	{
+		"type"	"mortar_control_screen"
+		"pixelswide"	480
+		"pixelshigh"	620
+		"resfile"  "resource/screens/vgui_mortar_screen.res"
+		"acceptsinput"	1
+	}
+	
+	"tram_control_screen"
+	{
+		"type"	"tram_control_screen"
+		"pixelswide"	480
+		"pixelshigh"	620
+		"resfile"  "resource/screens/vgui_tram_screen.res"
+		"acceptsinput"	1
+	}
 }
