@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.43"
+#define PLUGIN_VERSION "0.44"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -729,6 +729,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				int findend = -1;
 				int findstartpos = -1;
 				Handle passedarr = INVALID_HANDLE;
+				char targned[128];
 				for (int i = 0;i<GetArraySize(g_EditClassOrigin);i++)
 				{
 					GetArrayString(g_EditClassOrigin,i,cls,sizeof(cls));
@@ -736,9 +737,12 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					if (findend != -1)
 					{
 						Format(clsorg,sizeof(clsorg),"\"origin\" \"%s\"",cls[findend+1]);
+						ReplaceStringEx(cls,sizeof(cls),cls[findend],"");
 					}
+					Format(targned,sizeof(targned),"\"targetname\" \"%s\"",cls);
 					Format(cls,sizeof(cls),"\"classname\" \"%s\"",cls);
 					finder = StrContains(szMapEntities,clsorg,false);
+					if (finder == -1) finder = StrContains(szMapEntities,targned,false);
 					if (finder != -1)
 					{
 						Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder]);
@@ -2076,19 +2080,53 @@ void ReadEDT(char[] edtfile)
 					}
 					else if (strlen(targn) > 0)
 					{
-						if (DeletingEnt)
+						if (origindefined)
 						{
-							if (dbglvl) PrintToServer("Delete all by targetname %s",targn);
-							if (FindStringInArray(g_DeleteTargets,targn) == -1) PushArrayString(g_DeleteTargets,targn);
+							if (DeletingEnt)
+							{
+								if (dbglvl) PrintToServer("Delete %s at origin %s",targn,originch);
+								char deletion[64];
+								Format(deletion,sizeof(deletion),"%s,%s",targn,originch);
+								if (FindStringInArray(g_DeleteClassOrigin,deletion) == -1) PushArrayString(g_DeleteClassOrigin,deletion);
+							}
+							else
+							{
+								if (dbglvl > 0) PrintToServer("Edit %s at origin %s with %i KVs",targn,originch,GetArraySize(passedarr));
+								else if (dbglvl) PrintToServer("Edit %s at origin %s",targn,originch);
+								char resetent[128];
+								Format(resetent,sizeof(resetent),"%s,%s",targn,originch);
+								Handle dupearr = CloneArray(passedarr);
+								PushArrayString(g_EditClassOrigin,resetent);
+								PushArrayCell(g_EditClassOrgData,dupearr);
+							}
 						}
 						else
 						{
-							if (dbglvl) PrintToServer("Edit all by targetname %s",targn);
-							if (FindStringInArray(g_EditTargets,targn) == -1)
+							if (DeletingEnt)
 							{
-								PushArrayString(g_EditTargets,targn);
-								Handle dupearr = CloneArray(passedarr);
-								PushArrayCell(g_EditTargetsData,dupearr);
+								if (dbglvl) PrintToServer("Delete all by targetname %s",targn);
+								if (FindStringInArray(g_DeleteTargets,targn) == -1) PushArrayString(g_DeleteTargets,targn);
+							}
+							else
+							{
+								if (dbglvl) PrintToServer("Edit all by targetname %s",targn);
+								if (FindStringInArray(g_EditTargets,targn) == -1)
+								{
+									PushArrayString(g_EditTargets,targn);
+									Handle dupearr = CloneArray(passedarr);
+									PushArrayCell(g_EditTargetsData,dupearr);
+									/*
+									if (GetArraySize(passedarr) > 0)
+									{
+										for (int i = 0;i<GetArraySize(passedarr);i++)
+										{
+											char tmpar[64];
+											GetArrayString(passedarr,i,tmpar,sizeof(tmpar));
+											PrintToServer("AllByTargn %s",tmpar);
+										}
+									}
+									*/
+								}
 							}
 						}
 					}
