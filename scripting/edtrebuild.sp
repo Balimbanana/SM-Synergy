@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.44"
+#define PLUGIN_VERSION "0.45"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -732,6 +732,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				char targned[128];
 				for (int i = 0;i<GetArraySize(g_EditClassOrigin);i++)
 				{
+					int finderorground2dec = -1;
 					GetArrayString(g_EditClassOrigin,i,cls,sizeof(cls));
 					findend = StrContains(cls,",",false);
 					if (findend != -1)
@@ -743,6 +744,50 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					Format(cls,sizeof(cls),"\"classname\" \"%s\"",cls);
 					finder = StrContains(szMapEntities,clsorg,false);
 					if (finder == -1) finder = StrContains(szMapEntities,targned,false);
+					if (finder == -1)
+					{
+						float org[3];
+						char orgexpl[4096][32];
+						int arrsize = ExplodeString(szMapEntities,"\n\"origin\" \"",orgexpl,4096,32);
+						int finderorground = -1;
+						char orgoriginal[48];
+						char orgrounded[48];
+						char clsorground2dec[48];
+						char clsorground[48];
+						Format(tmpbuf,sizeof(clsorg),"%s",clsorg);
+						ReplaceStringEx(tmpbuf,sizeof(tmpbuf),"\"origin\" \"","");
+						ReplaceString(tmpbuf,sizeof(tmpbuf),"\"","");
+						ExplodeString(tmpbuf," ",tmpexpl,4,64);
+						org[0] = StringToFloat(tmpexpl[0]);
+						org[1] = StringToFloat(tmpexpl[1]);
+						org[2] = StringToFloat(tmpexpl[2]);
+						Format(clsorground,sizeof(clsorground),"%i %i %i",RoundFloat(org[0]),RoundFloat(org[1]),RoundFloat(org[2]));
+						Format(clsorground2dec,sizeof(clsorground2dec),"%1.2f %1.2f %1.2f",org[0],org[1],org[2]);
+						ReplaceString(clsorground2dec,sizeof(clsorground2dec),".00","");
+						for (int j = 0;j<arrsize;j++)
+						{
+							ExplodeString(orgexpl[j],"\n",tmpexpl,4,32);
+							ReplaceString(tmpexpl[0],sizeof(tmpexpl[]),"\"","");
+							Format(orgoriginal,sizeof(orgoriginal),"%s",tmpexpl[0]);
+							ExplodeString(tmpexpl[0]," ",tmpexpl,4,32);
+							org[0] = StringToFloat(tmpexpl[0]);
+							org[1] = StringToFloat(tmpexpl[1]);
+							org[2] = StringToFloat(tmpexpl[2]);
+							Format(tmpbuf,sizeof(tmpbuf),"%1.2f %1.2f %1.2f",org[0],org[1],org[2]);
+							Format(orgrounded,sizeof(orgrounded),"%i %i %i",RoundFloat(org[0]),RoundFloat(org[1]),RoundFloat(org[2]));
+							ReplaceString(tmpbuf,sizeof(tmpbuf),".00","");
+							finderorground2dec = StrContains(tmpbuf,clsorground2dec,false);
+							finderorground = StrContains(orgrounded,clsorground,false);
+							if ((finderorground2dec != -1) || (finderorground != -1))
+							{
+								Format(orgoriginal,sizeof(orgoriginal),"\"origin\" \"%s\"",orgoriginal);
+								finderorground2dec = StrContains(szMapEntities,orgoriginal,false);
+								Format(clsorg,sizeof(clsorg),"%s",orgoriginal);
+								break;
+							}
+						}
+						if (finderorground2dec != -1) finder = finderorground2dec;
+					}
 					if (finder != -1)
 					{
 						Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder]);
