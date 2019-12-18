@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.45"
+#define PLUGIN_VERSION "0.46"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -1959,16 +1959,18 @@ void ReadEDT(char[] edtfile)
 					}
 					Format(originch,sizeof(originch),"%s",line);
 					if (strlen(removeprev) > 0)
+					{
 						ReplaceString(originch,sizeof(originch),removeprev,"");
-					ReplaceString(originch,sizeof(originch),"\"","");
-					ReplaceString(originch,sizeof(originch),"origin","");
-					ReplaceString(originch,sizeof(originch),"{","");
-					ReplaceString(originch,sizeof(originch),"}","");
-					TrimString(originch);
-					char kvs[64][64];
-					ExplodeString(originch," ",kvs,64,64);
-					Format(originch,sizeof(originch),"%s %s %s",kvs[0],kvs[1],kvs[2]);
-					origindefined = true;
+						ReplaceString(originch,sizeof(originch),"\"","");
+						ReplaceString(originch,sizeof(originch),"origin","");
+						ReplaceString(originch,sizeof(originch),"{","");
+						ReplaceString(originch,sizeof(originch),"}","");
+						TrimString(originch);
+						char kvs[64][64];
+						ExplodeString(originch," ",kvs,64,64);
+						Format(originch,sizeof(originch),"%s %s %s",kvs[0],kvs[1],kvs[2]);
+						origindefined = true;
+					}
 				}
 				if ((StrContains(line,"targetname",false) != -1) && ((EditingEnt) || (DeletingEnt)) && (!TargnDefined))
 				{
