@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99954"
-			"Previous"	"1.99953"
+			"Latest"  	"1.99955"
+			"Previous"	"1.99954"
 		}
 		
-		"Notes"	"Fixed 64 max players being out of bounds on a couple indexes. Fixed a couple timers going over map changes."
+		"Notes"	"Added flush lod on client put in server which can fix most remount conditions."
 	}
 	
 	"Files"
