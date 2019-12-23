@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.15"
-			"Previous"	"2.14"
+			"Latest"  	"2.151"
+			"Previous"	"2.15"
 		}
 		
 		"Notes"	"Additional validation on OutOfWorld check."
