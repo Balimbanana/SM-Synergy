@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.14"
-			"Previous"	"2.13"
+			"Latest"  	"2.15"
+			"Previous"	"2.14"
 		}
 		
-		"Notes"	"Added outputs of PlayerOn and PlayerOff for Jalopy when named jeep over transition for Alyx entering/exiting."
+		"Notes"	"Additional validation on OutOfWorld check."
 	}
 	
 	"Files"
