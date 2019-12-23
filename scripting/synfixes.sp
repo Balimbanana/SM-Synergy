@@ -23,6 +23,7 @@ Handle physboxarr = INVALID_HANDLE;
 Handle physboxharr = INVALID_HANDLE;
 Handle elevlist = INVALID_HANDLE;
 Handle inputsarrorigincls = INVALID_HANDLE;
+Handle dctimeoutarr = INVALID_HANDLE;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 int WeapList = -1;
@@ -48,7 +49,7 @@ bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99954"
+#define PLUGIN_VERSION "1.99955"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -158,6 +159,7 @@ public void OnPluginStart()
 	//else linact = false;
 	HookEventEx("player_spawn",OnPlayerSpawn,EventHookMode_Post);
 	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
+	HookEventEx("player_disconnect",Event_PlayerDisconnect,EventHookMode_Post);
 	equiparr = CreateArray(32);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	entlist = CreateArray(1024);
@@ -166,6 +168,7 @@ public void OnPluginStart()
 	physboxharr = CreateArray(64);
 	elevlist = CreateArray(64);
 	inputsarrorigincls = CreateArray(768);
+	dctimeoutarr = CreateArray(MAXPLAYERS+1);
 	RegConsoleCmd("alyx",fixalyx);
 	RegConsoleCmd("barney",fixbarney);
 	RegConsoleCmd("stuck",stuckblck);
@@ -607,119 +610,127 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 
 public void OnClientPutInServer(int client)
 {
-	CreateTimer(0.5,clspawnpost,client);
-	if (forcehdr) QueryClientConVar(client,"mat_hdr_level",hdrchk,0);
-	if ((GetClientCount(true) >= playercapadj) && (!appliedlargeplayeradj) && (playercapadj > 0))
+	if (!IsFakeClient(client))
 	{
-		appliedlargeplayeradj = true;
-		Handle spawns = CreateArray(32);
-		FindAllByClassname(spawns,-1,"info_vehicle_spawn");
-		if (GetArraySize(spawns) > 0)
+		CreateTimer(0.5,clspawnpost,client);
+		if (forcehdr) QueryClientConVar(client,"mat_hdr_level",hdrchk,0);
+		if ((GetClientCount(true) >= playercapadj) && (!appliedlargeplayeradj) && (playercapadj > 0))
 		{
-			for (int i = 0;i<GetArraySize(spawns);i++)
+			appliedlargeplayeradj = true;
+			Handle spawns = CreateArray(32);
+			FindAllByClassname(spawns,-1,"info_vehicle_spawn");
+			if (GetArraySize(spawns) > 0)
 			{
-				int ent = GetArrayCell(spawns,i);
-				if (IsValidEntity(ent))
+				for (int i = 0;i<GetArraySize(spawns);i++)
 				{
-					float origin[3];
-					float angs[3];
-					float loc[3];
-					if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-					if (HasEntProp(ent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",origin);
-					else if (HasEntProp(ent,Prop_Send,"m_vecOrigin")) GetEntPropVector(ent,Prop_Send,"m_vecOrigin",origin);
-					//horizontal right check
-					angs[1]-=90.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					loc[2] = origin[2];
-					if (CheckBounds(loc,angs))
+					int ent = GetArrayCell(spawns,i);
+					if (IsValidEntity(ent))
 					{
-						//get original just in case
+						float origin[3];
+						float angs[3];
+						float loc[3];
 						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					//horizontal left check
-					angs[1]+=180.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					if (CheckBounds(loc,angs))
-					{
+						if (HasEntProp(ent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",origin);
+						else if (HasEntProp(ent,Prop_Send,"m_vecOrigin")) GetEntPropVector(ent,Prop_Send,"m_vecOrigin",origin);
+						//horizontal right check
+						angs[1]-=90.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						loc[2] = origin[2];
+						if (CheckBounds(loc,angs))
+						{
+							//get original just in case
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//horizontal left check
+						angs[1]+=180.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						if (CheckBounds(loc,angs))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//forward check
+						angs[1]-=90.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						if (CheckBounds(loc,angs))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//backwards check
+						angs[1]-=180.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						if (CheckBounds(loc,angs))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						
+						//run all over again with +50 z
+						origin[2]+=50.0;
 						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
+						//horizontal right check
+						angs[1]-=90.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						loc[2] = origin[2];
+						if (CheckBounds(loc,angs))
+						{
+							//get original just in case
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//horizontal left check
+						angs[1]+=180.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						if (CheckBounds(loc,angs))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//forward check
+						angs[1]-=90.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						if (CheckBounds(loc,angs))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//backwards check
+						angs[1]-=180.0;
+						loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
+						loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
+						if (CheckBounds(loc,angs))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
+							SetupVehicleSpawn(ent,loc,angs);
+							continue;
+						}
+						//asfasf
 					}
-					//forward check
-					angs[1]-=90.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					if (CheckBounds(loc,angs))
-					{
-						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					//backwards check
-					angs[1]-=180.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					if (CheckBounds(loc,angs))
-					{
-						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					
-					//run all over again with +50 z
-					origin[2]+=50.0;
-					if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-					//horizontal right check
-					angs[1]-=90.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					loc[2] = origin[2];
-					if (CheckBounds(loc,angs))
-					{
-						//get original just in case
-						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					//horizontal left check
-					angs[1]+=180.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					if (CheckBounds(loc,angs))
-					{
-						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					//forward check
-					angs[1]-=90.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					if (CheckBounds(loc,angs))
-					{
-						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					//backwards check
-					angs[1]-=180.0;
-					loc[0] = (origin[0] + (200 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (origin[1] + (200 * Sine(DegToRad(angs[1]))));
-					if (CheckBounds(loc,angs))
-					{
-						if (HasEntProp(ent,Prop_Data,"m_angRotation")) GetEntPropVector(ent,Prop_Data,"m_angRotation",angs);
-						SetupVehicleSpawn(ent,loc,angs);
-						continue;
-					}
-					//asfasf
 				}
 			}
+			CloseHandle(spawns);
 		}
-		CloseHandle(spawns);
+		char SteamID[64];
+		GetClientAuthId(client,AuthId_Steam3,SteamID,sizeof(SteamID));
+		int findid = FindStringInArray(dctimeoutarr,SteamID);
+		if ((findid == -1) && (syn56act)) ClientCommand(client,"r_flushlod");
+		else if (findid != -1) RemoveFromArray(dctimeoutarr,findid);
 	}
 }
 
@@ -1464,6 +1475,22 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 			}
 		}
 	}
+}
+
+public Action Event_PlayerDisconnect( Handle event, const char[] name, bool dontBroadcast )
+{
+	/*
+	"userid"	"short"		// user ID on server
+	"reason"	"string"	// "self", "kick", "ban", "cheat", "error"
+	"name"		"string"	// player name
+	"networkid"	"string"	// player network (i.e steam) id
+	"bot"		"short"		// is a bot
+	*/
+	char dcchar[256];
+	char netid[64];
+	GetEventString(event,"reason",dcchar,sizeof(dcchar));
+	GetEventString(event,"networkid",netid,sizeof(netid));
+	if (StrContains(dcchar,"timed out",false) != -1) PushArrayString(dctimeoutarr,netid);
 }
 
 void readoutputs(int scriptent, char[] targn)
