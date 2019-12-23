@@ -58,7 +58,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.15"
+#define PLUGIN_VERSION "2.151"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2119,7 +2119,7 @@ public void OnMapStart()
 						if ((TR_PointOutsideWorld(porigin)) && (!skipoow))
 						{
 							if (dbg) LogMessage("Delete Transition Ent (OutOfWorld) %s info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\"",clsname,mdl,targn,StringToInt(solidity),StringToInt(spawnflags),mvtype);
-							if (IsValidEntity(ent)) AcceptEntityInput(ent,"kill");
+							if ((IsValidEntity(ent)) && (ent != 0)) AcceptEntityInput(ent,"kill");
 							ent = -1;
 						}
 						if (ent != -1)
