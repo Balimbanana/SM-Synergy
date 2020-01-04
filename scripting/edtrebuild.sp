@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.46"
+#define PLUGIN_VERSION "0.47"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -1958,9 +1958,9 @@ void ReadEDT(char[] edtfile)
 						if (!nosetorg) Format(removeprev,findclass+1,"%s",line);
 					}
 					Format(originch,sizeof(originch),"%s",line);
-					if (strlen(removeprev) > 0)
+					if (strlen(removeprev) > 0) ReplaceString(originch,sizeof(originch),removeprev,"");
+					if (findclass != -1)
 					{
-						ReplaceString(originch,sizeof(originch),removeprev,"");
 						ReplaceString(originch,sizeof(originch),"\"","");
 						ReplaceString(originch,sizeof(originch),"origin","");
 						ReplaceString(originch,sizeof(originch),"{","");
