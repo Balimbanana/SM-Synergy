@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99955"
-			"Previous"	"1.99954"
+			"Latest"  	"1.99956"
+			"Previous"	"1.99955"
 		}
 		
-		"Notes"	"Added flush lod on client put in server which can fix most remount conditions."
+		"Notes"	"Updated hooks system to SynFixesDev version. Added a couple validations to a few functions."
 	}
 	
 	"Files"
