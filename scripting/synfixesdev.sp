@@ -93,7 +93,7 @@ bool BlockEx = true;
 bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 
-#define PLUGIN_VERSION "1.99994"
+#define PLUGIN_VERSION "1.99995"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -591,7 +591,7 @@ public void OnMapStart()
 		//		DeleteFile("maps\\ent_cache\\bms_bm_c2a4e.ent");
 		//}
 		bool syn1810act = false;
-		if (StrEqual(gamedescoriginal,"synergy 56.16",false))
+		if ((StrEqual(gamedescoriginal,"synergy 56.16",false)) || (StrEqual(gamedescoriginal,"synergy 18.12",false)))
 		{
 			syn56act = true;
 			syn1810act = false;
@@ -659,7 +659,6 @@ public void OnMapStart()
 			HookEntityOutput("func_door","OnOpen",createelev);
 			HookEntityOutput("func_door","OnClose",createelev);
 		}
-		if ((!StrEqual(mapbuf,"ep2_outland_12",false)) && (!StrEqual(mapbuf,"ep2_outland_06",false))) HookEntityOutput("prop_vehicle_jeep_episodic","PlayerOn",PlyEnterJalopy);
 		if (StrContains(mapbuf,"ep1_",false) == 0)
 		{
 			if (FileExists("resource/closecaption_ep1bulgarian.dat",true,NULL_STRING)) AddFileToDownloadsTable("resource/closecaption_ep1bulgarian.dat");
@@ -963,6 +962,15 @@ public void OnMapStart()
 		PushArrayString(customentlist,"weapon_sl8");
 		PushArrayString(customentlist,"weapon_uzi");
 		PushArrayString(customentlist,"weapon_healer");
+		PushArrayString(customentlist,"weapon_pistol1");
+		PushArrayString(customentlist,"weapon_pistol2");
+		PushArrayString(customentlist,"weapon_isa_knife");
+		PushArrayString(customentlist,"weapon_ls13");
+		PushArrayString(customentlist,"weapon_lugergun");
+		PushArrayString(customentlist,"weapon_rifle1");
+		PushArrayString(customentlist,"weapon_smg3");
+		PushArrayString(customentlist,"weapon_smg4");
+		PushArrayString(customentlist,"weapon_vc32sniperrifle");
 		PushArrayString(customentlist,"item_weapon_gluon");
 		PushArrayString(customentlist,"item_ammo_energy");
 		PushArrayString(customentlist,"item_weapon_gauss");
@@ -4408,44 +4416,6 @@ public Action createelev(const char[] output, int caller, int activator, float d
 	}
 }
 
-public Action PlyEnterJalopy(const char[] output, int caller, int activator, float delay)
-{
-	if (IsValidEntity(caller))
-	{
-		if (HasEntProp(caller,Prop_Data,"m_iName"))
-		{
-			char targn[32];
-			GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
-			if (StrEqual(targn,"jeep",false))
-			{
-				Handle arr = CreateArray(32);
-				FindAllByClassname(arr,-1,"npc_alyx");
-				if (GetArraySize(arr) > 0)
-				{
-					for (int i = 0;i<GetArraySize(arr);i++)
-					{
-						int ent = GetArrayCell(arr,i);
-						if (IsValidEntity(ent))
-						{
-							if (HasEntProp(ent,Prop_Data,"m_iName"))
-							{
-								GetEntPropString(ent,Prop_Data,"m_iName",targn,sizeof(targn));
-								if (StrEqual(targn,"alyx",false))
-								{
-									SetVariantString("jeep");
-									AcceptEntityInput(ent,"EnterVehicle");
-									break;
-								}
-							}
-						}
-					}
-				}
-				CloseHandle(arr);
-			}
-		}
-	}
-}
-
 public Action rebuildents(int client, int args)
 {
 	if (args == 1)
@@ -5681,6 +5651,23 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					else if (StrEqual(cls,"weapon_gluon",false))
 					{
 						Format(cls,sizeof(cls),"weapon_shotgun");
+					}
+					else if ((StrEqual(cls,"weapon_pistol1",false)) || (StrEqual(cls,"weapon_pistol2",false)) || (StrEqual(cls,"weapon_isa_knife",false)) || (StrEqual(cls,"weapon_ls13",false)) || (StrEqual(cls,"weapon_lugergun",false)) || (StrEqual(cls,"weapon_rifle1",false)) || (StrEqual(cls,"weapon_smg3",false)) || (StrEqual(cls,"weapon_smg4",false)) || (StrEqual(cls,"weapon_vc32sniperrifle",false)))
+					{
+						Format(cls,sizeof(cls),"kzsmodifiedweaps/%s",cls);
+						int find = FindStringInArray(passedarr,"classname");
+						if (find != -1)
+						{
+							RemoveFromArray(passedarr,find);
+							find++;
+							RemoveFromArray(passedarr,find);
+						}
+						PushArrayString(passedarr,"classname");
+						PushArrayString(passedarr,cls);
+						if ((StrEqual(cls,"kzsmodifiedweaps/weapon_pistol1",false)) || (StrEqual(cls,"kzsmodifiedweaps/weapon_pistol2",false))) Format(cls,sizeof(cls),"weapon_pistol");
+						else if (StrEqual(cls,"kzsmodifiedweaps/weapon_isa_knife",false)) Format(cls,sizeof(cls),"weapon_crowbar");
+						else if (StrEqual(cls,"kzsmodifiedweaps/weapon_ls13",false)) Format(cls,sizeof(cls),"weapon_shotgun");
+						else if ((StrEqual(cls,"kzsmodifiedweaps/weapon_lugergun",false)) || (StrEqual(cls,"kzsmodifiedweaps/weapon_smg3",false)) || (StrEqual(cls,"kzsmodifiedweaps/weapon_smg4",false)) || (StrEqual(cls,"kzsmodifiedweaps/weapon_vc32sniperrifle",false))) Format(cls,sizeof(cls),"weapon_smg1");
 					}
 					else if (StrEqual(cls,"item_weapon_gluon",false))
 					{
@@ -11391,13 +11378,13 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 			}
 			if (((StrEqual(clsorfixup[1],originchar)) && (StrEqual(clsorfixup[0],targn))) || ((StrEqual(clsorfixup[0],targn)) && (StrEqual(clsorfixup[1],originchar))) || (StrContains(clsorfixup[3],tmpoutpchk,false) != -1))
 			{
-				if (StrContains(tmpch,output) != -1)
+				if (StrContains(tmpch,output,false) != -1)
 				{
 					char lineorgrescom[16][128];
 					if ((StrContains(clsorfixup[5],",") != -1) && (StrContains(clsorfixup[3],":") == -1))
 					{
 						ExplodeString(clsorfixup[5],",",lineorgrescom,16,128);
-						if (StrEqual(input,lineorgrescom[1]))
+						if (StrEqual(input,lineorgrescom[1],false))
 						{
 							ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
 							float delay = StringToFloat(lineorgrescom[3]);
@@ -11491,7 +11478,7 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 					else
 					{
 						ExplodeString(clsorfixup[3],":",lineorgrescom,16,128);
-						if (StrEqual(input,lineorgrescom[1]))
+						if (StrEqual(input,lineorgrescom[1],false))
 						{
 							char delaystr[64];
 							Format(delaystr,sizeof(delaystr),lineorgrescom[3]);
