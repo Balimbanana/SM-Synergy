@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99956"
-			"Previous"	"1.99955"
+			"Latest"  	"1.99957"
+			"Previous"	"1.99956"
 		}
 		
 		"Notes"	"Updated hooks system to SynFixesDev version. Added a couple validations to a few functions."
