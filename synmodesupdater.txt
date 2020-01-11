@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.28"
-			"Previous"	"1.27"
+			"Latest"  	"1.29"
+			"Previous"	"1.28"
 		}
 		
-		"Notes"	"Added mp_dmsoundtrack and mp_dmsoundtrack_volume which will play when a DM or TDM round starts. Fixed winner of rounds and added tied message."
+		"Notes"	"Added sm_allowendspawn default 0. Allows instant spawn and timed spawn to spawn players on other players inside trigger_changelevel."
 	}
 	
 	"Files"
