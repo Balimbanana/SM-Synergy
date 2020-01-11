@@ -620,11 +620,11 @@ public Action Atkspecpress(int client, int args)
 		clspawntimeallow[client] = false;
 		clused = GetEntPropEnt(client,Prop_Send,"m_hObserverTarget");
 		if ((clused != -1) && (IsPlayerAlive(clused)) && (!cltouchend(clused)))
-			CreateTimer(0.1,tpclspawnnew,client);
+			CreateTimer(0.1,tpclspawnnew,client,TIMER_FLAG_NO_MAPCHANGE);
 		else
 		{
 			clused = 0;
-			CreateTimer(0.1,tpclspawnnew,client);
+			CreateTimer(0.1,tpclspawnnew,client,TIMER_FLAG_NO_MAPCHANGE);
 		}
 		/*
 		if (lastspawned[client] == 0) lastspawned[client]++;
@@ -1510,10 +1510,6 @@ public Action tpclspawnnew(Handle timer, int i)
 			}
 		}
 		DispatchSpawn(i);
-		float pos[3];
-		GetClientAbsOrigin(i, pos);
-		float plyang[3];
-		GetClientEyeAngles(i, plyang);
 		if (GetArraySize(equiparr) > 0)
 		{
 			for (int j; j<GetArraySize(equiparr); j++)
