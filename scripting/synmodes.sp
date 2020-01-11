@@ -13,7 +13,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.28"
+#define PLUGIN_VERSION "1.29"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -33,6 +33,7 @@ bool dmset = false;
 bool hasstarted = false;
 bool survivalact = false;
 bool hasread = false;
+bool allowendspawn = false;
 int WeapList = -1;
 int scoreshow = -1;
 int scoreshowstat = -1;
@@ -173,6 +174,11 @@ public void OnPluginStart()
 	if (mpcvar == INVALID_HANDLE) mpcvar = CreateConVar("mp_dmsoundtrack_volume", "50", "Volume of the song to play every round. Goes from 0 to 100.", FCVAR_PRINTABLEONLY, true, 0.0, true, 100.0);
 	HookConVarChange(mpcvar,soundtrackvolch);
 	g_iDMSoundTrackVol = GetConVarInt(mpcvar);
+	CloseHandle(mpcvar);
+	mpcvar = FindConVar("sm_allowendspawn");
+	if (mpcvar == INVALID_HANDLE) mpcvar = CreateConVar("sm_allowendspawn", "0", "Allow instant spawn and time spawn to spawn players on other players at trigger_changelevel", _, true, 0.0, true, 1.0);
+	HookConVarChange(mpcvar,allowendspawnch);
+	allowendspawn = GetConVarBool(mpcvar);
 	CloseHandle(mpcvar);
 	Handle resetmodeh = CreateConVar("sm_resetmode", "0", "Reset mode for survival gamemode. 0 is reload checkpoint, 1 is reload map, 2 is respawn all players.", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 0.0, true, 2.0);
 	HookConVarChange(resetmodeh,resetmodech);
@@ -425,6 +431,12 @@ public void soundtrackch(Handle convar, const char[] oldValue, const char[] newV
 public void soundtrackvolch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	g_iDMSoundTrackVol = StringToInt(newValue);
+}
+
+public void allowendspawnch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) allowendspawn = true;
+	else allowendspawn = false;
 }
 
 public void resetmodech(Handle convar, const char[] oldValue, const char[] newValue)
@@ -1432,6 +1444,22 @@ public Action tpclspawnnew(Handle timer, int i)
 	}
 	if ((isvehiclemap) || (clused == i))
 		clused = 0;
+	if ((clused > 0) && (IsValidEntity(clused)) && (!allowendspawn))
+	{
+		if (IsClientConnected(clused))
+		{
+			if (IsClientInGame(clused))
+			{
+				if (IsPlayerAlive(clused))
+				{
+					if (GetEntityRenderFx(clused) == RENDERFX_DISTORT)
+					{
+						clused = 0;
+					}
+				}
+			}
+		}
+	}
 	if ((clused > 0) && (IsValidEntity(clused)))
 	{
 		DispatchSpawn(i);
@@ -1602,6 +1630,7 @@ public Action tpclspawnnew(Handle timer, int i)
 					}
 				}
 			}
+			//PrintToServer("CheckPoint %s spawnent %i lastspawned %i",activecheckpoint,spawnent,lastspawned[i]);
 			float vec[3];
 			float spawnang[3];
 			if (HasEntProp(spawnent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(spawnent,Prop_Data,"m_vecAbsOrigin",vec);
