@@ -50,7 +50,7 @@ bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99956"
+#define PLUGIN_VERSION "1.99957"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1847,13 +1847,13 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 			}
 			if (((StrEqual(clsorfixup[1],originchar)) && (StrEqual(clsorfixup[0],targn))) || ((StrEqual(clsorfixup[0],targn)) && (StrEqual(clsorfixup[1],originchar))) || (StrContains(clsorfixup[3],tmpoutpchk,false) != -1))
 			{
-				if (StrContains(tmpch,output) != -1)
+				if (StrContains(tmpch,output,false) != -1)
 				{
 					char lineorgrescom[16][128];
 					if ((StrContains(clsorfixup[5],",") != -1) && (StrContains(clsorfixup[3],":") == -1))
 					{
 						ExplodeString(clsorfixup[5],",",lineorgrescom,16,128);
-						if (StrEqual(input,lineorgrescom[1]))
+						if (StrEqual(input,lineorgrescom[1],false))
 						{
 							ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
 							float delay = StringToFloat(lineorgrescom[3]);
@@ -1884,7 +1884,7 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 					else
 					{
 						ExplodeString(clsorfixup[3],":",lineorgrescom,16,128);
-						if (StrEqual(input,lineorgrescom[1]))
+						if (StrEqual(input,lineorgrescom[1],false))
 						{
 							char delaystr[64];
 							Format(delaystr,sizeof(delaystr),lineorgrescom[3]);
