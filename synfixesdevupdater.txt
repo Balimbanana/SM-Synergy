@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99994"
-			"Previous"	"1.99993"
+			"Latest"  	"1.99995"
+			"Previous"	"1.99994"
 		}
 		
-		"Notes"	"Changed flushfix to OnClientPutInServer."
+		"Notes"	"Fixed certain input hook case-sensitive scenarios."
 	}
 	
 	"Files"
