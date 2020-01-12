@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.47"
+#define PLUGIN_VERSION "0.48"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -1903,6 +1903,7 @@ void ReadEDT(char[] edtfile)
 									GetConVarString(cvarchk,originalval,sizeof(originalval));
 									Format(originalval,sizeof(originalval),"%s %s",kvs[0],originalval);
 									if (FindStringInArray(cvaroriginals,originalval) == -1) PushArrayString(cvaroriginals,originalval);
+									if (strlen(kvs[1]) > 0) SetConVarString(cvarchk,kvs[1],true,true);
 								}
 								CloseHandle(cvarchk);
 								ServerCommand("%s",tmparr);
@@ -2240,6 +2241,17 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 						{
 							i+=4;
 							//valdef = StrContains(kvs[i],"origin",false)+2;
+						}
+					}
+					if (StrContains(kvs[i],"values",false) == 0)
+					{
+						char chklong[64];
+						Format(chklong,sizeof(chklong),"%s",kvs[i]);
+						ReplaceStringEx(chklong,sizeof(chklong),"values","",-1,-1,false);
+						if (strlen(chklong) > 1)
+						{
+							if (StrContains(kvs[i],"{",false) == 0) ReplaceString(kvs[i],sizeof(kvs[]),"{","");
+							Format(kvs[i],sizeof(kvs[]),"%s",chklong);
 						}
 					}
 					if ((StrContains(kvs[i],"values",false) == -1) && (StrContains(kvs[i],"create",false) == -1) && (StrContains(kvs[i],"edit",false) == -1) && (StrContains(kvs[i],"delete",false) == -1) && (StrContains(kvs[i],"modifycase",false) == -1) || ((StrContains(kvs[i],"origin",false) > StrContains(passchar,"values",false)) || (StrContains(kvs[i],"for_origin",false) != -1)))
