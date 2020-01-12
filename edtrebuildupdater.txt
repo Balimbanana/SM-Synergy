@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.47"
-			"Previous"	"0.46"
+			"Latest"  	"0.48"
+			"Previous"	"0.47"
 		}
 		
-		"Notes"	"Fixed certain origin edit scenarios."
+		"Notes"	"Additional CVar set from EDT. Fixed edits that contain no spaces."
 	}
 	
 	"Files"
