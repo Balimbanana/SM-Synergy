@@ -93,7 +93,7 @@ bool BlockEx = true;
 bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 
-#define PLUGIN_VERSION "1.99995"
+#define PLUGIN_VERSION "1.99996"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -590,8 +590,11 @@ public void OnMapStart()
 		//	if (FileExists("maps\\ent_cache\\bms_bm_c2a4e.ent",false))
 		//		DeleteFile("maps\\ent_cache\\bms_bm_c2a4e.ent");
 		//}
+		Handle autobuildcv = FindConVar("rebuildents");
+		if (autobuildcv != INVALID_HANDLE) autorebuild = GetConVarInt(autobuildcv);
+		CloseHandle(autobuildcv);
 		bool syn1810act = false;
-		if ((StrEqual(gamedescoriginal,"synergy 56.16",false)) || (StrEqual(gamedescoriginal,"synergy 18.12",false)))
+		if ((StrEqual(gamedescoriginal,"synergy 56.16",false)) || (StrEqual(gamedescoriginal,"synergy 20.1",false)))
 		{
 			syn56act = true;
 			syn1810act = false;
