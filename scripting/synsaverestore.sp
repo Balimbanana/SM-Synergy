@@ -31,6 +31,7 @@ bool transitionply = false; //Set by cvar sm_disabletransition 2
 bool fallbackequip = false; //Set by cvar sm_equipfallback_disable
 bool reloadaftersetup = false;
 bool BMActive = false;
+bool SynLaterAct = false;
 int WeapList = -1;
 int reloadtype = 0;
 int logsv = -1;
@@ -58,7 +59,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.151"
+#define PLUGIN_VERSION "2.152"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1545,6 +1546,10 @@ public void OnMapStart()
 	mapstarttime = GetTickedTime()+2.0;
 	if (GetMapHistorySize() > 0)
 	{
+		char gamedescoriginal[24];
+		GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
+		if ((StrContains(gamedescoriginal,"Synergy",false) == 0) && (StrContains(gamedescoriginal,"56.16",false) == -1)) SynLaterAct = true;
+		else SynLaterAct = false;
 		GetCurrentMap(mapbuf,sizeof(mapbuf));
 		if ((!StrEqual(mapbuf,"d3_citadel_03",false)) && (!StrEqual(mapbuf,"ep2_outland_02",false)))
 		{
@@ -1572,6 +1577,11 @@ public void OnMapStart()
 				ReplaceString(savedir,sizeof(savedir),"\\","");
 			else if (StrContains(savedir,"/",false) != -1)
 				ReplaceString(savedir,sizeof(savedir),"/","");
+		}
+		else
+		{
+			Format(savedir,sizeof(savedir),"save");
+			if (!DirExists("save",false)) CreateDirectory("save",511);
 		}
 		CloseHandle(savedirh);
 		enterfrom04 = true;
@@ -1856,8 +1866,8 @@ public void OnMapStart()
 			}
 			CloseHandle(savedirrmh);
 			*/
-			CreateTimer(0.1,redel);
-			if ((logsv != -1) && (IsValidEntity(logsv))) saveresetveh(false);
+			if (!SynLaterAct) CreateTimer(0.1,redel);
+			if ((logsv != -1) && (IsValidEntity(logsv)) && (!SynLaterAct)) saveresetveh(false);
 			if ((transitionply) && (IsVehicleMap))
 			{
 				findent(MaxClients+1,"info_player_equip");
@@ -2282,7 +2292,7 @@ public void OnMapStart()
 					}
 				}
 			}
-			if (dbg) LogMessage("ClearTransitionEnts Array after restore of %i ents",GetArraySize(transitionents));
+			if ((dbg) && (GetArraySize(transitionents) > 0)) LogMessage("ClearTransitionEnts Array after restore of %i ents",GetArraySize(transitionents));
 			ClearArray(transitionents);
 			if ((alyxtransition != -1) && (IsValidEntity(alyxtransition)))
 			{
@@ -2886,6 +2896,17 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 		{
 			char clsname[32];
 			GetEntityClassname(i,clsname,sizeof(clsname));
+			if (SynLaterAct)
+			{
+				if (custentlist != INVALID_HANDLE)
+				{
+					if ((FindStringInArray(custentlist,clsname) == -1) && (!StrEqual(clsname,"player",false)))
+					{
+						continue;
+					}
+				}
+				else if (!StrEqual(clsname,"player",false)) continue;
+			}
 			int alwaystransition = 0;
 			if (HasEntProp(i,Prop_Data,"m_bAlwaysTransition")) alwaystransition = GetEntProp(i,Prop_Data,"m_bAlwaysTransition");
 			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
@@ -3676,7 +3697,7 @@ public Action restoreaim(Handle timer, Handle dp)
 */
 public void OnClientAuthorized(int client, const char[] szAuth)
 {
-	if (rmsaves)
+	if ((rmsaves) && (!SynLaterAct))
 	{
 		if ((!StrEqual(mapbuf,"d3_citadel_03",false)) && (!StrEqual(mapbuf,"ep2_outland_02",false)))
 		{
