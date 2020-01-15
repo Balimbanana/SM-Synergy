@@ -838,7 +838,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "HL2: Episode 2");
 	}
-	else if (StrContains(map,"meta",false) == 0)
+	else if (StrContains(map,"metastasis",false) == 0)
 	{
 		Format(modname, sizeof(modname), "Minerva");
 	}
@@ -1026,6 +1026,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Obsidian Conflict");
 	}
+	else if (StrContains(map,"vektaslums0",false) == 0)
+	{
+		Format(modname, sizeof(modname), "Killzone Source");
+	}
 	else if ((StrContains(map,"Uh_Prologue_",false) == 0) || (StrContains(map,"Uh_Chapter1_",false) == 0) || (StrContains(map,"Uh_Chapter2_",false) == 0) || (StrContains(map,"Uh_House_",false) == 0) || (StrContains(map,"Uh_Dreams_",false) == 0))
 	{
 		Format(modname, sizeof(modname), "Underhell");
@@ -1037,10 +1041,12 @@ public Action GetMapTag(const char[] map)
 		if (StrEqual(gamedesc,"tf",false))
 		{
 			Format(maptag, sizeof(maptag), "TF2");
+			Format(modname, sizeof(modname), "TF2");
 		}
 		else
 		{
 			Format(maptag, sizeof(maptag), "Syn");
+			Format(modname, sizeof(modname), "Syn");
 		}
 	}
 	if (strlen(modname) > 0)
