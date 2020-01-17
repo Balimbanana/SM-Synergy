@@ -1233,6 +1233,9 @@ public Action fixalyx(int client, int args)
 
 public Action fixbarney(int client, int args)
 {
+	char tmpmap[24];
+	GetCurrentMap(tmpmap,sizeof(tmpmap));
+	if (StrEqual(tmpmap,"ep1_c17_06",false)) return Plugin_Handled;
 	findgfollow(-1,"barney");
 	if (!findtargn("barney"))
 		readoutputs(client,"barney");
