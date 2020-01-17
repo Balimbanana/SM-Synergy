@@ -13,7 +13,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.29"
+#define PLUGIN_VERSION "1.30"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -75,6 +75,7 @@ int blueteamkills;
 float changeteamcd[MAXPLAYERS+1];
 char mapbuf[64];
 char activecheckpoint[64];
+char activegamemode[64];
 int resetmode = 0;
 bool resetvehpass = false;
 bool aggro = false;
@@ -1005,7 +1006,11 @@ void setupdmfor(char[] gametype)
 		SetEventFloat(startround,"fraglimit",roundtime);
 		FireEvent(startround,false);
 	}
-	PrintToChatAll("GameMode changed to %s",gametypedisp);
+	if (!StrEqual(activegamemode,gametypedisp,false))
+	{
+		PrintToChatAll("GameMode changed to %s",gametypedisp);
+		Format(activegamemode,sizeof(activegamemode),"%s",gametypedisp);
+	}
 }
 
 void balanceteams()
@@ -1435,6 +1440,7 @@ public Action tpclspawnnew(Handle timer, int i)
 		ClearArray(globalsarr);
 		findglobals(-1,"info_global_settings");
 	}
+	if (!IsValidEntity(clused)) clused = 0;
 	if (instspawnuse)
 	{
 		int vck = -1;
