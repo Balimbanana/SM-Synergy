@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99957"
-			"Previous"	"1.99956"
+			"Latest"  	"1.99958"
+			"Previous"	"1.99957"
 		}
 		
-		"Notes"	"Updated hooks system to SynFixesDev version. Added a couple validations to a few functions."
+		"Notes"	"Disabled !barney on ep1_c17_06. Disabled !alyx on d1_town_05."
 	}
 	
 	"Files"
