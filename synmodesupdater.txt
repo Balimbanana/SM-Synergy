@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.29"
-			"Previous"	"1.28"
+			"Latest"  	"1.30"
+			"Previous"	"1.29"
 		}
 		
-		"Notes"	"Added sm_allowendspawn default 0. Allows instant spawn and timed spawn to spawn players on other players inside trigger_changelevel."
+		"Notes"	"Fixed possible attempt to spawn on invalid entity. Fixed gamemode changed message to only display if changed from what it currently is."
 	}
 	
 	"Files"
