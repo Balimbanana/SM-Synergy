@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99995"
-			"Previous"	"1.99994"
+			"Latest"  	"1.99996"
+			"Previous"	"1.99995"
 		}
 		
-		"Notes"	"Fixed certain input hook case-sensitive scenarios."
+		"Notes"	"Disabled !barney on ep1_c17_06."
 	}
 	
 	"Files"
