@@ -120,7 +120,7 @@
 			}
 			"CommitSuicide"
 			{
-				"windows"	"446" //449
+				"windows"	"447"
 				"linux"		"447"
 				"mac"		"447"
 			}
