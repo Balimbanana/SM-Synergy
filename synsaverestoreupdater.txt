@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.152"
-			"Previous"	"2.151"
+			"Latest"  	"2.153"
+			"Previous"	"2.152"
 		}
 		
-		"Notes"	"Added support for Synergy 20.1 which will only handle custom entities and player stats/custom weapons transitions."
+		"Notes"	"Fixed possibility of array index change error if player disconnects before restored."
 	}
 	
 	"Files"
