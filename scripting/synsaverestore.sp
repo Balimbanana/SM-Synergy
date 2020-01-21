@@ -59,7 +59,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.152"
+#define PLUGIN_VERSION "2.153"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3938,139 +3938,142 @@ public Action anotherdelay(Handle timer, int client)
 			char ammosetamm[16];
 			char curweap[24];
 			RemoveFromArray(transitionid,arrindx);
-			Handle dp = GetArrayCell(transitiondp,arrindx);
-			ResetPack(dp);
-			int curh = ReadPackCell(dp);
-			int cura = ReadPackCell(dp);
-			int score = ReadPackCell(dp);
-			int kills = ReadPackCell(dp);
-			int deaths = ReadPackCell(dp);
-			int suitset = ReadPackCell(dp);
-			int medkitamm = ReadPackCell(dp);
-			int crouching = ReadPackCell(dp);
-			float plyorigin[3];
-			float angs[3];
-			angs[0] = ReadPackFloat(dp);
-			angs[1] = ReadPackFloat(dp);
-			bool teleport = true;
-			plyorigin[0] = ReadPackFloat(dp);
-			plyorigin[1] = ReadPackFloat(dp);
-			plyorigin[2] = ReadPackFloat(dp);
-			if (((plyorigin[0] == 0.0) && (plyorigin[1] == 0.0) && (plyorigin[2] == 0.0))) teleport = false;
-			plyorigin[0]+=landmarkorigin[0];
-			plyorigin[1]+=landmarkorigin[1];
-			plyorigin[2]+=landmarkorigin[2];
-			if (TR_PointOutsideWorld(plyorigin)) teleport = false;
-			if (dbg) LogMessage("Restore CL %N Transition info %i health %i armor Offset \"%1.f %1.f %1.f\" moveto %i",client,curh,cura,plyorigin[0],plyorigin[1],plyorigin[2],teleport);
-			ReadPackString(dp,curweap,sizeof(curweap));
-			SetEntProp(client,Prop_Data,"m_iHealth",curh);
-			SetEntProp(client,Prop_Data,"m_ArmorValue",cura);
-			if (HasEntProp(client,Prop_Data,"m_iPoints")) SetEntProp(client,Prop_Data,"m_iPoints",score);
-			SetEntProp(client,Prop_Data,"m_iFrags",kills);
-			SetEntProp(client,Prop_Data,"m_iDeaths",deaths);
-			SetEntProp(client,Prop_Send,"m_bWearingSuit",suitset);
-			if (HasEntProp(client,Prop_Data,"m_iHealthPack")) SetEntProp(client,Prop_Send,"m_iHealthPack",medkitamm);
-			SetEntProp(client,Prop_Send,"m_bDucking",crouching);
-			ReadPackString(dp,ammoset,sizeof(ammoset));
-			while (!StrEqual(ammoset,"endofpack",false))
+			if (GetArraySize(transitiondp) > arrindx)
 			{
-				if (StrContains(ammoset,"weapon_",false) == -1)
+				Handle dp = GetArrayCell(transitiondp,arrindx);
+				ResetPack(dp);
+				int curh = ReadPackCell(dp);
+				int cura = ReadPackCell(dp);
+				int score = ReadPackCell(dp);
+				int kills = ReadPackCell(dp);
+				int deaths = ReadPackCell(dp);
+				int suitset = ReadPackCell(dp);
+				int medkitamm = ReadPackCell(dp);
+				int crouching = ReadPackCell(dp);
+				float plyorigin[3];
+				float angs[3];
+				angs[0] = ReadPackFloat(dp);
+				angs[1] = ReadPackFloat(dp);
+				bool teleport = true;
+				plyorigin[0] = ReadPackFloat(dp);
+				plyorigin[1] = ReadPackFloat(dp);
+				plyorigin[2] = ReadPackFloat(dp);
+				if (((plyorigin[0] == 0.0) && (plyorigin[1] == 0.0) && (plyorigin[2] == 0.0))) teleport = false;
+				plyorigin[0]+=landmarkorigin[0];
+				plyorigin[1]+=landmarkorigin[1];
+				plyorigin[2]+=landmarkorigin[2];
+				if (TR_PointOutsideWorld(plyorigin)) teleport = false;
+				if (dbg) LogMessage("Restore CL %N Transition info %i health %i armor Offset \"%1.f %1.f %1.f\" moveto %i",client,curh,cura,plyorigin[0],plyorigin[1],plyorigin[2],teleport);
+				ReadPackString(dp,curweap,sizeof(curweap));
+				SetEntProp(client,Prop_Data,"m_iHealth",curh);
+				SetEntProp(client,Prop_Data,"m_ArmorValue",cura);
+				if (HasEntProp(client,Prop_Data,"m_iPoints")) SetEntProp(client,Prop_Data,"m_iPoints",score);
+				SetEntProp(client,Prop_Data,"m_iFrags",kills);
+				SetEntProp(client,Prop_Data,"m_iDeaths",deaths);
+				SetEntProp(client,Prop_Send,"m_bWearingSuit",suitset);
+				if (HasEntProp(client,Prop_Data,"m_iHealthPack")) SetEntProp(client,Prop_Send,"m_iHealthPack",medkitamm);
+				SetEntProp(client,Prop_Send,"m_bDucking",crouching);
+				ReadPackString(dp,ammoset,sizeof(ammoset));
+				while (!StrEqual(ammoset,"endofpack",false))
 				{
-					ExplodeString(ammoset," ",ammosetexp,2,24);
-					int ammindx = StringToInt(ammosetexp[0]);
-					int ammset = StringToInt(ammosetexp[1]);
-					SetEntProp(client,Prop_Send,"m_iAmmo",ammset,_,ammindx);
-				}
-				else if (StrContains(ammoset,"weapon_",false) != -1)
-				{
-					int breakstr = StrContains(ammoset," ",false);
-					Format(ammosettype,sizeof(ammosettype),"%s",ammoset);
-					Format(ammosetamm,sizeof(ammosetamm),"%s",ammoset[breakstr+1]);
-					ReplaceString(ammosettype,sizeof(ammosettype),ammoset[breakstr],"");
-					int weapindx = -1;
-					char basecls[32];
-					if (!BMActive)
+					if (StrContains(ammoset,"weapon_",false) == -1)
 					{
-						if (StrEqual(ammosettype,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
-						else if (StrEqual(ammosettype,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
-						else if ((StrEqual(ammosettype,"weapon_glock",false)) || (StrEqual(ammosettype,"weapon_pistol_worker",false)) || (StrEqual(ammosettype,"weapon_flaregun",false)) || (StrEqual(ammosettype,"weapon_manhack",false)) || (StrEqual(ammosettype,"weapon_manhackgun",false)) || (StrEqual(ammosettype,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-						else if ((StrEqual(ammosettype,"weapon_medkit",false)) || (StrEqual(ammosettype,"weapon_healer",false)) || (StrEqual(ammosettype,"weapon_snark",false)) || (StrEqual(ammosettype,"weapon_hivehand",false)) || (StrEqual(ammosettype,"weapon_satchel",false)) || (StrEqual(ammosettype,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-						else if ((StrEqual(ammosettype,"weapon_mp5",false)) || (StrEqual(ammosettype,"weapon_sl8",false)) || (StrEqual(ammosettype,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-						else if ((StrEqual(ammosettype,"weapon_gauss",false)) || (StrEqual(ammosettype,"weapon_tau",false)) || (StrEqual(ammosettype,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
-						else if (StrEqual(ammosettype,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
-						else if (StrEqual(ammosettype,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
-						else if (StrContains(ammosettype,"customweapons",false) != -1)
+						ExplodeString(ammoset," ",ammosetexp,2,24);
+						int ammindx = StringToInt(ammosetexp[0]);
+						int ammset = StringToInt(ammosetexp[1]);
+						SetEntProp(client,Prop_Send,"m_iAmmo",ammset,_,ammindx);
+					}
+					else if (StrContains(ammoset,"weapon_",false) != -1)
+					{
+						int breakstr = StrContains(ammoset," ",false);
+						Format(ammosettype,sizeof(ammosettype),"%s",ammoset);
+						Format(ammosetamm,sizeof(ammosetamm),"%s",ammoset[breakstr+1]);
+						ReplaceString(ammosettype,sizeof(ammosettype),ammoset[breakstr],"");
+						int weapindx = -1;
+						char basecls[32];
+						if (!BMActive)
 						{
-							char findpath[64];
-							Format(findpath,sizeof(findpath),"scripts/%s.txt",ammosettype);
-							if (FileExists(findpath,true,NULL_STRING))
+							if (StrEqual(ammosettype,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
+							else if (StrEqual(ammosettype,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
+							else if ((StrEqual(ammosettype,"weapon_glock",false)) || (StrEqual(ammosettype,"weapon_pistol_worker",false)) || (StrEqual(ammosettype,"weapon_flaregun",false)) || (StrEqual(ammosettype,"weapon_manhack",false)) || (StrEqual(ammosettype,"weapon_manhackgun",false)) || (StrEqual(ammosettype,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+							else if ((StrEqual(ammosettype,"weapon_medkit",false)) || (StrEqual(ammosettype,"weapon_healer",false)) || (StrEqual(ammosettype,"weapon_snark",false)) || (StrEqual(ammosettype,"weapon_hivehand",false)) || (StrEqual(ammosettype,"weapon_satchel",false)) || (StrEqual(ammosettype,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+							else if ((StrEqual(ammosettype,"weapon_mp5",false)) || (StrEqual(ammosettype,"weapon_sl8",false)) || (StrEqual(ammosettype,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+							else if ((StrEqual(ammosettype,"weapon_gauss",false)) || (StrEqual(ammosettype,"weapon_tau",false)) || (StrEqual(ammosettype,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+							else if (StrEqual(ammosettype,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
+							else if (StrEqual(ammosettype,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
+							else if (StrContains(ammosettype,"customweapons",false) != -1)
 							{
-								Handle filehandlesub = OpenFile(findpath,"r",true,NULL_STRING);
-								if (filehandlesub != INVALID_HANDLE)
+								char findpath[64];
+								Format(findpath,sizeof(findpath),"scripts/%s.txt",ammosettype);
+								if (FileExists(findpath,true,NULL_STRING))
 								{
-									char scrline[128];
-									while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
+									Handle filehandlesub = OpenFile(findpath,"r",true,NULL_STRING);
+									if (filehandlesub != INVALID_HANDLE)
 									{
-										TrimString(scrline);
-										if (StrContains(scrline,"\"anim_prefix\"",false) != -1)
+										char scrline[128];
+										while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
 										{
-											ReplaceStringEx(scrline,sizeof(scrline),"\"anim_prefix\"","",_,_,false);
-											ReplaceString(scrline,sizeof(scrline),"\"","");
 											TrimString(scrline);
-											if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
-											else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
-											else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
-											Format(scrline,sizeof(scrline),"weapon_%s",scrline);
-											Format(basecls,sizeof(basecls),"%s",scrline);
-											break;
+											if (StrContains(scrline,"\"anim_prefix\"",false) != -1)
+											{
+												ReplaceStringEx(scrline,sizeof(scrline),"\"anim_prefix\"","",_,_,false);
+												ReplaceString(scrline,sizeof(scrline),"\"","");
+												TrimString(scrline);
+												if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
+												else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
+												else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
+												Format(scrline,sizeof(scrline),"weapon_%s",scrline);
+												Format(basecls,sizeof(basecls),"%s",scrline);
+												break;
+											}
 										}
 									}
+									CloseHandle(filehandlesub);
 								}
-								CloseHandle(filehandlesub);
 							}
 						}
-					}
-					if (BMActive) Format(basecls,sizeof(basecls),"%s",ammosettype);
-					if (strlen(basecls) > 0)
-					{
-						weapindx = CreateEntityByName(basecls);
+						if (BMActive) Format(basecls,sizeof(basecls),"%s",ammosettype);
+						if (strlen(basecls) > 0)
+						{
+							weapindx = CreateEntityByName(basecls);
+							if (weapindx != -1)
+							{
+								float tmporgs[3];
+								GetClientAbsOrigin(client,tmporgs);
+								tmporgs[2]+=20.0;
+								TeleportEntity(weapindx,tmporgs,angs,NULL_VECTOR);
+								DispatchKeyValue(weapindx,"classname",ammosettype);
+								DispatchSpawn(weapindx);
+								ActivateEntity(weapindx);
+							}
+						}
+						if (weapindx == -1) weapindx = GivePlayerItem(client,ammosettype);
 						if (weapindx != -1)
 						{
-							float tmporgs[3];
-							GetClientAbsOrigin(client,tmporgs);
-							tmporgs[2]+=20.0;
-							TeleportEntity(weapindx,tmporgs,angs,NULL_VECTOR);
-							DispatchKeyValue(weapindx,"classname",ammosettype);
-							DispatchSpawn(weapindx);
-							ActivateEntity(weapindx);
+							int weapamm = StringToInt(ammosetamm);
+							SetEntProp(weapindx,Prop_Data,"m_iClip1",weapamm);
 						}
 					}
-					if (weapindx == -1) weapindx = GivePlayerItem(client,ammosettype);
-					if (weapindx != -1)
-					{
-						int weapamm = StringToInt(ammosetamm);
-						SetEntProp(weapindx,Prop_Data,"m_iClip1",weapamm);
-					}
+					ReadPackString(dp,ammoset,sizeof(ammoset));
 				}
-				ReadPackString(dp,ammoset,sizeof(ammoset));
+				CloseHandle(dp);
+				RemoveFromArray(transitiondp,arrindx);
+				if (teleport)
+				{
+					Handle dpoffs = CreateDataPack();
+					WritePackCell(dpoffs,client);
+					WritePackFloat(dpoffs,plyorigin[0]);
+					WritePackFloat(dpoffs,plyorigin[1]);
+					WritePackFloat(dpoffs,plyorigin[2]);
+					WritePackFloat(dpoffs,angs[0]);
+					WritePackFloat(dpoffs,angs[1]);
+					WritePackFloat(dpoffs,angs[2]);
+					if (BMActive) CreateTimer(1.1,tpcltooff,dpoffs,TIMER_FLAG_NO_MAPCHANGE);
+					else CreateTimer(0.1,tpcltooff,dpoffs,TIMER_FLAG_NO_MAPCHANGE);
+					TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
+				}
+				ClientCommand(client,"use %s",curweap);
 			}
-			CloseHandle(dp);
-			RemoveFromArray(transitiondp,arrindx);
-			if (teleport)
-			{
-				Handle dpoffs = CreateDataPack();
-				WritePackCell(dpoffs,client);
-				WritePackFloat(dpoffs,plyorigin[0]);
-				WritePackFloat(dpoffs,plyorigin[1]);
-				WritePackFloat(dpoffs,plyorigin[2]);
-				WritePackFloat(dpoffs,angs[0]);
-				WritePackFloat(dpoffs,angs[1]);
-				WritePackFloat(dpoffs,angs[2]);
-				if (BMActive) CreateTimer(1.1,tpcltooff,dpoffs,TIMER_FLAG_NO_MAPCHANGE);
-				else CreateTimer(0.1,tpcltooff,dpoffs,TIMER_FLAG_NO_MAPCHANGE);
-				TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
-			}
-			ClientCommand(client,"use %s",curweap);
 		}
 		else if (!BMActive)
 		{
