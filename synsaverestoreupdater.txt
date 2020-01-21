@@ -8,7 +8,7 @@
 			"Previous"	"2.152"
 		}
 		
-		"Notes"	"Fixed possibility of array index change error if player disconnects before restored."
+		"Notes"	"Fixed possibility of array index change error if player disconnects after restore starts, but before restored."
 	}
 	
 	"Files"
