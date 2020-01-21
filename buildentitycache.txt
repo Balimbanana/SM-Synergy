@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.42"
-			"Previous"	"0.41"
+			"Latest"  	"0.43"
+			"Previous"	"0.42"
 		}
 		
 		"Notes"	"Added buildloader ability to create loaders for Steam games. Added Steam game buildedt all support."
