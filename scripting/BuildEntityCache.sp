@@ -11,7 +11,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "0.42"
+#define PLUGIN_VERSION "0.43"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -19,6 +19,7 @@ bool startedreading = false;
 bool WriteCache = false;
 bool Reverse = false;
 bool MapSetInProgress = false;
+bool EndMapSet = false;
 char mapbuf[64];
 char curmap[64];
 char globaldots[48];
@@ -556,6 +557,15 @@ public Action BuildLoaderFor(int client, int args)
 								if (strlen(deps) < 1) Format(deps,sizeof(deps),"ep1");
 							}
 						}
+						else if ((strlen(appid) < 1) && (StrContains(line,"SteamAppId",false) != -1) && (StrContains(sourcemodpath,"sourcemods",false) == -1))
+						{
+							ReplaceString(line,sizeof(line),"SteamAppId","",false);
+							ReplaceString(line,sizeof(line),"	","");
+							int commentpos = StrContains(line,"//",false);
+							if (commentpos != -1) Format(line,commentpos+1,"%s",line);
+							TrimString(line);
+							Format(appid,sizeof(appid),"%s",line);
+						}
 					}
 				}
 			}
@@ -608,14 +618,19 @@ public Action BuildLoaderFor(int client, int args)
 			WriteFileLine(loaderdat,"\"%s\"",titlepath);
 			WriteFileLine(loaderdat,"{");
 			WriteFileLine(loaderdat,"	\"tag\"	\"%s\"",newtag);
-			WriteFileLine(loaderdat,"	\"web\"	\"%s\"",gameurl);
+			if (strlen(gameurl) > 1) WriteFileLine(loaderdat,"	\"web\"	\"%s\"",gameurl);
 			if (strlen(appid) > 0)
 			{
+				if (strlen(gameurl) < 2) WriteFileLine(loaderdat,"	\"web\"	\"https://store.steampowered.com/app/%s\"",appid);
 				WriteFileLine(loaderdat,"	\"id\"	\"%s\"",appid);
 				WriteFileLine(loaderdat,"	\"root\"	\"%s\"",sourcemod);
 				WriteFileLine(loaderdat,"	\"path\"	\"%s\"",subdir);
 			}
-			else WriteFileLine(loaderdat,"	\"path\"	\"%s\"",sourcemod);
+			else
+			{
+				WriteFileLine(loaderdat,"	\"web\"	\"%s\"",gameurl);
+				WriteFileLine(loaderdat,"	\"path\"	\"%s\"",sourcemod);
+			}
 			WriteFileLine(loaderdat,"	\"sup\"	\"2\"");
 			if (strlen(deps) > 1) WriteFileLine(loaderdat,"	\"deps\"	\"%s\"",deps);
 			WriteFileLine(loaderdat,"	");
@@ -746,7 +761,7 @@ void ReadCache(char[] cache, char[] mapedt)
 					{
 						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains Lock Input",cls,origin);
 						StrCat(lineedt,sizeof(lineedt),"//May need to edit this Lock");
-						PrintToServer("kv1 %s kv3 %s",kvs[1],kvs[3]);
+						//PrintToServer("kv1 %s kv3 %s",kvs[1],kvs[3]);
 					}
 					else if ((StrContains(kvs[3],",Strip,,",false) != -1) || (StrContains(kvs[3],",StripWeaponsAndSuit,,",false) != -1))
 					{
@@ -1231,7 +1246,12 @@ void ReadCache(char[] cache, char[] mapedt)
 		CloseHandle(mainspawn);
 		CloseHandle(logicautos);
 		CloseHandle(hudtimer);
-		if (!MapSetInProgress) CloseHandle(carriedoverweapons);
+		if (EndMapSet)
+		{
+			CloseHandle(carriedoverweapons);
+			carriedoverweapons = INVALID_HANDLE;
+			MapSetInProgress = false;
+		}
 		CloseHandle(itemsarr);
 		CloseHandle(equipsarrays);
 		CloseHandle(mapremovals);
@@ -1412,7 +1432,7 @@ void buildcache(int startline, Handle mapset)
 								{
 									PrintToServer("Finished writing map set");
 									CloseHandle(mapset);
-									MapSetInProgress = false;
+									if (MapSetInProgress) EndMapSet = true;
 									break;
 								}
 							}
