@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.48"
+#define PLUGIN_VERSION "0.49"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -1998,6 +1998,7 @@ void ReadEDT(char[] edtfile)
 								char kvs[64][64];
 								ExplodeString(tmparr," ",kvs,64,64);
 								Format(targn,sizeof(targn),"%s",kvs[0]);
+								if (StrEqual(kvs[2],"\"\"",false)) Format(targn,sizeof(targn),"%s %s",kvs[0],kvs[1]);
 								ReplaceString(targn,sizeof(targn),"\"","");
 								ReplaceString(targn,sizeof(targn),"}","");
 								if ((strlen(targn) > 0) && (!StrEqual(targn,"classname",false)))
@@ -2261,6 +2262,7 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 						int set = 0;
 						ReplaceString(kvs[i],sizeof(kvs[]),"{","");
 						ReplaceString(kvs[i+1],sizeof(kvs[]),"}","");
+						if ((StrEqual(cls,"targetname",false)) && (StrContains(kvs[i],"\"",false) == 0) && (StrContains(kvs[i+1],"\"",false) > -1)) Format(key,sizeof(key),"%s %s",kvs[i],kvs[i+1]);
 						if (StrContains(kvs[i],"\"",false) == -1) Format(key,sizeof(key),"%s",kvs[i]);
 						else if (StrContains(kvs[i],"\"",false) == 0)
 						{
