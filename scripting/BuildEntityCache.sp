@@ -11,7 +11,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "0.43"
+#define PLUGIN_VERSION "0.44"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -584,7 +584,7 @@ public Action BuildLoaderFor(int client, int args)
 				{
 					if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
 					{
-						if (StrContains(buff,".bsp",false) != -1)
+						if ((StrContains(buff,".bsp",false) != -1) && (StrContains(buff,".txt",false) == -1))
 						{
 							if ((StrContains(buff,"background",false) != -1) || (StrContains(buff,"loading",false) != -1))
 							{
@@ -628,7 +628,6 @@ public Action BuildLoaderFor(int client, int args)
 			}
 			else
 			{
-				WriteFileLine(loaderdat,"	\"web\"	\"%s\"",gameurl);
 				WriteFileLine(loaderdat,"	\"path\"	\"%s\"",sourcemod);
 			}
 			WriteFileLine(loaderdat,"	\"sup\"	\"2\"");
