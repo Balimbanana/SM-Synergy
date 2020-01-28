@@ -7,11 +7,13 @@
 #tryinclude <updater>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
+#pragma semicolon 1;
+#pragma newdecls required;
 
-#define PLUGIN_VERSION "1.69"
+#define PLUGIN_VERSION "1.70"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name = "ModelLoader",
 	author = "Balimbanana",
@@ -20,11 +22,9 @@ public Plugin:myinfo =
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
-Handle ndirlisting;
-Handle modelarray;
-Handle matarray;
-Handle mdirlisting;
-Handle Handle_Database;
+Handle modelarray = INVALID_HANDLE;
+Handle matarray = INVALID_HANDLE;
+Handle Handle_Database = INVALID_HANDLE;
 char SteamIDbuf[MAXPLAYERS+1][32];
 char curmodel[MAXPLAYERS+1][128];
 char desmodel[MAXPLAYERS+1][128];
@@ -33,21 +33,21 @@ float antispamchk[MAXPLAYERS+1];
 bool dlactive = false;
 bool soundfix = true;
 
-Handle magisterarray;
-Handle darxarray;
-Handle gmodarray;
-Handle hl2sarray;
-Handle qncarray;
-Handle n7larray;
-Handle kudarray;
-Handle cssarray;
-Handle cs16array;
-Handle mawsarray;
-Handle hl1array;
-Handle l4darray;
-Handle scarray;
-Handle modelarray2;
-Handle precachedarr;
+Handle magisterarray = INVALID_HANDLE;
+Handle darxarray = INVALID_HANDLE;
+Handle gmodarray = INVALID_HANDLE;
+Handle hl2sarray = INVALID_HANDLE;
+Handle qncarray = INVALID_HANDLE;
+Handle n7larray = INVALID_HANDLE;
+Handle kudarray = INVALID_HANDLE;
+Handle cssarray = INVALID_HANDLE;
+Handle cs16array = INVALID_HANDLE;
+Handle mawsarray = INVALID_HANDLE;
+Handle hl1array = INVALID_HANDLE;
+Handle l4darray = INVALID_HANDLE;
+Handle scarray = INVALID_HANDLE;
+Handle modelarray2 = INVALID_HANDLE;
+Handle precachedarr = INVALID_HANDLE;
 
 Handle bclcookieh = INVALID_HANDLE;
 Handle bclcookie2h = INVALID_HANDLE;
@@ -64,19 +64,6 @@ public void OnPluginStart()
 	modelarray = CreateArray(768);
 	modelarray2 = CreateArray(768);
 	matarray = CreateArray(512);
-	magisterarray = CreateArray(20);
-	darxarray = CreateArray(20);
-	gmodarray = CreateArray(20);
-	hl2sarray = CreateArray(30);
-	qncarray = CreateArray(20);
-	n7larray = CreateArray(20);
-	kudarray = CreateArray(20);
-	cssarray = CreateArray(20);
-	cs16array = CreateArray(20);
-	mawsarray = CreateArray(64);
-	hl1array = CreateArray(20);
-	l4darray = CreateArray(10);
-	scarray = CreateArray(20);
 	//ocarray = CreateArray(392);
 	precachedarr = CreateArray(256);
 	char Error[100];
@@ -91,8 +78,6 @@ public void OnPluginStart()
 		return;
 	}
 	reloadmdlclients();
-	ndirlisting = OpenDirectory("models/player", true, NULL_STRING);
-	mdirlisting = OpenDirectory("materials", true, NULL_STRING);
 	matarraypopulate();
 	Handle modelloaderdlh = CreateConVar("sm_modelloaderdl", "0", "Specifies if ModelLoader will add all found models to download list. But it will not add models inside VPKs", _, true, 0.0, true, 1.0);
 	dlactive = GetConVarBool(modelloaderdlh);
@@ -113,7 +98,7 @@ public void OnPluginStart()
 	AddNormalSoundHook(customsoundchecksnorm);
 }
 
-public OnLibraryAdded(const char[] name)
+public void OnLibraryAdded(const char[] name)
 {
 	if (StrEqual(name,"updater",false))
 	{
@@ -121,13 +106,13 @@ public OnLibraryAdded(const char[] name)
 	}
 }
 
-public Updater_OnPluginUpdated()
+public int Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
 }
 
-public dlch(Handle convar, const char[] oldValue, const char[] newValue)
+public void dlch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1)
 	{
@@ -179,7 +164,7 @@ public Action reloadmdlclients()
 	}
 }
 
-public LoadClient(int client)
+void LoadClient(int client)
 {
 	char Query[128];
 	if (!Stored(client))
@@ -196,6 +181,7 @@ public LoadClient(int client)
 		LogError("SQLite error: %s with query %s",Err,Query);
 	}
 	SQL_FetchString(hQuery, 0, desmodel[client], sizeof(desmodel[]));
+	CloseHandle(hQuery);
 	return;
 }
 
@@ -222,7 +208,7 @@ public void plymdlchk(QueryCookie cookie, int client, ConVarQueryResult result, 
 	}
 }
 
-public OnClientAuthorized(int client, const char[] szAuth)
+public void OnClientAuthorized(int client, const char[] szAuth)
 {
 	GetClientAuthId(client,AuthId_Steam2,SteamIDbuf[client],sizeof(SteamIDbuf[]));
 	LoadClient(client);
@@ -282,7 +268,7 @@ public Action setmodelbody(int client, int args)
 	return Plugin_Handled;
 }
 
-public OnClientCookiesCached(int client)
+public void OnClientCookiesCached(int client)
 {
 	char sValue[32];
 	GetClientCookie(client, bclcookieh, sValue, sizeof(sValue));
@@ -492,13 +478,13 @@ public bool Stored(int client)
 	return false;
 }
 
-public OnClientDisconnect(client)
+public void OnClientDisconnect(int client)
 {
 	int index = client;
 	init(index);
 }
 
-public init(int index)
+void init(int index)
 {
 	SteamIDbuf[index] = "";
 	curmodel[index] = "";
@@ -528,66 +514,79 @@ public Action sortarray(Handle Timer)
 			GetArrayString(modelarray, k, ktmp, sizeof(ktmp));
 			if (StrContains(ktmp, "- lord darx", false) != -1)
 			{
+				if (darxarray == INVALID_HANDLE) darxarray = CreateArray(20);
 				PushArrayString(darxarray, ktmp);
 				//Format(thattemp,sizeof(thattemp),"Lord Darx");
 			}
 			else if (StrContains(ktmp, "- gmod", false) != -1)
 			{
+				if (gmodarray == INVALID_HANDLE) gmodarray = CreateArray(20);
 				PushArrayString(gmodarray, ktmp);
 				//Format(thattemp,sizeof(thattemp),"Gmod");
 			}
 			else if (StrContains(ktmp, "- m@gister", false) != -1)
 			{
+				if (magisterarray == INVALID_HANDLE) magisterarray = CreateArray(20);
 				PushArrayString(magisterarray, ktmp);
 				//Format(thattemp,sizeof(thattemp),"M@gister");
 			}
 			else if (StrContains(ktmp, "- hl2s", false) != -1)
 			{
+				if (hl2sarray == INVALID_HANDLE) hl2sarray = CreateArray(30);
 				PushArrayString(hl2sarray, ktmp);
 				//Format(thattemp,sizeof(thattemp),"HL2S");
 			}
 			else if (StrContains(ktmp, "- quickninjacat", false) != -1)
 			{
+				if (qncarray == INVALID_HANDLE) qncarray = CreateArray(20);
 				PushArrayString(qncarray, ktmp);
 				//Format(thattemp,sizeof(thattemp),"QuickNinjaCat");
 			}
 			else if (StrContains(ktmp, "- n7legion", false) != -1)
 			{
+				if (n7larray == INVALID_HANDLE) n7larray = CreateArray(20);
 				PushArrayString(n7larray, ktmp);
 				//Format(thattemp,sizeof(thattemp),"N7Legion");
 			}
 			else if ((StrContains(ktmp, "pedo bear -", false) != -1) || (StrContains(ktmp, "soviet soldier - sniper elite v2", false) != -1) || (StrContains(ktmp, "- fairy fencer f", false) != -1) || (StrContains(ktmp, "- touhou project", false) != -1) || (StrContains(ktmp, "uni - maid ver", false) != -1) || (StrContains(ktmp, "- hyperdimension neptunia", false) != -1) || (StrContains(ktmp, "franklin clinton - gta5", false) != -1))
 			{
+				if (kudarray == INVALID_HANDLE) kudarray = CreateArray(20);
 				PushArrayString(kudarray, ktmp);
 				//Format(thattemp,sizeof(thattemp),"Kud");
 			}
 			else if (StrContains(ktmp, "- css", false) != -1)
 			{
+				if (cssarray == INVALID_HANDLE) cssarray = CreateArray(20);
 				PushArrayString(cssarray, ktmp);
 				//Format(thattemp,sizeof(thattemp),"CSS");
 			}
 			else if (StrContains(ktmp, "- cs 1.6", false) != -1)
 			{
+				if (cs16array == INVALID_HANDLE) cs16array = CreateArray(20);
 				PushArrayString(cs16array, ktmp);
 				//Format(thattemp,sizeof(thattemp),"CS 1.6");
 			}
 			else if (StrContains(ktmp, "- mawskeeto", false) != -1)
 			{
+				if (mawsarray == INVALID_HANDLE) mawsarray = CreateArray(64);
 				PushArrayString(mawsarray, ktmp);
 				//Format(thattemp,sizeof(thattemp),"Mawskeeto");
 			}
 			else if (StrContains(ktmp, "- hl1", false) != -1)
 			{
+				if (hl1array == INVALID_HANDLE) hl1array = CreateArray(20);
 				PushArrayString(hl1array, ktmp);
 				//Format(thattemp,sizeof(thattemp),"HL1");
 			}
 			else if (StrContains(ktmp, "- l4d", false) != -1)
 			{
+				if (l4darray == INVALID_HANDLE) l4darray = CreateArray(10);
 				PushArrayString(l4darray, ktmp);
 				//Format(thattemp,sizeof(thattemp),"L4D");
 			}
 			else if (StrContains(ktmp, "sc ", false) == 0)
 			{
+				if (scarray == INVALID_HANDLE) scarray = CreateArray(20);
 				PushArrayString(scarray, ktmp);
 				//Format(thattemp,sizeof(thattemp),"Sven Co-op");
 			}
@@ -607,32 +606,45 @@ public Action cmodelmenu(int client, int args)
 	char tmp[48];
 	Format(tmp,sizeof(tmp),"%T","ModelMenuGrp",client);
 	menu.SetTitle(tmp);
-	if (GetArraySize(magisterarray) > 0)
-		menu.AddItem("magister", "M@GISTER");
-	if (GetArraySize(darxarray) > 0)
-		menu.AddItem("darx", "Lord Darx");
-	if (GetArraySize(hl2sarray) > 0)
-		menu.AddItem("hl2s", "Half-Life 2: Survivor");
-	if (GetArraySize(gmodarray) > 0)
-		menu.AddItem("gmod", "Garry's Mod");
-	if (GetArraySize(qncarray) > 0)
-		menu.AddItem("qnc", "QuickNinjaCat");
-	if (GetArraySize(n7larray) > 0)
-		menu.AddItem("n7l", "N7Legion");
-	if (GetArraySize(kudarray) > 0)
-		menu.AddItem("kud", "Kud♪");
-	if (GetArraySize(cssarray) > 0)
-		menu.AddItem("css", "CSS");
-	if (GetArraySize(cs16array) > 0)
-		menu.AddItem("cs16", "CS 1.6");
-	if (GetArraySize(mawsarray) > 0)
-		menu.AddItem("maws", "Mawskeeto");
-	if (GetArraySize(hl1array) > 0)
-		menu.AddItem("hl1", "HL1");
-	if (GetArraySize(l4darray) > 0)
-		menu.AddItem("l4d", "L4D");
-	if (GetArraySize(scarray) > 0)
-		menu.AddItem("scm", "Sven Co-op");
+	if (magisterarray != INVALID_HANDLE)
+		if (GetArraySize(magisterarray) > 0)
+			menu.AddItem("magister", "M@GISTER");
+	if (darxarray != INVALID_HANDLE)
+		if (GetArraySize(darxarray) > 0)
+			menu.AddItem("darx", "Lord Darx");
+	if (hl2sarray != INVALID_HANDLE)
+		if (GetArraySize(hl2sarray) > 0)
+			menu.AddItem("hl2s", "Half-Life 2: Survivor");
+	if (gmodarray != INVALID_HANDLE)
+		if (GetArraySize(gmodarray) > 0)
+			menu.AddItem("gmod", "Garry's Mod");
+	if (qncarray != INVALID_HANDLE)
+		if (GetArraySize(qncarray) > 0)
+			menu.AddItem("qnc", "QuickNinjaCat");
+	if (n7larray != INVALID_HANDLE)
+		if (GetArraySize(n7larray) > 0)
+			menu.AddItem("n7l", "N7Legion");
+	if (kudarray != INVALID_HANDLE)
+		if (GetArraySize(kudarray) > 0)
+			menu.AddItem("kud", "Kud♪");
+	if (cssarray != INVALID_HANDLE)
+		if (GetArraySize(cssarray) > 0)
+			menu.AddItem("css", "CSS");
+	if (cs16array != INVALID_HANDLE)
+		if (GetArraySize(cs16array) > 0)
+			menu.AddItem("cs16", "CS 1.6");
+	if (mawsarray != INVALID_HANDLE)
+		if (GetArraySize(mawsarray) > 0)
+			menu.AddItem("maws", "Mawskeeto");
+	if (hl1array != INVALID_HANDLE)
+		if (GetArraySize(hl1array) > 0)
+			menu.AddItem("hl1", "HL1");
+	if (l4darray != INVALID_HANDLE)
+		if (GetArraySize(l4darray) > 0)
+			menu.AddItem("l4d", "L4D");
+	if (scarray != INVALID_HANDLE)
+		if (GetArraySize(scarray) > 0)
+			menu.AddItem("scm", "Sven Co-op");
 	if (GetArraySize(modelarray2) > 0)
 	{
 		char tmp2[48];
@@ -652,7 +664,7 @@ public Action modelmenutype(int client, int type)
 	char tmp[48];
 	Format(tmp,sizeof(tmp),"%T","ModelMenu",client);
 	menu.SetTitle(tmp);
-	Handle tmparray;
+	Handle tmparray = INVALID_HANDLE;
 	if (type == 1)
 		tmparray = CloneArray(magisterarray);
 	if (type == 2)
@@ -697,6 +709,7 @@ public Action modelmenutype(int client, int type)
 		menu.AddItem(ktmp, ktmpd);
 	}
 	ClearArray(tmparray);
+	CloseHandle(tmparray);
 	menu.ExitBackButton = true;
 	menu.ExitButton = true;
 	menu.Display(client, 60);
@@ -828,7 +841,7 @@ public Action rmmodelmenu(int client, int args)
 	return Plugin_Handled;
 }
 
-public PanelHandler(Handle menu, MenuAction action, int client, int param1)
+public int PanelHandler(Handle menu, MenuAction action, int client, int param1)
 {
 	if (action == MenuAction_Select)
 	{
@@ -866,6 +879,7 @@ public PanelHandler(Handle menu, MenuAction action, int client, int param1)
 	{
 		CloseHandle(menu);
 	}
+	return 0;
 }
 
 public Action modelmenu(int client, int args)
@@ -938,7 +952,7 @@ public Action modelmenu(int client, int args)
 	return Plugin_Handled;
 }
 
-public MenuHandlerDef(Menu menu, MenuAction action, int param1, int param2)
+public int MenuHandlerDef(Menu menu, MenuAction action, int param1, int param2)
 {
 	if (action == MenuAction_Select)
 	{
@@ -974,13 +988,10 @@ public MenuHandlerDef(Menu menu, MenuAction action, int param1, int param2)
 	{
 		delete menu;
 	}
-	else
-	{
-		
-	}
+	return 0;
 }
 
-public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
+public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 {
 	if (action == MenuAction_Select)
 	{
@@ -1016,13 +1027,10 @@ public MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 	{
 		delete menu;
 	}
-	else
-	{
-		
-	}
+	return 0;
 }
 
-public MenuHandlersub(Menu menu, MenuAction action, int param1, int param2)
+public int MenuHandlersub(Menu menu, MenuAction action, int param1, int param2)
 {
 	if (action == MenuAction_Select)
 	{
@@ -1066,14 +1074,13 @@ public MenuHandlersub(Menu menu, MenuAction action, int param1, int param2)
 	{
 		delete menu;
 	}
-	else
-	{
-		
-	}
+	return 0;
 }
 
-public matarraypopulate()
+void matarraypopulate()
 {
+	Handle ndirlisting = OpenDirectory("models/player", true, NULL_STRING);
+	Handle mdirlisting = OpenDirectory("materials", true, NULL_STRING);
 	char buff[64];
 	while (ReadDirEntry(ndirlisting, buff, sizeof(buff)))
 	{
@@ -1108,9 +1115,11 @@ public matarraypopulate()
 			}
 		}
 	}
+	CloseHandle(mdirlisting);
+	CloseHandle(ndirlisting);
 }
 
-public recursion(const String:sbuf[128])
+void recursion(const char sbuf[128])
 {
 	char buff[128];
 	Handle msubdirlisting = OpenDirectory(sbuf, true, NULL_STRING);
@@ -1151,6 +1160,7 @@ public recursion(const String:sbuf[128])
 			}
 		}
 	}
+	CloseHandle(msubdirlisting);
 }
 
 public void OnMapStart()
@@ -1165,7 +1175,7 @@ public void OnMapStart()
 			AddFileToDownloadsTable(ktmp);
 		}
 	}
-	HookEntityOutput("item_suit", "OnPlayerTouch", EntityOutput:onsuitpickup);
+	HookEntityOutput("item_suit", "OnPlayerTouch", onsuitpickup);
 }
 
 public Action showmodelpacks(int client, int args)
@@ -1196,7 +1206,7 @@ public Action resetmotd(Handle timer, int client)
 	}
 }
 
-public sndfixch(Handle convar, const char[] oldValue, const char[] newValue)
+public void sndfixch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) soundfix = true;
 	else soundfix = false;
