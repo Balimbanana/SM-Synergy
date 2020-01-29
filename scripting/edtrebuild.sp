@@ -40,7 +40,7 @@ public Plugin myinfo =
 {
 	name = "EDTRebuild",
 	author = "Balimbanana",
-	description = "Rebuilds EDT system to prevent memory leak in 56.16.",
+	description = "Rebuilds EDT system to prevent memory leak in 56.16. Also enables other games/mods to use Synergys EDT system.",
 	version = PLUGIN_VERSION,
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
