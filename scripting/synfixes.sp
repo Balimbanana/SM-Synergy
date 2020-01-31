@@ -2706,6 +2706,14 @@ public Action OnTakeDamage(int victim, int& attacker, int& inflictor, float& dam
 				return Plugin_Changed;
 			}
 		}
+		if (HasEntProp(inflictor,Prop_Data,"m_bHeld"))
+		{
+			if (GetEntProp(inflictor,Prop_Data,"m_bHeld") != 0)
+			{
+				damage = 0.0;
+				return Plugin_Changed;
+			}
+		}
 	}
 	else if (StrEqual(clsnamechk,"simple_physics_prop",false))
 	{
