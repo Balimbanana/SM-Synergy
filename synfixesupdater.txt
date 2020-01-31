@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99958"
-			"Previous"	"1.99957"
+			"Latest"  	"1.99959"
+			"Previous"	"1.99958"
 		}
 		
-		"Notes"	"Disabled !barney on ep1_c17_06. Disabled !alyx on d1_town_05."
+		"Notes"	"Added check to turrets and manhacks for if held by player."
 	}
 	
 	"Files"
