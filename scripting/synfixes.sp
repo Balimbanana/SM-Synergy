@@ -50,7 +50,7 @@ bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 
-#define PLUGIN_VERSION "1.99958"
+#define PLUGIN_VERSION "1.99959"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2696,7 +2696,7 @@ public Action OnTakeDamage(int victim, int& attacker, int& inflictor, float& dam
 	}
 	char clsnamechk[32];
 	GetEntityClassname(inflictor,clsnamechk,sizeof(clsnamechk));
-	if (StrEqual(clsnamechk,"npc_turret_floor",false))
+	if ((StrEqual(clsnamechk,"npc_turret_floor",false)) || (StrEqual(clsnamechk,"npc_manhack",false)))
 	{
 		if (HasEntProp(inflictor,Prop_Data,"m_bCarriedByPlayer"))
 		{
@@ -2734,6 +2734,7 @@ public Action OnTakeDamage(int victim, int& attacker, int& inflictor, float& dam
 			{
 				tkscale = GetConVarFloat(tkscalechk);
 			}
+			CloseHandle(tkscalechk);
 		}
 		CloseHandle(skillchk);
 		damage = slavezap*tkscale;
