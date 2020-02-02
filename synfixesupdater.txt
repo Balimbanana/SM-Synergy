@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99959"
-			"Previous"	"1.99958"
+			"Latest"  	"1.99960"
+			"Previous"	"1.99959"
 		}
 		
-		"Notes"	"Added check to turrets and manhacks for if held by player."
+		"Notes"	"Added check to strlen in entity cache read."
 	}
 	
 	"Files"
