@@ -92,8 +92,9 @@ bool incfixer = false;
 bool BlockEx = true;
 bool RestartedMap = false;
 bool AutoFixEp2Req = false;
+bool TrainBlockFix = true;
 
-#define PLUGIN_VERSION "1.99996"
+#define PLUGIN_VERSION "1.99997"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -255,6 +256,19 @@ public void OnPluginStart()
 		cvar = CreateConVar("sm_autofixreq_ep2", "0", "When map starts, it will be checked for episodic entities and whether or not Ep2 is mounted. If there are Ep2 entities and Ep2 is not mounted, sv_content_optional will be used and the map will restart automatically.", _, true, 0.0, true, 1.0);
 		AutoFixEp2Req = GetConVarBool(cvar);
 		HookConVarChange(cvar, ep2reqch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("sm_fixblockedtrains");
+	if (cvar != INVALID_HANDLE)
+	{
+		TrainBlockFix = GetConVarBool(cvar);
+		HookConVarChange(cvar, trainblckch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_fixblockedtrains", "1", "Removes items and weapons that are clipping with func_tracktrains, checks once every 10 seconds.", _, true, 0.0, true, 1.0);
+		TrainBlockFix = GetConVarBool(cvar);
+		HookConVarChange(cvar, trainblckch);
 	}
 	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
@@ -974,6 +988,7 @@ public void OnMapStart()
 		PushArrayString(customentlist,"weapon_smg3");
 		PushArrayString(customentlist,"weapon_smg4");
 		PushArrayString(customentlist,"weapon_vc32sniperrifle");
+		PushArrayString(customentlist,"weapon_camera");
 		PushArrayString(customentlist,"item_weapon_gluon");
 		PushArrayString(customentlist,"item_ammo_energy");
 		PushArrayString(customentlist,"item_weapon_gauss");
@@ -1013,6 +1028,8 @@ public void OnMapStart()
 		PushArrayString(customentlist,"logic_merchant_relay");
 		PushArrayString(customentlist,"npc_merchant");
 		PushArrayString(customentlist,"game_countdown_timer");
+		PushArrayString(customentlist,"hlss_camera_output");
+		PushArrayString(customentlist,"hlss_weaponstripper");
 		if (syn1810act) PushArrayString(customentlist,"point_energy_ball_launcher");
 		if ((!autorebuild) && (!rebuildentsset)) CreateTimer(0.1,rehooksaves,_,TIMER_FLAG_NO_MAPCHANGE);
 		if ((rebuildentsset) && (!customents))
@@ -1907,7 +1924,7 @@ public Action everyspawnpost(Handle timer, int client)
 											else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 											else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
 											else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-											else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+											else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_camera",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
 											else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 											else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 											else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
@@ -2093,7 +2110,7 @@ public Action clspawnpost(Handle timer, int client)
 											else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 											else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
 											else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-											else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_m4",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_g36c",false)) || (StrEqual(basecls,"weapon_oicw",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+											else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_m4",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_g36c",false)) || (StrEqual(basecls,"weapon_oicw",false)) || (StrEqual(basecls,"weapon_camera",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
 											else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 											else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 											else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
@@ -3069,6 +3086,14 @@ public Action dropshipchk(Handle timer)
 					AcceptEntityInput(i,"kill");
 				}
 			}
+			if ((TrainBlockFix) && (StrEqual(clsname,"func_tracktrain",false)))
+			{
+				float mins[3];
+				float maxs[3];
+				GetEntPropVector(i,Prop_Data,"m_vecSurroundingMins",mins);
+				GetEntPropVector(i,Prop_Data,"m_vecSurroundingMaxs",maxs);
+				findtouchingents(mins,maxs,i);
+			}
 		}
 	}
 }
@@ -3120,6 +3145,85 @@ public Action rmcolliding(Handle timer, int caller)
 		}
 	}
 	return Plugin_Handled;
+}
+
+void findtouchingents(float mins[3], float maxs[3], int ent)
+{
+	if (maxs[0] < mins[0])
+	{
+		float tmp = maxs[0];
+		maxs[0] = mins[0];
+		mins[0] = tmp;
+	}
+	if (maxs[1] < mins[1])
+	{
+		float tmp = maxs[1];
+		maxs[1] = mins[1];
+		mins[1] = tmp;
+	}
+	if (maxs[2] < mins[2])
+	{
+		float tmp = maxs[2];
+		maxs[2] = mins[2];
+		mins[2] = tmp;
+	}
+	if (maxs[0]-mins[0] < 11.0)
+	{
+		mins[0]-=15.0;
+		maxs[0]+=15.0;
+	}
+	if (maxs[1]-mins[1] < 11.0)
+	{
+		mins[1]-=15.0;
+		maxs[1]+=15.0;
+	}
+	if (maxs[2]-mins[2] < 11.0)
+	{
+		mins[2]-=5.0;
+		maxs[2]+=5.0;
+	}
+	mins[0]-=5.0;
+	maxs[0]+=5.0;
+	mins[1]-=5.0;
+	maxs[1]+=5.0;
+	mins[2]-=5.0;
+	maxs[2]+=5.0;
+	float entorg[3];
+	if (HasEntProp(ent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",entorg);
+	else if (HasEntProp(ent,Prop_Send,"m_vecOrigin")) GetEntPropVector(ent,Prop_Send,"m_vecOrigin",entorg);
+	mins[0]+=entorg[0];
+	mins[1]+=entorg[1];
+	mins[2]+=entorg[2];
+	maxs[0]+=entorg[0];
+	maxs[1]+=entorg[1];
+	maxs[2]+=entorg[2];
+	float porigin[3];
+	for (int i = 1;i<GetMaxEntities();i++)
+	{
+		if (IsValidEntity(i) && IsEntNetworkable(i) && (i != ent))
+		{
+			if (HasEntProp(i,Prop_Data,"m_hParent"))
+			{
+				if ((GetEntPropEnt(i,Prop_Data,"m_hParent") == ent) || (GetEntPropEnt(i,Prop_Data,"m_hParent") != -1)) continue;
+			}
+			char clsname[32];
+			GetEntityClassname(i,clsname,sizeof(clsname));
+			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
+			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
+			if ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]))
+			{
+				if ((StrContains(clsname,"weapon_",false) == 0) || (StrContains(clsname,"item_",false) == 0))
+				{
+					if (HasEntProp(i,Prop_Data,"m_hOwner"))
+					{
+						if (GetEntPropEnt(i,Prop_Data,"m_hOwner") != -1) continue;
+					}
+					if (debuglvl == 3) PrintToServer("%i %s touching train %i removed...",i,clsname,ent);
+					AcceptEntityInput(i,"kill");
+				}
+			}
+		}
+	}
 }
 
 public Action custentend(const char[] output, int caller, int activator, float delay)
@@ -4173,7 +4277,6 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 	if (FindValueInArray(ignoretrigs,caller) == -1)
 	{
 		int actmod = activator;
-		bool skipactchk = false;
 		char tmpout[32];
 		Format(tmpout,sizeof(tmpout),output);
 		char clsname[24];
@@ -4182,7 +4285,6 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			GetEntityClassname(caller,clsname,sizeof(clsname));
 			if (((StrEqual(clsname,"hud_timer",false)) || (StrEqual(clsname,"logic_relay",false)) || (StrEqual(clsname,"logic_choreographed_scene",false))) && ((actmod > MaxClients) || (actmod < 1)))
 			{
-				skipactchk = true;
 				actmod = 0;
 			}
 			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"logic_relay",false)) || (StrEqual(clsname,"func_door",false)) || (StrEqual(clsname,"trigger_coop",false)) || (StrEqual(clsname,"hud_timer",false)))
@@ -4233,78 +4335,41 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 				}
 			}
 		}
-		if (skipactchk)
+		char targn[64];
+		GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
+		if (strlen(targn) < 1) Format(targn,sizeof(targn),"notargn");
+		float origin[3];
+		if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+		else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
+		if (StrEqual(clsname,"env_xen_portal",false)) origin[2]-=20.0;
+		if (playerteleports) readoutputstp(caller,targn,tmpout,"Teleport",origin,actmod);
+		if (vehiclemaphook) readoutputstp(caller,targn,tmpout,"Save",origin,actmod);
+		if (customents)
 		{
-			char targn[64];
-			GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
-			if (strlen(targn) < 1) Format(targn,sizeof(targn),"notargn");
-			float origin[3];
-			if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
-			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
-			if (StrEqual(clsname,"env_xen_portal",false)) origin[2]-=20.0;
-			if (playerteleports) readoutputstp(caller,targn,tmpout,"Teleport",origin,actmod);
-			if (vehiclemaphook) readoutputstp(caller,targn,tmpout,"Save",origin,actmod);
-			if (customents)
-			{
-				readoutputstp(caller,targn,tmpout,"StartPortal",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"Deploy",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"Retire",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"Spawn",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"SpawnNPCInLine",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"ForceSpawn",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"BeginRappellingGrunts",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"DisplayText",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"Purchase",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"SetPurchaseName",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"SetPurchaseCost",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"Disable",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"CounterEntity",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"ApplyScore",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"SetTimerLabel",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"StartTimer",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"StopTimer",origin,actmod);
-			}
-			readoutputstp(caller,targn,tmpout,"SetMass",origin,actmod);
-			readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
-			readoutputstp(caller,targn,tmpout,"EquipAllPlayers",origin,actmod);
-			readoutputstp(caller,targn,tmpout,"SetCheckPoint",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"StartPortal",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"Deploy",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"Retire",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"Spawn",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"SpawnNPCInLine",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"ForceSpawn",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"BeginRappellingGrunts",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"DisplayText",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"Purchase",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"SetPurchaseName",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"SetPurchaseCost",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"Disable",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"CounterEntity",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"ApplyScore",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"SetTimerLabel",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"StartTimer",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"StopTimer",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"TakeAmmo",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"TakeAllAmmo",origin,actmod);
 		}
-		else
-		{
-			char targn[64];
-			GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
-			if (strlen(targn) < 1) Format(targn,sizeof(targn),"notargn");
-			float origin[3];
-			if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
-			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
-			if (StrEqual(clsname,"env_xen_portal",false)) origin[2]-=20.0;
-			if (playerteleports) readoutputstp(caller,targn,tmpout,"Teleport",origin,actmod);
-			if (vehiclemaphook) readoutputstp(caller,targn,tmpout,"Save",origin,actmod);
-			if (customents)
-			{
-				readoutputstp(caller,targn,tmpout,"StartPortal",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"Deploy",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"Retire",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"Spawn",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"SpawnNPCInLine",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"ForceSpawn",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"BeginRappellingGrunts",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"DisplayText",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"Purchase",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"SetPurchaseName",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"SetPurchaseCost",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"Disable",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"CounterEntity",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"ApplyScore",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"SetTimerLabel",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"StartTimer",origin,actmod);
-				readoutputstp(caller,targn,tmpout,"StopTimer",origin,actmod);
-			}
-			readoutputstp(caller,targn,tmpout,"SetMass",origin,actmod);
-			readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
-			readoutputstp(caller,targn,tmpout,"EquipAllPlayers",origin,actmod);
-			readoutputstp(caller,targn,tmpout,"SetCheckPoint",origin,actmod);
-		}
+		readoutputstp(caller,targn,tmpout,"SetMass",origin,actmod);
+		readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
+		readoutputstp(caller,targn,tmpout,"EquipAllPlayers",origin,actmod);
+		readoutputstp(caller,targn,tmpout,"SetCheckPoint",origin,actmod);
 	}
 }
 
@@ -5721,7 +5786,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						}
 						Format(cls,sizeof(cls),"weapon_slam");
 					}
-					else if ((StrEqual(cls,"weapon_mp5",false)) || (StrEqual(cls,"item_weapon_mp5",false)) || (StrEqual(cls,"weapon_m4",false)) || (StrEqual(cls,"weapon_oicw",false)) || (StrEqual(cls,"weapon_sl8",false)) || (StrEqual(cls,"weapon_uzi",false)))
+					else if ((StrEqual(cls,"weapon_mp5",false)) || (StrEqual(cls,"item_weapon_mp5",false)) || (StrEqual(cls,"weapon_m4",false)) || (StrEqual(cls,"weapon_oicw",false)) || (StrEqual(cls,"weapon_sl8",false)) || (StrEqual(cls,"weapon_uzi",false)) || (StrEqual(cls,"weapon_camera",false)))
 					{
 						if (StrContains(cls,"item_",false) == 0)
 						{
@@ -6117,6 +6182,10 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						PushArrayString(passedarr,"TimerType");
 						PushArrayString(passedarr,"1");
 					}
+					else if ((StrEqual(cls,"hlss_camera_output",false)) || (StrEqual(cls,"hlss_weaponstripper",false)))
+					{
+						Format(cls,sizeof(cls),"logic_relay");
+					}
 					else if (StrEqual(cls,"point_energy_ball_launcher",false))
 					{
 						Format(cls,sizeof(cls),"point_combine_ball_launcher");
@@ -6440,6 +6509,49 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							{
 								TrimString(response);
 								DispatchKeyValue(ent,"ResponseContext",response);
+							}
+						}
+					}
+					else if (StrEqual(oldcls,"hlss_camera_output",false))
+					{
+						for (int i = 0;i<GetArraySize(passedarr);i++)
+						{
+							char arrstart[64];
+							char arrnext[128];
+							GetArrayString(passedarr,i,arrstart,sizeof(arrstart));
+							i++;
+							GetArrayString(passedarr,i,arrnext,sizeof(arrnext));
+							if (StrEqual(arrstart,"OnPhotoTaken",false))
+							{
+								DispatchKeyValue(ent,"OnTrigger",arrnext);
+							}
+							else if (StrEqual(arrstart,"photo_target",false))
+							{
+								DispatchKeyValue(ent,"target",arrnext);
+							}
+							else if (StrEqual(arrstart,"enabled",false))
+							{
+								if (StringToInt(arrnext) > 0) DispatchKeyValue(ent,"StartDisabled","0");
+								else DispatchKeyValue(ent,"StartDisabled","1");
+							}
+						}
+					}
+					else if (StrEqual(oldcls,"hlss_weaponstripper",false))
+					{
+						for (int i = 0;i<GetArraySize(passedarr);i++)
+						{
+							char arrstart[64];
+							char arrnext[128];
+							GetArrayString(passedarr,i,arrstart,sizeof(arrstart));
+							i++;
+							GetArrayString(passedarr,i,arrnext,sizeof(arrnext));
+							if (StrEqual(arrstart,"AmmoRemoved",false))
+							{
+								DispatchKeyValue(ent,"OnUser1",arrnext);
+							}
+							else if (StrEqual(arrstart,"NoAmmo",false))
+							{
+								DispatchKeyValue(ent,"OnUser2",arrnext);
 							}
 						}
 					}
@@ -11141,138 +11253,8 @@ void readoutputs(int scriptent, char[] targn)
 		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
 		{
 			TrimString(line);
-			if (StrContains(line,"\"targetname\"",false) == 0)
+			if (strlen(line) > 0)
 			{
-				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" ","",false);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-				TrimString(tmpchar);
-				Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
-			}
-			else if (StrContains(line,"\"template0",false) == 0)
-			{
-				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"template0","",false);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-				strcopy(tmpchar,sizeof(tmpchar),tmpchar[2]);
-				TrimString(tmpchar);
-				Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
-			}
-			else if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
-			{
-				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"actor\" ","",false);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-				TrimString(tmpchar);
-				Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
-			}
-			if ((StrEqual(targn,lineoriginfixup,false)) && (reverse))
-			{
-				if (!findtargn(targn))
-				{
-					int linepos = FilePosition(filehandle);
-					if (debuglvl == 3) PrintToServer("Found matching %s on line %i",targn,linepos);
-					reverse = false;
-					createent = true;
-				}
-				else hasreadscriptents = true;
-			}
-			if ((!StrEqual(line,"}",false)) || (!StrEqual(line,"{",false)) || (!StrEqual(line,"}{",false)))
-			{
-				if (ent == -1) passvars = true;
-				else
-				{
-					passvars = false;
-					for (int k;k<GetArraySize(passedarr);k++)
-					{
-						char ktmp[128];
-						char ktmp2[128];
-						GetArrayString(passedarr, k, ktmp, sizeof(ktmp));
-						k++;
-						GetArrayString(passedarr, k, ktmp2, sizeof(ktmp2));
-						if ((debuglvl > 1) && (createent)) PrintToServer("%s %s",ktmp,ktmp2);
-						DispatchKeyValue(ent,ktmp,ktmp2);
-					}
-				}
-				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
-				ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
-				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
-				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
-				if (passvars)
-				{
-					if (FindStringInArray(passedarr,kvs[1]) == -1)
-					{
-						PushArrayString(passedarr,kvs[1]);
-						PushArrayString(passedarr,kvs[3]);
-					}
-				}
-				else if (ent != -1) DispatchKeyValue(ent,kvs[1],kvs[3]);
-			}
-			if (((StrEqual(line,"{",false)) || (StrEqual(line,"}",false)) || (StrEqual(line,"}{",false))) && (ent == -1))
-			{
-				ClearArray(passedarr);
-				passvars = true;
-			}
-			else if (createent)
-			{
-				if ((StrEqual(line,"}",false)) || (StrEqual(line,"{",false)) || (StrEqual(line,"}{",false)))
-				{
-					float origin[3];
-					if (!StrEqual(clsscript,"logic_choreographed_scene",false))
-						GetEntPropVector(scriptent,Prop_Data,"m_vecAbsOrigin",origin);
-					if ((origin[0] == 0.0) && (origin[1] == 0.0) && (origin[2] == 0.0))
-					{
-						origin[0] = fileorigin[0];
-						origin[1] = fileorigin[1];
-						origin[2] = fileorigin[2];
-					}
-					float angs[3];
-					GetEntPropVector(scriptent,Prop_Data,"m_angAbsRotation",angs);
-					if ((ent != -1) && (!StrEqual(clsscript,"ai_goal_follow",false)))
-					{
-						DispatchSpawn(ent);
-						ActivateEntity(ent);
-						SetEntData(ent, collisiongroup, 17, 4, true);
-						TeleportEntity(ent,origin,angs,NULL_VECTOR);
-						if (TR_PointOutsideWorld(origin))
-						{
-							origin[2]+=5.0;
-							TeleportEntity(ent,origin,angs,NULL_VECTOR);
-							origin[2]-=5.0;
-						}
-						origin[2]+=80.0;
-						if (TR_PointOutsideWorld(origin))
-						{
-							origin[2]-=90.0;
-							TeleportEntity(ent,origin,angs,NULL_VECTOR);
-						}
-					}
-					if (StrEqual(clsscript,"scripted_sequence",false))
-						AcceptEntityInput(scriptent,"BeginSequence");
-					else if (StrEqual(clsscript,"ai_goal_follow",false) && (ent != -1))
-						AcceptEntityInput(ent,"Activate");
-					else if (StrEqual(clsscript,"ai_goal_follow",false))
-						AcceptEntityInput(scriptent,"Activate");
-					else
-						AcceptEntityInput(scriptent,"Start");
-					break;
-				}
-				if (StrContains(line,"\"origin\"",false) == 0)
-				{
-					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
-					ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
-					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-					char origch[16][16];
-					ExplodeString(tmpchar," ",origch,16,16);
-					fileorigin[0] = StringToFloat(origch[0]);
-					fileorigin[1] = StringToFloat(origch[1]);
-					fileorigin[2] = StringToFloat(origch[2]);
-				}
 				if (StrContains(line,"\"targetname\"",false) == 0)
 				{
 					char tmpchar[128];
@@ -11282,7 +11264,17 @@ void readoutputs(int scriptent, char[] targn)
 					TrimString(tmpchar);
 					Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
 				}
-				if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
+				else if (StrContains(line,"\"template0",false) == 0)
+				{
+					char tmpchar[128];
+					Format(tmpchar,sizeof(tmpchar),line);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"template0","",false);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+					strcopy(tmpchar,sizeof(tmpchar),tmpchar[2]);
+					TrimString(tmpchar);
+					Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
+				}
+				else if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
 				{
 					char tmpchar[128];
 					Format(tmpchar,sizeof(tmpchar),line);
@@ -11291,54 +11283,177 @@ void readoutputs(int scriptent, char[] targn)
 					TrimString(tmpchar);
 					Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
 				}
-				char cls[32];
-				int arrindx = FindStringInArray(passedarr,"classname");
-				if (arrindx != -1)
+				if ((StrEqual(targn,lineoriginfixup,false)) && (reverse))
 				{
+					if (!findtargn(targn))
+					{
+						int linepos = FilePosition(filehandle);
+						if (debuglvl == 3) PrintToServer("Found matching %s on line %i",targn,linepos);
+						reverse = false;
+						createent = true;
+					}
+					else hasreadscriptents = true;
+				}
+				if ((!StrEqual(line,"}",false)) || (!StrEqual(line,"{",false)) || (!StrEqual(line,"}{",false)))
+				{
+					if (ent == -1) passvars = true;
+					else
+					{
+						passvars = false;
+						for (int k;k<GetArraySize(passedarr);k++)
+						{
+							char ktmp[128];
+							char ktmp2[128];
+							GetArrayString(passedarr, k, ktmp, sizeof(ktmp));
+							k++;
+							GetArrayString(passedarr, k, ktmp2, sizeof(ktmp2));
+							if ((debuglvl > 1) && (createent)) PrintToServer("%s %s",ktmp,ktmp2);
+							DispatchKeyValue(ent,ktmp,ktmp2);
+						}
+					}
 					char tmpchar[128];
-					GetArrayString(passedarr,arrindx+1,tmpchar,sizeof(tmpchar));
+					Format(tmpchar,sizeof(tmpchar),line);
 					ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
 					ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 					ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
-					Format(cls,sizeof(cls),"%s",kvs[3]);
-				}
-				if (StrContains(cls,"point_template",false) != -1)
-				{
-					int loginp = CreateEntityByName("logic_auto");
-					DispatchKeyValue(loginp,"spawnflags","1");
-					char tmpchar[128];
-					char tmpchar2[128];
-					char sname[128];
-					GetEntPropString(scriptent,Prop_Data,"m_iName",sname,sizeof(sname));
-					Format(tmpchar,sizeof(tmpchar),"%s,ForceSpawn,,0,-1",lineoriginfixup);
-					DispatchKeyValue(loginp,"OnMapSpawn",tmpchar);
-					if (StrEqual(clsscript,"scripted_sequence",false))
-						Format(tmpchar2,sizeof(tmpchar2),"%s,BeginSequence,,1,-1",sname);
-					else if (StrEqual(clsscript,"ai_goal_follow",false))
+					if (passvars)
 					{
-						AcceptEntityInput(scriptent,"Activate");
+						if (FindStringInArray(passedarr,kvs[1]) == -1)
+						{
+							PushArrayString(passedarr,kvs[1]);
+							PushArrayString(passedarr,kvs[3]);
+						}
 					}
-					else
-						Format(tmpchar2,sizeof(tmpchar2),"%s,Start,,1,-1",sname);
-					DispatchKeyValue(loginp,"OnMapSpawn",tmpchar2);
-					DispatchSpawn(loginp);
-					ActivateEntity(loginp);
-					if (debuglvl > 0) PrintToServer("Found point_template: %s that can spawn this npc",lineoriginfixup);
+					else if (ent != -1) DispatchKeyValue(ent,kvs[1],kvs[3]);
 				}
-				else if ((ent == -1) && (strlen(cls) > 0))
+				if (((StrEqual(line,"{",false)) || (StrEqual(line,"}",false)) || (StrEqual(line,"}{",false))) && (ent == -1))
 				{
-					if (StrEqual(cls,"worldspawn",false)) break;
-					else if (StrEqual(cls,"ai_goal_actbusy",false))
+					ClearArray(passedarr);
+					passvars = true;
+				}
+				else if (createent)
+				{
+					if ((StrEqual(line,"}",false)) || (StrEqual(line,"{",false)) || (StrEqual(line,"}{",false)))
 					{
-						createent = false;
-						ClearArray(passedarr);
+						float origin[3];
+						if (!StrEqual(clsscript,"logic_choreographed_scene",false))
+							GetEntPropVector(scriptent,Prop_Data,"m_vecAbsOrigin",origin);
+						if ((origin[0] == 0.0) && (origin[1] == 0.0) && (origin[2] == 0.0))
+						{
+							origin[0] = fileorigin[0];
+							origin[1] = fileorigin[1];
+							origin[2] = fileorigin[2];
+						}
+						float angs[3];
+						GetEntPropVector(scriptent,Prop_Data,"m_angAbsRotation",angs);
+						if ((ent != -1) && (!StrEqual(clsscript,"ai_goal_follow",false)))
+						{
+							DispatchSpawn(ent);
+							ActivateEntity(ent);
+							SetEntData(ent, collisiongroup, 17, 4, true);
+							TeleportEntity(ent,origin,angs,NULL_VECTOR);
+							if (TR_PointOutsideWorld(origin))
+							{
+								origin[2]+=5.0;
+								TeleportEntity(ent,origin,angs,NULL_VECTOR);
+								origin[2]-=5.0;
+							}
+							origin[2]+=80.0;
+							if (TR_PointOutsideWorld(origin))
+							{
+								origin[2]-=90.0;
+								TeleportEntity(ent,origin,angs,NULL_VECTOR);
+							}
+						}
+						if (StrEqual(clsscript,"scripted_sequence",false))
+							AcceptEntityInput(scriptent,"BeginSequence");
+						else if (StrEqual(clsscript,"ai_goal_follow",false) && (ent != -1))
+							AcceptEntityInput(ent,"Activate");
+						else if (StrEqual(clsscript,"ai_goal_follow",false))
+							AcceptEntityInput(scriptent,"Activate");
+						else
+							AcceptEntityInput(scriptent,"Start");
+						break;
 					}
-					else
+					if (StrContains(line,"\"origin\"",false) == 0)
 					{
-						ent = CreateEntityByName(cls);
-						if (debuglvl == 3) PrintToServer("Created Ent as %s",cls);
-						if (FindValueInArray(entlist,ent) == -1)
-							PushArrayCell(entlist,ent);
+						char tmpchar[128];
+						Format(tmpchar,sizeof(tmpchar),line);
+						ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
+						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+						char origch[16][16];
+						ExplodeString(tmpchar," ",origch,16,16);
+						fileorigin[0] = StringToFloat(origch[0]);
+						fileorigin[1] = StringToFloat(origch[1]);
+						fileorigin[2] = StringToFloat(origch[2]);
+					}
+					if (StrContains(line,"\"targetname\"",false) == 0)
+					{
+						char tmpchar[128];
+						Format(tmpchar,sizeof(tmpchar),line);
+						ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" ","",false);
+						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+						TrimString(tmpchar);
+						Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
+					}
+					if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
+					{
+						char tmpchar[128];
+						Format(tmpchar,sizeof(tmpchar),line);
+						ReplaceString(tmpchar,sizeof(tmpchar),"\"actor\" ","",false);
+						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+						TrimString(tmpchar);
+						Format(lineoriginfixup,sizeof(lineoriginfixup),"%s",tmpchar);
+					}
+					char cls[32];
+					int arrindx = FindStringInArray(passedarr,"classname");
+					if (arrindx != -1)
+					{
+						char tmpchar[128];
+						GetArrayString(passedarr,arrindx+1,tmpchar,sizeof(tmpchar));
+						ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
+						ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
+						ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
+						Format(cls,sizeof(cls),"%s",kvs[3]);
+					}
+					if (StrContains(cls,"point_template",false) != -1)
+					{
+						int loginp = CreateEntityByName("logic_auto");
+						DispatchKeyValue(loginp,"spawnflags","1");
+						char tmpchar[128];
+						char tmpchar2[128];
+						char sname[128];
+						GetEntPropString(scriptent,Prop_Data,"m_iName",sname,sizeof(sname));
+						Format(tmpchar,sizeof(tmpchar),"%s,ForceSpawn,,0,-1",lineoriginfixup);
+						DispatchKeyValue(loginp,"OnMapSpawn",tmpchar);
+						if (StrEqual(clsscript,"scripted_sequence",false))
+							Format(tmpchar2,sizeof(tmpchar2),"%s,BeginSequence,,1,-1",sname);
+						else if (StrEqual(clsscript,"ai_goal_follow",false))
+						{
+							AcceptEntityInput(scriptent,"Activate");
+						}
+						else
+							Format(tmpchar2,sizeof(tmpchar2),"%s,Start,,1,-1",sname);
+						DispatchKeyValue(loginp,"OnMapSpawn",tmpchar2);
+						DispatchSpawn(loginp);
+						ActivateEntity(loginp);
+						if (debuglvl > 0) PrintToServer("Found point_template: %s that can spawn this npc",lineoriginfixup);
+					}
+					else if ((ent == -1) && (strlen(cls) > 0))
+					{
+						if (StrEqual(cls,"worldspawn",false)) break;
+						else if (StrEqual(cls,"ai_goal_actbusy",false))
+						{
+							createent = false;
+							ClearArray(passedarr);
+						}
+						else
+						{
+							ent = CreateEntityByName(cls);
+							if (debuglvl == 3) PrintToServer("Created Ent as %s",cls);
+							if (FindValueInArray(entlist,ent) == -1)
+								PushArrayCell(entlist,ent);
+						}
 					}
 				}
 			}
@@ -11469,6 +11584,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								spawnpointstates(lineorgrescom[2],delay);
 							}
+							else if (((StrEqual(input,"TakeAmmo",false)) || (StrEqual(input,"TakeAllAmmo",false))) && (activator > 0) && (activator < MaxClients+1))
+							{
+								weapammoremovers(activator,input,lineorgrescom[0],lineorgrescom[2],delay);
+							}
 							int findignore = FindValueInArray(ignoretrigs,caller);
 							if (findignore != -1)
 							{
@@ -11565,6 +11684,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								spawnpointstates(lineorgrescom[2],delay);
 							}
+							else if (((StrEqual(input,"TakeAmmo",false)) || (StrEqual(input,"TakeAllAmmo",false))) && (activator > 0) && (activator < MaxClients+1))
+							{
+								weapammoremovers(activator,input,lineorgrescom[0],lineorgrescom[2],delay);
+							}
 							int findignore = FindValueInArray(ignoretrigs,caller);
 							if (findignore != -1)
 							{
@@ -11638,13 +11761,15 @@ void readoutputsforinputs()
 			PushArrayString(inputs,",BeginRappellingGrunts,,");
 			PushArrayString(inputs,",DisplayText,,");
 			PushArrayString(inputs,",Purchase,,");
-			PushArrayString(inputs,",SetPurchaseName,,");
-			PushArrayString(inputs,",SetPurchaseCost,,");
+			PushArrayString(inputs,",SetPurchaseName,");
+			PushArrayString(inputs,",SetPurchaseCost,");
 			PushArrayString(inputs,",CounterEntity,");
 			PushArrayString(inputs,",ApplyScore,,");
 			PushArrayString(inputs,",SetTimerLabel,");
 			PushArrayString(inputs,",StartTimer,");
 			PushArrayString(inputs,",StopTimer,,");
+			PushArrayString(inputs,",TakeAmmo,");
+			PushArrayString(inputs,",TakeAllAmmo,");
 		}
 		if (syn56act)
 		{
@@ -11662,189 +11787,53 @@ void readoutputsforinputs()
 		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
 		{
 			TrimString(line);
-			if ((StrEqual(line,"{",false)) || (StrEqual(line,"}",false)) || (StrEqual(line,"}{",false)))
+			if (strlen(line) > 0)
 			{
-				if ((strlen(lineadj) > 0) && (strlen(prevtargn) > 0) && (StrContains(lineadj,"notargn\"",false) == 0))
+				if ((StrEqual(line,"{",false)) || (StrEqual(line,"}",false)) || (StrEqual(line,"}{",false)))
 				{
-					//PrintToServer("Lineadj %s prevtn %s",lineadj,prevtargn);
-					Format(prevtargn,sizeof(prevtargn),"%s\"",prevtargn);
-					if (GetArraySize(inputsarrorigincls) > 0)
+					if ((strlen(lineadj) > 0) && (strlen(prevtargn) > 0) && (StrContains(lineadj,"notargn\"",false) == 0))
 					{
-						for (int i = 0;i<GetArraySize(inputsarrorigincls);i++)
+						//PrintToServer("Lineadj %s prevtn %s",lineadj,prevtargn);
+						Format(prevtargn,sizeof(prevtargn),"%s\"",prevtargn);
+						if (GetArraySize(inputsarrorigincls) > 0)
 						{
-							char tmpchk[128];
-							GetArrayString(inputsarrorigincls,i,tmpchk,sizeof(tmpchk));
-							//PrintToServer("\nCheck %s %s\n",tmpchk,lineoriginfixup);
-							if (StrContains(tmpchk,lineoriginfixup,false) == 0)
+							for (int i = 0;i<GetArraySize(inputsarrorigincls);i++)
 							{
-								ReplaceString(tmpchk,sizeof(tmpchk),"notargn\"",prevtargn);
-								if (FindStringInArray(inputsarrorigincls,tmpchk) == -1)
+								char tmpchk[128];
+								GetArrayString(inputsarrorigincls,i,tmpchk,sizeof(tmpchk));
+								//PrintToServer("\nCheck %s %s\n",tmpchk,lineoriginfixup);
+								if (StrContains(tmpchk,lineoriginfixup,false) == 0)
 								{
-									PushArrayString(inputsarrorigincls,tmpchk);
-									if ((debuglvl == 3) && (strlen(tmpchk) > 0))
+									ReplaceString(tmpchk,sizeof(tmpchk),"notargn\"",prevtargn);
+									if (FindStringInArray(inputsarrorigincls,tmpchk) == -1)
 									{
-										PrintToServer("%s",tmpchk);
+										PushArrayString(inputsarrorigincls,tmpchk);
+										if ((debuglvl == 3) && (strlen(tmpchk) > 0))
+										{
+											PrintToServer("%s",tmpchk);
+										}
 									}
 								}
 							}
 						}
+						ReplaceString(lineoriginfixup,sizeof(lineoriginfixup),"notargn\"",prevtargn,false);
+						ReplaceString(lineadj,sizeof(lineadj),"notargn\"",prevtargn,false);
 					}
-					ReplaceString(lineoriginfixup,sizeof(lineoriginfixup),"notargn\"",prevtargn,false);
-					ReplaceString(lineadj,sizeof(lineadj),"notargn\"",prevtargn,false);
-				}
-				if ((strlen(lineoriginfixup) > 0) && (strlen(lineorgres) > 0) && (strlen(lineadj) > 0) && (hastargn) && (hasorigin) && (FindStringInArray(inputsarrorigincls,lineadj) == -1))
-				{
-					Format(lineadj,sizeof(lineadj),"%s %s",lineoriginfixup,lineorgres);
-					PushArrayString(inputsarrorigincls,lineadj);
-					if (debuglvl == 3)
+					if ((strlen(lineoriginfixup) > 0) && (strlen(lineorgres) > 0) && (strlen(lineadj) > 0) && (hastargn) && (hasorigin) && (FindStringInArray(inputsarrorigincls,lineadj) == -1))
 					{
-						PrintToServer("%s",lineadj);
-					}
-					char outpchk[128];
-					Format(outpchk,sizeof(outpchk),lineadj);
-					ExplodeString(outpchk, "\"", kvs, 64, 128, true);
-					ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
-					ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
-					ReplaceString(kvs[2],sizeof(kvs[]),"\"","",false);
-					ReplaceString(kvs[3],sizeof(kvs[]),"\"","",false);
-					if (StrContains(lineadj,"AddOutput",false) != -1)
-					{
-						char tmpexpl[128][64];
-						ExplodeString(kvs[3], ":", tmpexpl, 64, 128, true);
-						ExplodeString(tmpexpl[0], ",", tmpexpl, 64, 128, true);
-						//Format(tmpexpl[0],sizeof(tmpexpl[]),"%s %s",tmpexpl[0],tmpexpl[3]);
-						char tmptarg[128];
-						Format(tmptarg,sizeof(tmptarg),"%s",tmpexpl[0]);
-						ExplodeString(tmpexpl[2], " ", tmpexpl, 64, 128, true);
-						if (debuglvl == 3) PrintToServer("Targetname %s Outp %s",tmptarg,tmpexpl[0]);
-						SearchForClass(tmptarg);
-						Format(outpchk,sizeof(outpchk),"%s %s",tmptarg,tmpexpl[0]);
-						if (StrEqual(classhook,"prop_physics_override",false)) Format(classhook,sizeof(classhook),"prop_physics");
-						Format(classhook,sizeof(classhook),"%s",tmptarg);
-						Format(kvs[3],sizeof(kvs[]),"%s",tmpexpl[0]);
-					}
-					else Format(outpchk,sizeof(outpchk),"%s %s",classhook,kvs[3]);
-					if (StrEqual(kvs[3],"OnFinishPortal",false))
-					{
-						Format(outpchk,sizeof(outpchk),"%s OnUser2",classhook);
-					}
-					if (FindStringInArray(inputclasshooks,outpchk) == -1)
-					{
-						if (StrEqual(classhook,"prop_physics_override",false)) Format(classhook,sizeof(classhook),"prop_physics");
-						if (StrContains(kvs[5],"!picker",false) != -1) HookEntityOutput(classhook,kvs[3],trigpicker);
-						else HookEntityOutput(classhook,kvs[3],trigtp);
-						PushArrayString(inputclasshooks,outpchk);
-					}
-				}
-				lineoriginfixup = "";
-				lineadj = "";
-				prevtargn = "";
-				hastargn = false;
-				hasorigin = false;
-			}
-			if (StrContains(line,"\"chaptertitle\"",false) == 0)
-			{
-				char tmpexpl[64][64];
-				ReplaceString(line,sizeof(line),"\"","",false);
-				ExplodeString(line," ",tmpexpl,64,64,true);
-				if (StrContains(mapbuf,"hl2_",false) != -1)
-					Format(ChapterTitle,sizeof(ChapterTitle),"HL2_%s",tmpexpl[1]);
-				else if (StrContains(mapbuf,"ep1_",false) != -1)
-				{
-					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
-					ReplaceStringEx(ChapterTitle,sizeof(ChapterTitle),"EP1_","episodic_",-1,-1,false);
-					if ((StrContains(ChapterTitle,"episodic_",false) == -1) && (StrContains(ChapterTitle,"Chapter",false) != -1)) Format(ChapterTitle,sizeof(ChapterTitle),"episodic_%s",ChapterTitle);
-				}
-				else if (StrContains(mapbuf,"bms_bm_c",false) != -1)
-					Format(ChapterTitle,sizeof(ChapterTitle),"BMS_%s",tmpexpl[1]);
-				else
-					Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
-				if (StrEqual(ChapterTitle,PreviousTitle,false)) ChapterTitle = "";
-				else Format(PreviousTitle,sizeof(PreviousTitle),"%s",ChapterTitle);
-			}
-			if ((StrContains(line,"\"origin\"",false) == 0) && (!hasorigin))
-			{
-				char tmpchar[64];
-				Format(tmpchar,sizeof(tmpchar),line);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-				ExplodeString(tmpchar, " ", lineorgresexpl, 4, 16);
-				if (hastargn) Format(lineoriginfixup,sizeof(lineoriginfixup),"%s%i %i %i\"",lineoriginfixup,RoundFloat(StringToFloat(lineorgresexpl[0])),RoundFloat(StringToFloat(lineorgresexpl[1])),RoundFloat(StringToFloat(lineorgresexpl[2])));
-				else Format(lineoriginfixup,sizeof(lineoriginfixup),"%i %i %i\"",RoundFloat(StringToFloat(lineorgresexpl[0])),RoundFloat(StringToFloat(lineorgresexpl[1])),RoundFloat(StringToFloat(lineorgresexpl[2])));
-				hasorigin = true;
-			}
-			else if (StrContains(line,"\"targetname\"",false) == 0)
-			{
-				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" \"","");
-				ReplaceString(tmpchar,sizeof(tmpchar),"\"","");
-				Format(prevtargn,sizeof(prevtargn),"%s",tmpchar);
-				if (!hastargn)
-				{
-					Format(lineoriginfixup,sizeof(lineoriginfixup),"%s\"%s",tmpchar,lineoriginfixup);
-					hastargn = true;
-				}
-			}
-			else if (StrContains(line,"\"classname\"",false) == 0)
-			{
-				char clschk[128];
-				Format(clschk,sizeof(clschk),line);
-				ExplodeString(clschk, "\"", kvs, 64, 128, true);
-				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
-				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
-				Format(classhook,sizeof(classhook),kvs[3]);
-			}
-			else if (StrContains(line,",",false) != -1)
-			{
-				bool formatinput = false;
-				char chkinp[64];
-				char chkinpadded[64];
-				for (int i = 0;i<GetArraySize(inputs);i++)
-				{
-					GetArrayString(inputs,i,chkinp,sizeof(chkinp));
-					Format(chkinpadded,sizeof(chkinpadded),"%s",chkinp);
-					ReplaceString(chkinpadded,sizeof(chkinpadded),",",":",false);
-					if ((StrContains(line,chkinp,false) != -1) || (StrContains(line,chkinpadded,false) != -1))
-					{
-						formatinput = true;
-						break;
-					}
-				}
-				if (formatinput)
-				{
-					Format(lineorgres,sizeof(lineorgres),line);
-					ReplaceString(lineorgres,sizeof(lineorgres),"\"OnMapSpawn\" ","");
-					if ((!hastargn) && (StrContains(line,",AddOutput,",false) == -1))
-					{
-						Format(lineoriginfixup,sizeof(lineoriginfixup),"notargn\"%s",lineoriginfixup);
-						hastargn = true;
-					}
-					else if ((!hastargn) && (StrContains(line,",AddOutput,",false) != -1))
-					{
-						char linenamef[8][128];
-						char tmpchar[128];
-						Format(tmpchar,sizeof(tmpchar),line);
-						ExplodeString(tmpchar,"\"",linenamef,8,128);
-						Format(tmpchar,sizeof(tmpchar),linenamef[3]);
-						ExplodeString(tmpchar,",",linenamef,8,128);
-						Format(lineoriginfixup,sizeof(lineoriginfixup),"%s\"0 0 0\"",linenamef[0]);
-						hastargn = true;
-						hasorigin = true;
-					}
-					Format(lineadj,sizeof(lineadj),"%s %s",lineoriginfixup,lineorgres);
-					if ((FindStringInArray(inputsarrorigincls,lineadj) == -1) && (hastargn) && (hasorigin))
-					{
+						Format(lineadj,sizeof(lineadj),"%s %s",lineoriginfixup,lineorgres);
 						PushArrayString(inputsarrorigincls,lineadj);
-						if ((debuglvl == 3) && (strlen(lineadj) > 0))
+						if (debuglvl == 3)
 						{
 							PrintToServer("%s",lineadj);
 						}
 						char outpchk[128];
-						Format(outpchk,sizeof(outpchk),line);
+						Format(outpchk,sizeof(outpchk),lineadj);
 						ExplodeString(outpchk, "\"", kvs, 64, 128, true);
 						ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 						ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
+						ReplaceString(kvs[2],sizeof(kvs[]),"\"","",false);
+						ReplaceString(kvs[3],sizeof(kvs[]),"\"","",false);
 						if (StrContains(lineadj,"AddOutput",false) != -1)
 						{
 							char tmpexpl[128][64];
@@ -11859,32 +11848,171 @@ void readoutputsforinputs()
 							Format(outpchk,sizeof(outpchk),"%s %s",tmptarg,tmpexpl[0]);
 							if (StrEqual(classhook,"prop_physics_override",false)) Format(classhook,sizeof(classhook),"prop_physics");
 							Format(classhook,sizeof(classhook),"%s",tmptarg);
-							Format(kvs[1],sizeof(kvs[]),"%s",tmpexpl[0]);
-							/*
-							if (StrEqual(tmpexpl[0],"OnPressed",false))
-							{
-								Format(outpchk,sizeof(outpchk),"func_button OnPressed");
-								Format(kvs[1],sizeof(kvs[]),"OnPressed");
-								Format(classhook,sizeof(classhook),"func_button");
-							}
-							*/
+							Format(kvs[3],sizeof(kvs[]),"%s",tmpexpl[0]);
 						}
-						else Format(outpchk,sizeof(outpchk),"%s %s",classhook,kvs[1]);
-						if (StrEqual(kvs[1],"OnFinishPortal",false))
+						else Format(outpchk,sizeof(outpchk),"%s %s",classhook,kvs[3]);
+						if (StrEqual(kvs[3],"OnFinishPortal",false))
 						{
 							Format(outpchk,sizeof(outpchk),"%s OnUser2",classhook);
 						}
 						if (FindStringInArray(inputclasshooks,outpchk) == -1)
 						{
 							if (StrEqual(classhook,"prop_physics_override",false)) Format(classhook,sizeof(classhook),"prop_physics");
-							if (StrContains(kvs[3],"!picker",false) != -1) HookEntityOutput(classhook,kvs[1],trigpicker);
-							else HookEntityOutput(classhook,kvs[1],trigtp);
+							if (StrContains(kvs[5],"!picker",false) != -1) HookEntityOutput(classhook,kvs[3],trigpicker);
+							else HookEntityOutput(classhook,kvs[3],trigtp);
 							PushArrayString(inputclasshooks,outpchk);
 						}
-						if (StrContains(lineadj,"notargn\"",false) == -1) lineorgres = "";
-						//lineoriginfixup = "";
-						//hastargn = false;
-						//hasorigin = false;
+					}
+					lineoriginfixup = "";
+					lineadj = "";
+					prevtargn = "";
+					hastargn = false;
+					hasorigin = false;
+				}
+				if (StrContains(line,"\"chaptertitle\"",false) == 0)
+				{
+					char tmpexpl[64][64];
+					ReplaceString(line,sizeof(line),"\"","",false);
+					ExplodeString(line," ",tmpexpl,64,64,true);
+					if (StrContains(mapbuf,"hl2_",false) != -1)
+						Format(ChapterTitle,sizeof(ChapterTitle),"HL2_%s",tmpexpl[1]);
+					else if (StrContains(mapbuf,"ep1_",false) != -1)
+					{
+						Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
+						ReplaceStringEx(ChapterTitle,sizeof(ChapterTitle),"EP1_","episodic_",-1,-1,false);
+						if ((StrContains(ChapterTitle,"episodic_",false) == -1) && (StrContains(ChapterTitle,"Chapter",false) != -1)) Format(ChapterTitle,sizeof(ChapterTitle),"episodic_%s",ChapterTitle);
+					}
+					else if (StrContains(mapbuf,"bms_bm_c",false) != -1)
+						Format(ChapterTitle,sizeof(ChapterTitle),"BMS_%s",tmpexpl[1]);
+					else
+						Format(ChapterTitle,sizeof(ChapterTitle),"%s",tmpexpl[1]);
+					if (StrEqual(ChapterTitle,PreviousTitle,false)) ChapterTitle = "";
+					else Format(PreviousTitle,sizeof(PreviousTitle),"%s",ChapterTitle);
+				}
+				if ((StrContains(line,"\"origin\"",false) == 0) && (!hasorigin))
+				{
+					char tmpchar[64];
+					Format(tmpchar,sizeof(tmpchar),line);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
+					ExplodeString(tmpchar, " ", lineorgresexpl, 4, 16);
+					if (hastargn) Format(lineoriginfixup,sizeof(lineoriginfixup),"%s%i %i %i\"",lineoriginfixup,RoundFloat(StringToFloat(lineorgresexpl[0])),RoundFloat(StringToFloat(lineorgresexpl[1])),RoundFloat(StringToFloat(lineorgresexpl[2])));
+					else Format(lineoriginfixup,sizeof(lineoriginfixup),"%i %i %i\"",RoundFloat(StringToFloat(lineorgresexpl[0])),RoundFloat(StringToFloat(lineorgresexpl[1])),RoundFloat(StringToFloat(lineorgresexpl[2])));
+					hasorigin = true;
+				}
+				else if (StrContains(line,"\"targetname\"",false) == 0)
+				{
+					char tmpchar[128];
+					Format(tmpchar,sizeof(tmpchar),line);
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" \"","");
+					ReplaceString(tmpchar,sizeof(tmpchar),"\"","");
+					Format(prevtargn,sizeof(prevtargn),"%s",tmpchar);
+					if (!hastargn)
+					{
+						Format(lineoriginfixup,sizeof(lineoriginfixup),"%s\"%s",tmpchar,lineoriginfixup);
+						hastargn = true;
+					}
+				}
+				else if (StrContains(line,"\"classname\"",false) == 0)
+				{
+					char clschk[128];
+					Format(clschk,sizeof(clschk),line);
+					ExplodeString(clschk, "\"", kvs, 64, 128, true);
+					ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
+					ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
+					Format(classhook,sizeof(classhook),kvs[3]);
+				}
+				else if (StrContains(line,",",false) != -1)
+				{
+					bool formatinput = false;
+					char chkinp[64];
+					char chkinpadded[64];
+					for (int i = 0;i<GetArraySize(inputs);i++)
+					{
+						GetArrayString(inputs,i,chkinp,sizeof(chkinp));
+						Format(chkinpadded,sizeof(chkinpadded),"%s",chkinp);
+						ReplaceString(chkinpadded,sizeof(chkinpadded),",",":",false);
+						if ((StrContains(line,chkinp,false) != -1) || (StrContains(line,chkinpadded,false) != -1))
+						{
+							formatinput = true;
+							break;
+						}
+					}
+					if (formatinput)
+					{
+						Format(lineorgres,sizeof(lineorgres),line);
+						ReplaceString(lineorgres,sizeof(lineorgres),"\"OnMapSpawn\" ","");
+						if ((!hastargn) && (StrContains(line,",AddOutput,",false) == -1))
+						{
+							Format(lineoriginfixup,sizeof(lineoriginfixup),"notargn\"%s",lineoriginfixup);
+							hastargn = true;
+						}
+						else if ((!hastargn) && (StrContains(line,",AddOutput,",false) != -1))
+						{
+							char linenamef[8][128];
+							char tmpchar[128];
+							Format(tmpchar,sizeof(tmpchar),line);
+							ExplodeString(tmpchar,"\"",linenamef,8,128);
+							Format(tmpchar,sizeof(tmpchar),linenamef[3]);
+							ExplodeString(tmpchar,",",linenamef,8,128);
+							Format(lineoriginfixup,sizeof(lineoriginfixup),"%s\"0 0 0\"",linenamef[0]);
+							hastargn = true;
+							hasorigin = true;
+						}
+						Format(lineadj,sizeof(lineadj),"%s %s",lineoriginfixup,lineorgres);
+						if ((FindStringInArray(inputsarrorigincls,lineadj) == -1) && (hastargn) && (hasorigin))
+						{
+							PushArrayString(inputsarrorigincls,lineadj);
+							if ((debuglvl == 3) && (strlen(lineadj) > 0))
+							{
+								PrintToServer("%s",lineadj);
+							}
+							char outpchk[128];
+							Format(outpchk,sizeof(outpchk),line);
+							ExplodeString(outpchk, "\"", kvs, 64, 128, true);
+							ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
+							ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
+							if (StrContains(lineadj,"AddOutput",false) != -1)
+							{
+								char tmpexpl[128][64];
+								ExplodeString(kvs[3], ":", tmpexpl, 64, 128, true);
+								ExplodeString(tmpexpl[0], ",", tmpexpl, 64, 128, true);
+								//Format(tmpexpl[0],sizeof(tmpexpl[]),"%s %s",tmpexpl[0],tmpexpl[3]);
+								char tmptarg[128];
+								Format(tmptarg,sizeof(tmptarg),"%s",tmpexpl[0]);
+								ExplodeString(tmpexpl[2], " ", tmpexpl, 64, 128, true);
+								if (debuglvl == 3) PrintToServer("Targetname %s Outp %s",tmptarg,tmpexpl[0]);
+								SearchForClass(tmptarg);
+								Format(outpchk,sizeof(outpchk),"%s %s",tmptarg,tmpexpl[0]);
+								if (StrEqual(classhook,"prop_physics_override",false)) Format(classhook,sizeof(classhook),"prop_physics");
+								Format(classhook,sizeof(classhook),"%s",tmptarg);
+								Format(kvs[1],sizeof(kvs[]),"%s",tmpexpl[0]);
+								/*
+								if (StrEqual(tmpexpl[0],"OnPressed",false))
+								{
+									Format(outpchk,sizeof(outpchk),"func_button OnPressed");
+									Format(kvs[1],sizeof(kvs[]),"OnPressed");
+									Format(classhook,sizeof(classhook),"func_button");
+								}
+								*/
+							}
+							else Format(outpchk,sizeof(outpchk),"%s %s",classhook,kvs[1]);
+							if (StrEqual(kvs[1],"OnFinishPortal",false))
+							{
+								Format(outpchk,sizeof(outpchk),"%s OnUser2",classhook);
+							}
+							if (FindStringInArray(inputclasshooks,outpchk) == -1)
+							{
+								if (StrEqual(classhook,"prop_physics_override",false)) Format(classhook,sizeof(classhook),"prop_physics");
+								if (StrContains(kvs[3],"!picker",false) != -1) HookEntityOutput(classhook,kvs[1],trigpicker);
+								else HookEntityOutput(classhook,kvs[1],trigtp);
+								PushArrayString(inputclasshooks,outpchk);
+							}
+							if (StrContains(lineadj,"notargn\"",false) == -1) lineorgres = "";
+							//lineoriginfixup = "";
+							//hastargn = false;
+							//hasorigin = false;
+						}
 					}
 				}
 			}
@@ -12373,7 +12501,7 @@ public void EquipCustom(int equip, int client)
 							else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 							else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
 							else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-							else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+							else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_camera",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
 							else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 							else if (StrContains(basecls,"customweapons",false) != -1)
 							{
@@ -12931,6 +13059,110 @@ public Action spawnpointstatesdelay(Handle timer, int entity)
 	}
 }
 
+void weapammoremovers(int activator, char[] input, char[] targn, char[] ammtype, float delay)
+{
+	Handle arr = CreateArray(64);
+	FindAllByClassname(arr,-1,"hlss_weaponstripper");
+	if (GetArraySize(arr) > 0)
+	{
+		for (int i = 0;i<GetArraySize(arr);i++)
+		{
+			int ent = GetArrayCell(arr,i);
+			if (IsValidEntity(ent))
+			{
+				if (HasEntProp(ent,Prop_Data,"m_iName"))
+				{
+					char enttargn[64];
+					GetEntPropString(ent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
+					if (StrEqual(targn,enttargn,false))
+					{
+						if (delay > 0.1)
+						{
+							Handle dp = CreateDataPack();
+							WritePackCell(dp,activator);
+							WritePackCell(dp,ent);
+							WritePackString(dp,input);
+							WritePackString(dp,ammtype);
+							CreateTimer(delay,weapammoremoversdelay,dp,TIMER_FLAG_NO_MAPCHANGE);
+						}
+						else RMAmmCheck(ent,activator,input,ammtype);
+						break;
+					}
+				}
+			}
+		}
+	}
+	CloseHandle(arr);
+}
+
+public Action weapammoremoversdelay(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int activator = ReadPackCell(dp);
+		int ent = ReadPackCell(dp);
+		char input[32];
+		char ammtype[32];
+		ReadPackString(dp,input,sizeof(input));
+		ReadPackString(dp,ammtype,sizeof(ammtype));
+		CloseHandle(dp);
+		RMAmmCheck(ent,activator,input,ammtype);
+	}
+}
+
+void RMAmmCheck(int ent, int activator, char[] input, char[] ammtype)
+{
+	if ((IsValidEntity(activator)) && (activator > 0) && (activator < MaxClients+1))
+	{
+		if (strlen(ammtype) > 0)
+		{
+			int elem = 0;
+			if (StrEqual(ammtype,"Buckshot",false)) elem = 7;
+			else if (StrEqual(ammtype,"rpg_round",false)) elem = 8;
+			else if (StrEqual(ammtype,"Pistol",false)) elem = 3;
+			else if (StrEqual(ammtype,"SniperRound",false)) elem = 0;//This is 10 but ammo icon crash occurs
+			else if ((StrEqual(ammtype,"Manhack",false)) || (StrEqual(ammtype,"ManhacksOnline",false)) || (StrEqual(ammtype,"Stunstick",false))) elem = 24;
+			else if ((StrEqual(ammtype,"grenade",false)) || (StrEqual(ammtype,"SmokeGrenade",false))) elem = 12;
+			else if (StrEqual(ammtype,"XBowBolt",false)) elem = 6;
+			else if (StrEqual(ammtype,"AlyxGun",false)) elem = 0;
+			else if (StrEqual(ammtype,"TurretHealth",false)) elem = 0;
+			else if (StrEqual(ammtype,"357",false)) elem = 5;
+			else if (StrEqual(ammtype,"SMG1",false)) elem = 4;
+			else if (StrEqual(ammtype,"SMG1_Grenade",false)) elem = 9;
+			else if (StrEqual(ammtype,"AR2AltFire",false)) elem = 22;
+			else if (StrEqual(ammtype,"AR2",false)) elem = 1;
+			if (elem != 0)
+			{
+				if (StrEqual(input,"TakeAllAmmo",false))
+				{
+					SetEntProp(activator, Prop_Data, "m_iAmmo", 0, _, elem);
+					AcceptEntityInput(ent,"FireUser1",activator);
+				}
+				else
+				{
+					int ammchk = GetEntProp(activator, Prop_Send, "m_iAmmo", _, elem);
+					if (ammchk < 1)
+					{
+						AcceptEntityInput(ent,"FireUser2",activator);
+					}
+					else
+					{
+						SetEntProp(activator, Prop_Data, "m_iAmmo", ammchk-1, _, elem);
+						AcceptEntityInput(ent,"FireUser1",activator);
+					}
+				}
+			}
+			else
+			{
+				//Don't know what ammo type was specified, run AmmoRemoved outputs as a failsave.
+				AcceptEntityInput(ent,"FireUser1",activator);
+			}
+		}
+	}
+	return;
+}
+
 public Action cleanup(Handle timer, Handle data)
 {
 	ResetPack(data);
@@ -13021,11 +13253,19 @@ public Action OnTakeDamage(int victim, int& attacker, int& inflictor, float& dam
 	}
 	char clsnamechk[32];
 	GetEntityClassname(inflictor,clsnamechk,sizeof(clsnamechk));
-	if (StrEqual(clsnamechk,"npc_turret_floor",false))
+	if ((StrEqual(clsnamechk,"npc_turret_floor",false)) || (StrEqual(clsnamechk,"npc_manhack",false)))
 	{
 		if (HasEntProp(inflictor,Prop_Data,"m_bCarriedByPlayer"))
 		{
 			if (GetEntProp(inflictor,Prop_Data,"m_bCarriedByPlayer") != 0)
+			{
+				damage = 0.0;
+				return Plugin_Changed;
+			}
+		}
+		if (HasEntProp(inflictor,Prop_Data,"m_bHeld"))
+		{
+			if (GetEntProp(inflictor,Prop_Data,"m_bHeld") != 0)
 			{
 				damage = 0.0;
 				return Plugin_Changed;
@@ -16136,7 +16376,7 @@ void restoreent(Handle dp)
 			Format(clsname,sizeof(clsname),"weapon_pistol");
 		else if ((StrEqual(clsname,"weapon_medkit",false)) || (StrEqual(clsname,"weapon_healer",false)) || (StrEqual(clsname,"weapon_snark",false)) || (StrEqual(clsname,"weapon_hivehand",false)) || (StrEqual(clsname,"weapon_satchel",false)) || (StrEqual(clsname,"weapon_tripmine",false)))
 			Format(clsname,sizeof(clsname),"weapon_slam");
-		else if ((StrEqual(clsname,"weapon_mp5",false)) || (StrEqual(clsname,"weapon_sl8",false)) || (StrEqual(clsname,"weapon_uzi",false)) || (StrEqual(clsname,"weapon_oicw",false)))
+		else if ((StrEqual(clsname,"weapon_mp5",false)) || (StrEqual(clsname,"weapon_sl8",false)) || (StrEqual(clsname,"weapon_uzi",false)) || (StrEqual(clsname,"weapon_oicw",false)) || (StrEqual(clsname,"weapon_camera",false)))
 			Format(clsname,sizeof(clsname),"weapon_smg1");
 		else if ((StrEqual(clsname,"weapon_gauss",false)) || (StrEqual(clsname,"weapon_tau",false)) || (StrEqual(clsname,"weapon_sniperrifle",false)))
 			Format(clsname,sizeof(clsname),"weapon_ar2");
@@ -16588,6 +16828,8 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				Format(clsname,sizeof(clsname),"logic_relay");
 			else if (StrEqual(clsname,"game_countdown_timer"))
 				Format(clsname,sizeof(clsname),"hud_timer");
+			else if ((StrEqual(clsname,"hlss_camera_output",false)) || (StrEqual(clsname,"hlss_weaponstripper",false)))
+				Format(clsname,sizeof(clsname),"logic_relay");
 			else if (StrEqual(clsname,"npc_merchant",false))
 				Format(clsname,sizeof(clsname),"generic_actor");
 			else if (StrContains(clsname,"customweapons/",false) == 0)
@@ -19308,6 +19550,14 @@ public void ep2reqch(Handle convar, const char[] oldValue, const char[] newValue
 		AutoFixEp2Req = true;
 	else
 		AutoFixEp2Req = false;
+}
+
+public void trainblckch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		TrainBlockFix = true;
+	else
+		TrainBlockFix = false;
 }
 
 public void autorebuildch(Handle convar, const char[] oldValue, const char[] newValue)
