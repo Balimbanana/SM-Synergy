@@ -49,8 +49,9 @@ bool hasread = false;
 bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
 bool BlockEx = true;
+bool TrainBlockFix = true;
 
-#define PLUGIN_VERSION "1.99960"
+#define PLUGIN_VERSION "1.99961"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -153,6 +154,19 @@ public void OnPluginStart()
 		cvar = CreateConVar("sm_blockex", "1", ".", _, true, 0.0, true, 1.0);
 		BlockEx = GetConVarBool(cvar);
 		HookConVarChange(cvar, blckexch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("sm_fixblockedtrains");
+	if (cvar != INVALID_HANDLE)
+	{
+		TrainBlockFix = GetConVarBool(cvar);
+		HookConVarChange(cvar, trainblckch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_fixblockedtrains", "1", "Removes items and weapons that are clipping with func_tracktrains, checks once every 10 seconds.", _, true, 0.0, true, 1.0);
+		TrainBlockFix = GetConVarBool(cvar);
+		HookConVarChange(cvar, trainblckch);
 	}
 	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
@@ -1288,6 +1302,22 @@ public Action dropshipchk(Handle timer)
 					if (strlen(localname) < 1) SetEntPropString(i,Prop_Data,"m_iName",glname);
 				}
 			}
+			if (StrEqual(clsname,"env_rockettrail",false))
+			{
+				int parentent = GetEntPropEnt(i,Prop_Data,"m_hParent");
+				if (parentent == -1)
+				{
+					AcceptEntityInput(i,"kill");
+				}
+			}
+			if ((TrainBlockFix) && (StrEqual(clsname,"func_tracktrain",false)))
+			{
+				float mins[3];
+				float maxs[3];
+				GetEntPropVector(i,Prop_Data,"m_vecSurroundingMins",mins);
+				GetEntPropVector(i,Prop_Data,"m_vecSurroundingMaxs",maxs);
+				findtouchingents(mins,maxs,i);
+			}
 		}
 	}
 }
@@ -1339,6 +1369,85 @@ public Action rmcolliding(Handle timer, int caller)
 		}
 	}
 	return Plugin_Handled;
+}
+
+void findtouchingents(float mins[3], float maxs[3], int ent)
+{
+	if (maxs[0] < mins[0])
+	{
+		float tmp = maxs[0];
+		maxs[0] = mins[0];
+		mins[0] = tmp;
+	}
+	if (maxs[1] < mins[1])
+	{
+		float tmp = maxs[1];
+		maxs[1] = mins[1];
+		mins[1] = tmp;
+	}
+	if (maxs[2] < mins[2])
+	{
+		float tmp = maxs[2];
+		maxs[2] = mins[2];
+		mins[2] = tmp;
+	}
+	if (maxs[0]-mins[0] < 11.0)
+	{
+		mins[0]-=15.0;
+		maxs[0]+=15.0;
+	}
+	if (maxs[1]-mins[1] < 11.0)
+	{
+		mins[1]-=15.0;
+		maxs[1]+=15.0;
+	}
+	if (maxs[2]-mins[2] < 11.0)
+	{
+		mins[2]-=5.0;
+		maxs[2]+=5.0;
+	}
+	mins[0]-=5.0;
+	maxs[0]+=5.0;
+	mins[1]-=5.0;
+	maxs[1]+=5.0;
+	mins[2]-=5.0;
+	maxs[2]+=5.0;
+	float entorg[3];
+	if (HasEntProp(ent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",entorg);
+	else if (HasEntProp(ent,Prop_Send,"m_vecOrigin")) GetEntPropVector(ent,Prop_Send,"m_vecOrigin",entorg);
+	mins[0]+=entorg[0];
+	mins[1]+=entorg[1];
+	mins[2]+=entorg[2];
+	maxs[0]+=entorg[0];
+	maxs[1]+=entorg[1];
+	maxs[2]+=entorg[2];
+	float porigin[3];
+	for (int i = 1;i<GetMaxEntities();i++)
+	{
+		if (IsValidEntity(i) && IsEntNetworkable(i) && (i != ent))
+		{
+			if (HasEntProp(i,Prop_Data,"m_hParent"))
+			{
+				if ((GetEntPropEnt(i,Prop_Data,"m_hParent") == ent) || (GetEntPropEnt(i,Prop_Data,"m_hParent") != -1)) continue;
+			}
+			char clsname[32];
+			GetEntityClassname(i,clsname,sizeof(clsname));
+			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
+			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
+			if ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]))
+			{
+				if ((StrContains(clsname,"weapon_",false) == 0) || (StrContains(clsname,"item_",false) == 0))
+				{
+					if (HasEntProp(i,Prop_Data,"m_hOwner"))
+					{
+						if (GetEntPropEnt(i,Prop_Data,"m_hOwner") != -1) continue;
+					}
+					if (debuglvl == 3) PrintToServer("%i %s touching train %i removed...",i,clsname,ent);
+					AcceptEntityInput(i,"kill");
+				}
+			}
+		}
+	}
 }
 
 public Action trigout(const char[] output, int caller, int activator, float delay)
@@ -3767,6 +3876,14 @@ public void blckexch(Handle convar, const char[] oldValue, const char[] newValue
 		BlockEx = true;
 	else
 		BlockEx = false;
+}
+
+public void trainblckch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		TrainBlockFix = true;
+	else
+		TrainBlockFix = false;
 }
 
 public void noguidech(Handle convar, const char[] oldValue, const char[] newValue)
