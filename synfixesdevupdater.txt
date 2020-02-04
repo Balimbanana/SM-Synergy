@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99996"
-			"Previous"	"1.99995"
+			"Latest"  	"1.99997"
+			"Previous"	"1.99996"
 		}
 		
-		"Notes"	"Disabled !barney on ep1_c17_06."
+		"Notes"	"Added CVar sm_fixblockedtrains 1, for items and weapons blocking trains. Added weapon_camera, hlss_camera_output, hlss_weaponstripper compat."
 	}
 	
 	"Files"
