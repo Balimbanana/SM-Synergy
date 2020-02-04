@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99960"
-			"Previous"	"1.99959"
+			"Latest"  	"1.99961"
+			"Previous"	"1.99960"
 		}
 		
-		"Notes"	"Added check to strlen in entity cache read."
+		"Notes"	"Added CVar sm_fixblockedtrains 1, for items and weapons blocking trains."
 	}
 	
 	"Files"
