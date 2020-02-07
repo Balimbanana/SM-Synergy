@@ -242,6 +242,21 @@ public Action Command_Nominate(int client, int args)
 	if (!g_mapTrie.GetValue(mapname, status))
 	{
 		ReplyToCommand(client, "%t", "Map was not found", mapname);
+		if ((GetArraySize(g_MapList) > 0) && (strlen(mapname) > 0))
+		{
+			int similarmaps = 0;
+			char mapsearch[64];
+			for (int i = 0;i<GetArraySize(g_MapList);i++)
+			{
+				GetArrayString(g_MapList,i,mapsearch,sizeof(mapsearch));
+				if (StrContains(mapsearch,mapname,false) != -1)
+				{
+					similarmaps++;
+					PrintToConsole(client,"%s",mapsearch);
+				}
+			}
+			if (similarmaps > 0) ReplyToCommand(client, "But there were %i maps found with similar names. Check console", similarmaps);
+		}
 		return Plugin_Handled;		
 	}
 	
