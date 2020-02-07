@@ -241,11 +241,11 @@ public Action Command_Nominate(int client, int args)
 	int status;
 	if (!g_mapTrie.GetValue(mapname, status))
 	{
-		ReplyToCommand(client, "%t", "Map was not found", mapname);
 		if ((GetArraySize(g_MapList) > 0) && (strlen(mapname) > 0))
 		{
 			int similarmaps = 0;
 			char mapsearch[64];
+			char lastmapsearch[64];
 			for (int i = 0;i<GetArraySize(g_MapList);i++)
 			{
 				GetArrayString(g_MapList,i,mapsearch,sizeof(mapsearch));
@@ -253,11 +253,27 @@ public Action Command_Nominate(int client, int args)
 				{
 					similarmaps++;
 					PrintToConsole(client,"%s",mapsearch);
+					Format(lastmapsearch,sizeof(lastmapsearch),"%s",mapsearch);
 				}
 			}
-			if (similarmaps > 0) ReplyToCommand(client, "But there were %i maps found with similar names. Check console", similarmaps);
+			if ((similarmaps == 1) && (strlen(lastmapsearch) > 0))
+			{
+				Format(mapname,sizeof(mapname),"%s",lastmapsearch);
+				g_mapTrie.GetValue(mapname, status);
+			}
+			else if (similarmaps > 0)
+			{
+				ReplyToCommand(client, "%t", "Map was not found", mapname);
+				ReplyToCommand(client, "But there were %i maps found with similar names. Check console", similarmaps);
+				return Plugin_Handled;
+			}
+			else
+			{
+				ReplyToCommand(client, "%t", "Map was not found", mapname);
+				return Plugin_Handled;
+			}
 		}
-		return Plugin_Handled;		
+		else return Plugin_Handled;
 	}
 	
 	if ((status & MAPSTATUS_DISABLED) == MAPSTATUS_DISABLED)
@@ -306,10 +322,24 @@ public Action Command_Nominate(int client, int args)
 	Format(map,sizeof(map),"%s",mapname);
 	GetMapTag(map);
 	char translate[128];
-	Format(translate,sizeof(translate),"[SM] %t","Map Nominated", name, map);
-	PrintToChatAll("%s (%s)", translate, maptag);
-	
-	return Plugin_Continue;
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if (IsValidEntity(i))
+		{
+			if (IsClientConnected(i))
+			{
+				if (IsClientInGame(i))
+				{
+					if (!IsFakeClient(i))
+					{
+						Format(translate,sizeof(translate),"[SM] %T","Map Nominated", i, name, map);
+						PrintToChat(i,"%s (%s)", translate, maptag);
+					}
+				}
+			}
+		}
+	}
+	return Plugin_Handled;
 }
 
 public Action fullmapslist(int client, int args)
