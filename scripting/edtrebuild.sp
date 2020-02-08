@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.49"
+#define PLUGIN_VERSION "0.50"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -1946,7 +1946,7 @@ void ReadEDT(char[] edtfile)
 				}
 				if ((StrContains(line,"origin",false) != -1) && (!origindefined))
 				{
-					char removeprev[64];
+					char removeprev[128];
 					int findclass = StrContains(line,"origin",false);
 					int containval = StrContains(line,"values",false);
 					if (findclass != -1)
@@ -1969,8 +1969,11 @@ void ReadEDT(char[] edtfile)
 						TrimString(originch);
 						char kvs[64][64];
 						ExplodeString(originch," ",kvs,64,64);
-						Format(originch,sizeof(originch),"%s %s %s",kvs[0],kvs[1],kvs[2]);
-						origindefined = true;
+						if (!StrEqual(kvs[0],"edit",false))
+						{
+							Format(originch,sizeof(originch),"%s %s %s",kvs[0],kvs[1],kvs[2]);
+							origindefined = true;
+						}
 					}
 				}
 				if ((StrContains(line,"targetname",false) != -1) && ((EditingEnt) || (DeletingEnt)) && (!TargnDefined))
