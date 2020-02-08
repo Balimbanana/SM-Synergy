@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.49"
-			"Previous"	"0.48"
+			"Latest"  	"0.50"
+			"Previous"	"0.49"
 		}
 		
-		"Notes"	"Fixed edit by targetname with spaces."
+		"Notes"	"Fixed edit by targetname specific scenarios."
 	}
 	
 	"Files"
