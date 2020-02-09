@@ -1175,6 +1175,7 @@ void ReadCache(char[] cache, char[] mapedt)
 						if (truncatedat == -1) truncatedat = 0;
 						else truncatedat++;
 						Format(tmptrunc,sizeof(tmptrunc),"%s",tmparr[truncatedat]);
+						if (StrEqual(tmparr,"weapon_crossbow",false)) Format(tmptrunc,sizeof(tmptrunc),"xbow");
 						Format(push,sizeof(push),"OnMapSpawn \"%s,AddOutput,OnPlayerPickup %spickup:Enable::0:-1,0,-1\"",tmparr,tmptrunc);
 						if (FindStringInArray(logicautos,push) == -1) PushArrayString(logicautos,push);
 						Format(push,sizeof(push),"OnMapSpawn \"%s,AddOutput,OnPlayerPickup %spickup:EquipAllPlayers::0.1:-1,0,-1\"",tmparr,tmptrunc);
