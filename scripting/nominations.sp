@@ -1075,6 +1075,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Killzone Source");
 	}
+	else if (StrContains(map,"silent_escape_map_",false) == 0)
+	{
+		Format(modname, sizeof(modname), "Silent Escape");
+	}
 	else if ((StrContains(map,"Uh_Prologue_",false) == 0) || (StrContains(map,"Uh_Chapter1_",false) == 0) || (StrContains(map,"Uh_Chapter2_",false) == 0) || (StrContains(map,"Uh_House_",false) == 0) || (StrContains(map,"Uh_Dreams_",false) == 0))
 	{
 		Format(modname, sizeof(modname), "Underhell");
