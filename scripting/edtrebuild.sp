@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.50"
+#define PLUGIN_VERSION "0.51"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -113,10 +113,34 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		CloseHandle(cvaroriginals);
 		cvaroriginals = CreateArray(64);
 	}
+	char contentdata[64];
+	Handle cvar = FindConVar("content_metadata");
+	if (cvar != INVALID_HANDLE)
+	{
+		GetConVarString(cvar,contentdata,sizeof(contentdata));
+		char fixuptmp[16][16];
+		ExplodeString(contentdata," ",fixuptmp,16,16,true);
+		Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+	}
+	CloseHandle(cvar);
 	char curmap[128];
-	Format(curmap,sizeof(curmap),"maps/%s.edt",szMapName);
 	char curmap2[128];
+	Format(curmap,sizeof(curmap),"maps/%s.edt",szMapName);
 	Format(curmap2,sizeof(curmap2),"maps/%s.edt2",szMapName);
+	if (strlen(contentdata) > 0)
+	{
+		Format(curmap,sizeof(curmap),"maps/%s_%s.edt",contentdata,szMapName);
+		Format(curmap2,sizeof(curmap2),"maps/%s_%s.edt2",contentdata,szMapName);
+		if ((FileExists(curmap,true,NULL_STRING)) || (FileExists(curmap2,true,NULL_STRING)))
+		{
+			if (FileExists(curmap2,true,NULL_STRING)) Format(curmap,sizeof(curmap),"%s",curmap2);
+		}
+		else
+		{
+			Format(curmap,sizeof(curmap),"maps/%s.edt",szMapName);
+			Format(curmap2,sizeof(curmap2),"maps/%s.edt2",szMapName);
+		}
+	}
 	if (FileExists("cfg/globaledt.edt",false)) ReadEDT("cfg/globaledt.edt");
 	if ((FileExists(curmap,true,NULL_STRING)) || (FileExists(curmap2,true,NULL_STRING)))
 	{
@@ -1700,16 +1724,6 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		CloseHandle(g_EditClassOrgData);
 		CloseHandle(g_CreateEnts);
 		char szMapNameadj[64];
-		char contentdata[64];
-		Handle cvar = FindConVar("content_metadata");
-		if (cvar != INVALID_HANDLE)
-		{
-			GetConVarString(cvar,contentdata,sizeof(contentdata));
-			char fixuptmp[16][16];
-			ExplodeString(contentdata," ",fixuptmp,16,16,true);
-			Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
-		}
-		CloseHandle(cvar);
 		if (strlen(contentdata) < 1) Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s.ent",szMapName);
 		else Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s_%s.ent",contentdata,szMapName);
 		if (GenerateEnt2)
@@ -1733,16 +1747,6 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 	{
 		PrintToServer("No EDT found at %s or %s",curmap,curmap2);
 		char szMapNameadj[64];
-		char contentdata[64];
-		Handle cvar = FindConVar("content_metadata");
-		if (cvar != INVALID_HANDLE)
-		{
-			GetConVarString(cvar,contentdata,sizeof(contentdata));
-			char fixuptmp[16][16];
-			ExplodeString(contentdata," ",fixuptmp,16,16,true);
-			Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
-		}
-		CloseHandle(cvar);
 		if (strlen(contentdata) < 1) Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s.ent",szMapName);
 		else Format(szMapNameadj,sizeof(szMapNameadj),"maps/ent_cache/%s_%s.ent",contentdata,szMapName);
 		Handle writefile = OpenFile(szMapNameadj,"wb",true,NULL_STRING);
