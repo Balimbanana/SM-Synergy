@@ -51,7 +51,7 @@ bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 bool TrainBlockFix = true;
 
-#define PLUGIN_VERSION "1.99961"
+#define PLUGIN_VERSION "1.99962"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -273,24 +273,27 @@ public void OnMapStart()
 		HookEntityOutput("trigger_changelevel","OnChangeLevel",mapendchg);
 		HookEntityOutput("npc_citizen","OnDeath",entdeath);
 		HookEntityOutput("func_physbox","OnPhysGunPunt",physpunt);
-		Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
-		char buff[64];
-		while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
+		if (DirExists("maps/ent_cache",false))
 		{
-			if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
+			Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
+			char buff[64];
+			while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
 			{
-				if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
+				if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
 				{
-					if (StrContains(buff,mapbuf,false) != -1)
+					if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
 					{
-						Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s",buff);
-						if (debuglvl > 1) PrintToServer("Found ent cache %s",mapbuf);
-						break;
+						if (StrContains(buff,mapbuf,false) != -1)
+						{
+							Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s",buff);
+							if (debuglvl > 1) PrintToServer("Found ent cache %s",mapbuf);
+							break;
+						}
 					}
 				}
 			}
+			CloseHandle(mdirlisting);
 		}
-		CloseHandle(mdirlisting);
 		
 		FindSaveTPHooks();
 		CreateTimer(0.1,rehooksaves,_,TIMER_FLAG_NO_MAPCHANGE);
