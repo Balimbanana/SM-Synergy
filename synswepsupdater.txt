@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.985"
-			"Previous"	"0.984"
+			"Latest"  	"0.986"
+			"Previous"	"0.985"
 		}
 		
-		"Notes"	"Removed hint on spawn. Cleaned up a few CVars."
+		"Notes"	"Re-wrote a few functions. Added some of KZS weapons. Added ironsights to certain weapons. Added weapon_camera from Human Error."
 	}
 	
 	"Files"
