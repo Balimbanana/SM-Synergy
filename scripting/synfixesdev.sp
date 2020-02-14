@@ -94,7 +94,7 @@ bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 
-#define PLUGIN_VERSION "1.99997"
+#define PLUGIN_VERSION "1.99998"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -796,9 +796,9 @@ public void OnMapStart()
 			Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s%s",contentdata,mapbuf);
 			if (!FileExists(mapbuf,true,NULL_STRING)) ReplaceStringEx(mapbuf,sizeof(mapbuf),".ent2",".ent");
 		}
-		if (!FileExists(mapbuf,true,NULL_STRING))
+		if ((!FileExists(mapbuf,true,NULL_STRING)) && (DirExists("maps/ent_cache",false)))
 		{
-			Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
+			Handle mdirlisting = OpenDirectory("maps/ent_cache",false);
 			if (mdirlisting != INVALID_HANDLE)
 			{
 				char buff[64];
@@ -989,6 +989,7 @@ public void OnMapStart()
 		PushArrayString(customentlist,"weapon_smg4");
 		PushArrayString(customentlist,"weapon_vc32sniperrifle");
 		PushArrayString(customentlist,"weapon_camera");
+		PushArrayString(customentlist,"weapon_goop");
 		PushArrayString(customentlist,"item_weapon_gluon");
 		PushArrayString(customentlist,"item_ammo_energy");
 		PushArrayString(customentlist,"item_weapon_gauss");
@@ -1920,7 +1921,7 @@ public Action everyspawnpost(Handle timer, int client)
 										if (addweap)
 										{
 											Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
-											if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
+											if ((StrEqual(basecls,"weapon_gluon",false)) || (StrEqual(basecls,"weapon_goop",false))) Format(basecls,sizeof(basecls),"weapon_shotgun");
 											else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 											else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
 											else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
@@ -2106,7 +2107,7 @@ public Action clspawnpost(Handle timer, int client)
 										if (addweap)
 										{
 											Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
-											if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
+											if ((StrEqual(basecls,"weapon_gluon",false)) || (StrEqual(basecls,"weapon_goop",false))) Format(basecls,sizeof(basecls),"weapon_shotgun");
 											else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 											else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
 											else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
@@ -5719,7 +5720,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					{
 						Format(cls,sizeof(cls),"weapon_pistol");
 					}
-					else if (StrEqual(cls,"weapon_gluon",false))
+					else if ((StrEqual(cls,"weapon_gluon",false)) || (StrEqual(cls,"weapon_goop",false)))
 					{
 						Format(cls,sizeof(cls),"weapon_shotgun");
 					}
@@ -12497,7 +12498,7 @@ public void EquipCustom(int equip, int client)
 						if (addweap)
 						{
 							Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
-							if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
+							if ((StrEqual(basecls,"weapon_gluon",false)) || (StrEqual(basecls,"weapon_goop",false))) Format(basecls,sizeof(basecls),"weapon_shotgun");
 							else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 							else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
 							else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false))) Format(basecls,sizeof(basecls),"weapon_slam");
@@ -16368,7 +16369,7 @@ void restoreent(Handle dp)
 			Format(clsname,sizeof(clsname),"prop_physics_override");
 		else if (StrEqual(clsname,"monster_ichthyosaur",false))
 			Format(clsname,sizeof(clsname),"npc_ichthyosaur");
-		else if (StrEqual(clsname,"weapon_gluon",false))
+		else if ((StrEqual(clsname,"weapon_gluon",false)) || (StrEqual(clsname,"weapon_goop",false)))
 			Format(clsname,sizeof(clsname),"weapon_shotgun");
 		else if (StrEqual(clsname,"weapon_handgrenade",false))
 			Format(clsname,sizeof(clsname),"weapon_frag");
