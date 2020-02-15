@@ -914,7 +914,7 @@ public Handler_MapVoteMenu(Menu menu, MenuAction action, int param1, int param2)
 
 			Panel panel = Panel:param2;
 			panel.SetTitle(buffer);
-		}		
+		}
 		
 		case MenuAction_DisplayItem:
 		{
@@ -977,11 +977,11 @@ public Handler_MapVoteMenu(Menu menu, MenuAction action, int param1, int param2)
 	return 0;
 }
 
-public Action:Timer_ChangeMap(Handle:hTimer, Handle:dp)
+public Action Timer_ChangeMap(Handle hTimer, Handle dp)
 {
 	g_ChangeMapInProgress = false;
 	
-	new String:map[PLATFORM_MAX_PATH];
+	char map[PLATFORM_MAX_PATH];
 	
 	if (dp == null)
 	{
@@ -1363,13 +1363,13 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Lost Coast");
 	}
-	else if (StrContains(map, "d2_", false) == 0)
+	else if ((StrContains(map, "d2_", false) == 0) || (StrContains(map, "d3_", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Half-Life 2");
 	}
-	else if (StrContains(map, "d3_", false) == 0)
+	else if (StrContains(map, "hl2u ", false) == 0)
 	{
-		Format(maptag, sizeof(maptag), "Half-Life 2");
+		Format(maptag, sizeof(maptag), "Half-Life 2 Update");
 	}
 	else if ((StrContains(map, "c0a0", false) == 0) || (StrContains(map, "c1a", false) == 0) || (StrContains(map, "c2a", false) == 0) || (StrContains(map, "c3a", false) == 0) || (StrContains(map, "c4a", false) == 0) || (StrEqual(map, "c5a1", false)))
 	{
@@ -1383,7 +1383,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Episode 2");
 	}
-	else if (StrContains(map, "meta", false) == 0)
+	else if (StrContains(map, "metastasis", false) == 0)
 	{
 		Format(maptag, sizeof(maptag), "Minerva");
 	}
@@ -1570,6 +1570,10 @@ public Action GetMapTag(const char[] map)
 	else if (StrContains(map,"oc_",false) == 0)
 	{
 		Format(maptag, sizeof(maptag), "Obsidian Conflict");
+	}
+	else if (StrContains(map,"vektaslums0",false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Killzone Source");
 	}
 	else if ((StrContains(map,"Uh_Prologue_",false) == 0) || (StrContains(map,"Uh_Chapter1_",false) == 0) || (StrContains(map,"Uh_Chapter2_",false) == 0) || (StrContains(map,"Uh_House_",false) == 0) || (StrContains(map,"Uh_Dreams_",false) == 0))
 	{
