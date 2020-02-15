@@ -1051,7 +1051,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Terminal 7");
 	}
-	else if (StrContains(map, "bm_c", false) == 0)
+	else if ((StrContains(map, "bm_c", false) == 0) || (StrContains(map, "bms ", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Black Mesa");
 	}
