@@ -2781,6 +2781,20 @@ public Action resetgraphs(int client, int args)
 				DeleteFile(findnode);
 				PrintToServer("Removed ain for %s",mapname);
 			}
+			if ((StrContains(mapname,"bm_c",false) != -1) || (StrContains(mapbuf,"xen_c",false) != -1))
+			{
+				char gamedescoriginal[24];
+				GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
+				if (StrEqual(gamedescoriginal,"synergy 20.1",false)) 
+				{
+					Handle srvcvar = FindConVar("sv_content_optional");
+					if (srvcvar != INVALID_HANDLE)
+					{
+						SetConVarString(srvcvar,"ep2 ep1",true,false);
+					}
+					CloseHandle(srvcvar);
+				}
+			}
 		}
 		else RestartedMap = false;
 	}
