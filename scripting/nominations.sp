@@ -723,6 +723,8 @@ void BuildMapMenu()
 			Format(displaymap,sizeof(displaymap),map);
 			if (StrContains(displaymap,"workshop/",false) != -1)
 				GetMapDisplayName(map,displaymap,sizeof(displaymap));
+			int pos = StrContains(displaymap," ",false);
+			if (pos != -1) Format(displaymap,sizeof(displaymap),"%s",displaymap[pos+1]);
 			if (StrEqual(displaymap,currentMap))
 			{
 				status = MAPSTATUS_DISABLED|MAPSTATUS_EXCLUDE_CURRENT;
