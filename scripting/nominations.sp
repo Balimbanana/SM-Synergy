@@ -545,7 +545,7 @@ void tmpmenu(int client, Handle tmparr, char[] menutitle)
 		GetArrayString(tmparr, k, ktmp, sizeof(ktmp));
 		int status;
 		int pos = StrContains(ktmp," ",false);
-		g_mapTrie.GetValue(ktmp[pos+1], status);
+		g_mapTrie.GetValue(ktmp, status);
 		if (status & MAPSTATUS_EXCLUDE_CURRENT)
 		{
 			char ktmpd[128];
