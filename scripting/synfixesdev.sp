@@ -94,7 +94,7 @@ bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 
-#define PLUGIN_VERSION "1.99998"
+#define PLUGIN_VERSION "1.99999"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -13999,6 +13999,8 @@ public void OnEntityDestroyed(int entity)
 	}
 	find = FindValueInArray(grenlist,entity);
 	if (find != -1) RemoveFromArray(grenlist,find);
+	find = FindValueInArray(entlist,entity);
+	if (find != -1) RemoveFromArray(entlist,find);
 	findmovechild(-1);
 }
 
