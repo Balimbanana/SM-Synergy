@@ -51,7 +51,7 @@ bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 bool TrainBlockFix = true;
 
-#define PLUGIN_VERSION "1.99962"
+#define PLUGIN_VERSION "1.99963"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3353,6 +3353,12 @@ public void OnEntityCreated(int entity, const char[] classname)
 			CreateTimer(0.1,custent,entity,TIMER_FLAG_NO_MAPCHANGE);
 		}
 	}
+}
+
+public void OnEntityDestroyed(int entity)
+{
+	int find = FindValueInArray(entlist,entity);
+	if (find != -1) RemoveFromArray(entlist,find);
 }
 
 public Action resetown(Handle timer, int entity)
