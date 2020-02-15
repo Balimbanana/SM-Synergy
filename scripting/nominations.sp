@@ -227,6 +227,16 @@ public Action Command_Nominate(int client, int args)
 	{
 		char curmap[128];
 		GetCurrentMap(curmap,sizeof(curmap));
+		Handle cvar = FindConVar("content_metadata");
+		if (cvar != INVALID_HANDLE)
+		{
+			char contentdata[64];
+			GetConVarString(cvar,contentdata,sizeof(contentdata));
+			char fixuptmp[16][16];
+			ExplodeString(contentdata," ",fixuptmp,16,16,true);
+			if (strlen(fixuptmp[2]) > 0) Format(curmap,sizeof(curmap),"%s %s",fixuptmp[2],curmap);
+		}
+		CloseHandle(cvar);
 		int find = FindStringInArray(g_MapList,curmap);
 		if (find != -1)
 		{
@@ -534,11 +544,12 @@ void tmpmenu(int client, Handle tmparr, char[] menutitle)
 		char ktmp[128];
 		GetArrayString(tmparr, k, ktmp, sizeof(ktmp));
 		int status;
-		g_mapTrie.GetValue(ktmp, status);
+		int pos = StrContains(ktmp," ",false);
+		g_mapTrie.GetValue(ktmp[pos+1], status);
 		if (status & MAPSTATUS_EXCLUDE_CURRENT)
 		{
 			char ktmpd[128];
-			Format(ktmpd,sizeof(ktmpd),"%s (Current Map)",ktmp);
+			Format(ktmpd,sizeof(ktmpd),"%s (Current Map)",ktmp[pos+1]);
 			if (StrContains(ktmp,"workshop/",false) != -1)
 			{
 				GetMapDisplayName(ktmp,ktmpd,sizeof(ktmpd));
@@ -549,7 +560,7 @@ void tmpmenu(int client, Handle tmparr, char[] menutitle)
 		else if ((status & MAPSTATUS_EXCLUDE_NOMINATED) == MAPSTATUS_EXCLUDE_NOMINATED)
 		{
 			char ktmpd[128];
-			Format(ktmpd,sizeof(ktmpd),"%s (Nominated)",ktmp);
+			Format(ktmpd,sizeof(ktmpd),"%s (Nominated)",ktmp[pos+1]);
 			if (StrContains(ktmpd,"workshop/",false) != -1)
 			{
 				GetMapDisplayName(ktmp,ktmpd,sizeof(ktmpd));
@@ -558,7 +569,10 @@ void tmpmenu(int client, Handle tmparr, char[] menutitle)
 			menu.AddItem(ktmp, ktmpd, ITEMDRAW_DISABLED);
 		}
 		else
-			menu.AddItem(ktmp, ktmp);
+		{
+			if (pos < 0) menu.AddItem(ktmp, ktmp);
+			else menu.AddItem(ktmp, ktmp[pos+1]);
+		}
 	}
 	ClearArray(tmparr);
 	CloseHandle(tmparr);
@@ -863,13 +877,13 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Lost Coast");
 	}
-	else if (StrContains(map,"d2_",false) == 0)
+	else if ((StrContains(map,"d2_",false) == 0) || (StrContains(map,"d3_",false) == 0) || (StrContains(map,"hl2 ",false) == 0))
 	{
 		Format(modname, sizeof(modname), "Half-Life 2");
 	}
-	else if (StrContains(map,"d3_",false) == 0)
+	else if (StrContains(map,"hl2u ",false) == 0)
 	{
-		Format(modname, sizeof(modname), "Half-Life 2");
+		Format(modname, sizeof(modname), "Half-Life 2 Update");
 	}
 	else if ((StrContains(map, "c0a0", false) == 0) || (StrContains(map, "c1a", false) == 0) || (StrContains(map, "c2a", false) == 0) || (StrContains(map, "c3a", false) == 0) || (StrContains(map, "c4a", false) == 0) || (StrEqual(map, "c5a1", false)))
 	{
