@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99962"
-			"Previous"	"1.99961"
+			"Latest"  	"1.99963"
+			"Previous"	"1.99962"
 		}
 		
-		"Notes"	"Aditional directory validation checks for if they are removed or renamed."
+		"Notes"	"Clean up entlist arr upon destroyed ents."
 	}
 	
 	"Files"
