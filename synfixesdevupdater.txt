@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99998"
-			"Previous"	"1.99997"
+			"Latest"  	"1.99999"
+			"Previous"	"1.99998"
 		}
 		
-		"Notes"	"Added CVar sm_fixblockedtrains 1, for items and weapons blocking trains. Added weapon_camera, hlss_camera_output, hlss_weaponstripper compat."
+		"Notes"	"Clean up entlist arr upon destroyed ents."
 	}
 	
 	"Files"
