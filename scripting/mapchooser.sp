@@ -1363,7 +1363,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Lost Coast");
 	}
-	else if ((StrContains(map, "d2_", false) == 0) || (StrContains(map, "d3_", false) == 0))
+	else if ((StrContains(map, "d2_", false) == 0) || (StrContains(map, "d3_", false) == 0) || (StrContains(map, "hl2 ",false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Half-Life 2");
 	}
@@ -1539,7 +1539,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Terminal 7");
 	}
-	else if (StrContains(map, "bm_c", false) == 0)
+	else if ((StrContains(map, "bm_c", false) == 0) || (StrContains(map, "bms ", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Black Mesa");
 	}
