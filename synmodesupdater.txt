@@ -4,16 +4,17 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.30"
-			"Previous"	"1.29"
+			"Latest"  	"1.31"
+			"Previous"	"1.30"
 		}
 		
-		"Notes"	"Fixed possible attempt to spawn on invalid entity. Fixed gamemode changed message to only display if changed from what it currently is."
+		"Notes"	"Added native GetCLTeam for other plugins to get Synergy client teams."
 	}
 	
 	"Files"
 	{
 		"Plugin"	"Path_SM/plugins/synmodes.smx"
 		"Source"	"Path_SM/scripting/synmodes.sp"
+		"Source"	"Path_SM/scripting/include/synmodes.inc"
 	}
 }
