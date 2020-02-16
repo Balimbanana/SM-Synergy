@@ -1,6 +1,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include <synmodes>
 #undef REQUIRE_PLUGIN
 #undef REQUIRE_EXTENSIONS
 #tryinclude <SteamWorks>
@@ -13,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.30"
+#define PLUGIN_VERSION "1.31"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -217,11 +218,32 @@ public int Updater_OnPluginUpdated()
 	ReloadPlugin(nullpl);
 }
 
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	RegPluginLibrary("SynModes");
+	CreateNative("GetCLTeam", Native_GetCLTeam);
+	return APLRes_Success;
+}
+
+public int Native_GetCLTeam(Handle plugin, int numParams)
+{
+	if (numParams > 0)
+	{
+		int client = GetNativeCell(1);
+		if ((IsValidEntity(client)) && (client < MaxClients+1) && (client > 0))
+		{
+			return teamnum[client];
+		}
+	}
+	return 0;
+}
+
 public void OnAllPluginsLoaded()
 {
 	Handle sfixchk = FindConVar("seqdbg");
 	if (sfixchk != INVALID_HANDLE) resetvehpass = true;
 	else resetvehpass = false;
+	CloseHandle(sfixchk);
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
