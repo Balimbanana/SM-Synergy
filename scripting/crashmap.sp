@@ -43,10 +43,10 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-static char FileLoc[128];
+//static char FileLoc[128];
 char logPath[PLATFORM_MAX_PATH];
 Handle logFileHandle = INVALID_HANDLE;
-Handle dataFileHandle = INVALID_HANDLE;
+//Handle dataFileHandle = INVALID_HANDLE;
 Handle sm_crashmap_enabled = INVALID_HANDLE;
 Handle sm_crashmap_maxrestarts = INVALID_HANDLE;
 bool Recovered = false;
@@ -73,7 +73,7 @@ public void OnPluginStart()
 	Handle cvar = FindConVar("hostname");
 	if (cvar != INVALID_HANDLE) HookConVarChange(cvar, HostNameChange);
 	CloseHandle(cvar);
-	
+	/*
 	BuildPath(Path_SM, FileLoc, 128, "data/crashmap.txt");
 	if (!FileExists(FileLoc))
 	{
@@ -83,14 +83,13 @@ public void OnPluginStart()
 		WriteFileLine(dataFileHandle,"}");
 		CloseHandle(dataFileHandle);
 	}
-	
+	*/
 	BuildPath(Path_SM, logPath, PLATFORM_MAX_PATH, "/logs/CMR.log");
 	if (!FileExists(logPath))
 	{
 		logFileHandle = OpenFile(logPath, "a");
 		CloseHandle(logFileHandle);
 	}
-	
 	//new
 	char Error[100];
 	Handle_Database = SQLite_UseDatabase("sourcemod-local",Error,100-1);
@@ -108,8 +107,6 @@ public void OnPluginStart()
 		return;
 	}
 }
-
-
 
 public void OnMapStart()
 {
@@ -140,6 +137,17 @@ public void OnMapStart()
 			char Query[256];
 			Format(Query,256,"INSERT INTO srvcm VALUES(");
 			char thistemp[64];
+			Handle cvar = FindConVar("content_metadata");
+			if (cvar != INVALID_HANDLE)
+			{
+				char contentdata[64];
+				GetConVarString(cvar,contentdata,sizeof(contentdata));
+				char fixuptmp[16][16];
+				ExplodeString(contentdata," ",fixuptmp,16,16,true);
+				Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+				if (strlen(fixuptmp[2]) > 0) Format(CurrentMap,sizeof(CurrentMap),"%s %s",fixuptmp[2],CurrentMap);
+			}
+			CloseHandle(cvar);
 			Format(thistemp,sizeof(thistemp),"'%s','%s',0);",srvname,CurrentMap);
 			StrCat(Query,256,thistemp);
 			SQL_FastQuery(Handle_Database,Query);
@@ -172,6 +180,17 @@ public void OnMapStart()
 			char Query[256];
 			Format(Query,256,"INSERT INTO srvcm VALUES(");
 			char thistemp[128];
+			Handle cvar = FindConVar("content_metadata");
+			if (cvar != INVALID_HANDLE)
+			{
+				char contentdata[64];
+				GetConVarString(cvar,contentdata,sizeof(contentdata));
+				char fixuptmp[16][16];
+				ExplodeString(contentdata," ",fixuptmp,16,16,true);
+				Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+				if (strlen(fixuptmp[2]) > 0) Format(CurrentMap,sizeof(CurrentMap),"%s %s",fixuptmp[2],CurrentMap);
+			}
+			CloseHandle(cvar);
 			Format(thistemp,sizeof(thistemp),"'%s','%s',0);",srvname,CurrentMap);
 			StrCat(Query,256,thistemp);
 			SQL_FastQuery(Handle_Database,Query);
@@ -210,9 +229,18 @@ public void OnMapStart()
 		
 		LogToFile(logPath, "[CMR] %s loaded after server crash.", MapToLoad);
 		ServerCommand("changelevel %s",MapToLoad);
+		/*
 		char gamedir[16];
 		GetGameFolderName(gamedir,sizeof(gamedir));
-		if (!StrEqual(gamedir,"bms",false)) ServerCommand("changelevel custom %s",MapToLoad);
+		if (!StrEqual(gamedir,"bms",false))
+		{
+			ServerCommand("changelevel Custom %s",MapToLoad);
+			ServerCommand("changelevel hl2 %s",MapToLoad);
+			ServerCommand("changelevel ep1 %s",MapToLoad);
+			ServerCommand("changelevel ep2 %s",MapToLoad);
+			ServerCommand("changelevel bms %s",MapToLoad);
+		}
+		*/
 		//ForceChangeLevel(MapToLoad, "Crashed Map Recovery");
 		return;
 	}
@@ -224,6 +252,17 @@ public Action delayedcheck(Handle timer, Handle hQuery)
 	{
 		char CurrentMap[128];
 		GetCurrentMap(CurrentMap, sizeof(CurrentMap));
+		Handle cvar = FindConVar("content_metadata");
+		if (cvar != INVALID_HANDLE)
+		{
+			char contentdata[64];
+			GetConVarString(cvar,contentdata,sizeof(contentdata));
+			char fixuptmp[16][16];
+			ExplodeString(contentdata," ",fixuptmp,16,16,true);
+			Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+			if (strlen(fixuptmp[2]) > 0) Format(CurrentMap,sizeof(CurrentMap),"%s %s",fixuptmp[2],CurrentMap);
+		}
+		CloseHandle(cvar);
 		char Query[256];
 		Format(Query,256,"UPDATE srvcm SET mapname = '%s', restarts = 0 WHERE srvname = '%s'",CurrentMap,srvname);
 		SQL_FastQuery(Handle_Database,Query);
