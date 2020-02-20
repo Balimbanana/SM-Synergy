@@ -22,6 +22,7 @@ public Plugin myinfo =
 }
 
 bool showallcreated = false;
+bool showalldeleted = false;
 bool showallnormsounds = false;
 bool showallambsounds = false;
 
@@ -44,9 +45,15 @@ public void OnPluginStart()
 	Handle dbgcreate = CreateConVar("sm_showall_created", "0", "Shows all entities created in server console.", _, true, 0.0, true, 1.0);
 	HookConVarChange(dbgcreate, dbghch);
 	showallcreated = GetConVarBool(dbgcreate);
+	CloseHandle(dbgcreate);
+	dbgcreate = CreateConVar("sm_showall_deleted", "0", "Shows all entities deleted in server console.", _, true, 0.0, true, 1.0);
+	HookConVarChange(dbgcreate, dbgcrehch);
+	showalldeleted = GetConVarBool(dbgcreate);
+	CloseHandle(dbgcreate);
 	dbgcreate = CreateConVar("sm_showall_normsounds", "0", "Shows all normal sounds played in server console (skips stop flags).", _, true, 0.0, true, 1.0);
 	HookConVarChange(dbgcreate, dbgnormsch);
 	showallnormsounds = GetConVarBool(dbgcreate);
+	CloseHandle(dbgcreate);
 	dbgcreate = CreateConVar("sm_showall_ambientsounds", "0", "Shows all ambient sounds played in server console (skips stop flags).", _, true, 0.0, true, 1.0);
 	HookConVarChange(dbgcreate, dbgambsch);
 	showallambsounds = GetConVarBool(dbgcreate);
@@ -1321,10 +1328,15 @@ public Action listents(int client, int args)
 							GetEntPropString(targ,Prop_Data,tmpennam,scrtmp,sizeof(scrtmp));
 							if (strlen(scrtmp) > 0)
 							{
-								if (j < 10) Format(scriptinf,sizeof(scriptinf),"%sTemplate0%i %s ",scriptinf,j,scrtmp);
-								else Format(scriptinf,sizeof(scriptinf),"%sTemplate%i %s ",scriptinf,j,scrtmp);
+								if (j < 9) Format(scriptinf,sizeof(scriptinf),"%sTemplate0%i %s ",scriptinf,j+1,scrtmp);
+								else Format(scriptinf,sizeof(scriptinf),"%sTemplate%i %s ",scriptinf,j+1,scrtmp);
 							}
 						}
+					}
+					if (HasEntProp(targ,Prop_Data,"m_iszSound"))
+					{
+						GetEntPropString(targ,Prop_Data,"m_iszSound",scrtmp,sizeof(scrtmp));
+						if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszSound %s ",scriptinf,scrtmp);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_bCarriedByPlayer"))
 					{
@@ -1386,6 +1398,26 @@ public Action listents(int client, int args)
 						int enablestate = GetEntProp(targ,Prop_Data,"m_bDisabled");
 						if (enablestate == 1) Format(stateinf,sizeof(stateinf),"%sToggleState: Disabled ",stateinf);
 						else Format(stateinf,sizeof(stateinf),"%sToggleState: Enabled ",stateinf);
+					}
+					if (HasEntProp(targ,Prop_Send,"m_hEnt"))
+					{
+						int hEnt = GetEntPropEnt(targ,Prop_Send,"m_hEnt");
+						Format(stateinf,sizeof(stateinf),"%sm_hEnt: %i ",stateinf,hEnt);
+					}
+					if (HasEntProp(targ,Prop_Send,"m_pPlayer"))
+					{
+						int hEnt = GetEntPropEnt(targ,Prop_Send,"m_pPlayer");
+						Format(stateinf,sizeof(stateinf),"%sm_pPlayer: %i ",stateinf,hEnt);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_hLinkedPortal"))
+					{
+						int hEnt = GetEntPropEnt(targ,Prop_Data,"m_hLinkedPortal");
+						Format(stateinf,sizeof(stateinf),"%sm_hLinkedPortal: %i ",stateinf,hEnt);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_bActivated"))
+					{
+						int hEnt = GetEntProp(targ,Prop_Data,"m_bActivated");
+						Format(stateinf,sizeof(stateinf),"%sm_bActivated: %i ",stateinf,hEnt);
 					}
 					if ((HasEntProp(targ,Prop_Data,"m_iHealth")) && (HasEntProp(targ,Prop_Data,"m_iMaxHealth")))
 					{
@@ -1840,6 +1872,8 @@ public Action setprops(int client, int args)
 				int datamapoffs = FindDataMapInfo(targ,propname,datamaptype);
 				if (StrEqual(propname,"classname",false))
 					Format(propname,sizeof(propname),"m_iClassname");
+				else if (StrEqual(propname,"model",false))
+					Format(propname,sizeof(propname),"m_ModelName");
 				if (HasEntProp(targ,Prop_Send,propname))
 				{
 					PropFieldType type;
@@ -2168,6 +2202,11 @@ public Action setprops(int client, int args)
 				{
 					pdata = true;
 					Format(propname,sizeof(propname),"m_iClassname");
+				}
+				else if (StrEqual(propname,"model",false))
+				{
+					pdata = true;
+					Format(propname,sizeof(propname),"m_ModelName");
 				}
 				GetCmdArg(3, secondintchk, sizeof(secondintchk));
 				float secondfl = StringToFloat(secondintchk);
@@ -2790,11 +2829,24 @@ public Action setprops(int client, int args)
 	return Plugin_Handled;
 }
 
-public void OnEntityCreated(int entity, char[] classname)
+public void OnEntityCreated(int entity, const char[] classname)
 {
 	if (showallcreated)
 	{
 		PrintToServer("Create %i %s",entity,classname);
+	}
+}
+
+public void OnEntityDestroyed(int entity)
+{
+	if (showalldeleted)
+	{
+		if (IsValidEntity(entity))
+		{
+			char cls[32];
+			GetEntityClassname(entity,cls,sizeof(cls));
+			PrintToServer("Delete %i %s",entity,cls);
+		}
 	}
 }
 
@@ -2825,6 +2877,12 @@ public void dbghch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) showallcreated = true;
 	else showallcreated = false;
+}
+
+public void dbgcrehch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) showalldeleted = true;
+	else showalldeleted = false;
 }
 
 public void dbgnormsch(Handle convar, const char[] oldValue, const char[] newValue)
