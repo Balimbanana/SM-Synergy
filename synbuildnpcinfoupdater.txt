@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.91"
-			"Previous"	"0.9"
+			"Latest"  	"0.92"
+			"Previous"	"0.91"
 		}
 		
-		"Notes"	"Added custom death hook for certain npcs that should have certain animations or model overrides."
+		"Notes"	"Fixed issues of escape characters in entity cache."
 	}
 	
 	"Files"
