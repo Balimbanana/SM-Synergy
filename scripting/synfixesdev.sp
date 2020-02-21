@@ -448,6 +448,7 @@ public Action bmcvars(Handle timer)
 	{
 		PrintToServer("Cannot run both SynFixesDev and SynFixes at the same time.\nSynFixes default removed...");
 		DeleteFile(savepath);
+		ServerCommand("sm plugins unload synfixes");
 	}
 	return Plugin_Handled;
 }
@@ -4889,7 +4890,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 			if (StrContains(line,"classname",false))
 			{
 				char clschk[128];
-				Format(clschk,sizeof(clschk),line);
+				Format(clschk,sizeof(clschk),"%s",line);
 				ExplodeString(clschk, "\"", kvs, 64, 128, true);
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
@@ -4942,7 +4943,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					}
 				}
 				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
+				Format(tmpchar,sizeof(tmpchar),"%s",line);
 				ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
@@ -4979,7 +4980,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 			if (StrContains(line,"\"origin\"",false) == 0)
 			{
 				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
+				Format(tmpchar,sizeof(tmpchar),"%s",line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				char origch[16][16];
@@ -4991,7 +4992,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 			else if (StrContains(line,"\"angles\"",false) == 0)
 			{
 				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
+				Format(tmpchar,sizeof(tmpchar),"%s",line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"angles\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				char origch[16][16];
@@ -7659,7 +7660,7 @@ void readcacheexperimental(int client)
 		{
 			TrimString(line);
 			char clsfind[128];
-			Format(clsfind,sizeof(clsfind),line);
+			Format(clsfind,sizeof(clsfind),"%s",line);
 			ExplodeString(clsfind, "\"", kvs, 64, 128, true);
 			ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 			ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
@@ -7667,7 +7668,7 @@ void readcacheexperimental(int client)
 			if ((StrContains(line,"classname",false) != -1) && ((StrContains(line,"npc_",false) != -1) || (StrContains(line,"monster_",false) != -1) || (FindStringInArray(customentlist,kvs[3]) != -1)))
 			{
 				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
+				Format(tmpchar,sizeof(tmpchar),"%s",line);
 				ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
@@ -7702,7 +7703,7 @@ void readcacheexperimental(int client)
 					}
 				}
 				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
+				Format(tmpchar,sizeof(tmpchar),"%s",line);
 				ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
@@ -7717,7 +7718,7 @@ void readcacheexperimental(int client)
 			if (StrContains(line,"\"origin\"",false) == 0)
 			{
 				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
+				Format(tmpchar,sizeof(tmpchar),"%s",line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				char origch[16][16];
@@ -7729,7 +7730,7 @@ void readcacheexperimental(int client)
 			if (StrContains(line,"\"angles\"",false) == 0)
 			{
 				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
+				Format(tmpchar,sizeof(tmpchar),"%s",line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"angles\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				char origch[16][16];
@@ -11308,7 +11309,7 @@ void readoutputs(int scriptent, char[] targn)
 				if (StrContains(line,"\"targetname\"",false) == 0)
 				{
 					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
+					Format(tmpchar,sizeof(tmpchar),"%s",line);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" ","",false);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 					TrimString(tmpchar);
@@ -11317,7 +11318,7 @@ void readoutputs(int scriptent, char[] targn)
 				else if (StrContains(line,"\"template0",false) == 0)
 				{
 					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
+					Format(tmpchar,sizeof(tmpchar),"%s",line);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"template0","",false);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 					strcopy(tmpchar,sizeof(tmpchar),tmpchar[2]);
@@ -11327,7 +11328,7 @@ void readoutputs(int scriptent, char[] targn)
 				else if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
 				{
 					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
+					Format(tmpchar,sizeof(tmpchar),"%s",line);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"actor\" ","",false);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 					TrimString(tmpchar);
@@ -11362,7 +11363,7 @@ void readoutputs(int scriptent, char[] targn)
 						}
 					}
 					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
+					Format(tmpchar,sizeof(tmpchar),"%s",line);
 					ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
 					ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 					ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
@@ -11428,7 +11429,7 @@ void readoutputs(int scriptent, char[] targn)
 					if (StrContains(line,"\"origin\"",false) == 0)
 					{
 						char tmpchar[128];
-						Format(tmpchar,sizeof(tmpchar),line);
+						Format(tmpchar,sizeof(tmpchar),"%s",line);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 						char origch[16][16];
@@ -11440,7 +11441,7 @@ void readoutputs(int scriptent, char[] targn)
 					if (StrContains(line,"\"targetname\"",false) == 0)
 					{
 						char tmpchar[128];
-						Format(tmpchar,sizeof(tmpchar),line);
+						Format(tmpchar,sizeof(tmpchar),"%s",line);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" ","",false);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 						TrimString(tmpchar);
@@ -11449,7 +11450,7 @@ void readoutputs(int scriptent, char[] targn)
 					if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
 					{
 						char tmpchar[128];
-						Format(tmpchar,sizeof(tmpchar),line);
+						Format(tmpchar,sizeof(tmpchar),"%s",line);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"actor\" ","",false);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 						TrimString(tmpchar);
@@ -11999,7 +12000,7 @@ void readoutputsforinputs()
 					}
 					if (formatinput)
 					{
-						Format(lineorgres,sizeof(lineorgres),line);
+						Format(lineorgres,sizeof(lineorgres),"%s",line);
 						ReplaceString(lineorgres,sizeof(lineorgres),"\"OnMapSpawn\" ","");
 						if ((!hastargn) && (StrContains(line,",AddOutput,",false) == -1))
 						{
@@ -12010,7 +12011,7 @@ void readoutputsforinputs()
 						{
 							char linenamef[8][128];
 							char tmpchar[128];
-							Format(tmpchar,sizeof(tmpchar),line);
+							Format(tmpchar,sizeof(tmpchar),"%s",line);
 							ExplodeString(tmpchar,"\"",linenamef,8,128);
 							Format(tmpchar,sizeof(tmpchar),linenamef[3]);
 							ExplodeString(tmpchar,",",linenamef,8,128);
@@ -12027,7 +12028,7 @@ void readoutputsforinputs()
 								PrintToServer("%s",lineadj);
 							}
 							char outpchk[128];
-							Format(outpchk,sizeof(outpchk),line);
+							Format(outpchk,sizeof(outpchk),"%s",line);
 							ExplodeString(outpchk, "\"", kvs, 64, 128, true);
 							ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 							ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
