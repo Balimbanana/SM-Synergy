@@ -11,7 +11,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "0.44"
+#define PLUGIN_VERSION "0.45"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -586,7 +586,7 @@ public Action BuildLoaderFor(int client, int args)
 					{
 						if ((StrContains(buff,".bsp",false) != -1) && (StrContains(buff,".txt",false) == -1))
 						{
-							if ((StrContains(buff,"background",false) != -1) || (StrContains(buff,"loading",false) != -1))
+							if ((StrContains(buff,"background",false) != -1) || (StrContains(buff,"loading",false) != -1) || (StrContains(buff,"bg.bsp",false) >= 3))
 							{
 								ReplaceString(buff,sizeof(buff),".bsp","");
 								PrintToConsole(client,"Found backgroundmap %s",buff);
@@ -1139,6 +1139,9 @@ void ReadCache(char[] cache, char[] mapedt)
 					if (GetVectorDistance(orgpos,itempos,false) < 60.0)
 					{
 						PushArrayString(duplicates,tmparr);
+						char deletion[72];
+						Format(deletion,sizeof(deletion),"%s\" %s}",tmparr,origin);
+						if (FindStringInArray(mapremovals,deletion) == -1) PushArrayString(mapremovals,deletion);
 						if (StrEqual(tmparr,"item_box_buckshot",false)) Format(tmparr,sizeof(tmparr),"ammo_buckshot \"6\"");
 						else if (StrEqual(tmparr,"item_rpg_round",false)) Format(tmparr,sizeof(tmparr),"ammo_rpg_round \"2\"");
 						else if (StrEqual(tmparr,"item_battery",false)) Format(tmparr,sizeof(tmparr),"item_armor \"15\"");
@@ -1148,12 +1151,6 @@ void ReadCache(char[] cache, char[] mapedt)
 						else if (StrEqual(tmparr,"item_box_lrounds",false)) Format(tmparr,sizeof(tmparr),"ammo_ar2 \"30\"");
 						else
 						{
-							if (StrEqual(tmparr,"item_suit",false))
-							{
-								char deletion[72];
-								Format(deletion,sizeof(deletion),"%s\" %s}",tmparr,origin);
-								if (FindStringInArray(mapremovals,deletion) == -1) PushArrayString(mapremovals,deletion);
-							}
 							if ((StrContains(tmparr,"item_ammo",false) == 0) && (!StrEqual(tmparr,"item_suit",false)))
 							{
 								ReplaceStringEx(tmparr,sizeof(tmparr),"item_","");
