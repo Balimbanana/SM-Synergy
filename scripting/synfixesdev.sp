@@ -94,7 +94,7 @@ bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 
-#define PLUGIN_VERSION "1.99999"
+#define PLUGIN_VERSION "2.0000"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1922,11 +1922,12 @@ public Action everyspawnpost(Handle timer, int client)
 										{
 											Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
 											if ((StrEqual(basecls,"weapon_gluon",false)) || (StrEqual(basecls,"weapon_goop",false))) Format(basecls,sizeof(basecls),"weapon_shotgun");
+											else if (StrEqual(basecls,"weapon_isa_knife",false)) Format(basecls,sizeof(basecls),"weapon_crowbar");
 											else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
-											else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+											else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false)) || (StrEqual(basecls,"weapon_p911",false)) || (StrEqual(basecls,"weapon_pistol2",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
 											else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-											else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_camera",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-											else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+											else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_camera",false)) || (StrEqual(basecls,"weapon_smg3",false)) || (StrEqual(basecls,"weapon_smg4",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+											else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false)) || (StrEqual(basecls,"weapon_vc32sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 											else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 											else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 											else if (StrContains(basecls,"customweapons",false) != -1)
@@ -2816,6 +2817,39 @@ public Action changeleveldelay(Handle timer, Handle data)
 		if (StrEqual(mapchk,curmapbuf,false))
 		{
 			if (debuglvl > 1) PrintToServer("Failed to change map to %s attempting to change manually.",maptochange);
+			Handle mdirlisting = OpenDirectory("maps",true,NULL_STRING);
+			if (mdirlisting != INVALID_HANDLE)
+			{
+				char buff[64];
+				while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
+				{
+					if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
+					{
+						if (StrContains(buff,".bsp",false) != -1)
+						{
+							if (StrContains(buff,maptochange,false) != -1)
+							{
+								//case-sensitive map changes
+								ReplaceString(maptochange,sizeof(maptochange),".bsp","",false);
+								Format(maptochange,sizeof(maptochange),"%s",buff);
+								break;
+							}
+						}
+					}
+				}
+			}
+			CloseHandle(mdirlisting);
+			Handle cvar = FindConVar("content_metadata");
+			if (cvar != INVALID_HANDLE)
+			{
+				char contentdata[64];
+				GetConVarString(cvar,contentdata,sizeof(contentdata));
+				char fixuptmp[16][16];
+				ExplodeString(contentdata," ",fixuptmp,16,16,true);
+				Format(contentdata,sizeof(contentdata),"%s %s",fixuptmp[2],maptochange);
+				ServerCommand("changelevel %s",contentdata);
+			}
+			CloseHandle(cvar);
 			ServerCommand("changelevel %s",maptochange);
 			ServerCommand("changelevel ep1 %s",maptochange);
 			ServerCommand("changelevel ep2 %s",maptochange);
@@ -4385,6 +4419,7 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 		readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
 		readoutputstp(caller,targn,tmpout,"EquipAllPlayers",origin,actmod);
 		readoutputstp(caller,targn,tmpout,"SetCheckPoint",origin,actmod);
+		readoutputstp(caller,targn,tmpout,"CLCommand",origin,actmod);
 	}
 }
 
@@ -11599,6 +11634,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								spawnpointstates(lineorgrescom[2],delay);
 							}
+							else if (StrEqual(input,"CLCommand",false))
+							{
+								if (strlen(lineorgrescom[2]) > 0) CLToAllComm(lineorgrescom[2],delay);
+							}
 							else if (((StrEqual(input,"TakeAmmo",false)) || (StrEqual(input,"TakeAllAmmo",false))) && (activator > 0) && (activator < MaxClients+1))
 							{
 								weapammoremovers(activator,input,lineorgrescom[0],lineorgrescom[2],delay);
@@ -11699,6 +11738,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								spawnpointstates(lineorgrescom[2],delay);
 							}
+							else if (StrEqual(input,"CLCommand",false))
+							{
+								if (strlen(lineorgrescom[2]) > 0) CLToAllComm(lineorgrescom[2],delay);
+							}
 							else if (((StrEqual(input,"TakeAmmo",false)) || (StrEqual(input,"TakeAllAmmo",false))) && (activator > 0) && (activator < MaxClients+1))
 							{
 								weapammoremovers(activator,input,lineorgrescom[0],lineorgrescom[2],delay);
@@ -11768,6 +11811,7 @@ void readoutputsforinputs()
 		PushArrayString(inputs,",SetMass,");
 		PushArrayString(inputs,",Fade,,");
 		PushArrayString(inputs,",SetCheckPoint,");
+		PushArrayString(inputs,",CLCommand,");
 		if (customents)
 		{
 			PushArrayString(inputs,",ForceSpawn,,");
@@ -11907,7 +11951,7 @@ void readoutputsforinputs()
 				if ((StrContains(line,"\"origin\"",false) == 0) && (!hasorigin))
 				{
 					char tmpchar[64];
-					Format(tmpchar,sizeof(tmpchar),line);
+					Format(tmpchar,sizeof(tmpchar),"%s",line);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 					ExplodeString(tmpchar, " ", lineorgresexpl, 4, 16);
@@ -11918,7 +11962,7 @@ void readoutputsforinputs()
 				else if (StrContains(line,"\"targetname\"",false) == 0)
 				{
 					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
+					Format(tmpchar,sizeof(tmpchar),"%s",line);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" \"","");
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","");
 					Format(prevtargn,sizeof(prevtargn),"%s",tmpchar);
@@ -11931,7 +11975,7 @@ void readoutputsforinputs()
 				else if (StrContains(line,"\"classname\"",false) == 0)
 				{
 					char clschk[128];
-					Format(clschk,sizeof(clschk),line);
+					Format(clschk,sizeof(clschk),"%s",line);
 					ExplodeString(clschk, "\"", kvs, 64, 128, true);
 					ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 					ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
@@ -12513,11 +12557,14 @@ public void EquipCustom(int equip, int client)
 						{
 							Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
 							if ((StrEqual(basecls,"weapon_gluon",false)) || (StrEqual(basecls,"weapon_goop",false))) Format(basecls,sizeof(basecls),"weapon_shotgun");
+							else if (StrEqual(basecls,"weapon_isa_knife",false)) Format(basecls,sizeof(basecls),"weapon_crowbar");
 							else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
-							else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+							else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false)) || (StrEqual(basecls,"weapon_p911",false)) || (StrEqual(basecls,"weapon_pistol2",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
 							else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-							else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_camera",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-							else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+							else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_camera",false)) || (StrEqual(basecls,"weapon_smg3",false)) || (StrEqual(basecls,"weapon_smg4",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+							else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false)) || (StrEqual(basecls,"weapon_vc32sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+							else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
+							else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 							else if (StrContains(basecls,"customweapons",false) != -1)
 							{
 								char findpath[64];
@@ -13071,6 +13118,58 @@ public Action spawnpointstatesdelay(Handle timer, int entity)
 		}
 		CloseHandle(arr);
 		if (HasEntProp(entity,Prop_Data,"m_bDisabled")) SetEntProp(entity,Prop_Data,"m_bDisabled",0);
+	}
+}
+
+void CLToAllComm(char[] cmd, float delay)
+{
+	if (delay > 0.1)
+	{
+		Handle dp = CreateDataPack();
+		WritePackString(dp,cmd);
+		CreateTimer(delay,CLToAllCommdelay,dp,TIMER_FLAG_NO_MAPCHANGE);
+	}
+	else
+	{
+		for (int i = 1;i<MaxClients+1;i++)
+		{
+			if (IsValidEntity(i))
+			{
+				if (IsClientConnected(i))
+				{
+					if (!IsFakeClient(i))
+					{
+						ClientCommand(i,cmd);
+					}
+				}
+			}
+		}
+	}
+}
+
+public Action CLToAllCommdelay(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		char cmd[64];
+		ReadPackString(dp,cmd,sizeof(cmd));
+		CloseHandle(dp);
+		for (int i = 1;i<MaxClients+1;i++)
+		{
+			if (IsValidEntity(i))
+			{
+				if (IsClientConnected(i))
+				{
+					if (!IsFakeClient(i))
+					{
+						ClientCommand(i,cmd);
+						//Open menu for video play
+						if (StrContains(cmd,"playvideo",false) == 0) ClientCommand(i,"con");
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -14325,6 +14424,13 @@ public Action custent(Handle timer, int entity)
 			Format(cls,sizeof(cls),"%s",entcls);
 			resetname = false;
 		}
+		else if (StrEqual(entcls,"npc_zombie_security",false))
+		{
+			if (HasEntProp(entity,Prop_Data,"m_nBody"))
+			{
+				if (GetEntProp(entity,Prop_Data,"m_nBody") == 1) SetEntProp(entity,Prop_Data,"m_nBody",0);
+			}
+		}
 		if ((strlen(cls) > 0) && (!StrEqual(entcls,"prop_physics",false)) && (!StrEqual(entcls,"prop_dynamic",false)) && (!StrEqual(entcls,"prop_ragdoll",false)) && (StrContains(entcls,"ai_",false) == -1) && (StrContains(entcls,"logic_",false) == -1) && (StrContains(entcls,"game_",false) == -1))
 		{
 			if (((StrContains(cls,"npc_",false) != -1) || (StrContains(cls,"monster_",false) != -1) || (StrEqual(cls,"generic_actor",false)) || (StrEqual(cls,"generic_monster",false))) && (!StrEqual(cls,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(cls,"npc_bullseye",false)) && (!StrEqual(cls,"env_xen_portal",false)) && (!StrEqual(cls,"env_xen_portal_template",false)) && (!StrEqual(cls,"npc_maker",false)) && (!StrEqual(cls,"npc_template_maker",false)) && (StrContains(cls,"info_",false) == -1) && (StrContains(cls,"game_",false) == -1) && (StrContains(cls,"trigger_",false) == -1) && (FindValueInArray(entlist,entity) == -1))
@@ -14487,6 +14593,7 @@ public Action custent(Handle timer, int entity)
 				if ((FileExists("models/zombies/zombie_guard.mdl",true,NULL_STRING)) || (FileExists("models/zombie/zsecurity.mdl",true,NULL_STRING)))
 				{
 					DispatchKeyValue(entity,"classname","npc_zombie_security");
+					DispatchKeyValue(entity,"body","0");
 					ReplaceString(cls,sizeof(cls),"npc_zombie_security","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
 					if (FileExists("models/zombie/zsecurity.mdl",true,NULL_STRING))
@@ -14499,6 +14606,7 @@ public Action custent(Handle timer, int entity)
 						DispatchKeyValue(entity,"model","models/zombies/zombie_guard.mdl");
 						WritePackString(dp,"models/zombies/zombie_guard.mdl");
 					}
+					if (HasEntProp(entity,Prop_Data,"m_nBody")) SetEntProp(entity,Prop_Data,"m_nBody",0);
 					setuprelations("npc_zombie_security");
 					SDKHookEx(entity,SDKHook_Think,zomthink);
 					SDKHookEx(entity,SDKHook_OnTakeDamage,zomtkdmg);

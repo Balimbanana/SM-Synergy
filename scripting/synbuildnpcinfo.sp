@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.91"
+#define PLUGIN_VERSION "0.92"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synbuildnpcinfoupdater.txt"
 
 bool hasreadcache = false;
@@ -37,37 +37,74 @@ public void OnMapStart()
 	{
 		GetCurrentMap(mapbuf,sizeof(mapbuf));
 		Format(mapbuf,sizeof(mapbuf),"_%s.ent",mapbuf);
-		Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
-		if (mdirlisting != INVALID_HANDLE)
+		char contentdata[64];
+		Handle cvar = FindConVar("content_metadata");
+		if (cvar != INVALID_HANDLE)
 		{
-			char buff[64];
-			while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
+			GetConVarString(cvar,contentdata,sizeof(contentdata));
+			char fixuptmp[16][16];
+			ExplodeString(contentdata," ",fixuptmp,16,16,true);
+			Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+		}
+		CloseHandle(cvar);
+		if (strlen(contentdata) > 1)
+		{
+			Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s%s",contentdata,mapbuf);
+			if (!FileExists(mapbuf,true,NULL_STRING)) ReplaceStringEx(mapbuf,sizeof(mapbuf),".ent2",".ent");
+		}
+		if (!FileExists(mapbuf,true,NULL_STRING))
+		{
+			Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
+			if (mdirlisting != INVALID_HANDLE)
 			{
-				if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
+				char buff[64];
+				while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
 				{
-					if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
+					if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
 					{
-						if (StrContains(buff,mapbuf,false) != -1)
+						if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
 						{
-							char tmp[64];
-							Format(tmp,sizeof(tmp),"%s",buff);
-							ReplaceStringEx(tmp,sizeof(tmp),mapbuf,"");
-							// Fix for maps with similar names such as
-							// bms_bm_c0a0a and hl1_c0a0a HL1 c0a0a will come up as BMS first without this check
-							if (StrContains(tmp,"_",false) == -1)
+							if (StrContains(buff,mapbuf,false) != -1)
 							{
-								Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s",buff);
-								break;
+								char tmp[64];
+								Format(tmp,sizeof(tmp),"%s",buff);
+								ReplaceStringEx(tmp,sizeof(tmp),mapbuf,"");
+								// Fix for maps with similar names such as
+								// bms_bm_c0a0a and hl1_c0a0a HL1 c0a0a will come up as BMS first without this check
+								if (StrContains(tmp,"_",false) == -1)
+								{
+									Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s",buff);
+									break;
+								}
 							}
 						}
 					}
 				}
 			}
+			CloseHandle(mdirlisting);
 		}
-		CloseHandle(mdirlisting);
+		ClearArrayHandles(npcpacks);
 		ClearArray(npcpacks);
 		hasreadcache = false;
 		CreateTimer(1.0,buildinfodelay,_,TIMER_FLAG_NO_MAPCHANGE);
+	}
+}
+
+void ClearArrayHandles(Handle array)
+{
+	if (array != INVALID_HANDLE)
+	{
+		if (view_as<int>(array) != 1634494062)
+		{
+			if (GetArraySize(array) > 0)
+			{
+				for (int i = 0;i<GetArraySize(array);i++)
+				{
+					Handle closearr = GetArrayCell(array,i);
+					if (closearr != INVALID_HANDLE) CloseHandle(closearr);
+				}
+			}
+		}
 	}
 }
 
@@ -95,7 +132,7 @@ void buildnpcinfo()
 			if (StrContains(line,"\"npchealth\"",false) == 0)
 			{
 				char tmpchar[128];
-				Format(tmpchar,sizeof(tmpchar),line);
+				Format(tmpchar,sizeof(tmpchar),"%s",line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"npchealth\"","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				TrimString(tmpchar);
@@ -103,21 +140,21 @@ void buildnpcinfo()
 			}
 			else if (StrContains(line,"\"model\"",false) == 0)
 			{
-				Format(npcmdl,sizeof(npcmdl),line);
+				Format(npcmdl,sizeof(npcmdl),"%s",line);
 				ReplaceString(npcmdl,sizeof(npcmdl),"\"model\"","",false);
 				ReplaceString(npcmdl,sizeof(npcmdl),"\"","",false);
 				TrimString(npcmdl);
 			}
 			else if (StrContains(line,"\"npcname\"",false) == 0)
 			{
-				Format(npcname,sizeof(npcname),line);
+				Format(npcname,sizeof(npcname),"%s",line);
 				ReplaceString(npcname,sizeof(npcname),"\"npcname\"","",false);
 				ReplaceString(npcname,sizeof(npcname),"\"","",false);
 				TrimString(npcname);
 			}
 			else if (StrContains(line,"\"targetname\"",false) == 0)
 			{
-				Format(targn,sizeof(targn),line);
+				Format(targn,sizeof(targn),"%s",line);
 				ReplaceString(targn,sizeof(targn),"\"targetname\"","",false);
 				ReplaceString(targn,sizeof(targn),"\"","",false);
 				TrimString(targn);

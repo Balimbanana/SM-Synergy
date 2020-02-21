@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.31"
+#define PLUGIN_VERSION "1.32"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -3592,7 +3592,7 @@ void readoutputsforinputs()
 			if (StrContains(line,"\"origin\"",false) == 0)
 			{
 				char tmpchar[64];
-				Format(tmpchar,sizeof(tmpchar),line);
+				Format(tmpchar,sizeof(tmpchar),"%s",line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				ExplodeString(tmpchar, " ", lineorgresexpl, 4, 16);
@@ -3601,7 +3601,7 @@ void readoutputsforinputs()
 			else if (StrContains(line,"\"targetname\"",false) == 0)
 			{
 				char tmpchar[72];
-				Format(tmpchar,sizeof(tmpchar),line);
+				Format(tmpchar,sizeof(tmpchar),"%s",line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" \"","");
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","");
 				Format(lineoriginfixup,sizeof(lineoriginfixup),"%s\"%s",tmpchar,lineoriginfixup);
@@ -3609,7 +3609,7 @@ void readoutputsforinputs()
 			}
 			else if ((StrContains(line,inputadded,false) != -1) || (StrContains(line,inputadded2,false) != -1) || (StrContains(line,inputdef,false) != -1) || (StrContains(line,inputdef2,false) != -1))
 			{
-				Format(lineorgres,sizeof(lineorgres),line);
+				Format(lineorgres,sizeof(lineorgres),"%s",line);
 				ReplaceString(lineorgres,sizeof(lineorgres),"\"OnMapSpawn\" ","");
 				if (!hastargn)
 				{
