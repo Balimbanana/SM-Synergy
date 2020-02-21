@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.31"
-			"Previous"	"1.30"
+			"Latest"  	"1.32"
+			"Previous"	"1.31"
 		}
 		
-		"Notes"	"Added native GetCLTeam for other plugins to get Synergy client teams."
+		"Notes"	"Fixed issues of escape characters in entity cache."
 	}
 	
 	"Files"
