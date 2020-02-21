@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.44"
-			"Previous"	"0.43"
+			"Latest"  	"0.45"
+			"Previous"	"0.44"
 		}
 		
-		"Notes"	"Added buildloader ability to create loaders for Steam games. Added Steam game buildedt all support."
+		"Notes"	"BuildLoader Added detection of maps ending in bg.bsp to add to backgrounds list. BuildEDT Added removal of start equipment when in proximty of info_player_start."
 	}
 	
 	"Files"
