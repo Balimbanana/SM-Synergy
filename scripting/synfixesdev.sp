@@ -94,7 +94,7 @@ bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 
-#define PLUGIN_VERSION "2.0000"
+#define PLUGIN_VERSION "2.0001"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1229,6 +1229,42 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginEnd()
 {
 	if (SynFixesRunning) SynFixesRunning = false;
+	CloseHandle(entlist);
+	CloseHandle(equiparr);
+	CloseHandle(entnames);
+	CloseHandle(physboxarr);
+	CloseHandle(physboxharr);
+	CloseHandle(elevlist);
+	CloseHandle(inputsarrorigincls);
+	ClearArrayHandles(restorecustoments);
+	CloseHandle(restorecustoments);
+	CloseHandle(hounds);
+	CloseHandle(houndsmdl);
+	CloseHandle(squids);
+	CloseHandle(squidsmdl);
+	CloseHandle(tents);
+	CloseHandle(tentsmdl);
+	CloseHandle(tentssnd);
+	CloseHandle(grenlist);
+	CloseHandle(tripmines);
+	CloseHandle(controllers);
+	CloseHandle(templateslist);
+	CloseHandle(templatetargs);
+	CloseHandle(templateents);
+	CloseHandle(d_li);
+	CloseHandle(d_ht);
+	CloseHandle(customrelations);
+	CloseHandle(ignoretrigs);
+	CloseHandle(spawnerswait);
+	CloseHandle(precachedarr);
+	CloseHandle(conveyors);
+	CloseHandle(delayedsounds);
+	CloseHandle(delayedspeech);
+	CloseHandle(passedstrings);
+	CloseHandle(globalsarr);
+	CloseHandle(merchantscr);
+	ClearArrayHandles(merchantscrd);
+	CloseHandle(merchantscrd);
 }
 
 public Action fixalyx(int client, int args)
@@ -6403,6 +6439,22 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							DispatchKeyValue(ent,"NPCTargetname",templatetn);
 						}
 						PushArrayCell(templateslist,ent);
+					}
+					else if (StrEqual(oldcls,"item_longjump",false))
+					{
+						for (int k = 0;k<GetArraySize(passedarr);k++)
+						{
+							char ktmp[128];
+							char ktmp2[128];
+							GetArrayString(passedarr, k, ktmp, sizeof(ktmp));
+							k++;
+							GetArrayString(passedarr, k, ktmp2, sizeof(ktmp2));
+							if (StrEqual(ktmp,"OnPlayerPickup",false))
+							{
+								Format(ktmp,sizeof(ktmp),"OnCacheInteraction");
+								DispatchKeyValue(ent,ktmp,ktmp2);
+							}
+						}
 					}
 					else if (StrEqual(oldcls,"item_custom",false))
 					{
@@ -17073,9 +17125,25 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 					}
 					HookSingleEntityOutput(ent,"OnUser1",MerchantUse);
 				}
-				else if ((StrEqual(clsname,"npc_human_security",false)) || (StrEqual(clsname,"npc_human_scientist",false)) || (StrEqual(clsname,"npc_human_scientist_female",false)))
+				else if ((StrEqual(oldcls,"npc_human_security",false)) || (StrEqual(oldcls,"npc_human_scientist",false)) || (StrEqual(oldcls,"npc_human_scientist_female",false)))
 				{
 					DispatchKeyValue(ent,"citizentype","4");
+				}
+				else if (StrEqual(oldcls,"item_longjump",false))
+				{
+					for (int k = 0;k<GetArraySize(dp);k++)
+					{
+						char ktmp[128];
+						char ktmp2[128];
+						GetArrayString(dp, k, ktmp, sizeof(ktmp));
+						k++;
+						GetArrayString(dp, k, ktmp2, sizeof(ktmp2));
+						if (StrEqual(ktmp,"OnPlayerPickup",false))
+						{
+							Format(ktmp,sizeof(ktmp),"OnCacheInteraction");
+							DispatchKeyValue(ent,ktmp,ktmp2);
+						}
+					}
 				}
 				DispatchSpawn(ent);
 				ActivateEntity(ent);
@@ -18716,11 +18784,11 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		if (!(g_LastButtons[client] & IN_ATTACK)) {
 			OnButtonPressTankchk(client,IN_ATTACK);
 		}
+		int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
 		if ((StrContains(mapbuf,"maps/ent_cache/bms_bm_c",false) == 0) || (StrContains(mapbuf,"maps/ent_cache/bmsxen_xen_c",false) == 0))
 		{
 			char curweap[24];
 			GetClientWeapon(client,curweap,sizeof(curweap));
-			int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
 			if ((StrEqual(curweap,"weapon_crowbar",false)) && (vehicle == -1))
 			{
 				int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
@@ -18737,21 +18805,40 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					}
 				}
 			}
-			else if ((StrEqual(curweap,"weapon_crossbow",false)) && (vehicle == -1))
+		}
+		char curweap[24];
+		GetClientWeapon(client,curweap,sizeof(curweap));
+		if ((StrEqual(curweap,"weapon_crossbow",false)) && (vehicle == -1))
+		{
+			int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+			if (IsValidEntity(weap))
 			{
-				int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
-				if (IsValidEntity(weap))
+				if (HasEntProp(weap,Prop_Data,"m_iClip1"))
 				{
-					if (HasEntProp(weap,Prop_Data,"m_iClip1"))
+					int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
+					float Time = GetTickedTime();
+					if ((curclip > 0) && (centnextatk[weap] < Time))
 					{
-						int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
-						float Time = GetTickedTime();
-						if ((curclip > 0) && (centnextatk[weap] < Time))
+						if (HasEntProp(weap,Prop_Data,"m_bReloadsSingly")) SetEntProp(weap,Prop_Data,"m_bReloadsSingly",0);
+						if (HasEntProp(weap,Prop_Send,"m_bMustReload"))
 						{
-							if (HasEntProp(weap,Prop_Data,"m_bReloadsSingly")) SetEntProp(weap,Prop_Data,"m_bReloadsSingly",0);
-							centnextatk[weap] = Time + 2.0;
-							//CreateTimer(2.0,resetweapreload,weap,TIMER_FLAG_NO_MAPCHANGE);
+							int mustrel = GetEntProp(weap,Prop_Send,"m_bMustReload");
+							SetEntProp(weap,Prop_Send,"m_bMustReload",0);
+							if (mustrel)
+							{
+								SetEntProp(weap,Prop_Data,"m_bInReload",0);
+								char shootsnd[64];
+								int chan,sndlvl,pitch;
+								float vol;
+								GetGameSoundParams("Weapon_Crossbow.Single",chan,sndlvl,vol,pitch,shootsnd,sizeof(shootsnd),0);
+								if (strlen(shootsnd) > 0)
+								{
+									EmitGameSoundToAll("Weapon_Crossbow.Single",client);
+								}
+							}
+							CreateTimer(0.1,resetweapreload,weap,TIMER_FLAG_NO_MAPCHANGE);
 						}
+						centnextatk[weap] = Time + 2.0;
 					}
 				}
 			}
@@ -18807,9 +18894,10 @@ public Action resetweapreload(Handle timer, int weap)
 		GetEntityClassname(weap,clschk,sizeof(clschk));
 		if (StrContains(clschk,"weapon_",false) == 0)
 		{
-			float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
-			SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",nextatk-1.0);
+			SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",GetGameTime()-0.01);
+			SetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack",GetGameTime()-0.01);
 			SetEntProp(weap,Prop_Data,"m_bInReload",0);
+			if (HasEntProp(weap,Prop_Send,"m_bMustReload")) SetEntProp(weap,Prop_Send,"m_bMustReload",0);
 		}
 	}
 	return Plugin_Handled;
@@ -18921,7 +19009,7 @@ public void OnButtonPressUse(int client)
 		{
 			int npcstate = 0;
 			if (HasEntProp(targ,Prop_Data,"m_NPCState")) npcstate = GetEntProp(targ,Prop_Data,"m_NPCState");
-			if (npcstate != 4)
+			if (npcstate != 5)//4 is scripting
 			{
 				char cls[32];
 				GetEntityClassname(targ,cls,sizeof(cls));
@@ -18938,7 +19026,30 @@ public void OnButtonPressUse(int client)
 					if (chkdist < 100)
 					{
 						int scr = GetEntPropEnt(targ,Prop_Data,"m_hTarget");
-						if ((scr == -1) && (HasEntProp(targ,Prop_Data,"m_hTargetEnt"))) scr = GetEntPropEnt(targ,Prop_Data,"m_hTargetEnt");
+						if ((scr == -1) && (HasEntProp(targ,Prop_Data,"m_hTargetEnt")))
+						{
+							scr = GetEntPropEnt(targ,Prop_Data,"m_hTargetEnt");
+							if (IsValidEntity(scr))
+							{
+								char tmpinf[32];
+								GetEntityClassname(scr,tmpinf,sizeof(tmpinf));
+								if (StrEqual(tmpinf,"scripted_sequence",false))
+								{
+									bool resetscr = false;
+									if (HasEntProp(scr,Prop_Data,"m_iName"))
+									{
+										GetEntPropString(scr,Prop_Data,"m_iName",tmpinf,sizeof(tmpinf));
+										if (strlen(tmpinf) < 1) resetscr = true;
+									}
+									if (HasEntProp(scr,Prop_Data,"m_spawnflags"))
+									{
+										int sf = GetEntProp(scr,Prop_Data,"m_spawnflags");
+										if (!(sf & 1<<9)) resetscr = true;
+									}
+									if (resetscr) scr = -1;
+								}
+							}
+						}
 						if (scr == -1)
 						{
 							bool predis = GetStateOf("predisaster");
@@ -19513,6 +19624,30 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 		}
 		*/
 	}
+	//Check SynDev+
+	//Check func_door emitter m_NoiseMoving prevent future sounds until SingleEntityOutput OnFullyOpen/OnFullyClosed
+	if (IsValidEntity(entity))
+	{
+		char cls[32];
+		GetEntityClassname(entity,cls,sizeof(cls));
+		if (StrEqual(cls,"func_door",false))
+		{
+			if (HasEntProp(entity,Prop_Data,"m_NoiseMoving"))
+			{
+				char doorsound[128];
+				GetEntPropString(entity,Prop_Data,"m_NoiseMoving",doorsound,sizeof(doorsound));
+				if (StrEqual(doorsound,sample,false))
+				{
+					if (flags == 0)
+					{
+						flags = SND_CHANGEVOL;
+						return Plugin_Changed;
+					}
+				}
+			}
+		}
+	}
+	return Plugin_Continue;
 }
 
 public Action customsoundchecks(char sample[PLATFORM_MAX_PATH], int& entity, float& volume, int& level, int& pitch, float pos[3], int& flags, float& delay)
@@ -19531,8 +19666,8 @@ public void pushch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1)
 	{
-		int jstat = FindEntityByClassname(MaxClients+1,"prop_vehicle_jeep");
-		int jspawn = FindEntityByClassname(MaxClients+1,"info_vehicle_spawn");
+		int jstat = FindEntityByClassname(-1,"prop_vehicle_jeep");
+		int jspawn = FindEntityByClassname(-1,"info_vehicle_spawn");
 		if ((jstat != -1) || (jspawn != -1))
 		{
 			Handle cvarchk = FindConVar("sv_player_push");
