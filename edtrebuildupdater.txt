@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.51"
-			"Previous"	"0.50"
+			"Latest"  	"0.52"
+			"Previous"	"0.51"
 		}
 		
 		"Notes"	"Added support for contenttag_mapname.edt for multiple maps with the same name from different mods/games."
