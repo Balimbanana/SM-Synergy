@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.987"
+#define PLUGIN_VERSION "0.988"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -20,6 +20,7 @@ bool customcvarsset = false;
 bool loweredsprint = false;
 bool InChargeUp[2048];
 bool InIronSights[MAXPLAYERS+1];
+bool dbgmdlsetup = false;
 int g_LastButtons[MAXPLAYERS+1];
 int difficulty = 1;
 int WeapList = -1;
@@ -97,7 +98,12 @@ public void OnPluginStart()
 	weapaniminf = CreateArray(48);
 	precachedarr = CreateArray(48);
 	HookEvent("player_spawn",OnPlayerSpawn,EventHookMode_Post);
-	Handle cvar = FindConVar("sk_flaregun_ignighttime");
+	Handle cvar = FindConVar("synswepsdbg");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("synswepsdbg", "0", "SynSwepsdbg of setup.", _, true, 0.0, true, 1.0);
+	HookConVarChange(cvar, swepssetupch);
+	dbgmdlsetup = GetConVarBool(cvar);
+	CloseHandle(cvar);
+	cvar = FindConVar("sk_flaregun_ignighttime");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_flaregun_ignighttime", "10", "Time to ignight for.", _, true, 1.0, true, 99.0);
 	CloseHandle(cvar);
 	cvar = FindConVar("sk_immolator_ignighttime");
@@ -643,6 +649,12 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	{
 		FindStrayWeaps(-1,killed);
 	}
+}
+
+public void swepssetupch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) dbgmdlsetup = true;
+	else dbgmdlsetup = false;
 }
 
 public void tauknockch(Handle convar, const char[] oldValue, const char[] newValue)
@@ -2106,7 +2118,7 @@ int GetWepAnim(char[] weapcls, int seq, char[] ACTVM)
 									if (StrContains(tmp,"ACT",false) != -1)
 									{
 										Format(push,sizeof(push),"%s %s",push,tmp);
-										//PrintToServer("ActMap %s %s",fixupcls,push);
+										if (dbgmdlsetup) PrintToServer("ActMap %s %s",weapcls,push);
 										PushArrayString(actmap,push);
 										push = "";
 									}
@@ -2242,14 +2254,14 @@ void GetSequencesFromAnim(Handle dp, Handle actmap, char[] mdl, bool custweap)
 					{
 						Format(acts,sizeof(acts),"%i %s",j,prevanim);
 						WritePackString(dp,acts);
-						//PrintToServer("PushVMActsub %s",acts);
+						if (dbgmdlsetup) PrintToServer("PushVMActsub %s",acts);
 					}
 				}
 				Format(acts,sizeof(acts),"%i %s",seq,split[1]);
 				prevseq = seq;
 				Format(prevanim,sizeof(prevanim),"%s",split[1]);
 				WritePackString(dp,acts);
-				//PrintToServer("PushVMAct %s",acts);
+				if (dbgmdlsetup) PrintToServer("PushVMAct %s",acts);
 			}
 			AcceptEntityInput(propset,"kill");
 		}
@@ -2596,6 +2608,48 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						}
 					}
 					setbuttons = false;
+				}
+				else if (StrEqual(curweap,"weapon_crossbow",false))
+				{
+					if (HasEntProp(weap,Prop_Data,"m_iClip1"))
+					{
+						int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
+						float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
+						if ((curclip > 0) && (centnextatk[client] < nextatk))
+						{
+							if (HasEntProp(weap,Prop_Data,"m_bReloadsSingly")) SetEntProp(weap,Prop_Data,"m_bReloadsSingly",0);
+							if (HasEntProp(weap,Prop_Send,"m_bMustReload"))
+							{
+								int mustrel = GetEntProp(weap,Prop_Send,"m_bMustReload");
+								SetEntProp(weap,Prop_Send,"m_bMustReload",0);
+								if (mustrel)
+								{
+									SetEntProp(weap,Prop_Data,"m_bInReload",0);
+									char shootsnd[64];
+									int chan,sndlvl,pitch;
+									float vol;
+									GetGameSoundParams("Weapon_Crossbow.Single",chan,sndlvl,vol,pitch,shootsnd,sizeof(shootsnd),0);
+									if (strlen(shootsnd) > 0)
+									{
+										EmitGameSoundToAll("Weapon_Crossbow.Single",client);
+									}
+								}
+								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+								if (viewmdl != -1)
+								{
+									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+									int relseq = GetWepAnim(curweap,seq,"ACT_VM_RELOAD");
+									if (relseq == seq)
+									{
+										relseq = GetWepAnim(curweap,seq,"ACT_CROSSBOW_BOLT_BACK");
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",relseq);
+										centnextatk[client] = nextatk+0.05;
+									}
+								}
+							}
+							setbuttons = false;
+						}
+					}
 				}
 				else if (StrEqual(curweap,"weapon_immolator",false))
 				{
