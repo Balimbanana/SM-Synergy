@@ -2611,43 +2611,46 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				}
 				else if (StrEqual(curweap,"weapon_crossbow",false))
 				{
-					if (HasEntProp(weap,Prop_Data,"m_iClip1"))
+					if (IsValidEntity(weap))
 					{
-						int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
-						float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
-						if ((curclip > 0) && (centnextatk[client] < nextatk))
+						if (HasEntProp(weap,Prop_Data,"m_iClip1"))
 						{
-							if (HasEntProp(weap,Prop_Data,"m_bReloadsSingly")) SetEntProp(weap,Prop_Data,"m_bReloadsSingly",0);
-							if (HasEntProp(weap,Prop_Send,"m_bMustReload"))
+							int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
+							float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
+							if ((curclip > 0) && (centnextatk[client] < nextatk))
 							{
-								int mustrel = GetEntProp(weap,Prop_Send,"m_bMustReload");
-								SetEntProp(weap,Prop_Send,"m_bMustReload",0);
-								if (mustrel)
+								if (HasEntProp(weap,Prop_Data,"m_bReloadsSingly")) SetEntProp(weap,Prop_Data,"m_bReloadsSingly",0);
+								if (HasEntProp(weap,Prop_Send,"m_bMustReload"))
 								{
-									SetEntProp(weap,Prop_Data,"m_bInReload",0);
-									char shootsnd[64];
-									int chan,sndlvl,pitch;
-									float vol;
-									GetGameSoundParams("Weapon_Crossbow.Single",chan,sndlvl,vol,pitch,shootsnd,sizeof(shootsnd),0);
-									if (strlen(shootsnd) > 0)
+									int mustrel = GetEntProp(weap,Prop_Send,"m_bMustReload");
+									SetEntProp(weap,Prop_Send,"m_bMustReload",0);
+									if (mustrel)
 									{
-										EmitGameSoundToAll("Weapon_Crossbow.Single",client);
+										SetEntProp(weap,Prop_Data,"m_bInReload",0);
+										char shootsnd[64];
+										int chan,sndlvl,pitch;
+										float vol;
+										GetGameSoundParams("Weapon_Crossbow.Single",chan,sndlvl,vol,pitch,shootsnd,sizeof(shootsnd),0);
+										if (strlen(shootsnd) > 0)
+										{
+											EmitGameSoundToAll("Weapon_Crossbow.Single",client);
+										}
+									}
+									int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+									if (viewmdl != -1)
+									{
+										int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+										int relseq = GetWepAnim(curweap,seq,"ACT_VM_RELOAD");
+										if (relseq == seq)
+										{
+											relseq = GetWepAnim(curweap,seq,"ACT_CROSSBOW_BOLT_BACK");
+											SetEntProp(viewmdl,Prop_Send,"m_nSequence",relseq);
+											centnextatk[client] = nextatk+0.05;
+										}
 									}
 								}
-								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-								if (viewmdl != -1)
-								{
-									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-									int relseq = GetWepAnim(curweap,seq,"ACT_VM_RELOAD");
-									if (relseq == seq)
-									{
-										relseq = GetWepAnim(curweap,seq,"ACT_CROSSBOW_BOLT_BACK");
-										SetEntProp(viewmdl,Prop_Send,"m_nSequence",relseq);
-										centnextatk[client] = nextatk+0.05;
-									}
-								}
+								setbuttons = false;
 							}
-							setbuttons = false;
 						}
 					}
 				}
