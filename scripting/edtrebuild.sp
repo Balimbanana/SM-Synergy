@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.51"
+#define PLUGIN_VERSION "0.52"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -481,31 +481,49 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 						finder = StrContains(szMapEntitiesbuff,cls,false);
 						if ((strlen(szMapEntitiesbuff) > 1) && (finder != -1))
 						{
-							bool endofcache = false;
-							while (!endofcache)
+							bool reading = true;
+							finderorg = StrContains(szMapEntitiesbuff,clsorg,false);
+							finderorground = StrContains(szMapEntitiesbuff,clsorground,false);
+							finderorground2dec = StrContains(szMapEntitiesbuff,clsorground2dec,false);
+							int recheck = -1;
+							while (reading)
 							{
-								finder = ReplaceStringEx(szMapEntities,sizeof(szMapEntities),szMapEntitiesbuff,"");
-								if (dbglvl == 4) PrintToServer("Delete %s %s\n%s",cls,clsorg,szMapEntitiesbuff);
+								recheck = StrContains(szMapEntitiesbuff,cls,false);
+								if (recheck != -1)
+								{
+									finder = ReplaceStringEx(szMapEntities,sizeof(szMapEntities),szMapEntitiesbuff,"");
+									if (dbglvl == 4) PrintToServer("Delete %s %s\n%s",cls,clsorg,szMapEntitiesbuff);
+								}
+								else if (recheck == -1) break;
 								if (finder != -1)
 								{
 									Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder]);
-									finder = StrContains(szMapEntitiesbuff,cls,false);
-									finderorg = StrContains(szMapEntitiesbuff,clsorg,false);
+									finder = StrContains(szMapEntities,cls,false);
+									finderorg = StrContains(szMapEntities,clsorg,false);
 									if ((finder != -1) && (finderorg != -1))
 									{
 										Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finderorg]);
-										findend = StrContains(szMapEntitiesbuff,"}",false);
-										if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s\n",szMapEntitiesbuff);
-										while (StrContains(szMapEntitiesbuff,"{",false) != 0)
+										finderorground = StrContains(szMapEntitiesbuff,clsorground,false);
+										finderorground2dec = StrContains(szMapEntitiesbuff,clsorground2dec,false);
+										recheck = finderorg;
+										if ((recheck == -1) && (finderorground2dec != -1)) recheck = finderorground2dec;
+										else if ((recheck == -1) && (finderorground != -1)) recheck = finderorground;
+										if ((finder != -1) && (finderorg != -1) && (recheck != -1))
 										{
-											Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finderorg--]);
+											findend = StrContains(szMapEntitiesbuff,"}",false);
+											if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s\n",szMapEntitiesbuff);
+											while (StrContains(szMapEntitiesbuff,"{",false) != 0)
+											{
+												Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finderorg--]);
+											}
+											findend = StrContains(szMapEntitiesbuff,"}",false);
+											if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s\n",szMapEntitiesbuff);
 										}
-										findend = StrContains(szMapEntitiesbuff,"}",false);
-										if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s\n",szMapEntitiesbuff);
+										else break;
 									}
-									else endofcache = true;
+									else break;
 								}
-								else endofcache = true;
+								else break;
 							}
 						}
 					}
