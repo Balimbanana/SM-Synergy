@@ -159,6 +159,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			char replacedata[128];
 			char edt_map[64];
 			char edt_landmark[64];
+			char portalnumber[64];
 			char edtkey[128];
 			char edtval[128];
 			if (GetArraySize(g_ModifyCase) > 0)
@@ -410,7 +411,6 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					}
 				}
 			}
-			//Need iterator for further instances of entities
 			if (GetArraySize(g_DeleteClassOrigin) > 0)
 			{
 				int finder = -1;
@@ -630,6 +630,29 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 													else break;
 												}
 											}
+										}
+										if (StrEqual(edtkey,"\"portalnumber\"",false))
+										{
+											findedit = StrContains(szMapEntitiesbuff,"\"portalnumber\" \"",false);
+											if (findedit != -1)
+											{
+												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
+												ReplaceStringEx(tmpbuf,sizeof(tmpbuf),"\"portalnumber\" ","");
+												findend = StrContains(tmpbuf,"\n",false);
+												if (findend != -1)
+												{
+													Format(tmpbuf,findend,"%s",tmpbuf);
+													ReplaceString(tmpbuf,sizeof(tmpbuf),"\"","");
+													TrimString(tmpbuf);
+													if (StrEqual(tmpbuf,edtval,false))
+													{
+														Format(portalnumber,sizeof(portalnumber),"%s",edtval);
+														edtkey = "";
+													}
+													else break;
+												}
+											}
+											else edtkey = "";
 										}
 										if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_removespawnflags\"",false)))
 										{
@@ -1233,6 +1256,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			char replacedata[128];
 			char edt_map[64];
 			char edt_landmark[64];
+			char portalnumber[32];
 			char edtkey[128];
 			char edtval[128];
 			Format(tmpline,sizeof(tmpline),"%s",curbuf[lastarr-1]);
@@ -1646,6 +1670,29 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 													else break;
 												}
 											}
+										}
+										if (StrEqual(edtkey,"\"portalnumber\"",false))
+										{
+											findedit = StrContains(tmpline,"\"portalnumber\" \"",false);
+											if (findedit != -1)
+											{
+												Format(tmpbuf,sizeof(tmpbuf),"%s",tmpline[findedit]);
+												ReplaceStringEx(tmpbuf,sizeof(tmpbuf),"\"portalnumber\" ","");
+												findend = StrContains(tmpbuf,"\n",false);
+												if (findend != -1)
+												{
+													Format(tmpbuf,findend,"%s",tmpbuf);
+													ReplaceString(tmpbuf,sizeof(tmpbuf),"\"","");
+													TrimString(tmpbuf);
+													if (StrEqual(tmpbuf,edtval,false))
+													{
+														Format(portalnumber,sizeof(portalnumber),"%s",edtval);
+														edtkey = "";
+													}
+													else break;
+												}
+											}
+											else edtkey = "";
 										}
 										if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_removespawnflags\"",false)))
 										{
