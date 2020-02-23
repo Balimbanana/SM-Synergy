@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0001"
-			"Previous"	"2.0000"
+			"Latest"  	"2.0002"
+			"Previous"	"2.0001"
 		}
 		
 		"Notes"	"Fixed crossbows with more than 1 max clip. Fixed occasional invalid entity in sv_player_push change OnMapInit. Fixed some outputs on item_longjump."
