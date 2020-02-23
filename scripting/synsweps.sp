@@ -3712,6 +3712,11 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						StopSound(client,SNDCHAN_WEAPON,"weapons/smg1/smg1_fire1.wav");
 						int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
 						int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
+						if (GetEntProp(client,Prop_Data,"m_nWaterLevel") == 3)
+						{
+							int fireunderwater = GetEntProp(weap,Prop_Data,"m_bFiresUnderwater");
+							if (!fireunderwater) amm = 0;
+						}
 						if ((amm > 0) && (!inreload))
 						{
 							float Time = GetTickedTime();
