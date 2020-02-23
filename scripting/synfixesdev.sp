@@ -14530,16 +14530,19 @@ public Action custent(Handle timer, int entity)
 		}
 		else if (StrEqual(entcls,"item_ammo_crate",false))
 		{
-			char mdl[64];
-			GetEntPropString(entity,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-			if (strlen(mdl) > 0)
+			if (HasEntProp(entity,Prop_Data,"m_ModelName"))
 			{
-				if ((!FileExists(mdl,true,NULL_STRING)) && (StrContains(mdl,"ammocrate_smg2.mdl",false) != -1))
+				char mdl[64];
+				GetEntPropString(entity,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+				if (strlen(mdl) > 0)
 				{
-					if (FileExists("models/props_hc/items/ammocrate_argrenades.mdl",true,NULL_STRING))
+					if ((!FileExists(mdl,true,NULL_STRING)) && (StrContains(mdl,"ammocrate_smg2.mdl",false) != -1))
 					{
-						if (!IsModelPrecached("models/props_hc/items/ammocrate_argrenades.mdl")) PrecacheModel("models/props_hc/items/ammocrate_argrenades.mdl",true);
-						SetEntityModel(entity,"models/props_hc/items/ammocrate_argrenades.mdl");
+						if (FileExists("models/props_hc/items/ammocrate_argrenades.mdl",true,NULL_STRING))
+						{
+							if (!IsModelPrecached("models/props_hc/items/ammocrate_argrenades.mdl")) PrecacheModel("models/props_hc/items/ammocrate_argrenades.mdl",true);
+							SetEntityModel(entity,"models/props_hc/items/ammocrate_argrenades.mdl");
+						}
 					}
 				}
 			}
