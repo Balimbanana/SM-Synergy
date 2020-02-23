@@ -94,7 +94,7 @@ bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 
-#define PLUGIN_VERSION "2.0001"
+#define PLUGIN_VERSION "2.0002"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -4455,6 +4455,7 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 		readoutputstp(caller,targn,tmpout,"SetMass",origin,actmod);
 		readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
 		readoutputstp(caller,targn,tmpout,"EquipAllPlayers",origin,actmod);
+		readoutputstp(caller,targn,tmpout,"EquipPlayer",origin,actmod);
 		readoutputstp(caller,targn,tmpout,"SetCheckPoint",origin,actmod);
 		readoutputstp(caller,targn,tmpout,"CLCommand",origin,actmod);
 	}
@@ -4688,6 +4689,13 @@ void resetchargers(int ent, char[] clsname)
 				DispatchKeyValue(thisent,"model",mdl);
 				if (!IsModelPrecached(mdl)) PrecacheModel(mdl,true);
 				SetEntityModel(thisent,mdl);
+				char changeskin[128];
+				Format(changeskin,sizeof(changeskin),"OnEmpty !self:Skin:1:0:-1,0,-1");
+				SetVariantString(changeskin);
+				AcceptEntityInput(thisent,"AddOutput");
+				Format(changeskin,sizeof(changeskin),"OnFull !self:Skin:2:0:-1,0,-1");
+				SetVariantString(changeskin);
+				AcceptEntityInput(thisent,"AddOutput");
 			}
 		}
 		resetchargers(thisent++,clsname);
@@ -11653,7 +11661,12 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							}
 							else if (StrEqual(input,"EquipAllPlayers",false))
 							{
-								findequips(-1,lineorgrescom[0],delay);
+								findequips(-1,lineorgrescom[0],input,0,delay);
+							}
+							else if (StrEqual(input,"EquipPlayer",false))
+							{
+								if ((activator > MaxClients) || (activator < 0)) activator = 0;
+								findequips(-1,lineorgrescom[0],input,activator,delay);
 							}
 							else if ((StrEqual(input,"DisplayText",false)) || (StrEqual(input,"CounterEntity",false)))
 							{
@@ -11757,7 +11770,12 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							}
 							else if (StrEqual(input,"EquipAllPlayers",false))
 							{
-								findequips(-1,lineorgrescom[0],delay);
+								findequips(-1,lineorgrescom[0],input,activator,delay);
+							}
+							else if (StrEqual(input,"EquipPlayer",false))
+							{
+								if ((activator > MaxClients) || (activator < 0)) activator = 0;
+								findequips(-1,lineorgrescom[0],input,activator,delay);
 							}
 							else if ((StrEqual(input,"DisplayText",false)) || (StrEqual(input,"CounterEntity",false)))
 							{
@@ -11861,6 +11879,7 @@ void readoutputsforinputs()
 		PushArrayString(inputs,",Deploy,,");
 		PushArrayString(inputs,",Retire,,");
 		PushArrayString(inputs,",EquipAllPlayers,,");
+		PushArrayString(inputs,",EquipPlayer,,");
 		PushArrayString(inputs,",SetMass,");
 		PushArrayString(inputs,",Fade,,");
 		PushArrayString(inputs,",SetCheckPoint,");
@@ -12524,7 +12543,7 @@ void fadeintercept(int ent, int activator)
 	}
 }
 
-void findequips(int ent, char[] targn, float delay)
+void findequips(int ent, char[] targn, char[] input, int activator, float delay)
 {
 	int thisent = FindEntityByClassname(ent,"info_player_equip");
 	if ((IsValidEntity(thisent)) && (thisent != -1))
@@ -12535,22 +12554,34 @@ void findequips(int ent, char[] targn, float delay)
 		{
 			if (delay > 0.1)
 			{
-				Handle dp = CreateDataPack();
-				WritePackCell(dp,thisent);
-				CreateTimer(delay,equipdelay,dp,TIMER_FLAG_NO_MAPCHANGE);
+				if ((StrEqual(input,"EquipPlayer",false)) && (activator != 0))
+				{
+					Handle dp = CreateDataPack();
+					WritePackCell(dp,thisent);
+					WritePackCell(dp,activator);
+					CreateTimer(delay,equipdelaydp,dp,TIMER_FLAG_NO_MAPCHANGE);
+				}
+				else CreateTimer(delay,equipdelay,thisent,TIMER_FLAG_NO_MAPCHANGE);
 			}
 			else
 			{
-				for (int i = 1;i<MaxClients+1;i++)
+				if ((StrEqual(input,"EquipPlayer",false)) && (activator != 0))
 				{
-					if (IsValidEntity(i))
-						if (IsClientConnected(i))
-							if (IsPlayerAlive(i))
-								EquipCustom(thisent,i);
+					EquipCustom(thisent,activator);
+				}
+				else
+				{
+					for (int i = 1;i<MaxClients+1;i++)
+					{
+						if (IsValidEntity(i))
+							if (IsClientConnected(i))
+								if (IsPlayerAlive(i))
+									EquipCustom(thisent,i);
+					}
 				}
 			}
 		}
-		findequips(thisent++,targn,delay);
+		findequips(thisent++,targn,input,activator,delay);
 	}
 }
 
@@ -12564,6 +12595,31 @@ public Action equipdelay(Handle timer, int equip)
 				if (IsClientConnected(i))
 					if (IsPlayerAlive(i))
 						EquipCustom(equip,i);
+		}
+	}
+}
+
+public Action equipdelaydp(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int equip = ReadPackCell(dp);
+		int activator = ReadPackCell(dp);
+		CloseHandle(dp);
+		if (IsValidEntity(equip))
+		{
+			if ((IsValidEntity(activator)) && (activator != 0)) EquipCustom(equip,activator);
+			else
+			{
+				for (int i = 1;i<MaxClients+1;i++)
+				{
+					if (IsValidEntity(i))
+						if (IsClientConnected(i))
+							if (IsPlayerAlive(i))
+								EquipCustom(equip,i);
+				}
+			}
 		}
 	}
 }
@@ -16487,6 +16543,7 @@ void restoreent(Handle dp)
 		char scriptinf[256];
 		ReadPackString(dp,scriptinf,sizeof(scriptinf));
 		char oldcls[32];
+		if (StrEqual(clsname,"item_weapon_mp5",false)) Format(clsname,sizeof(clsname),"weapon_mp5");
 		Format(oldcls,sizeof(oldcls),"%s",clsname);
 		if (StrEqual(clsname,"npc_human_scientist_kleiner",false))
 			Format(clsname,sizeof(clsname),"npc_kleiner");
@@ -16540,6 +16597,8 @@ void restoreent(Handle dp)
 			Format(clsname,sizeof(clsname),"weapon_pipe");
 		else if ((StrEqual(clsname,"item_ammo_flare_box",false)) || (StrEqual(clsname,"item_box_flare_rounds",false)))
 			Format(clsname,sizeof(clsname),"item_ammo_pistol");
+		else if (StrEqual(clsname,"item_ammo_mp5",false))
+			Format(clsname,sizeof(clsname),"item_ammo_smg1");
 		else if (StrEqual(clsname,"env_mortar_launcher"))
 			Format(clsname,sizeof(clsname),"info_target");
 		else if (StrEqual(clsname,"env_mortar_controller"))
@@ -16939,6 +16998,7 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				GetArrayString(dp,findequip,additionalequip,sizeof(additionalequip));
 			}
 			char oldcls[64];
+			if (StrEqual(clsname,"item_weapon_mp5",false)) Format(clsname,sizeof(clsname),"weapon_mp5");
 			Format(oldcls,sizeof(oldcls),"%s",clsname);
 			if (StrEqual(clsname,"npc_human_scientist_kleiner",false))
 				Format(clsname,sizeof(clsname),"npc_kleiner");
@@ -16984,14 +17044,20 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				Format(clsname,sizeof(clsname),"item_healthkit");
 			else if (StrEqual(clsname,"weapon_immolator",false))
 				Format(clsname,sizeof(clsname),"weapon_physcannon");
-			else if ((StrEqual(clsname,"weapon_pistol_worker",false)) || (StrEqual(clsname,"weapon_flaregun",false)))
+			else if ((StrEqual(clsname,"item_weapon_glock",false)) || (StrEqual(clsname,"weapon_glock",false)) || (StrEqual(clsname,"weapon_pistol_worker",false)) || (StrEqual(clsname,"weapon_flaregun",false)))
 				Format(clsname,sizeof(clsname),"weapon_pistol");
 			else if ((StrEqual(clsname,"weapon_medkit",false)) || (StrEqual(clsname,"weapon_camera",false)))
 				Format(clsname,sizeof(clsname),"weapon_slam");
+			else if ((StrEqual(clsname,"weapon_mp5",false)) || (StrEqual(clsname,"weapon_sl8",false)) || (StrEqual(clsname,"weapon_uzi",false)) || (StrEqual(clsname,"weapon_oicw",false)) || (StrEqual(clsname,"weapon_camera",false)))
+				Format(clsname,sizeof(clsname),"weapon_smg1");
+			else if ((StrEqual(clsname,"weapon_gauss",false)) || (StrEqual(clsname,"weapon_tau",false)) || (StrEqual(clsname,"weapon_sniperrifle",false)))
+				Format(clsname,sizeof(clsname),"weapon_ar2");
 			else if ((StrEqual(clsname,"weapon_manhack",false)) || (StrEqual(clsname,"weapon_manhacktoss",false)))
 				Format(clsname,sizeof(clsname),"weapon_pistol");
-			else if ((StrEqual(clsname,"item_ammo_flare_box",false)) || (StrEqual(clsname,"item_box_flare_rounds",false)))
+			else if ((StrEqual(clsname,"item_ammo_energy",false)) || (StrEqual(clsname,"item_ammo_glock",false)) || (StrEqual(clsname,"item_ammo_flare_box",false)) || (StrEqual(clsname,"item_box_flare_rounds",false)))
 				Format(clsname,sizeof(clsname),"item_ammo_pistol");
+			else if (StrEqual(clsname,"item_ammo_mp5",false))
+				Format(clsname,sizeof(clsname),"item_ammo_smg1");
 			else if (StrEqual(clsname,"env_mortar_launcher"))
 				Format(clsname,sizeof(clsname),"info_target");
 			else if (StrEqual(clsname,"env_mortar_controller"))
@@ -18785,7 +18851,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			OnButtonPressTankchk(client,IN_ATTACK);
 		}
 		int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
-		if ((StrContains(mapbuf,"maps/ent_cache/bms_bm_c",false) == 0) || (StrContains(mapbuf,"maps/ent_cache/bmsxen_xen_c",false) == 0))
+		if ((StrContains(mapbuf,"maps/ent_cache/bms_bm_c",false) == 0) || (StrContains(mapbuf,"maps/ent_cache/bms_hc_t",false) == 0) || (StrContains(mapbuf,"maps/ent_cache/bmsxen_xen_c",false) == 0))
 		{
 			char curweap[24];
 			GetClientWeapon(client,curweap,sizeof(curweap));
@@ -18797,6 +18863,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					if (HasEntProp(weap,Prop_Data,"m_flNextPrimaryAttack"))
 					{
 						float nextatk = GetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack");
+						if (centnextatk[client] > GetGameTime()+3.0) centnextatk[client] = GetGameTime();
 						if (centnextatk[client] < nextatk)
 						{
 							SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",nextatk-0.1);
