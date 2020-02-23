@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.52"
+#define PLUGIN_VERSION "0.53"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -1866,6 +1866,18 @@ public void OnMapStart()
 		{
 			char tmparr[64];
 			GetArrayString(cvarmods,i,tmparr,sizeof(tmparr));
+			char kvs[4][64];
+			ExplodeString(tmparr," ",kvs,4,64);
+			Handle cvarchk = FindConVar(kvs[0]);
+			if (cvarchk != INVALID_HANDLE)
+			{
+				if (strlen(kvs[1]) > 0)
+				{
+					ReplaceString(kvs[1],sizeof(kvs[]),"\"","");
+					SetConVarString(cvarchk,kvs[1],true,true);
+				}
+			}
+			CloseHandle(cvarchk);
 			ServerCommand("%s",tmparr);
 		}
 		CloseHandle(cvarmods);
@@ -2273,6 +2285,30 @@ void ReadEDT(char[] edtfile)
 		if (dbglvl > 1) PrintToServer("EDTRead Ended at line %i",linenum+1);
 		CloseHandle(passedarr);
 		CloseHandle(filehandle);
+		//Re-apply after for late setup
+		if (GetArraySize(cvarmods) > 0)
+		{
+			for (int i = 0;i<GetArraySize(cvarmods);i++)
+			{
+				char tmparr[64];
+				GetArrayString(cvarmods,i,tmparr,sizeof(tmparr));
+				char kvs[4][64];
+				ExplodeString(tmparr," ",kvs,4,64);
+				Handle cvarchk = FindConVar(kvs[0]);
+				if (cvarchk != INVALID_HANDLE)
+				{
+					if (strlen(kvs[1]) > 0)
+					{
+						ReplaceString(kvs[1],sizeof(kvs[]),"\"","");
+						SetConVarString(cvarchk,kvs[1],true,true);
+					}
+				}
+				CloseHandle(cvarchk);
+				ServerCommand("%s",tmparr);
+			}
+			CloseHandle(cvarmods);
+			cvarmods = CreateArray(64);
+		}
 	}
 	return;
 }
