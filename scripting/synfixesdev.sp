@@ -14528,6 +14528,22 @@ public Action custent(Handle timer, int entity)
 				}
 			}
 		}
+		else if (StrEqual(entcls,"item_ammo_crate",false))
+		{
+			char mdl[64];
+			GetEntPropString(entity,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+			if (strlen(mdl) > 0)
+			{
+				if ((!FileExists(mdl,true,NULL_STRING)) && (StrContains(mdl,"ammocrate_smg2.mdl",false) != -1))
+				{
+					if (FileExists("models/props_hc/items/ammocrate_argrenades.mdl",true,NULL_STRING))
+					{
+						if (!IsModelPrecached("models/props_hc/items/ammocrate_argrenades.mdl")) PrecacheModel("models/props_hc/items/ammocrate_argrenades.mdl",true);
+						SetEntityModel(entity,"models/props_hc/items/ammocrate_argrenades.mdl");
+					}
+				}
+			}
+		}
 		if ((StrEqual(entcls,"npc_snark",false)) || (StrEqual(entcls,"monster_snark",false)) || (StrEqual(entcls,"npc_babycrab",false)))
 		{
 			Format(cls,sizeof(cls),"%s",entcls);
