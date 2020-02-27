@@ -51,7 +51,7 @@ bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 bool TrainBlockFix = true;
 
-#define PLUGIN_VERSION "1.99963"
+#define PLUGIN_VERSION "1.99964"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3542,7 +3542,7 @@ public Action OnWeaponUse(int client, int weapon)
 {
 	if (instswitch > 0)
 	{
-		if ((IsValidEntity(weapon)) && (weapon != -1))
+		if ((IsValidEntity(weapon)) && (weapon != -1) && (IsValidEntity(client)))
 		{
 			char weapname[32];
 			GetEntityClassname(weapon,weapname,sizeof(weapname));
@@ -3565,7 +3565,7 @@ public Action resetinst(Handle timer, Handle data)
 	int client = ReadPackCell(data);
 	int weap = ReadPackCell(data);
 	CloseHandle(data);
-	if ((IsValidEntity(weap)) && (HasEntProp(weap,Prop_Send,"m_flNextPrimaryAttack")))
+	if ((IsValidEntity(weap)) && (IsValidEntity(client)) && (HasEntProp(weap,Prop_Send,"m_flNextPrimaryAttack")))
 	{
 		float curtime = GetGameTime();
 		SetEntPropFloat(weap,Prop_Send,"m_flNextPrimaryAttack",curtime,0);
