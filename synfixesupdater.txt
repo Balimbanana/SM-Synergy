@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99963"
-			"Previous"	"1.99962"
+			"Latest"  	"1.99964"
+			"Previous"	"1.99963"
 		}
 		
-		"Notes"	"Clean up entlist arr upon destroyed ents."
+		"Notes"	"Additional validation in weapon switch reset."
 	}
 	
 	"Files"
