@@ -1056,7 +1056,12 @@ void ReadCache(char[] cache, char[] mapedt)
 			WriteFileLine(edtfile,"			}");
 			WriteFileLine(edtfile,"		}");
 		}
-		if ((GetArraySize(itemsarr) > 0) || (GetArraySize(carriedoverweapons) > 0))
+		bool carriedover = false;
+		if (carriedoverweapons != INVALID_HANDLE)
+		{
+			if (GetArraySize(carriedoverweapons) > 0) carriedover = true;
+		}
+		if ((GetArraySize(itemsarr) > 0) || (carriedover))
 		{
 			WriteFileLine(edtfile,"		create {classname \"info_player_equip\"");
 			WriteFileLine(edtfile,"			values");
@@ -1064,61 +1069,64 @@ void ReadCache(char[] cache, char[] mapedt)
 			WriteFileLine(edtfile,"				targetname \"syn_equipment_base\"");
 			SortADTArray(itemsarr,Sort_Ascending,Sort_String);
 			Handle duplicates = CreateArray(64);
-			if (GetArraySize(carriedoverweapons) > 0)
+			if (carriedoverweapons != INVALID_HANDLE)
 			{
-				SortADTArray(carriedoverweapons,Sort_Ascending,Sort_String);
-				for (int i = 0;i<GetArraySize(carriedoverweapons);i++)
+				if (GetArraySize(carriedoverweapons) > 0)
 				{
-					char tmparr[128];
-					GetArrayString(carriedoverweapons,i,tmparr,sizeof(tmparr));
-					if (FindStringInArray(duplicates,tmparr) == -1)
+					SortADTArray(carriedoverweapons,Sort_Ascending,Sort_String);
+					for (int i = 0;i<GetArraySize(carriedoverweapons);i++)
 					{
-						PushArrayString(duplicates,tmparr);
-						if (StrEqual(tmparr,"item_box_buckshot",false)) Format(tmparr,sizeof(tmparr),"ammo_buckshot \"6\"");
-						else if (StrEqual(tmparr,"item_rpg_round",false)) Format(tmparr,sizeof(tmparr),"ammo_rpg_round \"2\"");
-						else if (StrEqual(tmparr,"item_battery",false)) Format(tmparr,sizeof(tmparr),"item_armor \"15\"");
-						else if (StrEqual(tmparr,"item_ar2_grenade",false)) Format(tmparr,sizeof(tmparr),"ammo_ar2_altfire \"1\"");
-						else if (StrEqual(tmparr,"item_box_mrounds",false)) Format(tmparr,sizeof(tmparr),"ammo_smg1 \"90\"");
-						else if (StrEqual(tmparr,"item_box_srounds",false)) Format(tmparr,sizeof(tmparr),"ammo_pistol \"36\""); //But also sniper rounds
-						else if (StrEqual(tmparr,"item_box_lrounds",false)) Format(tmparr,sizeof(tmparr),"ammo_ar2 \"30\"");
-						else
+						char tmparr[128];
+						GetArrayString(carriedoverweapons,i,tmparr,sizeof(tmparr));
+						if (FindStringInArray(duplicates,tmparr) == -1)
 						{
-							if (StrEqual(tmparr,"item_suit",false))
-							{
-								char deletion[72];
-								Format(deletion,sizeof(deletion),"%s\" %s}",tmparr,origin);
-								if (FindStringInArray(mapremovals,deletion) == -1) PushArrayString(mapremovals,deletion);
-							}
-							if ((StrContains(tmparr,"item_ammo",false) == 0) && (!StrEqual(tmparr,"item_suit",false)))
-							{
-								ReplaceStringEx(tmparr,sizeof(tmparr),"item_","");
-								if (StrContains(tmparr,"grenade",false) != -1) StrCat(tmparr,sizeof(tmparr)," \"3\"");
-								else StrCat(tmparr,sizeof(tmparr)," \"12\"");
-							}
+							PushArrayString(duplicates,tmparr);
+							if (StrEqual(tmparr,"item_box_buckshot",false)) Format(tmparr,sizeof(tmparr),"ammo_buckshot \"6\"");
+							else if (StrEqual(tmparr,"item_rpg_round",false)) Format(tmparr,sizeof(tmparr),"ammo_rpg_round \"2\"");
+							else if (StrEqual(tmparr,"item_battery",false)) Format(tmparr,sizeof(tmparr),"item_armor \"15\"");
+							else if (StrEqual(tmparr,"item_ar2_grenade",false)) Format(tmparr,sizeof(tmparr),"ammo_ar2_altfire \"1\"");
+							else if (StrEqual(tmparr,"item_box_mrounds",false)) Format(tmparr,sizeof(tmparr),"ammo_smg1 \"90\"");
+							else if (StrEqual(tmparr,"item_box_srounds",false)) Format(tmparr,sizeof(tmparr),"ammo_pistol \"36\""); //But also sniper rounds
+							else if (StrEqual(tmparr,"item_box_lrounds",false)) Format(tmparr,sizeof(tmparr),"ammo_ar2 \"30\"");
 							else
 							{
-								StrCat(tmparr,sizeof(tmparr)," \"1\"");
+								if (StrEqual(tmparr,"item_suit",false))
+								{
+									char deletion[72];
+									Format(deletion,sizeof(deletion),"%s\" %s}",tmparr,origin);
+									if (FindStringInArray(mapremovals,deletion) == -1) PushArrayString(mapremovals,deletion);
+								}
+								if ((StrContains(tmparr,"item_ammo",false) == 0) && (!StrEqual(tmparr,"item_suit",false)))
+								{
+									ReplaceStringEx(tmparr,sizeof(tmparr),"item_","");
+									if (StrContains(tmparr,"grenade",false) != -1) StrCat(tmparr,sizeof(tmparr)," \"3\"");
+									else StrCat(tmparr,sizeof(tmparr)," \"12\"");
+								}
+								else
+								{
+									StrCat(tmparr,sizeof(tmparr)," \"1\"");
+								}
 							}
+							char ammtype[32];
+							Format(ammtype,sizeof(ammtype),"%s",tmparr);
+							int findend = StrContains(ammtype," ",false);
+							if (findend != -1) Format(ammtype,findend+1,"%s",ammtype);
+							ReplaceStringEx(ammtype,sizeof(ammtype),"weapon_","sk_max_");
+							ReplaceString(ammtype,sizeof(ammtype),"\"","");
+							if (StrEqual(ammtype,"sk_max_shotgun",false)) Format(ammtype,sizeof(ammtype),"sk_max_buckshot");
+							int ammamount = 1;
+							Handle cvarchk = FindConVar(ammtype);
+							if (cvarchk != INVALID_HANDLE) ammamount = GetConVarInt(cvarchk)/4;
+							CloseHandle(cvarchk);
+							ReplaceStringEx(ammtype,sizeof(ammtype),"sk_max_","ammo_");
+							if (StrEqual(ammtype,"ammo_rpg",false)) Format(ammtype,sizeof(ammtype),"ammo_rpg_round");
+							else if (StrEqual(ammtype,"ammo_frag",false)) Format(ammtype,sizeof(ammtype),"ammo_grenade");
+							else if (StrEqual(ammtype,"ammo_shotgun",false)) Format(ammtype,sizeof(ammtype),"ammo_buckshot");
+							else if (StrEqual(ammtype,"ammo_crossbow",false)) Format(ammtype,sizeof(ammtype),"ammo_xbowbolt");
+							else if ((StrEqual(ammtype,"ammo_crowbar",false)) || (StrEqual(ammtype,"ammo_physcannon",false)) || (StrEqual(ammtype,"ammo_portalgun",false)) || (StrEqual(ammtype,"ammo_suit",false))) ammtype = "";
+							WriteFileLine(edtfile,"				%s",tmparr);
+							if (strlen(ammtype) > 1) WriteFileLine(edtfile,"					%s \"%i\"",ammtype,ammamount);
 						}
-						char ammtype[32];
-						Format(ammtype,sizeof(ammtype),"%s",tmparr);
-						int findend = StrContains(ammtype," ",false);
-						if (findend != -1) Format(ammtype,findend+1,"%s",ammtype);
-						ReplaceStringEx(ammtype,sizeof(ammtype),"weapon_","sk_max_");
-						ReplaceString(ammtype,sizeof(ammtype),"\"","");
-						if (StrEqual(ammtype,"sk_max_shotgun",false)) Format(ammtype,sizeof(ammtype),"sk_max_buckshot");
-						int ammamount = 1;
-						Handle cvarchk = FindConVar(ammtype);
-						if (cvarchk != INVALID_HANDLE) ammamount = GetConVarInt(cvarchk)/4;
-						CloseHandle(cvarchk);
-						ReplaceStringEx(ammtype,sizeof(ammtype),"sk_max_","ammo_");
-						if (StrEqual(ammtype,"ammo_rpg",false)) Format(ammtype,sizeof(ammtype),"ammo_rpg_round");
-						else if (StrEqual(ammtype,"ammo_frag",false)) Format(ammtype,sizeof(ammtype),"ammo_grenade");
-						else if (StrEqual(ammtype,"ammo_shotgun",false)) Format(ammtype,sizeof(ammtype),"ammo_buckshot");
-						else if (StrEqual(ammtype,"ammo_crossbow",false)) Format(ammtype,sizeof(ammtype),"ammo_xbowbolt");
-						else if ((StrEqual(ammtype,"ammo_crowbar",false)) || (StrEqual(ammtype,"ammo_physcannon",false)) || (StrEqual(ammtype,"ammo_portalgun",false)) || (StrEqual(ammtype,"ammo_suit",false))) ammtype = "";
-						WriteFileLine(edtfile,"				%s",tmparr);
-						if (strlen(ammtype) > 1) WriteFileLine(edtfile,"					%s \"%i\"",ammtype,ammamount);
 					}
 				}
 			}
