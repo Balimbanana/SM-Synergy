@@ -1003,11 +1003,11 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "The Masked Prisoner");
 	}
-	else if ((StrContains(map, "belowice", false) == 0) || (StrEqual(map,"memory",false)) || (StrContains(map, "bti belowice", false) == 0))
+	else if ((StrContains(map, "belowice", false) == 0) || (StrEqual(map,"memory",false)) || (StrContains(map, "bti ", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Below The Ice");
 	}
-	else if ((StrContains(map, "dayhardpart", false) == 0) || (StrEqual(map,"dayhard_menu",false)) || (StrEqual(map,"voyage",false)) || (StrEqual(map,"redrum",false)) || (StrEqual(map,"finale",false)) || (StrEqual(map,"breencave",false)))
+	else if ((StrContains(map, "dayhardpart", false) == 0) || (StrEqual(map,"dayhard_menu",false)) || (StrEqual(map,"voyage",false)) || (StrEqual(map,"redrum",false)) || (StrEqual(map,"finale",false)) || (StrEqual(map,"breencave",false)) || (StrEqual(map,"dojo",false)))
 	{
 		Format(modname, sizeof(modname), "Day Hard");
 	}
@@ -1067,7 +1067,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "PTSD 2");
 	}
-	else if ((StrContains(map, "ptsd ", false) == 0) || (StrContains(map, "ptsd_", false) == 0) || (StrEqual(map,"boneless_ptsd",false)))
+	else if ((StrContains(map, "ptsd ", false) == 0) || (StrContains(map, "ptsd_", false) == 0) || (StrEqual(map,"boneless_ptsd",false)) || (StrEqual(map,"the_end",false)))
 	{
 		Format(modname, sizeof(modname), "PTSD");
 	}
