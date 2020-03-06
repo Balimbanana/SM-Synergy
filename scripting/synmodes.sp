@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.32"
+#define PLUGIN_VERSION "1.33"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -35,6 +35,7 @@ bool hasstarted = false;
 bool survivalact = false;
 bool hasread = false;
 bool allowendspawn = false;
+bool ResetOnAllDead = false;
 int WeapList = -1;
 int scoreshow = -1;
 int scoreshowstat = -1;
@@ -181,6 +182,11 @@ public void OnPluginStart()
 	if (mpcvar == INVALID_HANDLE) mpcvar = CreateConVar("sm_allowendspawn", "0", "Allow instant spawn and time spawn to spawn players on other players at trigger_changelevel", _, true, 0.0, true, 1.0);
 	HookConVarChange(mpcvar,allowendspawnch);
 	allowendspawn = GetConVarBool(mpcvar);
+	CloseHandle(mpcvar);
+	mpcvar = FindConVar("mp_reset");
+	if (mpcvar == INVALID_HANDLE) mpcvar = CreateConVar("mp_reset", "0", "Reload the last checkpoint on all players dead.", _, true, 0.0, true, 1.0);
+	HookConVarChange(mpcvar,reloadonalldeadch);
+	ResetOnAllDead = GetConVarBool(mpcvar);
 	CloseHandle(mpcvar);
 	Handle resetmodeh = CreateConVar("sm_resetmode", "0", "Reset mode for survival gamemode. 0 is reload checkpoint, 1 is reload map, 2 is respawn all players.", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 0.0, true, 2.0);
 	HookConVarChange(resetmodeh,resetmodech);
@@ -462,6 +468,12 @@ public void allowendspawnch(Handle convar, const char[] oldValue, const char[] n
 	else allowendspawn = false;
 }
 
+public void reloadonalldeadch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) ResetOnAllDead = true;
+	else ResetOnAllDead = false;
+}
+
 public void resetmodech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	resetmode = StringToInt(newValue);
@@ -688,6 +700,27 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 		}
 		if (instspawnb)
 		{
+			if (ResetOnAllDead)
+			{
+				bool reset = true;
+				for (int i = 1;i<MaxClients+1;i++)
+				{
+					if (IsClientConnected(i))
+					{
+						if (IsClientInGame(i))
+						{
+							if (IsPlayerAlive(i))
+							{
+								reset = false;
+							}
+						}
+					}
+				}
+				if (reset)
+				{
+					return Plugin_Continue;
+				}
+			}
 			if (((!dmset) && (!dmact)) && (lastspawned[killed] == 0)) lastspawned[killed]++;
 			if (((!dmset) && (!dmact)) && (lastspawned[killed] > MaxClients)) lastspawned[killed] = 1;
 			for (int i = lastspawned[killed]; i<MaxClients+1; i++)
@@ -700,7 +733,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 						if ((vck == -1) && (teamnum[killed] == teamnum[i]) && (killed != i))
 						{
 							clused = i;
-							CreateTimer(0.1,tpclspawnnew,killed);
+							CreateTimer(0.1,tpclspawnnew,killed,TIMER_FLAG_NO_MAPCHANGE);
 							lastspawned[killed] = clused+1;
 							//PrintToServer("cl %i spawned on %i, next spawn %i",killed,i,lastspawned[killed]);
 							return Plugin_Continue;
@@ -711,7 +744,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 			if ((!dmset) && (!dmact)) lastspawned[killed] = 0;
 			clused = 0;
 			//PrintToServer("CL %i will spawn on %i last %i",killed,clused,lastspawned[killed]);
-			CreateTimer(0.1,tpclspawnnew,killed);
+			CreateTimer(0.1,tpclspawnnew,killed,TIMER_FLAG_NO_MAPCHANGE);
 		}
 		else if (instspawnuse)
 		{
@@ -769,7 +802,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 							{
 								if (IsClientInGame(i))
 								{
-									CreateTimer(0.1,tpclspawnnew,i);
+									CreateTimer(0.1,tpclspawnnew,i,TIMER_FLAG_NO_MAPCHANGE);
 								}
 							}
 						}
