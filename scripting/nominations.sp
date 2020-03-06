@@ -867,23 +867,23 @@ public Action GetMapTag(const char[] map)
 		if (modsact < 2) modsact++;
 		GetMapDisplayName(map,maptag,sizeof(maptag));
 	}
-	else if ((StrEqual(map,"d1_overboard_01",false)) || (StrEqual(map,"d1_wakeupcall_02",false)) || (StrEqual(map,"d2_breakout_03",false)) || (StrEqual(map,"d2_surfacing_04",false)) || (StrEqual(map,"d3_theescape_05",false)) || (StrEqual(map,"d3_extraction_06",false)))
+	else if ((StrContains(map,"rock24 d",false) == 0) || (StrEqual(map,"d1_overboard_01",false)) || (StrEqual(map,"d1_wakeupcall_02",false)) || (StrEqual(map,"d2_breakout_03",false)) || (StrEqual(map,"d2_surfacing_04",false)) || (StrEqual(map,"d3_theescape_05",false)) || (StrEqual(map,"d3_extraction_06",false)))
 	{
 		Format(modname, sizeof(modname), "Rock 24");
 	}
-	else if (StrContains(map,"d1_",false) == 0)
+	else if (StrContains(map, "d1_", false) == 0)
 	{
 		Format(modname, sizeof(modname), "Half-Life 2");
 	}
-	else if (StrEqual(map,"d2_lostcoast",false))
+	else if (StrContains(map, "d2_lostcoast", false) == 0)
 	{
 		Format(modname, sizeof(modname), "Lost Coast");
 	}
-	else if ((StrContains(map,"d2_",false) == 0) || (StrContains(map,"d3_",false) == 0) || (StrContains(map,"hl2 ",false) == 0))
+	else if ((StrContains(map, "d2_", false) == 0) || (StrContains(map, "d3_", false) == 0) || (StrContains(map, "hl2 ",false) == 0))
 	{
 		Format(modname, sizeof(modname), "Half-Life 2");
 	}
-	else if (StrContains(map,"hl2u ",false) == 0)
+	else if (StrContains(map, "hl2u ", false) == 0)
 	{
 		Format(modname, sizeof(modname), "Half-Life 2 Update");
 	}
@@ -891,117 +891,137 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Half-Life 1");
 	}
-	else if (StrContains(map,"ep1_",false) == 0)
+	else if (StrContains(map, "ep1", false) == 0)
 	{
 		Format(modname, sizeof(modname), "HL2: Episode 1");
 	}
-	else if (StrContains(map,"ep2_outland_",false) == 0)
+	else if (StrContains(map, "ep2", false) == 0)
 	{
 		Format(modname, sizeof(modname), "HL2: Episode 2");
 	}
-	else if (StrContains(map,"metastasis",false) == 0)
+	else if ((StrContains(map, "metastasis", false) == 0) || (StrContains(map, "meta metastasis", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Minerva");
 	}
-	else if (StrContains(map,"sp_c14_",false) == 0)
+	else if ((StrContains(map, "sp_c14_", false) == 0) || (StrContains(map, "cal sp_c14_", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Calamity");
 	}
-	else if ((StrEqual(map, "sp_canal1", false)) || (StrEqual(map, "sp_canal2", false)) || (StrEqual(map, "sp_base", false)) || (StrEqual(map, "sp_canyon", false)) || (StrEqual(map, "sp_casino", false)) || (StrEqual(map, "sp_casino2", false)) || (StrEqual(map, "sp_ending", false)) || (StrEqual(map, "sp_intro", false)) || (StrEqual(map, "sp_postsquare", false)) || (StrEqual(map, "sp_precasino", false)) || (StrEqual(map, "sp_presquare", false)) || (StrEqual(map, "sp_square", false)) || (StrContains(map, "sp_streetwar", false) == 0) || (StrEqual(map, "sp_waterplant", false)) || (StrEqual(map, "sp_waterplant2", false)))
+	else if ((StrContains(map, "cit2 sp", false) == 0) || (StrEqual(map, "sp_canal1", false)) || (StrEqual(map, "sp_canal2", false)) || (StrEqual(map, "sp_base", false)) || (StrEqual(map, "sp_canyon", false)) || (StrEqual(map, "sp_casino", false)) || (StrEqual(map, "sp_casino2", false)) || (StrEqual(map, "sp_ending", false)) || (StrEqual(map, "sp_intro", false)) || (StrEqual(map, "sp_postsquare", false)) || (StrEqual(map, "sp_precasino", false)) || (StrEqual(map, "sp_presquare", false)) || (StrEqual(map, "sp_square", false)) || (StrContains(map, "sp_streetwar", false) == 0) || (StrEqual(map, "sp_waterplant", false)) || (StrEqual(map, "sp_waterplant2", false)))
 	{
 		Format(modname, sizeof(modname), "The Citizen Returns");
 	}
-	else if ((StrEqual(map,"mel_lastman_square_f",false)) || (StrEqual(map,"shuter_st_f",false)) || (StrContains(map,"st_michaels_",false) == 0) || (StrEqual(map,"yonge_st_f",false)) || (StrEqual(map,"dundas_square_f",false)) || (StrEqual(map,"subway_system_f",false)))
+	else if ((StrContains(map, "shuter_st_f", false) == 0) || (StrContains(map, "st_michaels_", false) == 0) || (StrContains(map, "yonge_st_f", false) == 0) || (StrContains(map, "dundas_square_f", false) == 0) || (StrContains(map, "subway_system_f", false) == 0) || (StrContains(map, "mel_lastman_square_f", false) == 0))
 	{
 		Format(modname, sizeof(modname), "City 7: Toronto Conflict");
 	}
-	else if (StrContains(map,"up_",false) == 0)
+	else if ((StrContains(map, "up_", false) == 0) || (StrContains(map, "up up_", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Uncertainty Principle");
 	}
-	else if (StrContains(map,"ra_c1l",false) == 0)
+	else if ((StrContains(map, "ra_c1l", false) == 0) || (StrContains(map, "riotact ra_c1l", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Riot Act");
 	}
-	else if (StrContains(map,"dw_",false) == 0)
+	else if ((StrContains(map, "dw_", false) == 0) || (StrContains(map, "dworld dw", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Dangerous World");
 	}
-	else if (StrContains(map,"r_map",false) == 0)
+	else if ((StrContains(map, "r_map", false) == 0) || (StrContains(map, "pre r_", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Precursor");
 	}
-	else if ((StrContains(map,"leonhl2",false) == 0) || (StrEqual(map,"final_credits",false)))
+	else if ((StrContains(map, "leonhl2", false) == 0) || (StrContains(map, "final_credits", false) == 0) || (StrContains(map, "ctoa leonHL2", false) == 0) || (StrContains(map, "ctoa final", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Coastline To Atmosphere");
 	}
-	else if (StrContains(map,"spymap_ep3",false) != -1)
+	else if (StrContains(map, "spymap_ep3", false) != -1)
 	{
 		Format(modname, sizeof(modname), "Episode 3: The Closure");
 	}
-	else if (StrContains(map,"island",false) == 0)
+	else if ((StrContains(map, "island", false) == 0) || (StrContains(map, "offshore island", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Offshore");
 	}
-	else if (StrContains(map,"level_",false) == 0)
+	else if (StrContains(map, "level_", false) == 0)
 	{
 		Format(modname, sizeof(modname), "Research & Development");
 	}
-	else if (StrContains(map,"cd",false) == 0)
+	else if (StrContains(map, "cd", false) == 0)
 	{
 		Format(modname, sizeof(modname), "Combine Destiny");
 	}
-	else if (StrContains(map,"nt_",false) == 0)
+	else if (StrContains(map, "nt_", false) == 0)
 	{
 		Format(modname, sizeof(modname), "Neotokyo");
 	}
-	else if (StrContains(map,"po_",false) == 0)
+	else if ((StrContains(map, "po_", false) == 0) || (StrContains(map, "op po_", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Omega Prison");
 	}
-	else if (StrContains(map,"mimp",false) == 0)
+	else if ((StrContains(map, "mimp", false) == 0) || (StrContains(map, "mi mimp", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Mission Improbable");
 	}
-	else if (StrContains(map,"_sm_",false) != -1)
+	else if (StrContains(map, "_sm_", false) != -1)
 	{
 		Format(modname, sizeof(modname), "Strider Mountain");
 	}
-	else if (StrContains(map,"slums_",false) == 0)
+	else if ((StrContains(map, "slums_", false) == 0) || (StrContains(map, "s2e slums_", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Slums 2: Extended");
 	}
-	else if (StrContains(map,"ravenholm",false) == 0)
+	else if ((StrContains(map, "ravenholm", false) == 0) || (StrContains(map, "rh ravenholm", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Ravenholm");
 	}
-	else if (StrContains(map,"sn_",false) == 0)
+	else if (StrContains(map, "sn_", false) == 0)
 	{
 		Format(modname, sizeof(modname), "Spherical Nightmares");
 	}
-	else if (StrContains(map,"ks_mop_",false) == 0)
+	else if ((StrContains(map, "ks_mop_", false) == 0) || (StrContains(map, "mop ks_mop_", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Mistake of Pythagoras");
 	}
-	else if (StrContains(map,"ce_0",false) == 0)
+	else if ((StrContains(map, "ce_0", false) == 0) || (StrContains(map, "ce ce_0", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Causality Effect");
 	}
-	else if (StrContains(map,"1187",false) == 0)
+	else if (StrContains(map, "1187", false) == 0)
 	{
 		Format(modname, sizeof(modname), "1187");
 	}
-	else if (StrContains(map,"sh_alchemilla",false) == 0)
+	else if ((StrContains(map, "sh_alchemilla", false) == 0) || (StrContains(map, "alc sh_alchemilla", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Alchemilla");
 	}
-	else if (StrContains(map,"eots_1",false) == 0)
+	else if (StrContains(map, "eots_1", false) == 0)
 	{
 		Format(modname, sizeof(modname), "Eye of The Storm");
 	}
-	else if (StrContains(map,"mpr_0",false) == 0)
+	else if ((StrContains(map, "mpr_0", false) == 0) || (StrContains(map, "mpr mpr_0", false) == 0))
 	{
 		Format(modname, sizeof(modname), "The Masked Prisoner");
+	}
+	else if ((StrContains(map, "belowice", false) == 0) || (StrEqual(map,"memory",false)) || (StrContains(map, "bti belowice", false) == 0))
+	{
+		Format(modname, sizeof(modname), "Below The Ice");
+	}
+	else if ((StrContains(map, "dayhardpart", false) == 0) || (StrEqual(map,"dayhard_menu",false)) || (StrEqual(map,"voyage",false)) || (StrEqual(map,"redrum",false)) || (StrEqual(map,"finale",false)) || (StrEqual(map,"breencave",false)))
+	{
+		Format(modname, sizeof(modname), "Day Hard");
+	}
+	else if ((StrContains(map,"mine01_0",false) == 0) || (StrContains(map,"mine_01_0",false) == 0))
+	{
+		Format(modname, sizeof(modname), "Antlions Everywhere");
+	}
+	else if (StrEqual(map, "intro01", false) || StrEqual(map, "intro02", false) || StrEqual(map, "mines01", false) || StrEqual(map, "mines02", false) || StrEqual(map, "sewer01", false) || StrEqual(map, "scape01", false) || StrEqual(map, "scape02", false) || StrEqual(map, "scape03", false) || StrEqual(map, "ldtd01", false) || StrEqual(map, "tull01", false) || StrEqual(map, "surreal01", false) || StrEqual(map, "outside01", false) || StrEqual(map, "ending01", false))
+	{
+		Format(modname, sizeof(modname), "Lost Under The Snow");
+	}
+	else if ((StrContains(map, "th_intro", false) == 0) || (StrContains(map, "drainage", false) == 0) || (StrContains(map, "church", false) == 0) || (StrContains(map, "basement", false) == 0) || (StrContains(map, "cabin", false) == 0) || (StrContains(map, "cave", false) == 0) || (StrContains(map, "rift", false) == 0) || (StrContains(map, "volcano", false) == 0) || (StrContains(map, "train", false) == 0))
+	{
+		Format(modname, sizeof(modname), "They Hunger Again");
 	}
 	else if (StrContains(map, "dwn0", false) == 0)
 	{
@@ -1011,31 +1031,11 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Steam Tracks Trouble and Riddles");
 	}
-	else if ((StrContains(map, "belowice", false) == 0) || (StrEqual(map,"memory",false)))
-	{
-		Format(modname, sizeof(modname), "Below The Ice");
-	}
-	else if ((StrContains(map, "lifelostprison_0", false) == 0) || (StrContains(map, "bonus_earlyprison_0", false) == 0))
+	else if ((StrContains(map, "llp ", false) == 0) || (StrContains(map, "lifelostprison_0", false) == 0) || (StrContains(map, "bonus_earlyprison_0", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Liberation");
 	}
-	else if ((StrContains(map, "dayhardpart", false) == 0) || (StrEqual(map,"dayhard_menu",false)) || (StrEqual(map,"voyage",false)) || (StrEqual(map,"redrum",false)) || (StrEqual(map,"finale",false)) || (StrEqual(map,"breencave",false)) || (StrEqual(map,"dojo",false)))
-	{
-		Format(modname, sizeof(modname), "Day Hard");
-	}
-	else if ((StrContains(map,"mine01_0",false) == 0) || (StrContains(map,"mine_01_0",false) == 0))
-	{
-		Format(modname, sizeof(modname), "Antlions Everywhere");
-	}
-	else if ((StrContains(map,"intro0",false) == 0) || (StrContains(map,"mines0",false) == 0) || (StrEqual(map,"sewer01",false)) || (StrContains(map,"scape0",false) == 0) || (StrEqual(map,"ldtd01",false)) || StrEqual(map, "tull01", false) || StrEqual(map, "surreal01", false) || StrEqual(map, "outside01", false) || StrEqual(map, "ending01", false))
-	{
-		Format(modname, sizeof(modname), "Lost Under The Snow");
-	}
-	else if ((StrEqual(map,"th_intro",false)) || (StrEqual(map,"drainage",false)) || (StrEqual(map,"church",false)) || (StrEqual(map,"basement",false)) || (StrEqual(map,"cabin",false)) || (StrEqual(map,"cave",false)) || (StrEqual(map,"rift",false)) || (StrEqual(map,"volcano",false)) || (StrEqual(map,"train",false)))
-	{
-		Format(modname, sizeof(modname), "They Hunger Again");
-	}
-	else if (StrContains(map,"ep2_deepdown_",false) == 0)
+	else if ((StrContains(map, "ep2_deepdown_", false) == 0) || (StrContains(map, "deepdown ep2_deepdown_", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Deep Down");
 	}
@@ -1055,21 +1055,25 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Black Mesa");
 	}
-	else if ((StrContains(map,"ptsd_",false) == 0) || (StrEqual(map,"boneless_ptsd",false)))
-	{
-		Format(modname, sizeof(modname), "PTSD");
-	}
-	else if ((StrEqual(map,"am2",false)) || (StrEqual(map,"am3",false)) || (StrEqual(map,"am4",false)))
-	{
-		Format(modname, sizeof(modname), "Aftermath");
-	}
 	else if (StrContains(map,"bm_damo0",false) == 0)
 	{
 		Format(modname, sizeof(modname), "Black Mesa: Damocles");
 	}
-	else if ((StrContains(map,"xen_c4a",false) == 0) || (StrEqual(map,"xen_c5a1",false)))
+	else if ((StrContains(map, "xen_c", false) == 0) || (StrContains(map, "bmsxen ", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Black Mesa: Improved Xen");
+	}
+	else if (StrContains(map, "ptsd2 ", false) == 0)
+	{
+		Format(modname, sizeof(modname), "PTSD 2");
+	}
+	else if ((StrContains(map, "ptsd ", false) == 0) || (StrContains(map, "ptsd_", false) == 0) || (StrEqual(map,"boneless_ptsd",false)))
+	{
+		Format(modname, sizeof(modname), "PTSD");
+	}
+	else if ((StrContains(map, "am am", false) == 0) || (StrEqual(map,"am2",false)) || (StrEqual(map,"am3",false)) || (StrEqual(map,"am4",false)))
+	{
+		Format(modname, sizeof(modname), "Aftermath");
 	}
 	else if (StrContains(map,"Penetration0",false) == 0)
 	{
@@ -1098,6 +1102,14 @@ public Action GetMapTag(const char[] map)
 	else if ((StrContains(map,"Uh_Prologue_",false) == 0) || (StrContains(map,"Uh_Chapter1_",false) == 0) || (StrContains(map,"Uh_Chapter2_",false) == 0) || (StrContains(map,"Uh_House_",false) == 0) || (StrContains(map,"Uh_Dreams_",false) == 0))
 	{
 		Format(modname, sizeof(modname), "Underhell");
+	}
+	else if ((StrContains(map,"exesc ",false) == 0) || (StrContains(map,"escape_map_0",false) == 0))
+	{
+		Format(modname, sizeof(modname), "Escape by Ex-Mo");
+	}
+	else if ((StrContains(map,"hlesc ",false) == 0) || (StrEqual(map,"substation_1_d",false)) || (StrEqual(map,"canals_v1_d",false)) || (StrEqual(map,"canals_v2_d",false)) || (StrEqual(map,"railway21_d",false)))
+	{
+		Format(modname, sizeof(modname), "Half-Life Escape");
 	}
 	else
 	{
