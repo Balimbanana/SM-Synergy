@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.32"
-			"Previous"	"1.31"
+			"Latest"  	"1.33"
+			"Previous"	"1.32"
 		}
 		
-		"Notes"	"Fixed issues of escape characters in entity cache."
+		"Notes"	"Fixed issue of respawn loop if instant spawn is 1, there is only one player, and mp_reset is 1."
 	}
 	
 	"Files"
