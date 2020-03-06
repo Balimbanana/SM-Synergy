@@ -1331,27 +1331,7 @@ public Native_GetNominatedMapList(Handle:plugin, numParams)
 
 public Action GetMapTag(const char[] map)
 {
-	if (StrContains(map, "d1_overboard_01", false) == 0)
-	{
-		Format(maptag, sizeof(maptag), "Rock 24");
-	}
-	else if (StrContains(map, "d1_wakeupcall_02", false) == 0)
-	{
-		Format(maptag, sizeof(maptag), "Rock 24");
-	}
-	else if (StrContains(map, "d2_breakout_03", false) == 0)
-	{
-		Format(maptag, sizeof(maptag), "Rock 24");
-	}
-	else if (StrContains(map, "d2_surfacing_04", false) == 0)
-	{
-		Format(maptag, sizeof(maptag), "Rock 24");
-	}
-	else if (StrContains(map, "d3_theescape_05", false) == 0)
-	{
-		Format(maptag, sizeof(maptag), "Rock 24");
-	}
-	else if (StrContains(map, "d3_extraction_06", false) == 0)
+	if ((StrContains(map,"rock24 d",false) == 0) || (StrEqual(map,"d1_overboard_01",false)) || (StrEqual(map,"d1_wakeupcall_02",false)) || (StrEqual(map,"d2_breakout_03",false)) || (StrEqual(map,"d2_surfacing_04",false)) || (StrEqual(map,"d3_theescape_05",false)) || (StrEqual(map,"d3_extraction_06",false)))
 	{
 		Format(maptag, sizeof(maptag), "Rock 24");
 	}
@@ -1377,21 +1357,21 @@ public Action GetMapTag(const char[] map)
 	}
 	else if (StrContains(map, "ep1", false) == 0)
 	{
-		Format(maptag, sizeof(maptag), "Episode 1");
+		Format(maptag, sizeof(maptag), "HL2: Episode 1");
 	}
 	else if (StrContains(map, "ep2", false) == 0)
 	{
-		Format(maptag, sizeof(maptag), "Episode 2");
+		Format(maptag, sizeof(maptag), "HL2: Episode 2");
 	}
-	else if (StrContains(map, "metastasis", false) == 0)
+	else if ((StrContains(map, "metastasis", false) == 0) || (StrContains(map, "meta metastasis", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Minerva");
 	}
-	else if (StrContains(map, "sp_c14_", false) == 0)
+	else if ((StrContains(map, "sp_c14_", false) == 0) || (StrContains(map, "cal sp_c14_", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Calamity");
 	}
-	else if ((StrEqual(map, "sp_canal1", false)) || (StrEqual(map, "sp_canal2", false)) || (StrEqual(map, "sp_base", false)) || (StrEqual(map, "sp_canyon", false)) || (StrEqual(map, "sp_casino", false)) || (StrEqual(map, "sp_casino2", false)) || (StrEqual(map, "sp_ending", false)) || (StrEqual(map, "sp_intro", false)) || (StrEqual(map, "sp_postsquare", false)) || (StrEqual(map, "sp_precasino", false)) || (StrEqual(map, "sp_presquare", false)) || (StrEqual(map, "sp_square", false)) || (StrContains(map, "sp_streetwar", false) == 0) || (StrEqual(map, "sp_waterplant", false)) || (StrEqual(map, "sp_waterplant2", false)))
+	else if ((StrContains(map, "cit2 sp", false) == 0) || (StrEqual(map, "sp_canal1", false)) || (StrEqual(map, "sp_canal2", false)) || (StrEqual(map, "sp_base", false)) || (StrEqual(map, "sp_canyon", false)) || (StrEqual(map, "sp_casino", false)) || (StrEqual(map, "sp_casino2", false)) || (StrEqual(map, "sp_ending", false)) || (StrEqual(map, "sp_intro", false)) || (StrEqual(map, "sp_postsquare", false)) || (StrEqual(map, "sp_precasino", false)) || (StrEqual(map, "sp_presquare", false)) || (StrEqual(map, "sp_square", false)) || (StrContains(map, "sp_streetwar", false) == 0) || (StrEqual(map, "sp_waterplant", false)) || (StrEqual(map, "sp_waterplant2", false)))
 	{
 		Format(maptag, sizeof(maptag), "The Citizen Returns");
 	}
@@ -1399,23 +1379,23 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "City 7: Toronto Conflict");
 	}
-	else if (StrContains(map, "up_", false) == 0)
+	else if ((StrContains(map, "up_", false) == 0) || (StrContains(map, "up up_", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Uncertainty Principle");
 	}
-	else if (StrContains(map, "ra_c1l", false) == 0)
+	else if ((StrContains(map, "ra_c1l", false) == 0) || (StrContains(map, "riotact ra_c1l", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Riot Act");
 	}
-	else if (StrContains(map, "dw_", false) == 0)
+	else if ((StrContains(map, "dw_", false) == 0) || (StrContains(map, "dworld dw", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Dangerous World");
 	}
-	else if (StrContains(map, "r_map", false) == 0)
+	else if ((StrContains(map, "r_map", false) == 0) || (StrContains(map, "pre r_", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Precursor");
 	}
-	else if ((StrContains(map, "leonhl2", false) == 0) || (StrContains(map, "final_credits", false) == 0))
+	else if ((StrContains(map, "leonhl2", false) == 0) || (StrContains(map, "final_credits", false) == 0) || (StrContains(map, "ctoa leonHL2", false) == 0) || (StrContains(map, "ctoa final", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Coastline To Atmosphere");
 	}
@@ -1423,7 +1403,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Episode 3: The Closure");
 	}
-	else if (StrContains(map, "island", false) == 0)
+	else if ((StrContains(map, "island", false) == 0) || (StrContains(map, "offshore island", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Offshore");
 	}
@@ -1439,11 +1419,11 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Neotokyo");
 	}
-	else if (StrContains(map, "po_", false) == 0)
+	else if ((StrContains(map, "po_", false) == 0) || (StrContains(map, "op po_", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Omega Prison");
 	}
-	else if (StrContains(map, "mimp", false) == 0)
+	else if ((StrContains(map, "mimp", false) == 0) || (StrContains(map, "mi mimp", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Mission Improbable");
 	}
@@ -1451,11 +1431,11 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Strider Mountain");
 	}
-	else if (StrContains(map, "slums_", false) == 0)
+	else if ((StrContains(map, "slums_", false) == 0) || (StrContains(map, "s2e slums_", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Slums 2: Extended");
 	}
-	else if (StrContains(map, "ravenholm", false) == 0)
+	else if ((StrContains(map, "ravenholm", false) == 0) || (StrContains(map, "rh ravenholm", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Ravenholm");
 	}
@@ -1463,11 +1443,11 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Spherical Nightmares");
 	}
-	else if (StrContains(map, "ks_mop_", false) == 0)
+	else if ((StrContains(map, "ks_mop_", false) == 0) || (StrContains(map, "mop ks_mop_", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Mistake of Pythagoras");
 	}
-	else if (StrContains(map, "ce_0", false) == 0)
+	else if ((StrContains(map, "ce_0", false) == 0) || (StrContains(map, "ce ce_0", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Causality Effect");
 	}
@@ -1475,7 +1455,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "1187");
 	}
-	else if (StrContains(map, "sh_alchemilla", false) == 0)
+	else if ((StrContains(map, "sh_alchemilla", false) == 0) || (StrContains(map, "alc sh_alchemilla", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Alchemilla");
 	}
@@ -1483,11 +1463,11 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Eye of The Storm");
 	}
-	else if (StrContains(map, "mpr_0", false) == 0)
+	else if ((StrContains(map, "mpr_0", false) == 0) || (StrContains(map, "mpr mpr_0", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "The Masked Prisoner");
 	}
-	else if (StrContains(map, "belowice", false) == 0)
+	else if ((StrContains(map, "belowice", false) == 0) || (StrEqual(map,"memory",false)) || (StrContains(map, "bti belowice", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Below The Ice");
 	}
@@ -1515,15 +1495,11 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Steam Tracks Trouble and Riddles");
 	}
-	else if ((StrContains(map, "belowice", false) == 0) || (StrEqual(map,"memory",false)))
-	{
-		Format(maptag, sizeof(maptag), "Below The Ice");
-	}
-	else if ((StrContains(map, "lifelostprison_0", false) == 0) || (StrContains(map, "bonus_earlyprison_0", false) == 0))
+	else if ((StrContains(map, "llp ", false) == 0) || (StrContains(map, "lifelostprison_0", false) == 0) || (StrContains(map, "bonus_earlyprison_0", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Liberation");
 	}
-	else if (StrContains(map, "ep2_deepdown_", false) == 0)
+	else if ((StrContains(map, "ep2_deepdown_", false) == 0) || (StrContains(map, "deepdown ep2_deepdown_", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Deep Down");
 	}
@@ -1543,15 +1519,23 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Black Mesa");
 	}
-	else if (StrContains(map, "xen_c", false) == 0)
+	else if (StrContains(map,"bm_damo0",false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Black Mesa: Damocles");
+	}
+	else if ((StrContains(map, "xen_c", false) == 0) || (StrContains(map, "bmsxen ", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Black Mesa: Improved Xen");
 	}
-	else if ((StrContains(map, "ptsd_", false) == 0) || (StrEqual(map,"boneless_ptsd",false)))
+	else if (StrContains(map, "ptsd2 ", false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "PTSD 2");
+	}
+	else if ((StrContains(map, "ptsd ", false) == 0) || (StrContains(map, "ptsd_", false) == 0) || (StrEqual(map,"boneless_ptsd",false)))
 	{
 		Format(maptag, sizeof(maptag), "PTSD");
 	}
-	else if ((StrEqual(map,"am2",false)) || (StrEqual(map,"am3",false)) || (StrEqual(map,"am4",false)))
+	else if ((StrContains(map, "am am", false) == 0) || (StrEqual(map,"am2",false)) || (StrEqual(map,"am3",false)) || (StrEqual(map,"am4",false)))
 	{
 		Format(maptag, sizeof(maptag), "Aftermath");
 	}
@@ -1575,9 +1559,21 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Killzone Source");
 	}
+	else if (StrContains(map,"silent_escape_map_",false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Silent Escape");
+	}
 	else if ((StrContains(map,"Uh_Prologue_",false) == 0) || (StrContains(map,"Uh_Chapter1_",false) == 0) || (StrContains(map,"Uh_Chapter2_",false) == 0) || (StrContains(map,"Uh_House_",false) == 0) || (StrContains(map,"Uh_Dreams_",false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Underhell");
+	}
+	else if ((StrContains(map,"exesc ",false) == 0) || (StrContains(map,"escape_map_0",false) == 0))
+	{
+		Format(maptag, sizeof(maptag), "Escape by Ex-Mo");
+	}
+	else if ((StrContains(map,"hlesc ",false) == 0) || (StrEqual(map,"substation_1_d",false)) || (StrEqual(map,"canals_v1_d",false)) || (StrEqual(map,"canals_v2_d",false)) || (StrEqual(map,"railway21_d",false)))
+	{
+		Format(maptag, sizeof(maptag), "Half-Life Escape");
 	}
 	else
 	{
