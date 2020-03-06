@@ -1111,6 +1111,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Half-Life Escape");
 	}
+	else if (StrContains(map,"avenueodessa",false) == 0)
+	{
+		Format(modname, sizeof(modname), "Avenue Odessa");
+	}
 	else
 	{
 		char gamedesc[32];

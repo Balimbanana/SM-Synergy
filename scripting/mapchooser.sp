@@ -1575,6 +1575,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Half-Life Escape");
 	}
+	else if (StrContains(map,"avenueodessa",false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Avenue Odessa");
+	}
 	else
 	{
 		Format(maptag, sizeof(maptag), "Syn");
