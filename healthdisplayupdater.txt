@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.95"
-			"Previous"	"1.94"
+			"Latest"  	"1.96"
+			"Previous"	"1.95"
 		}
 		
-		"Notes"	"Fixed targetmode 2 not correctly skipping func_clip types when TR works, but aimtarget doesn't."
+		"Notes"	"Added several names and a few entities. Added updated support for npcname keys through SynBuildNPCInfo."
 	}
 	
 	"Files"
