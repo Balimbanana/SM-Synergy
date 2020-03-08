@@ -93,8 +93,9 @@ bool BlockEx = true;
 bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
+bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0002"
+#define PLUGIN_VERSION "2.0003"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -467,6 +468,7 @@ public void OnMapStart()
 	}
 	if (GetMapHistorySize() > 0)
 	{
+		norunagain = false;
 		GetCurrentMap(mapbuf,sizeof(mapbuf));
 		if (AutoFixEp2Req)
 		{
@@ -2757,8 +2759,7 @@ public Action mapendchg(const char[] output, int caller, int activator, float de
 					DeleteFile(findnode);
 				}
 			}
-			Handle data;
-			data = CreateDataPack();
+			Handle data = CreateDataPack();
 			WritePackString(data, maptochange);
 			WritePackString(data, curmapbuf);
 			CreateTimer(1.0,changeleveldelay,data);
@@ -2777,7 +2778,11 @@ public Action resetgraphs(int client, int args)
 			char mapname[128];
 			GetCmdArg(1,mapname,sizeof(mapname));
 			if (args > 1) GetCmdArg(2,mapname,sizeof(mapname));
-			if (strlen(mapname) > 0) TrimString(mapname);
+			if (strlen(mapname) > 0)
+			{
+				TrimString(mapname);
+				ReplaceString(mapname,sizeof(mapname),".bsp","",false);
+			}
 			if (incfixer)
 			{
 				char findinc[128];
@@ -2833,6 +2838,19 @@ public Action resetgraphs(int client, int args)
 					CloseHandle(srvcvar);
 				}
 			}
+			if (!norunagain)
+			{
+				norunagain = true;
+				char curmapbuf[64];
+				GetCurrentMap(curmapbuf,sizeof(curmapbuf));
+				if (!StrEqual(curmapbuf,mapname,false))
+				{
+					Handle data = CreateDataPack();
+					WritePackString(data, mapname);
+					WritePackString(data, curmapbuf);
+					CreateTimer(1.0,changeleveldelay,data);
+				}
+			}
 		}
 		else RestartedMap = false;
 	}
@@ -2853,6 +2871,8 @@ public Action changeleveldelay(Handle timer, Handle data)
 		GetCurrentMap(mapchk,sizeof(mapchk));
 		if (StrEqual(mapchk,curmapbuf,false))
 		{
+			norunagain = true;
+			if (StrContains(maptochange,".bsp",false) != -1) ReplaceString(maptochange,sizeof(maptochange),".bsp","",false);
 			if (debuglvl > 1) PrintToServer("Failed to change map to %s attempting to change manually.",maptochange);
 			Handle mdirlisting = OpenDirectory("maps",true,NULL_STRING);
 			if (mdirlisting != INVALID_HANDLE)
@@ -2893,6 +2913,7 @@ public Action changeleveldelay(Handle timer, Handle data)
 			ServerCommand("changelevel Custom %s",maptochange);
 			ServerCommand("changelevel syn %s",maptochange);
 		}
+		else norunagain = false;
 	}
 }
 
@@ -6604,14 +6625,31 @@ void readcache(int client, char[] cache, float offsetpos[3])
 										Format(arrnext,sizeof(arrnext),"90");
 									}
 								}
+								else if (StrEqual(arrstart,"item_rpg_round",false))
+								{
+									Format(arrstart,sizeof(arrstart),"ammo_rpg");
+									Format(arrnext,sizeof(arrnext),"1");
+								}
 								else if (StrEqual(arrstart,"item_box_buckshot",false))
 								{
 									Format(arrstart,sizeof(arrstart),"ammo_buckshot");
 									Format(arrnext,sizeof(arrnext),"6");
 								}
+								else if (StrEqual(arrstart,"item_box_sniper_rounds",false))
+								{
+									Format(arrstart,sizeof(arrstart),"ammo_sniper_rounds");
+									Format(arrnext,sizeof(arrnext),"10");
+								}
 								else if (StrContains(arrstart,"custom_",false) == 0)
 								{
-									Format(response,sizeof(response),"customweapons/%s ",arrstart);
+									if (strlen(response) < 2) Format(response,sizeof(response),"customweapons/%s",arrstart);
+									else Format(response,sizeof(response),"%s customweapons/%s",response,arrstart);
+									nodispatch = true;
+								}
+								else if ((StrEqual(arrstart,"weapon_uzi",false)) || (StrEqual(arrstart,"weapon_sniperrifle",false)) || (StrEqual(arrstart,"weapon_manhack",false)) || (StrEqual(arrstart,"weapon_guass",false)))
+								{
+									if (strlen(response) < 2) Format(response,sizeof(response),"%s",arrstart);
+									else Format(response,sizeof(response),"%s %s",response,arrstart);
 									nodispatch = true;
 								}
 								if (!nodispatch) DispatchKeyValue(ent,arrstart,arrnext);
@@ -19093,22 +19131,22 @@ public void OnButtonPressUse(int client)
 		int targ = GetClientAimTarget(client,false);
 		if ((IsValidEntity(targ)) && (targ != 0))
 		{
+			float orgs[3];
+			float targorgs[3];
+			if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
+			else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
+			if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",targorgs);
+			else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",targorgs);
+			float chkdist = GetVectorDistance(orgs,targorgs,false);
 			int npcstate = 0;
 			if (HasEntProp(targ,Prop_Data,"m_NPCState")) npcstate = GetEntProp(targ,Prop_Data,"m_NPCState");
+			char cls[32];
+			GetEntityClassname(targ,cls,sizeof(cls));
+			if ((StrEqual(cls,"npc_merchant",false)) && (chkdist < 100.0)) AcceptEntityInput(targ,"FireUser1",client);
 			if (npcstate != 5)//4 is scripting
 			{
-				char cls[32];
-				GetEntityClassname(targ,cls,sizeof(cls));
-				if (StrEqual(cls,"npc_merchant",false)) AcceptEntityInput(targ,"FireUser1",client);
-				else if ((StrEqual(cls,"npc_human_security",false)) || (StrEqual(cls,"npc_human_scientist",false)) || (StrEqual(cls,"npc_human_scientist_female",false)))
+				if ((StrEqual(cls,"npc_human_security",false)) || (StrEqual(cls,"npc_human_scientist",false)) || (StrEqual(cls,"npc_human_scientist_female",false)))
 				{
-					float orgs[3];
-					float targorgs[3];
-					if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
-					else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
-					if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",targorgs);
-					else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",targorgs);
-					float chkdist = GetVectorDistance(orgs,targorgs,false);
 					if (chkdist < 100)
 					{
 						int scr = GetEntPropEnt(targ,Prop_Data,"m_hTarget");
@@ -19314,13 +19352,6 @@ public void OnButtonPressUse(int client)
 					int owner = GetEntPropEnt(targ,Prop_Data,"m_hOwnerEntity");
 					if (owner == -1)
 					{
-						float orgs[3];
-						float targorgs[3];
-						if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
-						else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
-						if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",targorgs);
-						else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",targorgs);
-						float chkdist = GetVectorDistance(orgs,targorgs,false);
 						if (chkdist < 100)
 						{
 							bool addweap = true;
