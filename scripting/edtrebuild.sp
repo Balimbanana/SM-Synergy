@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.53"
+#define PLUGIN_VERSION "0.54"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -187,7 +187,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 							{
 								Format(cls,finder+1,"%s",first);
 								Format(edtkey,sizeof(edtkey),"%s",first);
-								ReplaceString(edtkey,sizeof(edtkey),cls,"");
+								ReplaceStringEx(edtkey,sizeof(edtkey),cls,"");
 								TrimString(edtkey);
 								if (StrEqual(edtkey,"*",false))
 								{
@@ -201,7 +201,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 							{
 								Format(cls,finder+1,"%s",second);
 								Format(edtkey,sizeof(edtkey),"%s",second);
-								ReplaceString(edtkey,sizeof(edtkey),cls,"");
+								ReplaceStringEx(edtkey,sizeof(edtkey),cls,"");
 								TrimString(edtkey);
 								Format(second,sizeof(second),"\"%s\" \"%s\"",cls,edtkey);
 							}
