@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99964"
-			"Previous"	"1.99963"
+			"Latest"  	"1.99965"
+			"Previous"	"1.99964"
 		}
 		
-		"Notes"	"Additional validation in weapon switch reset."
+		"Notes"	"Skip if npc_merchant is scripting. Added changelevel base command fallbacks. More fixups to game_player_equip auto rebuilds."
 	}
 	
 	"Files"
