@@ -333,6 +333,7 @@ void squidthink(int entity)
 								else if (randside == 4) shootvel[1]-=randamnt;
 								//float randscale = GetRandomFloat(1.0,1.5);
 								//ScaleVector(shootvel,randscale);
+								//Blocked in Synergy 20.x forward
 								int spitball = CreateEntityByName("grenade_spit");
 								if (spitball != -1)
 								{
@@ -343,6 +344,25 @@ void squidthink(int entity)
 									SetEntPropFloat(spitball,Prop_Data,"m_flDamage",dmgset);
 									TeleportEntity(spitball,loc,angs,shootvel);
 								}
+								/*
+								int spitball = CreateEntityByName("generic_actor");
+								if (spitball != -1)
+								{
+									DispatchKeyValue(spitball,"model","models/spitball_large.mdl");
+									if (!FileExists("models/spitball_large.mdl",true,NULL_STRING)) DispatchKeyValue(spitball,"RenderMode","10");
+									DispatchKeyValue(spitball,"classname","grenade_spit");
+									DispatchKeyValue(spitball,"solid","6");
+									TeleportEntity(spitball,loc,angs,shootvel);
+									DispatchSpawn(spitball);
+									ActivateEntity(spitball);
+									SetEntProp(spitball,Prop_Data,"m_MoveType",5);
+									SetEntPropEnt(spitball,Prop_Data,"m_hEffectEntity",entity);
+									SDKHook(spitball, SDKHook_StartTouch, StartTouchBullSquidSpit);
+									TeleportEntity(spitball,NULL_VECTOR,NULL_VECTOR,shootvel);
+									if (HasEntProp(spitball,Prop_Data,"m_bloodColor")) SetEntProp(spitball,Prop_Data,"m_bloodColor",3);
+									if (HasEntProp(spitball,Prop_Data,"m_bInvulnerable")) SetEntProp(spitball,Prop_Data,"m_bInvulnerable",1);
+								}
+								*/
 							}
 							if (StrContains(mapbuf,"bm_bm_c",false) == -1)
 							{
@@ -415,3 +435,84 @@ public Action squidtkdmg(victim, &attacker, &inflictor, &Float:damage, &damagety
 	}
 	return Plugin_Continue;
 }
+/*
+public Action StartTouchBullSquidSpit(int entity, int other)
+{
+	if (IsValidEntity(other))
+	{
+		char clschk[24];
+		GetEntityClassname(other,clschk,sizeof(clschk));
+		int attacker = GetEntPropEnt(entity,Prop_Data,"m_hEffectEntity");
+		if ((!StrEqual(clschk,"npc_bullsquid",false)) && (!StrEqual(clschk,"grenade_spit",false)))
+		{
+			float damageForce[3];
+			float dmgset = 5.0;
+			Handle spitdmg = FindConVar("sk_bullsquid_spit_dmg");
+			if (spitdmg != INVALID_HANDLE)
+				dmgset = GetConVarFloat(spitdmg);
+			CloseHandle(spitdmg);
+			float dmgforce = 5.0;
+			damageForce[0] = dmgforce;
+			damageForce[1] = dmgforce;
+			damageForce[2] = dmgforce;
+			if ((attacker != 0) && (IsValidEntity(attacker))) SDKHooks_TakeDamage(other,attacker,attacker,dmgset,DMG_ACID,-1,damageForce);
+			else SDKHooks_TakeDamage(other,entity,entity,dmgset,DMG_ACID,-1,damageForce);
+		}
+		else return Plugin_Continue;
+	}
+	if (IsValidEntity(entity))
+	{
+		float curorg[3];
+		float angs[3];
+		if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",curorg);
+		else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",curorg);
+		GetEntPropVector(entity,Prop_Data,"m_angRotation",angs);
+		int decal = CreateEntityByName("infodecal");
+		if (decal != -1)
+		{
+			int rand = GetRandomInt(1,4);
+			char slimetex[64];
+			if (rand == 1) Format(slimetex,sizeof(slimetex),"decals/slime_splat");
+			else Format(slimetex,sizeof(slimetex),"decals/slime_splat_0%i",rand);
+			DispatchKeyValue(decal,"texture",slimetex);
+			TeleportEntity(decal,curorg,angs,NULL_VECTOR);
+			DispatchSpawn(decal);
+			ActivateEntity(decal);
+			AcceptEntityInput(decal,"Activate");
+		}
+		if (FindStringInArray(precachedarr,"npc_bullsquid") == -1)
+		{
+			PrecacheSound("npc\\bullsquid\\splat1.wav",true);
+			PrecacheSound("npc\\bullsquid\\splat2.wav",true);
+			PushArrayString(precachedarr,"npc_bullsquid");
+		}
+		int radiusdmg = CreateEntityByName("env_explosion");
+		if (radiusdmg != -1)
+		{
+			char bullradius[8];
+			float dmgset = 5.0;
+			Handle spitdmg = FindConVar("sk_bullsquid_spit_dmg");
+			if (spitdmg != INVALID_HANDLE)
+				dmgset = GetConVarFloat(spitdmg);
+			CloseHandle(spitdmg);
+			Format(bullradius,sizeof(bullradius),"%1.f",dmgset/2);
+			TeleportEntity(radiusdmg,curorg,angs,NULL_VECTOR);
+			DispatchKeyValue(radiusdmg,"imagnitude",bullradius);
+			DispatchKeyValue(radiusdmg,"targetname","syn_gonarchspit");
+			DispatchKeyValue(radiusdmg,"iradiusoverride","30");
+			DispatchKeyValue(radiusdmg,"spawnflags","9084");
+			DispatchKeyValue(radiusdmg,"rendermode","0");
+			int attacker = GetEntPropEnt(entity,Prop_Data,"m_hEffectEntity");
+			SetEntPropEnt(radiusdmg,Prop_Data,"m_hEffectEntity",attacker);
+			DispatchSpawn(radiusdmg);
+			ActivateEntity(radiusdmg);
+			AcceptEntityInput(radiusdmg,"Explode");
+		}
+		char snd[128];
+		Format(snd,sizeof(snd),"npc\\bullsquid\\splat%i.wav",GetRandomInt(1,2));
+		EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+		AcceptEntityInput(entity,"kill");
+	}
+	return Plugin_Continue;
+}
+*/

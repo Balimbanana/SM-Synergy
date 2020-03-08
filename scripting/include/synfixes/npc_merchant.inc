@@ -69,12 +69,17 @@ void DisplayMerchMenu(int activator, int finddp)
 		{
 			if (StrContains(data,"Name",false) == 0)
 			{
+				Format(title,sizeof(title),"%s",data);
+				ReplaceStringEx(title,sizeof(title),"Name","",_,_,false);
+				TrimString(title);
+				/*
 				char tmp[3][64];
 				ExplodeString(data," ",tmp,3,64);
 				TrimString(tmp[1]);
 				TrimString(tmp[2]);
 				if (strlen(tmp[2]) > 0) Format(title,sizeof(title),"%s",tmp[2]);
 				else if (strlen(tmp[1]) > 0) Format(title,sizeof(title),"%s",tmp[1]);
+				*/
 			}
 			else if (StrContains(data," ",false) != 0)
 			{
