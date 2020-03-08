@@ -1,6 +1,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include <synbuildnpcinfo>
 #undef REQUIRE_PLUGIN
 #undef REQUIRE_EXTENSIONS
 #tryinclude <SteamWorks>
@@ -10,11 +11,13 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.92"
+#define PLUGIN_VERSION "0.93"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synbuildnpcinfoupdater.txt"
 
 bool hasreadcache = false;
 Handle npcpacks = INVALID_HANDLE;
+Handle npcnameents = INVALID_HANDLE;
+Handle npcnamestr = INVALID_HANDLE;
 char mapbuf[64];
 
 public Plugin myinfo =
@@ -29,12 +32,56 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	npcpacks = CreateArray(256);
+	npcnameents = CreateArray(256);
+	npcnamestr = CreateArray(256);
+	SynNPCInfRunning = true;
+}
+
+public void OnPluginEnd()
+{
+	if (SynNPCInfRunning) SynNPCInfRunning = false;
+	CloseHandle(npcnameents);
+	CloseHandle(npcnamestr);
+	npcnameents = INVALID_HANDLE;
+	npcnamestr = INVALID_HANDLE;
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	RegPluginLibrary("SynBuildNPCInfo");
+	CreateNative("GetNPCEnts", Native_GetNPCEntList);
+	CreateNative("GetNPCNames", Native_GetNPCNameList);
+	SynNPCInfRunning = true;
+	return APLRes_Success;
+}
+
+public int Native_GetNPCEntList(Handle plugin, int numParams)
+{
+	return view_as<int>(npcnameents);
+}
+
+public int Native_GetNPCNameList(Handle plugin, int numParams)
+{
+	return view_as<int>(npcnamestr);
+}
+
+public void OnEntityDestroyed(int entity)
+{
+	int find = FindValueInArray(npcnameents,entity);
+	if (find != -1)
+	{
+		RemoveFromArray(npcnameents,find);
+		RemoveFromArray(npcnamestr,find);
+	}
 }
 
 public void OnMapStart()
 {
 	if (GetMapHistorySize() > 0)
 	{
+		SynNPCInfRunning = true;
+		ClearArray(npcnamestr);
+		ClearArray(npcnameents);
 		GetCurrentMap(mapbuf,sizeof(mapbuf));
 		Format(mapbuf,sizeof(mapbuf),"_%s.ent",mapbuf);
 		char contentdata[64];
@@ -218,7 +265,12 @@ void ResetCurrent(int ent)
 							SetEntProp(thisent,Prop_Data,"m_iHealth",npchealth);
 							SetEntProp(thisent,Prop_Data,"m_iMaxHealth",npchealth);
 						}
-						SetEntPropString(thisent,Prop_Data,"m_iszResponseContext",npcname);
+						//SetEntPropString(thisent,Prop_Data,"m_iszResponseContext",npcname);
+						if (FindValueInArray(npcnameents,thisent) == -1)
+						{
+							PushArrayCell(npcnameents,thisent);
+							PushArrayString(npcnamestr,npcname);
+						}
 						if (!StrEqual(npccls,"monster_gargantua",false))
 						{
 							if (FileExists(npcmodel,true,NULL_STRING))
@@ -281,7 +333,12 @@ public Action ResetThis(Handle timer, int entity)
 							SetEntProp(entity,Prop_Data,"m_iHealth",npchealth);
 							SetEntProp(entity,Prop_Data,"m_iMaxHealth",npchealth);
 						}
-						SetEntPropString(entity,Prop_Data,"m_iszResponseContext",npcname);
+						//SetEntPropString(entity,Prop_Data,"m_iszResponseContext",npcname);
+						if (FindValueInArray(npcnameents,entity) == -1)
+						{
+							PushArrayCell(npcnameents,entity);
+							PushArrayString(npcnamestr,npcname);
+						}
 						if (!StrEqual(npccls,"monster_gargantua",false))
 						{
 							if (FileExists(npcmodel,true,NULL_STRING))
