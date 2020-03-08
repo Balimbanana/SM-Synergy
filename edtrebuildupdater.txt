@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.53"
-			"Previous"	"0.52"
+			"Latest"  	"0.54"
+			"Previous"	"0.53"
 		}
 		
-		"Notes"	"Fixed issue of some CVars not being set early enough for other plugins before OnMapStart."
+		"Notes"	"Fix to modifycase removing parts of the value if they contained the key."
 	}
 	
 	"Files"
