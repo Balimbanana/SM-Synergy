@@ -35,9 +35,9 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-char restorelang[65][65];
-char ChapterTitle[64];
-char PreviousTitle[64];
+char restorelang[128][32];
+char ChapterTitle[128];
+char PreviousTitle[128];
 Handle equiparr = INVALID_HANDLE;
 Handle physboxarr = INVALID_HANDLE;
 Handle physboxharr = INVALID_HANDLE;
@@ -55,12 +55,12 @@ Handle dctimeoutarr = INVALID_HANDLE;
 //Handle nextweapreset = INVALID_HANDLE;
 float entrefresh = 0.0;
 float removertimer = 30.0;
-float fadingtime[65];
+float fadingtime[128];
 int WeapList = -1;
 int tauhl2beam = -1;
 int spawneramt = 20;
 int restrictmode = 0;
-int clrocket[65];
+int clrocket[128];
 int mdlus = -1;
 int mdlus3 = -1;
 int longjumpactive = false;
@@ -69,8 +69,8 @@ int playercapadj = 20;
 int instswitch = 1;
 bool rebuildnodes = false;
 bool allownoguide = true;
-bool guiderocket[65];
-bool isfading[65];
+bool guiderocket[128];
+bool isfading[128];
 bool restrictact = false;
 bool friendlyfire = false;
 bool seqenablecheck = true;
@@ -85,7 +85,7 @@ bool hasreadscriptents = false;
 bool reloadaftersetup = false;
 bool weapmanagersplaced = false;
 bool mapchanging = false;
-bool DisplayedChapterTitle[65];
+bool DisplayedChapterTitle[128];
 bool appliedlargeplayeradj = false;
 bool antlionguardhard = false;
 bool incfixer = false;
@@ -95,7 +95,7 @@ bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0003"
+#define PLUGIN_VERSION "2.0004"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -120,7 +120,7 @@ public Plugin myinfo =
 
 float perclimit = 0.66;
 float delaylimit = 66.0;
-float votetime[64];
+float votetime[128];
 int clused = 0;
 int voteact = 0;
 
@@ -202,7 +202,7 @@ public void OnPluginStart()
 	}
 	else
 	{
-		cvar = CreateConVar("sm_playertriggerapply", "20", "Set player trigger amount for map adjustments such as additional vehicle spawns. 0 disables.", _, true, 0.0, true, 128.0);
+		cvar = CreateConVar("sm_playertriggerapply", "64", "Set player trigger amount for map adjustments such as additional vehicle spawns. 0 disables.", _, true, 0.0, true, 128.0);
 		playercapadj = GetConVarInt(cvar);
 		HookConVarChange(cvar, plytrigch);
 	}
@@ -1030,6 +1030,7 @@ public void OnMapStart()
 		PushArrayString(customentlist,"point_message_multiplayer");
 		PushArrayString(customentlist,"weapon_scripted");
 		PushArrayString(customentlist,"logic_merchant_relay");
+		PushArrayString(customentlist,"logic_player_branch");
 		PushArrayString(customentlist,"npc_merchant");
 		PushArrayString(customentlist,"game_countdown_timer");
 		PushArrayString(customentlist,"hlss_camera_output");
@@ -1133,7 +1134,7 @@ public void OnMapStart()
 			DispatchSpawn(nullfil);
 			ActivateEntity(nullfil);
 		}
-		if (syn56act)
+		if (customents)
 		{
 			HookEntityOutput("scripted_sequence","OnCancelSequence",custentend);
 			HookEntityOutput("npc_maker","OnSpawnNPC",onxenspawn);
@@ -2887,7 +2888,7 @@ public Action changeleveldelay(Handle timer, Handle data)
 							if (StrContains(buff,maptochange,false) != -1)
 							{
 								//case-sensitive map changes
-								ReplaceString(maptochange,sizeof(maptochange),".bsp","",false);
+								ReplaceString(buff,sizeof(buff),".bsp","",false);
 								Format(maptochange,sizeof(maptochange),"%s",buff);
 								break;
 							}
@@ -4472,6 +4473,7 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			readoutputstp(caller,targn,tmpout,"StopTimer",origin,actmod);
 			readoutputstp(caller,targn,tmpout,"TakeAmmo",origin,actmod);
 			readoutputstp(caller,targn,tmpout,"TakeAllAmmo",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"Test",origin,actmod);
 		}
 		readoutputstp(caller,targn,tmpout,"SetMass",origin,actmod);
 		readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
@@ -4984,7 +4986,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 			if ((!StrEqual(line,"}",false)) || (!StrEqual(line,"{",false)) || (!StrEqual(line,"}{",false)))
 			{
 				if (ent == -1) passvars = true;
-				else
+				else if (passvars)
 				{
 					passvars = false;
 					for (int k;k<GetArraySize(passedarr);k++)
@@ -5029,17 +5031,11 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					if (speedadjust > 1000) speedadjust = 1000;
 					Format(kvs[3],sizeof(kvs[]),"%i",speedadjust);
 				}
-				if (passvars)
-				{
-					PushArrayString(passedarr,kvs[1]);
-					PushArrayString(passedarr,kvs[3]);
-				}
-				else
+				PushArrayString(passedarr,kvs[1]);
+				PushArrayString(passedarr,kvs[3]);
+				if (!passvars)
 				{
 					DispatchKeyValue(ent,kvs[1],kvs[3]);
-					//Still pass for later info
-					PushArrayString(passedarr,kvs[1]);
-					PushArrayString(passedarr,kvs[3]);
 				}
 			}
 			if (StrContains(line,"\"origin\"",false) == 0)
@@ -6285,6 +6281,10 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					{
 						Format(cls,sizeof(cls),"logic_relay");
 					}
+					else if (StrEqual(cls,"logic_player_branch",false))
+					{
+						Format(cls,sizeof(cls),"math_counter");
+					}
 					else if (StrEqual(cls,"game_countdown_timer",false))
 					{
 						Format(cls,sizeof(cls),"hud_timer");
@@ -6529,7 +6529,8 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							char arrnext[128];
 							GetArrayString(passedarr,i,arrstart,sizeof(arrstart));
 							i++;
-							GetArrayString(passedarr,i,arrnext,sizeof(arrnext));
+							if (i < GetArraySize(passedarr)) GetArrayString(passedarr,i,arrnext,sizeof(arrnext));
+							i+=2;
 							if (StrEqual(arrstart,"IsShared",false)) SetEntProp(ent,Prop_Data,"m_bInvulnerable",StringToInt(arrnext));
 							else if (StrEqual(arrstart,"AnnounceCashNeeded",false)) SetEntPropFloat(ent,Prop_Data,"m_flSpeed",StringToFloat(arrnext));
 							else if (StrEqual(arrstart,"purchasesound",false)) SetEntPropString(ent,Prop_Data,"m_iszResponseContext",arrnext);
@@ -6544,6 +6545,27 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							HookSingleEntityOutput(ent,"OnUser2",LogMerchNotEnough);
 							HookSingleEntityOutput(ent,"OnUser3",LogMerchCashReduced);
 							HookSingleEntityOutput(ent,"OnUser4",LogMerchDisabled);
+						}
+					}
+					else if (StrEqual(oldcls,"logic_player_branch",false))
+					{
+						for (int i = 0;i<GetArraySize(passedarr);i++)
+						{
+							char arrstart[64];
+							char arrnext[128];
+							GetArrayString(passedarr,i,arrstart,sizeof(arrstart));
+							i++;
+							GetArrayString(passedarr,i,arrnext,sizeof(arrnext));
+							if (StrEqual(arrstart,"InitialValue",false))
+							{
+								PushArrayString(passedarr,"max");
+								PushArrayString(passedarr,arrnext);
+							}
+							else if (StrEqual(arrstart,"OnTrue",false))
+							{
+								PushArrayString(passedarr,"OnHitMax");
+								PushArrayString(passedarr,arrnext);
+							}
 						}
 					}
 					else if (StrEqual(oldcls,"npc_merchant",false))
@@ -11746,6 +11768,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								weapammoremovers(activator,input,lineorgrescom[0],lineorgrescom[2],delay);
 							}
+							else if (StrEqual(input,"Test",false))
+							{
+								playerbranches(lineorgrescom[0],delay);
+							}
 							int findignore = FindValueInArray(ignoretrigs,caller);
 							if (findignore != -1)
 							{
@@ -11855,6 +11881,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								weapammoremovers(activator,input,lineorgrescom[0],lineorgrescom[2],delay);
 							}
+							else if (StrEqual(input,"Test",false))
+							{
+								playerbranches(lineorgrescom[0],delay);
+							}
 							int findignore = FindValueInArray(ignoretrigs,caller);
 							if (findignore != -1)
 							{
@@ -11939,6 +11969,7 @@ void readoutputsforinputs()
 			PushArrayString(inputs,",StopTimer,,");
 			PushArrayString(inputs,",TakeAmmo,");
 			PushArrayString(inputs,",TakeAllAmmo,");
+			PushArrayString(inputs,",Test,,");
 		}
 		if (syn56act)
 		{
@@ -12679,8 +12710,8 @@ public void EquipCustom(int equip, int client)
 			{
 				char additionalweap[64][64];
 				char basecls[64];
-				ExplodeString(additionalweaps," ",additionalweap,64,64,true);
-				for (int k = 0;k<64;k++)
+				int arrloop = ExplodeString(additionalweaps," ",additionalweap,64,64,true);
+				for (int k = 0;k<arrloop;k++)
 				{
 					if (strlen(additionalweap[k]) > 0)
 					{
@@ -13422,6 +13453,65 @@ void RMAmmCheck(int ent, int activator, char[] input, char[] ammtype)
 		}
 	}
 	return;
+}
+
+void playerbranches(char[] targn, float delay)
+{
+	Handle arr = CreateArray(64);
+	FindAllByClassname(arr,-1,"logic_player_branch");
+	if (GetArraySize(arr) > 0)
+	{
+		for (int i = 0;i<GetArraySize(arr);i++)
+		{
+			int ent = GetArrayCell(arr,i);
+			if (IsValidEntity(ent))
+			{
+				if (HasEntProp(ent,Prop_Data,"m_iName"))
+				{
+					char enttargn[64];
+					GetEntPropString(ent,Prop_Data,"m_iName",enttargn,sizeof(enttargn));
+					if (StrEqual(targn,enttargn,false))
+					{
+						if (delay > 0.1)
+						{
+							CreateTimer(delay,logplybranchdelay,ent,TIMER_FLAG_NO_MAPCHANGE);
+						}
+						else logplybranchfire(ent);
+						break;
+					}
+				}
+			}
+		}
+	}
+	CloseHandle(arr);
+}
+
+public Action logplybranchdelay(Handle timer, int entity)
+{
+	if (IsValidEntity(entity))
+	{
+		logplybranchfire(entity);
+	}
+}
+
+void logplybranchfire(int entity)
+{
+	if (IsValidEntity(entity))
+	{
+		int curply = GetClientCount(false);
+		SetVariantInt(curply);
+		AcceptEntityInput(entity,"SetValue");
+		CreateTimer(0.1,logplybranchreset,entity,TIMER_FLAG_NO_MAPCHANGE);
+	}
+}
+
+public Action logplybranchreset(Handle timer, int entity)
+{
+	if (IsValidEntity(entity))
+	{
+		SetVariantInt(0);
+		AcceptEntityInput(entity,"SetValue");
+	}
 }
 
 public Action cleanup(Handle timer, Handle data)
@@ -16622,6 +16712,8 @@ void restoreent(Handle dp)
 			Format(clsname,sizeof(clsname),"npc_zombie");
 		else if (StrEqual(clsname,"npc_zombie_scientist_torso",false))
 			Format(clsname,sizeof(clsname),"npc_zombie_torso");
+		else if (StrEqual(clsname,"logic_player_branch"))
+				Format(clsname,sizeof(clsname),"math_counter");
 		else if ((StrEqual(clsname,"monster_alien_slave",false)) || (StrEqual(clsname,"npc_alien_slave",false)) || (StrEqual(clsname,"npc_alien_controller",false)))
 			Format(clsname,sizeof(clsname),"npc_vortigaunt");
 		else if ((StrEqual(clsname,"npc_zombie_security",false)) || (StrEqual(clsname,"npc_zombie_security_torso",false)) || (StrEqual(clsname,"npc_gonarch",false)) || (StrEqual(clsname,"npc_zombie_worker",false)))
@@ -17127,6 +17219,8 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				Format(clsname,sizeof(clsname),"trigger_multiple");
 			else if (StrEqual(clsname,"logic_merchant_relay"))
 				Format(clsname,sizeof(clsname),"logic_relay");
+			else if (StrEqual(clsname,"logic_player_branch"))
+				Format(clsname,sizeof(clsname),"math_counter");
 			else if (StrEqual(clsname,"game_countdown_timer"))
 				Format(clsname,sizeof(clsname),"hud_timer");
 			else if ((StrEqual(clsname,"hlss_camera_output",false)) || (StrEqual(clsname,"hlss_weaponstripper",false)))
@@ -17203,6 +17297,25 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 						HookSingleEntityOutput(ent,"OnUser2",LogMerchNotEnough);
 						HookSingleEntityOutput(ent,"OnUser3",LogMerchCashReduced);
 						HookSingleEntityOutput(ent,"OnUser4",LogMerchDisabled);
+					}
+				}
+				else if (StrEqual(oldcls,"logic_player_branch",false))
+				{
+					for (int i = 0;i<GetArraySize(dp);i++)
+					{
+						char arrstart[64];
+						char arrnext[128];
+						GetArrayString(dp,i,arrstart,sizeof(arrstart));
+						i++;
+						GetArrayString(dp,i,arrnext,sizeof(arrnext));
+						if (StrEqual(arrstart,"InitialValue",false))
+						{
+							DispatchKeyValue(ent,"max",arrnext);
+						}
+						else if (StrEqual(arrstart,"OnTrue",false))
+						{
+							DispatchKeyValue(ent,"OnHitMax",arrnext);
+						}
 					}
 				}
 				else if (StrEqual(oldcls,"npc_merchant",false))
