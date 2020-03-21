@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.153"
-			"Previous"	"2.152"
+			"Latest"  	"2.154"
+			"Previous"	"2.153"
 		}
 		
 		"Notes"	"Fixed possibility of array index change error if player disconnects after restore starts, but before restored."
