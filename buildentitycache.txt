@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.45"
-			"Previous"	"0.44"
+			"Latest"  	"0.46"
+			"Previous"	"0.45"
 		}
 		
-		"Notes"	"BuildLoader Added detection of maps ending in bg.bsp to add to backgrounds list. BuildEDT Added removal of start equipment when in proximty of info_player_start."
+		"Notes"	"Fix additional spaces in web from gameinfo. Fixed issue of some item origins overlapping while generating spawn equipment."
 	}
 	
 	"Files"
