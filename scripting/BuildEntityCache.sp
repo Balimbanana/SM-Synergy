@@ -11,7 +11,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "0.45"
+#define PLUGIN_VERSION "0.46"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -618,7 +618,12 @@ public Action BuildLoaderFor(int client, int args)
 			WriteFileLine(loaderdat,"\"%s\"",titlepath);
 			WriteFileLine(loaderdat,"{");
 			WriteFileLine(loaderdat,"	\"tag\"	\"%s\"",newtag);
-			if (strlen(gameurl) > 1) WriteFileLine(loaderdat,"	\"web\"	\"%s\"",gameurl);
+			if (strlen(gameurl) > 1)
+			{
+				ReplaceString(gameurl,sizeof(gameurl),"	","",false);
+				ReplaceString(gameurl,sizeof(gameurl)," ","",false);
+				WriteFileLine(loaderdat,"	\"web\"	\"%s\"",gameurl);
+			}
 			if (strlen(appid) > 0)
 			{
 				if (strlen(gameurl) < 2) WriteFileLine(loaderdat,"	\"web\"	\"https://store.steampowered.com/app/%s\"",appid);
@@ -742,7 +747,7 @@ void ReadCache(char[] cache, char[] mapedt)
 			{
 				char kvs[128][128];
 				char lineedt[512];
-				Format(lineedt,sizeof(lineedt),line);
+				Format(lineedt,sizeof(lineedt),"%s",line);
 				ExplodeString(lineedt, "\"", kvs, 128, 128, true);
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
@@ -1148,7 +1153,7 @@ void ReadCache(char[] cache, char[] mapedt)
 					{
 						PushArrayString(duplicates,tmparr);
 						char deletion[72];
-						Format(deletion,sizeof(deletion),"%s\" %s}",tmparr,origin);
+						Format(deletion,sizeof(deletion),"%s\" \"%s %s %s\"}",tmparr,kvs2[0],kvs2[1],kvs2[2]);
 						if (FindStringInArray(mapremovals,deletion) == -1) PushArrayString(mapremovals,deletion);
 						if (StrEqual(tmparr,"item_box_buckshot",false)) Format(tmparr,sizeof(tmparr),"ammo_buckshot \"6\"");
 						else if (StrEqual(tmparr,"item_rpg_round",false)) Format(tmparr,sizeof(tmparr),"ammo_rpg_round \"2\"");
