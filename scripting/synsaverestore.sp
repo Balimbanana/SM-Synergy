@@ -59,7 +59,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.153"
+#define PLUGIN_VERSION "2.154"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -88,9 +88,9 @@ public void OnPluginStart()
 	LoadTranslations("basevotes.phrases");
 	//globalsarr = CreateArray(32);
 	//globalsiarr = CreateArray(32);
-	transitionid = CreateArray(MAXPLAYERS);
-	transitiondp = CreateArray(MAXPLAYERS);
-	transitionplyorigin = CreateArray(MAXPLAYERS);
+	transitionid = CreateArray(128);
+	transitiondp = CreateArray(128);
+	transitionplyorigin = CreateArray(128);
 	transitionents = CreateArray(256);
 	globalstransition = CreateArray(16);
 	ignoreent = CreateArray(256);
@@ -995,12 +995,12 @@ void loadthissave(char[] info)
 		if (FileExists(plyinffile,false))
 		{
 			dp = CreateDataPack();
-			Handle reloadids = CreateArray(64);
-			Handle reloadangs = CreateArray(64);
-			Handle reloadorgs = CreateArray(64);
-			Handle reloadammset = CreateArray(64);
-			Handle reloadstatsset = CreateArray(64);
-			Handle reloadcurweaps = CreateArray(64);
+			Handle reloadids = CreateArray(128);
+			Handle reloadangs = CreateArray(128);
+			Handle reloadorgs = CreateArray(128);
+			Handle reloadammset = CreateArray(128);
+			Handle reloadstatsset = CreateArray(128);
+			Handle reloadcurweaps = CreateArray(128);
 			char sets[6][64];
 			char line[600];
 			Handle plyinf = OpenFile(plyinffile,"r");
@@ -3792,16 +3792,16 @@ void saveresetveh(bool rmsave)
 					CloseHandle(savedirrmh);
 				}
 			}
-			int vehicles[MAXPLAYERS];
-			float steerpos[MAXPLAYERS];
-			int vehon[MAXPLAYERS];
-			float throttle[MAXPLAYERS];
-			int speed[MAXPLAYERS];
+			int vehicles[128];
+			float steerpos[128];
+			int vehon[128];
+			float throttle[128];
+			int speed[128];
 			float restoreang[3];
-			float ang0[MAXPLAYERS];
-			float ang1[MAXPLAYERS];
-			float ang2[MAXPLAYERS];
-			int gearsound[MAXPLAYERS];
+			float ang0[128];
+			float ang1[128];
+			float ang2[128];
+			int gearsound[128];
 			for (int i = 1;i<MaxClients+1;i++)
 			{
 				if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
@@ -3993,12 +3993,13 @@ public Action anotherdelay(Handle timer, int client)
 						char basecls[32];
 						if (!BMActive)
 						{
-							if (StrEqual(ammosettype,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
+							if ((StrEqual(ammosettype,"weapon_gluon",false)) || (StrEqual(ammosettype,"weapon_goop",false))) Format(basecls,sizeof(basecls),"weapon_shotgun");
+							else if (StrEqual(ammosettype,"weapon_isa_knife",false)) Format(basecls,sizeof(basecls),"weapon_crowbar");
 							else if (StrEqual(ammosettype,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
-							else if ((StrEqual(ammosettype,"weapon_glock",false)) || (StrEqual(ammosettype,"weapon_pistol_worker",false)) || (StrEqual(ammosettype,"weapon_flaregun",false)) || (StrEqual(ammosettype,"weapon_manhack",false)) || (StrEqual(ammosettype,"weapon_manhackgun",false)) || (StrEqual(ammosettype,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+							else if ((StrEqual(ammosettype,"weapon_glock",false)) || (StrEqual(ammosettype,"weapon_pistol_worker",false)) || (StrEqual(ammosettype,"weapon_flaregun",false)) || (StrEqual(ammosettype,"weapon_manhack",false)) || (StrEqual(ammosettype,"weapon_manhackgun",false)) || (StrEqual(ammosettype,"weapon_manhacktoss",false)) || (StrEqual(ammosettype,"weapon_p911",false)) || (StrEqual(ammosettype,"weapon_pistol2",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
 							else if ((StrEqual(ammosettype,"weapon_medkit",false)) || (StrEqual(ammosettype,"weapon_healer",false)) || (StrEqual(ammosettype,"weapon_snark",false)) || (StrEqual(ammosettype,"weapon_hivehand",false)) || (StrEqual(ammosettype,"weapon_satchel",false)) || (StrEqual(ammosettype,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-							else if ((StrEqual(ammosettype,"weapon_mp5",false)) || (StrEqual(ammosettype,"weapon_sl8",false)) || (StrEqual(ammosettype,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-							else if ((StrEqual(ammosettype,"weapon_gauss",false)) || (StrEqual(ammosettype,"weapon_tau",false)) || (StrEqual(ammosettype,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+							else if ((StrEqual(ammosettype,"weapon_mp5",false)) || (StrEqual(ammosettype,"weapon_sl8",false)) || (StrEqual(ammosettype,"weapon_uzi",false)) || (StrEqual(ammosettype,"weapon_camera",false)) || (StrEqual(ammosettype,"weapon_smg3",false)) || (StrEqual(ammosettype,"weapon_smg4",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+							else if ((StrEqual(ammosettype,"weapon_gauss",false)) || (StrEqual(ammosettype,"weapon_tau",false)) || (StrEqual(ammosettype,"weapon_sniperrifle",false)) || (StrEqual(ammosettype,"weapon_vc32sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 							else if (StrEqual(ammosettype,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 							else if (StrEqual(ammosettype,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 							else if (StrContains(ammosettype,"customweapons",false) != -1)
@@ -4208,12 +4209,13 @@ public void EquipCustom(int equip, int client)
 					if (addweap)
 					{
 						Format(basecls,sizeof(basecls),"%s",additionalweap[k]);
-						if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
+						if ((StrEqual(basecls,"weapon_gluon",false)) || (StrEqual(basecls,"weapon_goop",false))) Format(basecls,sizeof(basecls),"weapon_shotgun");
+						else if (StrEqual(basecls,"weapon_isa_knife",false)) Format(basecls,sizeof(basecls),"weapon_crowbar");
 						else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
-						else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+						else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false)) || (StrEqual(basecls,"weapon_p911",false)) || (StrEqual(basecls,"weapon_pistol2",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
 						else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-						else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-						else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+						else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_camera",false)) || (StrEqual(basecls,"weapon_smg3",false)) || (StrEqual(basecls,"weapon_smg4",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+						else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false)) || (StrEqual(basecls,"weapon_vc32sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 						else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 						else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 						else if (StrContains(basecls,"customweapons",false) != -1)
