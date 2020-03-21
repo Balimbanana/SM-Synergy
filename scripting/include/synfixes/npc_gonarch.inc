@@ -230,7 +230,7 @@ void gonarchthink(int entity)
 	}
 }
 
-public Action gonarchtkdmg(victim, &attacker, &inflictor, &Float:damage, &damagetype)
+public Action gonarchtkdmg(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
 {
 	if (IsValidEntity(victim))
 	{

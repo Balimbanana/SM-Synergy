@@ -38,7 +38,7 @@ int debugoowlvl = 0;
 int collisiongroup = -1;
 int headgroup = 2;
 int difficulty = 1;
-bool showcc[65];
+bool showcc[128];
 bool customents = false;
 bool relsetvort = false;
 bool relsetzsec = false;

@@ -172,8 +172,9 @@ void ichythink(int entity)
 						float fhitpos[3];
 						Handle hhitpos = INVALID_HANDLE;
 						int rand = GetRandomInt(1,4);
-						if (rand == 1) angs[1]+=45.0;
-						else if (rand == 2) angs[1]-=45.0;
+						float randangadd = GetRandomFloat(10.0,70.0);
+						if (rand == 1) angs[1]+=randangadd;
+						else if (rand == 2) angs[1]-=randangadd;
 						TR_TraceRayFilter(curorg,angs,MASK_SHOT,RayType_Infinite,TraceIchyFilter);
 						TR_GetEndPosition(fhitpos,hhitpos);
 						float chkdist = GetVectorDistance(curorg,fhitpos,false);
