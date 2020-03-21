@@ -95,7 +95,7 @@ bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0004"
+#define PLUGIN_VERSION "2.0005"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -305,7 +305,7 @@ public void OnPluginStart()
 	ignoretrigs = CreateArray(1024);
 	spawnerswait = CreateArray(256);
 	globalsarr = CreateArray(32);
-	dctimeoutarr = CreateArray(MAXPLAYERS+1);
+	dctimeoutarr = CreateArray(128);
 	precachedarr = CreateArray(128);
 	customentlist = CreateArray(128);
 	conveyors = CreateArray(128);
@@ -19001,7 +19001,7 @@ public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 	return true;
 }
 
-int g_LastButtons[MAXPLAYERS+1];
+int g_LastButtons[128];
 
 public void OnClientDisconnect_Post(int client)
 {
