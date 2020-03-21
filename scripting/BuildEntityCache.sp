@@ -524,9 +524,9 @@ public Action BuildLoaderFor(int client, int args)
 					{
 						if ((StrContains(line,"game",false) != -1) && (StrContains(line,"gameinfo",false) == -1) && (!foundname))
 						{
-							ReplaceString(line,sizeof(line),"	","");
-							ReplaceString(line,sizeof(line),"game","");
-							ReplaceString(line,sizeof(line),"\"","");
+							ReplaceString(line,sizeof(line),"	","",false);
+							ReplaceString(line,sizeof(line),"game","",false);
+							ReplaceString(line,sizeof(line),"\"","",false);
 							TrimString(line);
 							int commentpos = StrContains(line,"//",false);
 							if (commentpos != -1) Format(line,commentpos+1,"%s",line);
@@ -535,9 +535,9 @@ public Action BuildLoaderFor(int client, int args)
 						}
 						else if ((StrContains(line,"developer_url",false) != -1) && (!foundurl))
 						{
-							ReplaceString(line,sizeof(line),"	","");
-							ReplaceString(line,sizeof(line),"developer_url","");
-							ReplaceString(line,sizeof(line),"\"","");
+							ReplaceString(line,sizeof(line),"	","",false);
+							ReplaceString(line,sizeof(line),"developer_url","",false);
+							ReplaceString(line,sizeof(line),"\"","",false);
 							Format(gameurl,sizeof(gameurl),"%s",line);
 							foundurl = true;
 						}
@@ -560,7 +560,7 @@ public Action BuildLoaderFor(int client, int args)
 						else if ((strlen(appid) < 1) && (StrContains(line,"SteamAppId",false) != -1) && (StrContains(sourcemodpath,"sourcemods",false) == -1))
 						{
 							ReplaceString(line,sizeof(line),"SteamAppId","",false);
-							ReplaceString(line,sizeof(line),"	","");
+							ReplaceString(line,sizeof(line),"	","",false);
 							int commentpos = StrContains(line,"//",false);
 							if (commentpos != -1) Format(line,commentpos+1,"%s",line);
 							TrimString(line);
@@ -588,20 +588,20 @@ public Action BuildLoaderFor(int client, int args)
 						{
 							if ((StrContains(buff,"background",false) != -1) || (StrContains(buff,"loading",false) != -1) || (StrContains(buff,"bg.bsp",false) >= 3))
 							{
-								ReplaceString(buff,sizeof(buff),".bsp","");
+								ReplaceString(buff,sizeof(buff),".bsp","",false);
 								PrintToConsole(client,"Found backgroundmap %s",buff);
 								PushArrayString(backgroundmaps,buff);
 							}
 							else if (StrContains(buff,"test_",false) != -1)
 							{
-								ReplaceString(buff,sizeof(buff),".bsp","");
+								ReplaceString(buff,sizeof(buff),".bsp","",false);
 								PrintToConsole(client,"Found testmap %s",buff);
 								Format(buff,sizeof(buff),"//%s",buff);
 								PushArrayString(regularmaps,buff);
 							}
 							else
 							{
-								ReplaceString(buff,sizeof(buff),".bsp","");
+								ReplaceString(buff,sizeof(buff),".bsp","",false);
 								PrintToConsole(client,"Found map %s",buff);
 								PushArrayString(regularmaps,buff);
 							}
