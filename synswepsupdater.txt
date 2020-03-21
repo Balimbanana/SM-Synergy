@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.988"
-			"Previous"	"0.987"
+			"Latest"  	"0.989"
+			"Previous"	"0.988"
 		}
 		
 		"Notes"	"Fixed crossbows with clips larger than 1. Added synswepsdbg for ACT map prints."
