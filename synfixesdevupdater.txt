@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0003"
-			"Previous"	"2.0002"
+			"Latest"  	"2.0004"
+			"Previous"	"2.0003"
 		}
 		
-		"Notes"	"Skip if npc_merchant is scripting. Added changelevel base command fallbacks. More fixups to game_player_equip auto rebuilds."
+		"Notes"	"Added logic_player_branch. Fixed mapchange fail checks."
 	}
 	
 	"Files"
