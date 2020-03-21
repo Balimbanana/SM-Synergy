@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0004"
-			"Previous"	"2.0003"
+			"Latest"  	"2.0005"
+			"Previous"	"2.0004"
 		}
 		
 		"Notes"	"Added logic_player_branch. Fixed mapchange fail checks."
