@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.988"
+#define PLUGIN_VERSION "0.989"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -19,9 +19,9 @@ bool tauknockback = false;
 bool customcvarsset = false;
 bool loweredsprint = false;
 bool InChargeUp[2048];
-bool InIronSights[MAXPLAYERS+1];
+bool InIronSights[128];
 bool dbgmdlsetup = false;
-int g_LastButtons[MAXPLAYERS+1];
+int g_LastButtons[128];
 int difficulty = 1;
 int WeapList = -1;
 int SL8Scope = -1;
@@ -39,36 +39,36 @@ int tauhl2beam = -1;
 int goopbeam = -1;
 int headgroup = 2;
 int equip = -1;
-int flareammo[MAXPLAYERS+1];
-int ManHackAmmo[MAXPLAYERS+1];
-int CGuardAmm[MAXPLAYERS+1];
-int EnergyAmm[MAXPLAYERS+1];
-int HiveAmm[MAXPLAYERS+1];
-int SnarkAmm[MAXPLAYERS+1];
-int SatchelAmm[MAXPLAYERS+1];
-int TripMineAmm[MAXPLAYERS+1];
-int Ammo3Reset[MAXPLAYERS+1];
-int Ammo12Reset[MAXPLAYERS+1];
-int Ammo24Reset[MAXPLAYERS+1];
-int CLManhack[MAXPLAYERS+1];
-int clsummontarg[MAXPLAYERS+1];
-int EndTarg[MAXPLAYERS+1];
-int HandAttach[MAXPLAYERS+1];
-int TauCharge[MAXPLAYERS+1];
-int CLInScope[MAXPLAYERS+1];
-int CLAttachment[MAXPLAYERS+1];
-int Reviving[MAXPLAYERS+1];
-float ReviveTime[MAXPLAYERS+1];
-float Healchk[MAXPLAYERS+1];
-float MedkitAmm[MAXPLAYERS+1];
+int flareammo[128];
+int ManHackAmmo[128];
+int CGuardAmm[128];
+int EnergyAmm[128];
+int HiveAmm[128];
+int SnarkAmm[128];
+int SatchelAmm[128];
+int TripMineAmm[128];
+int Ammo3Reset[128];
+int Ammo12Reset[128];
+int Ammo24Reset[128];
+int CLManhack[128];
+int clsummontarg[128];
+int EndTarg[128];
+int HandAttach[128];
+int TauCharge[128];
+int CLInScope[128];
+int CLAttachment[128];
+int Reviving[128];
+float ReviveTime[128];
+float Healchk[128];
+float MedkitAmm[128];
 float centnextatk[2048];
 float centnextatk2[2048];
-float clsummoncdc[MAXPLAYERS+1];
-float antispamchk[MAXPLAYERS+1];
-float WeapSnd[MAXPLAYERS+1];
-float WeapAttackSpeed[MAXPLAYERS+1];
+float clsummoncdc[128];
+float antispamchk[128];
+float WeapSnd[128];
+float WeapAttackSpeed[128];
 char equipper[128];
-char SteamID[MAXPLAYERS+1][32];
+char SteamID[128][32];
 char custammtype[2048][32];
 char custammtype2[2048][32];
 char mapbuf[64];
@@ -494,9 +494,9 @@ public Action sweplist(int client, int args)
 					if (client == 0) PrintToServer("%s",swep);
 					else
 					{
-						char lastposarr[16][72];
+						char lastposarr[16][128];
 						char weapclsren[64];
-						ExplodeString(swep,"/",lastposarr,32,128,true);
+						ExplodeString(swep,"/",lastposarr,16,128,true);
 						for (int j = 0;j<5;j++)
 						{
 							TrimString(lastposarr[j]);
@@ -1533,7 +1533,7 @@ public Action weaponticks(Handle timer)
 							ChangeEdictState(weap);
 							int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
 							int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
-							if ((GetEntProp(client,Prop_Send,"m_iAmmo",_,10) > 0) && (!inreload) && (!amm))
+							if ((GetEntProp(client,Prop_Send,"m_iAmmo",_,10) > 0) && (!inreload) && (amm == 0))
 							{
 								if (viewmdl != -1)
 								{
@@ -3967,31 +3967,36 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						}
 						else if ((amm <= 0) && (!inreload))
 						{
-							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-							int mdlseq = 2;
-							if (StrEqual(curweap,"weapon_uzi",false))
+							int ammtype = GetEntProp(weap,Prop_Data,"m_iPrimaryAmmoType");
+							int reserveamm = GetEntProp(client,Prop_Send,"m_iAmmo",_,ammtype);
+							if (reserveamm > 0)
 							{
-								mdlseq = 9;
-								if (CLAttachment[client]) mdlseq = 10;
-							}
-							if (seq != mdlseq)
-							{
-								SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-								StopSound(client,SNDCHAN_ITEM,"weapons/smg1/smg1_reload.wav");
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								int mdlseq = 2;
 								if (StrEqual(curweap,"weapon_uzi",false))
 								{
-									EmitSoundToAll("weapons\\uzi\\uzi_clipout.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
-									if (CLAttachment[client]) CreateTimer(4.5,resetviewmdl,viewmdl);
-									else CreateTimer(2.8,resetviewmdl,viewmdl);
+									mdlseq = 9;
+									if (CLAttachment[client]) mdlseq = 10;
 								}
-								else
+								if (seq != mdlseq)
 								{
-									if (FileExists("sound/weapons/sl8/sl8_magout.wav",true,NULL_STRING))
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+									StopSound(client,SNDCHAN_ITEM,"weapons/smg1/smg1_reload.wav");
+									if (StrEqual(curweap,"weapon_uzi",false))
 									{
-										char snd[64];
-										Format(snd,sizeof(snd),"weapons\\sl8\\sl8_magout.wav");
-										EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
-										CreateTimer(0.6,resetviewmdl,viewmdl);
+										EmitSoundToAll("weapons\\uzi\\uzi_clipout.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+										if (CLAttachment[client]) CreateTimer(4.5,resetviewmdl,viewmdl);
+										else CreateTimer(2.8,resetviewmdl,viewmdl);
+									}
+									else
+									{
+										if (FileExists("sound/weapons/sl8/sl8_magout.wav",true,NULL_STRING))
+										{
+											char snd[64];
+											Format(snd,sizeof(snd),"weapons\\sl8\\sl8_magout.wav");
+											EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+											CreateTimer(0.6,resetviewmdl,viewmdl);
+										}
 									}
 								}
 							}
@@ -4450,6 +4455,23 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							}
 						}
 					}
+				}
+				else if (StrEqual(curweap,"weapon_drill",false))
+				{
+					//int seqmdl = GetWepAnim(curweap,seq,"ACT_VM_HITCENTER");
+					//ACT_VM_MISSCENTER
+					//ACT_VM_HITCENTER
+					//ACT_VM_HITKILL
+				}
+				else if (StrEqual(curweap,"weapon_shotgundouble",false))
+				{
+					//int seqmdl = GetWepAnim(curweap,seq,"ACT_VM_PRIMARYATTACK");
+					//ACT_SHOTGUN_RELOAD_START
+					//ACT_SHOTGUN_RELOAD_FINISH
+					//ACT_VM_RELOAD
+					//ACT_VM_PRIMARYATTACK
+					//ACT_VM_SECONDARYATTACK
+					//ACT_VM_DRYFIRE
 				}
 			}
 		}
@@ -5521,7 +5543,9 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				{
 					if (weap != -1)
 					{
-						if (GetEntProp(client,Prop_Send,"m_iAmmo",_,10) > 0)
+						int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
+						int amm = GetEntProp(weap,Prop_Data,"m_iClip1");
+						if ((GetEntProp(client,Prop_Send,"m_iAmmo",_,10) > 0) && (!inreload) && (amm == 0))
 						{
 							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
 							if (viewmdl != -1)
@@ -5710,6 +5734,10 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					{
 						int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
 						int seqlowered = GetWepAnim(curweap,seq,"ACT_VM_LOWERED");
+						if (StrEqual(curweap,"weapon_uzi",false))
+						{
+							if (CLAttachment[client]) seqlowered = GetWepAnim(curweap,seq,"Uzi_IdleDual");
+						}
 						if (seq != seqlowered)
 						{
 							SetEntProp(viewmdl,Prop_Send,"m_nSequence",seqlowered);
@@ -5726,8 +5754,12 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						int seqlowered = GetWepAnim(curweap,seq,"ACT_VM_LOWERED");
 						if (seq == seqlowered)
 						{
-							seqlowered = GetWepAnim(curweap,seq,"ACT_VM_IDLE");
-							if (CLAttachment[client]) seqlowered = GetWepAnim(curweap,seq,"ACT_VM_IDLE_SILENCED");
+							if (CLAttachment[client])
+							{
+								if (StrEqual(curweap,"weapon_uzi",false)) seqlowered = GetWepAnim(curweap,seq,"Uzi_IdleDual");
+								else seqlowered = GetWepAnim(curweap,seq,"ACT_VM_IDLE_SILENCED");
+							}
+							else seqlowered = GetWepAnim(curweap,seq,"ACT_VM_IDLE");
 							SetEntProp(viewmdl,Prop_Send,"m_nSequence",seqlowered);
 						}
 					}
