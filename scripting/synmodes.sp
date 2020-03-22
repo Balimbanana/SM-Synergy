@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.33"
+#define PLUGIN_VERSION "1.34"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -26,7 +26,7 @@ public Plugin myinfo =
 	url = "https://github.com/Balimbanana/SM-Synergy/"
 }
 
-float antispamchk[MAXPLAYERS+1];
+float antispamchk[128];
 Handle equiparr = INVALID_HANDLE;
 
 bool dmact = false;
@@ -39,10 +39,10 @@ bool ResetOnAllDead = false;
 int WeapList = -1;
 int scoreshow = -1;
 int scoreshowstat = -1;
-int dmkills[MAXPLAYERS+1];
-int teamnum[MAXPLAYERS+1];
-float scoreshowcd[MAXPLAYERS+1];
-char SteamID[MAXPLAYERS+1][65];
+int dmkills[128];
+int teamnum[128];
+float scoreshowcd[128];
+char SteamID[128][65];
 char g_sDMSoundTrack[128];
 int g_iDMSoundTrackVol = 80;
 int g_iDMSoundTrack = -1;
@@ -51,16 +51,16 @@ bool instspawnb = false;
 bool instspawnuse = false;
 bool isvehiclemap = false;
 bool clspawnforce = false;
-bool clinspectate[MAXPLAYERS+1];
+bool clinspectate[128];
 Handle globalsarr = INVALID_HANDLE;
 Handle changelevels = INVALID_HANDLE;
 Handle respawnids = INVALID_HANDLE;
 Handle inputsarrorigincls = INVALID_HANDLE;
 Handle afkids = INVALID_HANDLE;
-bool clspawntimeallow[MAXPLAYERS+1];
-int clspawntime[MAXPLAYERS+1];
+bool clspawntimeallow[128];
+int clspawntime[128];
 int clspawntimemax = 10;
-int lastspawned[MAXPLAYERS+1];
+int lastspawned[128];
 int clused = 0;
 int canceltimer = 0;
 
@@ -74,7 +74,7 @@ bool falldamagedis = false;
 int fraglimit = 20;
 int redteamkills;
 int blueteamkills;
-float changeteamcd[MAXPLAYERS+1];
+float changeteamcd[128];
 char mapbuf[64];
 char activecheckpoint[64];
 char activegamemode[64];
@@ -1339,7 +1339,7 @@ public Action scoreboardsh(int client, int args)
 }
 
 int buttonscoreboard = (1 << 16);
-int g_LastButtons[MAXPLAYERS+1];
+int g_LastButtons[128];
 
 public void OnButtonPressscoreboard(int client, int button)
 {
