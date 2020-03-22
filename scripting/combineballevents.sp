@@ -44,6 +44,7 @@ public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 		SetEventString(syncballkill,"victimname",viccls);
 		SetEventInt(syncballkill,"iconcolor",-1052689);
 		CreateTimer(2.0,combballekill,syncballkill);
+		FireEntityOutput(victim,"OnDeath",attacker,0.0);
 	}
 }
 
