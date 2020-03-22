@@ -611,7 +611,7 @@ public void OnMapStart()
 		if (autobuildcv != INVALID_HANDLE) autorebuild = GetConVarInt(autobuildcv);
 		CloseHandle(autobuildcv);
 		bool syn1810act = false;
-		if ((StrEqual(gamedescoriginal,"synergy 56.16",false)) || (StrEqual(gamedescoriginal,"synergy 20.1",false)))
+		if ((StrEqual(gamedescoriginal,"synergy 56.16",false)) || (StrEqual(gamedescoriginal,"synergy 20.1",false)) || (StrEqual(gamedescoriginal,"synergy 20.3",false)))
 		{
 			syn56act = true;
 			syn1810act = false;
@@ -2829,7 +2829,7 @@ public Action resetgraphs(int client, int args)
 			{
 				char gamedescoriginal[24];
 				GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
-				if (StrEqual(gamedescoriginal,"synergy 20.1",false)) 
+				if ((StrEqual(gamedescoriginal,"synergy 20.1",false)) || (StrEqual(gamedescoriginal,"synergy 20.3",false)))
 				{
 					Handle srvcvar = FindConVar("sv_content_optional");
 					if (srvcvar != INVALID_HANDLE)
