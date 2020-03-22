@@ -13,7 +13,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.97"
+#define PLUGIN_VERSION "1.98"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin myinfo = 
@@ -114,7 +114,7 @@ public void OnMapStart()
 	GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
 	ReplaceString(gamedescoriginal,sizeof(gamedescoriginal),"synergy","",false);
 	ReplaceString(gamedescoriginal,sizeof(gamedescoriginal)," ","",false);
-	if (StringToFloat(gamedescoriginal) >= 20.1) ShowPlayers = true;
+	if ((StrEqual(gamedescoriginal,"20.1",false)) || (StrEqual(gamedescoriginal,"20.3",false))) ShowPlayers = true;
 	bugbaitpicked = false;
 	HookEntityOutput("weapon_bugbait", "OnPlayerPickup", onbugbaitpickup);
 }
