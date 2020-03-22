@@ -13,7 +13,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.96"
+#define PLUGIN_VERSION "1.97"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin myinfo = 
@@ -33,19 +33,19 @@ bool bugbaitpicked = false;
 bool ShowPlayers = false;
 bool SynModesAct = false;
 int targmode = 0;
-float antispamchk[MAXPLAYERS+1];
+float antispamchk[128];
 
 Handle Handle_Database = INVALID_HANDLE;
-char SteamID[32][MAXPLAYERS+1];
-int bclcookie[MAXPLAYERS+1];
-int bclcookie2[MAXPLAYERS+1];
-int bclcookie3[MAXPLAYERS+1];
-int bclcookie4[MAXPLAYERS+1][3];
-int bclcookie4f[MAXPLAYERS+1][3];
+char SteamID[32][128];
+int bclcookie[128];
+int bclcookie2[128];
+int bclcookie3[128];
+int bclcookie4[128][3];
+int bclcookie4f[128][3];
 int defaultmode = 0;
-float bclcookie5x[MAXPLAYERS+1];
-float bclcookie5y[MAXPLAYERS+1];
-int hChanged[MAXPLAYERS+1];
+float bclcookie5x[128];
+float bclcookie5y[128];
+int hChanged[128];
 
 public void OnPluginStart()
 {
