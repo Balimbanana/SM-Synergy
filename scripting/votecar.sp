@@ -21,16 +21,16 @@ int restrictrm = 0;
 float perclimit = 0.66;
 float delaylimit = 66.0;
 
-float vehspawnposx[MAXPLAYERS];
-float vehspawnposy[MAXPLAYERS];
-float vehspawnposz[MAXPLAYERS];
-float vehspawnangx[MAXPLAYERS];
-float vehspawnangy[MAXPLAYERS];
-float vehspawnangz[MAXPLAYERS];
-float votetime[MAXPLAYERS];
-int vehholo[MAXPLAYERS];
-int vehiclemdltype[MAXPLAYERS];
-int plyvehicle[MAXPLAYERS];
+float vehspawnposx[128];
+float vehspawnposy[128];
+float vehspawnposz[128];
+float vehspawnangx[128];
+float vehspawnangy[128];
+float vehspawnangz[128];
+float votetime[128];
+int vehholo[128];
+int vehiclemdltype[128];
+int plyvehicle[128];
 int clused = 0;
 int carwalldist = 60;
 char vehicletype[64];
@@ -56,7 +56,7 @@ enum voteType
 
 voteType g_voteType = question;
 
-#define PLUGIN_VERSION "1.13"
+#define PLUGIN_VERSION "1.14"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/votecarupdater.txt"
 
 public Plugin myinfo = 
