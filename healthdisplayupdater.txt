@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.96"
-			"Previous"	"1.95"
+			"Latest"  	"1.97"
+			"Previous"	"1.96"
 		}
 		
-		"Notes"	"Added several names and a few entities. Added updated support for npcname keys through SynBuildNPCInfo."
+		"Notes"	"Added maxply adjustment."
 	}
 	
 	"Files"
