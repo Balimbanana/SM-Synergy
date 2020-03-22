@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.33"
-			"Previous"	"1.32"
+			"Latest"  	"1.34"
+			"Previous"	"1.33"
 		}
 		
-		"Notes"	"Fixed issue of respawn loop if instant spawn is 1, there is only one player, and mp_reset is 1."
+		"Notes"	"Added maxply adjustment."
 	}
 	
 	"Files"
