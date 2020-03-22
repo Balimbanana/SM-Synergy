@@ -112,7 +112,9 @@ public void OnMapStart()
 	ClearArray(globalsarr);
 	char gamedescoriginal[24];
 	GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
-	if (StrEqual(gamedescoriginal,"synergy 20.1",false)) ShowPlayers = true;
+	ReplaceString(gamedescoriginal,sizeof(gamedescoriginal),"synergy","",false);
+	ReplaceString(gamedescoriginal,sizeof(gamedescoriginal)," ","",false);
+	if (StringToFloat(gamedescoriginal) >= 20.1) ShowPlayers = true;
 	bugbaitpicked = false;
 	HookEntityOutput("weapon_bugbait", "OnPlayerPickup", onbugbaitpickup);
 }
