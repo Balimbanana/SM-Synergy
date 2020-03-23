@@ -32,6 +32,7 @@ bool fallbackequip = false; //Set by cvar sm_equipfallback_disable
 bool reloadaftersetup = false;
 bool BMActive = false;
 bool SynLaterAct = false;
+bool SkipVer = false;
 int WeapList = -1;
 int reloadtype = 0;
 int logsv = -1;
@@ -59,7 +60,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.154"
+#define PLUGIN_VERSION "2.155"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -163,6 +164,12 @@ public void OnPluginStart()
 	if (GetConVarBool(transitiondbgh) == true) dbg = true;
 	else dbg = false;
 	HookConVarChange(transitiondbgh, transitiondbgch);
+	CloseHandle(transitiondbgh);
+	transitiondbgh = FindConVar("sm_transitionskipver");
+	if (transitiondbgh == INVALID_HANDLE) transitiondbgh = CreateConVar("sm_transitionskipver", "0", "Skip version check and run full transition overrides.", _, true, 0.0, true, 1.0);
+	if (GetConVarBool(transitiondbgh) == true) SkipVer = true;
+	else SkipVer = false;
+	HookConVarChange(transitiondbgh, transitionskipverch);
 	CloseHandle(transitiondbgh);
 	RegServerCmd("changelevel",resettransition);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
@@ -269,6 +276,12 @@ public void transitiondbgch(Handle convar, const char[] oldValue, const char[] n
 {
 	if (StringToInt(newValue) == 1) dbg = true;
 	else dbg = false;
+}
+
+public void transitionskipverch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) SkipVer = true;
+	else SkipVer = false;
 }
 
 public Action votereloadchk(int client, int args)
@@ -1866,8 +1879,8 @@ public void OnMapStart()
 			}
 			CloseHandle(savedirrmh);
 			*/
-			if (!SynLaterAct) CreateTimer(0.1,redel);
-			if ((logsv != -1) && (IsValidEntity(logsv)) && (!SynLaterAct)) saveresetveh(false);
+			if ((!SynLaterAct) || (SkipVer)) CreateTimer(0.1,redel);
+			if ((logsv != -1) && (IsValidEntity(logsv)) && ((!SynLaterAct) || (SkipVer))) saveresetveh(false);
 			if ((transitionply) && (IsVehicleMap))
 			{
 				findent(MaxClients+1,"info_player_equip");
@@ -2896,7 +2909,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 		{
 			char clsname[32];
 			GetEntityClassname(i,clsname,sizeof(clsname));
-			if (SynLaterAct)
+			if ((SynLaterAct) && (!SkipVer))
 			{
 				if (custentlist != INVALID_HANDLE)
 				{
@@ -3697,7 +3710,7 @@ public Action restoreaim(Handle timer, Handle dp)
 */
 public void OnClientAuthorized(int client, const char[] szAuth)
 {
-	if ((rmsaves) && (!SynLaterAct))
+	if ((rmsaves) && ((!SynLaterAct) || (SkipVer)))
 	{
 		if ((!StrEqual(mapbuf,"d3_citadel_03",false)) && (!StrEqual(mapbuf,"ep2_outland_02",false)))
 		{
