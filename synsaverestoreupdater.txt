@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.154"
-			"Previous"	"2.153"
+			"Latest"  	"2.155"
+			"Previous"	"2.154"
 		}
 		
-		"Notes"	"Fixed possibility of array index change error if player disconnects after restore starts, but before restored."
+		"Notes"	"Added CVar sm_transitionskipver which will allow the full transition rebuild to run on later versions of Synergy, default is only custom transition info."
 	}
 	
 	"Files"
