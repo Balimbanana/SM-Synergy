@@ -95,7 +95,7 @@ bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0005"
+#define PLUGIN_VERSION "2.0006"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -611,7 +611,7 @@ public void OnMapStart()
 		if (autobuildcv != INVALID_HANDLE) autorebuild = GetConVarInt(autobuildcv);
 		CloseHandle(autobuildcv);
 		bool syn1810act = false;
-		if ((StrEqual(gamedescoriginal,"synergy 56.16",false)) || (StrEqual(gamedescoriginal,"synergy 20.1",false)) || (StrEqual(gamedescoriginal,"synergy 20.3",false)))
+		if (StrContains(gamedescoriginal,"synergy",false) == 0)
 		{
 			syn56act = true;
 			syn1810act = false;
@@ -19784,7 +19784,7 @@ public int Native_ReadCache(Handle plugin, int numParams)
 
 public Action customsoundchecksnorm(int clients[64], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags)
 {
-	if (((StrContains(sample,"vo\\",false) == 0) || (StrContains(sample,"vo/",false) == 0) || (StrContains(sample,"*vo\\",false) == 0) || (StrContains(sample,"*vo/",false) == 0)) && (StrContains(sample,"pain",false) == -1))
+	if (((StrContains(sample,"vo\\",false) == 0) || (StrContains(sample,"vo/",false) == 0) || (StrContains(sample,"*vo\\",false) == 0) || (StrContains(sample,"*vo/",false) == 0)) && ((StrContains(sample,"pain",false) == -1) && (StrContains(sample,"breath",false) == -1)))
 	{
 		bool addsnd = true;
 		if (GetArraySize(delayedspeech) > 0)
