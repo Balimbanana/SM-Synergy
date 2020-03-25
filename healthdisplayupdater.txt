@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.98"
-			"Previous"	"1.97"
+			"Latest"  	"1.99"
+			"Previous"	"1.98"
 		}
 		
 		"Notes"	"Added maxply adjustment."
