@@ -13,7 +13,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.98"
+#define PLUGIN_VERSION "1.99"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin myinfo = 
@@ -36,7 +36,7 @@ int targmode = 0;
 float antispamchk[128];
 
 Handle Handle_Database = INVALID_HANDLE;
-char SteamID[32][128];
+char SteamID[128][32];
 int bclcookie[128];
 int bclcookie2[128];
 int bclcookie3[128];
