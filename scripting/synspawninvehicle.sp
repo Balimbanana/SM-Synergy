@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.20"
+#define PLUGIN_VERSION "1.21"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -39,7 +39,7 @@ public void OnPluginStart()
 	HookConVarChange(spawninvehiclesh, vehiclespawnch);
 	CloseHandle(spawninvehiclesh);
 	Handle cvar = FindConVar("sm_spawninvehicles_collisionset");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sm_spawninvehicles_collisionset", "0", "Removes collision between vehicles when spawned in to.", _, true, 0.0, true, 1.0);
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sm_spawninvehicles_collisionset", "1", "Removes collision between vehicles when spawned in to.", _, true, 0.0, true, 1.0);
 	SetColl = GetConVarBool(cvar);
 	HookConVarChange(cvar,collsetch);
 	CloseHandle(cvar);
@@ -95,6 +95,7 @@ public Action waitforlive(Handle timer, int client)
 		{
 			char clschk[32];
 			int curweps = 0;
+			bool validweap = false;
 			for (int l; l<104; l += 4)
 			{
 				int tmpi = GetEntDataEnt2(client,WeapList + l);
@@ -104,7 +105,12 @@ public Action waitforlive(Handle timer, int client)
 					if (strlen(clschk) > 1)
 					{
 						curweps++;
-						if (curweps > 2)
+						if (HasEntProp(client,Prop_Data,"m_hActiveWeapon"))
+						{
+							if (IsValidEntity(GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon"))) validweap = true;
+						}
+						else validweap = true;
+						if ((curweps > 2) && (validweap))
 						{
 							hasweapons = true;
 							break;
@@ -201,7 +207,57 @@ void setupvehicle(int vehicle, int client, bool enterexit)
 	{
 		if (SetColl)
 		{
-			if (HasEntProp(vehicle,Prop_Data,"m_CollisionGroup")) SetEntProp(vehicle,Prop_Data,"m_CollisionGroup",5);
+			//if (HasEntProp(vehicle,Prop_Data,"m_CollisionGroup")) SetEntProp(vehicle,Prop_Data,"m_CollisionGroup",5);
+			char targn[64];
+			char targn2[64];
+			if (HasEntProp(vehicle,Prop_Data,"m_iName")) GetEntPropString(vehicle,Prop_Data,"m_iName",targn,sizeof(targn));
+			if (strlen(targn) < 1)
+			{
+				Format(targn,sizeof(targn),"synveh%i",vehicle);
+				SetEntPropString(vehicle,Prop_Data,"m_iName",targn);
+			}
+			for (int i = 1;i<MaxClients+1;i++)
+			{
+				if ((IsValidEntity(i)) && (i != client))
+				{
+					if (IsClientConnected(i))
+					{
+						if (IsClientInGame(i))
+						{
+							if (IsPlayerAlive(i))
+							{
+								if (HasEntProp(i,Prop_Data,"m_hVehicle"))
+								{
+									int clveh = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+									if (IsValidEntity(clveh))
+									{
+										if (HasEntProp(clveh,Prop_Data,"m_iName")) GetEntPropString(clveh,Prop_Data,"m_iName",targn2,sizeof(targn2));
+										if (strlen(targn2) < 1)
+										{
+											Format(targn2,sizeof(targn2),"synveh%i",clveh);
+											SetEntPropString(clveh,Prop_Data,"m_iName",targn2);
+										}
+										int logcoll = CreateEntityByName("logic_collision_pair");
+										if (logcoll != -1)
+										{
+											DispatchKeyValue(logcoll,"attach1",targn);
+											DispatchKeyValue(logcoll,"attach2",targn2);
+											DispatchKeyValue(logcoll,"StartDisabled","1");
+											DispatchSpawn(logcoll);
+											ActivateEntity(logcoll);
+											AcceptEntityInput(logcoll,"DisableCollisions");
+											Handle dp2 = CreateDataPack();
+											WritePackCell(dp2,logcoll);
+											WritePackString(dp2,"logic_collision_pair");
+											CreateTimer(0.5,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 			CreateTimer(2.0,resetcollision,vehicle,TIMER_REPEAT);
 		}
 		//SetEntData(vehicle,collisiongroup,5,4,true);
@@ -214,6 +270,25 @@ void setupvehicle(int vehicle, int client, bool enterexit)
 		if (HasEntProp(vehicle,Prop_Data,"bRunningEnterExit")) SetEntProp(vehicle,Prop_Data,"bRunningEnterExit",0);
 		if (HasEntProp(vehicle,Prop_Data,"m_controls.handbrake")) SetEntProp(vehicle,Prop_Data,"m_controls.handbrake",0);
 		HookSingleEntityOutput(vehicle,"PlayerOff",exitspawnvehicle,true);
+	}
+}
+
+public Action cleanup(Handle timer, Handle data)
+{
+	ResetPack(data);
+	int cleanupent = ReadPackCell(data);
+	char clsname[32];
+	ReadPackString(data,clsname,sizeof(clsname));
+	CloseHandle(data);
+	if ((IsValidEntity(cleanupent)) && (cleanupent > MaxClients))
+	{
+		char tmpcls[32];
+		GetEntityClassname(cleanupent,tmpcls,sizeof(tmpcls));
+		if (StrEqual(tmpcls,clsname,false))
+		{
+			if (StrEqual(tmpcls,"logic_collision_pair",false)) AcceptEntityInput(cleanupent,"DisableCollisions");
+			AcceptEntityInput(cleanupent,"kill");
+		}
 	}
 }
 
@@ -366,6 +441,7 @@ public Action resetcollision(Handle timer, int vehicle)
 		GetEntityClassname(vehicle,cls,sizeof(cls));
 		if (StrContains(cls,"vehicle",false) != -1)
 		{
+			/*
 			float vehicleorg[3];
 			if (HasEntProp(vehicle,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(vehicle,Prop_Data,"m_vecAbsOrigin",vehicleorg);
 			Handle arr = CreateArray(65);
@@ -396,6 +472,57 @@ public Action resetcollision(Handle timer, int vehicle)
 					SetEntProp(vehicle,Prop_Data,"m_CollisionGroup",7);
 				}
 				KillTimer(timer);
+			}
+			*/
+			char targn[64];
+			char targn2[64];
+			if (HasEntProp(vehicle,Prop_Data,"m_iName")) GetEntPropString(vehicle,Prop_Data,"m_iName",targn,sizeof(targn));
+			if (strlen(targn) < 1)
+			{
+				Format(targn,sizeof(targn),"synveh%i",vehicle);
+				SetEntPropString(vehicle,Prop_Data,"m_iName",targn);
+			}
+			for (int i = 1;i<MaxClients+1;i++)
+			{
+				if (IsValidEntity(i))
+				{
+					if (IsClientConnected(i))
+					{
+						if (IsClientInGame(i))
+						{
+							if (IsPlayerAlive(i))
+							{
+								if (HasEntProp(i,Prop_Data,"m_hVehicle"))
+								{
+									int clveh = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+									if ((IsValidEntity(clveh)) && (clveh != vehicle))
+									{
+										if (HasEntProp(clveh,Prop_Data,"m_iName")) GetEntPropString(clveh,Prop_Data,"m_iName",targn2,sizeof(targn2));
+										if (strlen(targn2) < 1)
+										{
+											Format(targn2,sizeof(targn2),"synveh%i",clveh);
+											SetEntPropString(clveh,Prop_Data,"m_iName",targn2);
+										}
+										int logcoll = CreateEntityByName("logic_collision_pair");
+										if (logcoll != -1)
+										{
+											DispatchKeyValue(logcoll,"attach1",targn);
+											DispatchKeyValue(logcoll,"attach2",targn2);
+											DispatchKeyValue(logcoll,"StartDisabled","1");
+											DispatchSpawn(logcoll);
+											ActivateEntity(logcoll);
+											AcceptEntityInput(logcoll,"DisableCollisions");
+											Handle dp2 = CreateDataPack();
+											WritePackCell(dp2,logcoll);
+											WritePackString(dp2,"logic_collision_pair");
+											CreateTimer(0.5,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 		else KillTimer(timer);
