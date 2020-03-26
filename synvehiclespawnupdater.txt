@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20"
-			"Previous"	"1.19"
+			"Latest"  	"1.21"
+			"Previous"	"1.20"
 		}
 		
-		"Notes"	"Added CVar sm_spawninvehicles_collisionset default 0. Will remove collisions between vehicles spawned with players inside when 1."
+		"Notes"	"Fixed collision removal by logic_collision_pair instead of collision group. Fixed issue of active weapon not set before enter vehicle."
 	}
 	
 	"Files"
