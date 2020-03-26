@@ -95,7 +95,7 @@ bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0006"
+#define PLUGIN_VERSION "2.0007"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -611,7 +611,7 @@ public void OnMapStart()
 		if (autobuildcv != INVALID_HANDLE) autorebuild = GetConVarInt(autobuildcv);
 		CloseHandle(autobuildcv);
 		bool syn1810act = false;
-		if (StrContains(gamedescoriginal,"synergy",false) == 0)
+		if (StrContains(gamedescoriginal,"synergy",false) != -1)
 		{
 			syn56act = true;
 			syn1810act = false;
@@ -791,7 +791,8 @@ public void OnMapStart()
 			GetConVarString(cvar,contentdata,sizeof(contentdata));
 			char fixuptmp[16][16];
 			ExplodeString(contentdata," ",fixuptmp,16,16,true);
-			Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+			if (StrEqual(fixuptmp[2],"|",false)) Format(contentdata,sizeof(contentdata),"%s",fixuptmp[3]);
+			else Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
 		}
 		CloseHandle(cvar);
 		if (strlen(contentdata) > 1)
@@ -1134,7 +1135,7 @@ public void OnMapStart()
 			DispatchSpawn(nullfil);
 			ActivateEntity(nullfil);
 		}
-		if (customents)
+		if ((customents) || (autorebuild > 0) || (rebuildentsset))
 		{
 			HookEntityOutput("scripted_sequence","OnCancelSequence",custentend);
 			HookEntityOutput("npc_maker","OnSpawnNPC",onxenspawn);
@@ -2202,18 +2203,49 @@ public Action clspawnpost(Handle timer, int client)
 			}
 			else
 			{
-				float PlayerOrigin[3];
-				float PlyAng[3];
-				GetClientAbsOrigin(client, PlayerOrigin);
-				GetClientEyeAngles(client, PlyAng);
-				int cam = CreateEntityByName("point_viewcontrol");
-				TeleportEntity(cam, PlayerOrigin, PlyAng, NULL_VECTOR);
-				DispatchKeyValue(cam, "spawnflags","1");
-				DispatchSpawn(cam);
-				ActivateEntity(cam);
-				AcceptEntityInput(cam,"Enable",client);
-				AcceptEntityInput(cam,"Disable",client);
-				AcceptEntityInput(cam,"Kill");
+				bool ApplyVC = true;
+				char cls[25];
+				for (int i = 1;i<MaxClients+1;i++)
+				{
+					if (IsValidEntity(i))
+					{
+						if (HasEntProp(i,Prop_Data,"m_hViewEntity"))
+						{
+							ViewEnt = GetEntPropEnt(i,Prop_Data,"m_hViewEntity");
+							if ((IsValidEntity(ViewEnt)) && (ViewEnt > MaxClients))
+							{
+								GetEntityClassname(ViewEnt, cls, sizeof(cls));
+								if (StrEqual(cls, "point_viewcontrol", false))
+								{
+									if (HasEntProp(ViewEnt,Prop_Data,"m_spawnflags"))
+									{
+										if (GetEntProp(ViewEnt,Prop_Data,"m_spawnflags") & 1<<7)
+										{
+											ApplyVC = false;//Needs testing, maybe by SetViewEntity Native
+											AcceptEntityInput(ViewEnt,"Enable",client);
+											break;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				if (ApplyVC)
+				{
+					float PlayerOrigin[3];
+					float PlyAng[3];
+					GetClientAbsOrigin(client, PlayerOrigin);
+					GetClientEyeAngles(client, PlyAng);
+					int cam = CreateEntityByName("point_viewcontrol");
+					TeleportEntity(cam, PlayerOrigin, PlyAng, NULL_VECTOR);
+					DispatchKeyValue(cam, "spawnflags","1");
+					DispatchSpawn(cam);
+					ActivateEntity(cam);
+					AcceptEntityInput(cam,"Enable",client);
+					AcceptEntityInput(cam,"Disable",client);
+					AcceptEntityInput(cam,"Kill");
+				}
 			}
 			SetEntProp(client,Prop_Data,"m_bPlayerUnderwater",1);
 			if (longjumpactive)
@@ -2904,7 +2936,8 @@ public Action changeleveldelay(Handle timer, Handle data)
 				GetConVarString(cvar,contentdata,sizeof(contentdata));
 				char fixuptmp[16][16];
 				ExplodeString(contentdata," ",fixuptmp,16,16,true);
-				Format(contentdata,sizeof(contentdata),"%s %s",fixuptmp[2],maptochange);
+				if (StrEqual(fixuptmp[2],"|",false)) Format(contentdata,sizeof(contentdata),"%s %s",fixuptmp[3],maptochange);
+				else Format(contentdata,sizeof(contentdata),"%s %s",fixuptmp[2],maptochange);
 				ServerCommand("changelevel %s",contentdata);
 			}
 			CloseHandle(cvar);
@@ -14189,18 +14222,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 	}
 	if ((StrContains(classname,"weapon_",false) == 0) && (!StrEqual(classname,"weapon_striderbuster",false)))
 	{
-		//SetEntProp(entity,Prop_Data,"m_MoveType",0);
-		//ChangeEdictState(entity);
-		/*
-		int find = FindValueInArray(nextweapreset,entity);
-		if (find != -1)
-		{
-			if (StrEqual(classname,"weapon_smg1",false)) DispatchKeyValue(entity,"classname","weapon_mp5");
-			else if (StrEqual(classname,"weapon_pistol",false)) DispatchKeyValue(entity,"classname","weapon_glock");
-			RemoveFromArray(nextweapreset,find);
-		}
-		*/
-		CreateTimer(0.1,resetweapmv,entity,TIMER_FLAG_NO_MAPCHANGE);
+		SDKHookEx(entity,SDKHook_SpawnPost,resetweapmv);
 	}
 	if (StrEqual(classname,"rpg_missile",false))
 	{
@@ -18179,19 +18201,29 @@ public Action resetown(Handle timer, int entity)
 	}
 }
 
-public Action resetweapmv(Handle timer, int entity)
+public void resetweapmv(int entity)
 {
-	if ((IsValidEntity(entity)) && (StrContains(mapbuf,"ep1_c17_02a",false) == -1))
+	SDKUnhook(entity,SDKHook_SpawnPost,resetweapmv);
+	if (IsValidEntity(entity))
 	{
 		char clsrecheck[32];
 		GetEntityClassname(entity,clsrecheck,sizeof(clsrecheck));
-		if (StrContains(clsrecheck,"weapon_",false) == 0)
+		if ((StrContains(clsrecheck,"weapon_",false) == 0) && (StrContains(mapbuf,"ep1_c17_02a",false) == -1))
 		{
 			int sf = GetEntProp(entity,Prop_Data,"m_spawnflags");
 			int parent = GetEntPropEnt(entity,Prop_Data,"m_hParent");
-			SetVariantString("spawnflags 0");
-			AcceptEntityInput(entity,"AddOutput");
-			if ((sf > 0) && (!IsValidEntity(parent))) SetEntProp(entity,Prop_Data,"m_MoveType",0);
+			if ((sf > 0) && (!IsValidEntity(parent)))
+			{
+				SetEntProp(entity,Prop_Data,"m_MoveType",0);
+				float orgs[3];
+				GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",orgs);
+				Handle dp = CreateDataPack();
+				WritePackCell(dp,entity);
+				WritePackFloat(dp,orgs[0]);
+				WritePackFloat(dp,orgs[1]);
+				WritePackFloat(dp,orgs[2]);
+				CreateTimer(0.1,resetweappos,dp,TIMER_FLAG_NO_MAPCHANGE);
+			}
 			if (StrEqual(clsrecheck,"weapon_glock",false))
 			{
 				if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",3);
@@ -18200,6 +18232,37 @@ public Action resetweapmv(Handle timer, int entity)
 			{
 				if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",4);
 				if (HasEntProp(entity,Prop_Data,"m_iSecondaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iSecondaryAmmoType",9);
+			}
+		}
+	}
+}
+
+public Action resetweappos(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int entity = ReadPackCell(dp);
+		float orgs[3];
+		orgs[0] = ReadPackFloat(dp);
+		orgs[1] = ReadPackFloat(dp);
+		orgs[2] = ReadPackFloat(dp);
+		CloseHandle(dp);
+		if (IsValidEntity(entity))
+		{
+			char clsrecheck[32];
+			GetEntityClassname(entity,clsrecheck,sizeof(clsrecheck));
+			if (StrContains(clsrecheck,"weapon_",false) == 0)
+			{
+				int sf = GetEntProp(entity,Prop_Data,"m_spawnflags");
+				int parent = GetEntPropEnt(entity,Prop_Data,"m_hParent");
+				SetVariantString("spawnflags 0");
+				AcceptEntityInput(entity,"AddOutput");
+				if ((sf > 0) && (!IsValidEntity(parent)))
+				{
+					SetEntProp(entity,Prop_Data,"m_MoveType",0);
+					TeleportEntity(entity,orgs,NULL_VECTOR,NULL_VECTOR);
+				}
 			}
 		}
 	}
