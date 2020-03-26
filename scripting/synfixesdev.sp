@@ -13554,7 +13554,7 @@ public Action cleanup(Handle timer, Handle data)
 	char clsname[32];
 	ReadPackString(data,clsname,sizeof(clsname));
 	CloseHandle(data);
-	if ((IsValidEntity(cleanupent)) && (cleanupent > MaxClients))
+	if ((IsValidEntity(cleanupent)) && ((cleanupent > MaxClients) || (cleanupent < -1)))
 	{
 		char tmpcls[32];
 		GetEntityClassname(cleanupent,tmpcls,sizeof(tmpcls));
