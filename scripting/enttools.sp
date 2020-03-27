@@ -9,7 +9,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.25"
+#define PLUGIN_VERSION "1.26"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -21,8 +21,9 @@ public Plugin myinfo =
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
-bool showallcreated = false;
-bool showalldeleted = false;
+int showallcreated = 0;
+int showalldeleted = 0;
+int showalldeaths = 0;
 bool showallnormsounds = false;
 bool showallambsounds = false;
 
@@ -42,13 +43,17 @@ public void OnPluginStart()
 	RegAdminCmd("listents",listents,ADMFLAG_KICK,".");
 	RegAdminCmd("findents",listents,ADMFLAG_KICK,".");
 	RegAdminCmd("moveent",moveentity,ADMFLAG_KICK,".");
-	Handle dbgcreate = CreateConVar("sm_showall_created", "0", "Shows all entities created in server console.", _, true, 0.0, true, 1.0);
+	Handle dbgcreate = CreateConVar("sm_showall_created", "0", "Shows all entities created in server console. 2 shows more info.", _, true, 0.0, true, 2.0);
 	HookConVarChange(dbgcreate, dbghch);
-	showallcreated = GetConVarBool(dbgcreate);
+	showallcreated = GetConVarInt(dbgcreate);
 	CloseHandle(dbgcreate);
-	dbgcreate = CreateConVar("sm_showall_deleted", "0", "Shows all entities deleted in server console.", _, true, 0.0, true, 1.0);
+	dbgcreate = CreateConVar("sm_showall_deleted", "0", "Shows all entities deleted in server console.  2 shows more info.", _, true, 0.0, true, 2.0);
 	HookConVarChange(dbgcreate, dbgcrehch);
-	showalldeleted = GetConVarBool(dbgcreate);
+	showalldeleted = GetConVarInt(dbgcreate);
+	CloseHandle(dbgcreate);
+	dbgcreate = CreateConVar("sm_showall_deaths", "0", "Shows all entities firing entity_death in server console.  2 shows more info.", _, true, 0.0, true, 2.0);
+	HookConVarChange(dbgcreate, dbgdeahch);
+	showalldeaths = GetConVarInt(dbgcreate);
 	CloseHandle(dbgcreate);
 	dbgcreate = CreateConVar("sm_showall_normsounds", "0", "Shows all normal sounds played in server console (skips stop flags).", _, true, 0.0, true, 1.0);
 	HookConVarChange(dbgcreate, dbgnormsch);
@@ -58,6 +63,7 @@ public void OnPluginStart()
 	HookConVarChange(dbgcreate, dbgambsch);
 	showallambsounds = GetConVarBool(dbgcreate);
 	CloseHandle(dbgcreate);
+	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
 	AddNormalSoundHook(listnormsounds);
 	AddAmbientSoundHook(listambientsounds);
 }
@@ -2834,7 +2840,16 @@ public void OnEntityCreated(int entity, const char[] classname)
 	if (showallcreated)
 	{
 		PrintToServer("Create %i %s",entity,classname);
+		if (showallcreated > 0)
+		{
+			CreateTimer(0.1,CreateDebugSpawn,entity,TIMER_FLAG_NO_MAPCHANGE);
+		}
 	}
+}
+
+public Action CreateDebugSpawn(Handle timer, int entity)
+{
+	PrintEntInfoFor(entity);
 }
 
 public void OnEntityDestroyed(int entity)
@@ -2846,6 +2861,395 @@ public void OnEntityDestroyed(int entity)
 			char cls[32];
 			GetEntityClassname(entity,cls,sizeof(cls));
 			PrintToServer("Delete %i %s",entity,cls);
+			if (showalldeleted > 1)
+			{
+				PrintEntInfoFor(entity);
+			}
+		}
+	}
+}
+
+void PrintEntInfoFor(int targ)
+{
+	if (IsValidEntity(targ))
+	{
+		char ent[128];
+		char targname[128];
+		char globname[128];
+		float vec[3];
+		float angs[3];
+		int parent = 0;
+		int ammotype = -1;
+		vec[0] = -1.1;
+		angs[0] = -1.1;
+		char exprsc[24];
+		char exprtargname[64];
+		char stateinf[128];
+		char scriptinf[256];
+		char scrtmp[64];
+		int doorstate, sleepstate, exprsci;
+		GetEntityClassname(targ, ent, sizeof(ent));
+		GetEntPropString(targ,Prop_Data,"m_iName",targname,sizeof(targname));
+		if (HasEntProp(targ,Prop_Data,"m_iGlobalname"))
+			GetEntPropString(targ,Prop_Data,"m_iGlobalname",globname,sizeof(globname));
+		if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",vec);
+		else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",vec);
+		if (HasEntProp(targ,Prop_Send,"m_angRotation"))
+			GetEntPropVector(targ,Prop_Send,"m_angRotation",angs);
+		if (HasEntProp(targ,Prop_Data,"m_hParent"))
+			parent = GetEntPropEnt(targ,Prop_Data,"m_hParent");
+		if (HasEntProp(targ,Prop_Data,"m_nAmmoType"))
+			ammotype = GetEntProp(targ,Prop_Data,"m_nAmmoType");
+		if (HasEntProp(targ,Prop_Data,"m_hTargetEnt"))
+		{
+			exprsci = GetEntPropEnt(targ,Prop_Data,"m_hTargetEnt");
+			if (IsValidEntity(exprsci))
+			{
+				GetEntityClassname(exprsci,exprsc,sizeof(exprsc));
+				if (HasEntProp(exprsci,Prop_Data,"m_iName"))
+					GetEntPropString(exprsci,Prop_Data,"m_iName",exprtargname,sizeof(exprtargname));
+			}
+		}
+		char cmodel[64];
+		GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+		int spawnflagsi = GetEntityFlags(targ);
+		char inf[256];
+		Format(inf,sizeof(inf),"\nID: %i %s %s ",targ,ent,cmodel);
+		if (parent > 0)
+		{
+			char parentname[32];
+			if (HasEntProp(parent,Prop_Data,"m_iName"))
+				GetEntPropString(parent,Prop_Data,"m_iName",parentname,sizeof(parentname));
+			char parentcls[32];
+			GetEntityClassname(parent,parentcls,sizeof(parentcls));
+			Format(stateinf,sizeof(stateinf),"%sParented to %i %s %s ",stateinf,parent,parentname,parentcls);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_flRefireTime"))
+		{
+			float firetime = GetEntPropFloat(targ,Prop_Data,"m_flRefireTime");
+			Format(stateinf,sizeof(stateinf),"%sRefireTime %f ",stateinf,firetime);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_vehicleScript"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_vehicleScript",scrtmp,sizeof(scrtmp));
+			Format(stateinf,sizeof(stateinf),"%sVehicleScript %s ",stateinf,scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_spawnEquipment"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_spawnEquipment",scrtmp,sizeof(scrtmp));
+			if (strlen(scrtmp) > 0) Format(stateinf,sizeof(stateinf),"%sAdditionalEquipment %s ",stateinf,scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_nSkin"))
+		{
+			int sk = GetEntProp(targ,Prop_Data,"m_nSkin");
+			Format(stateinf,sizeof(stateinf),"%sSkin %i ",stateinf,sk);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_nHardwareType"))
+		{
+			int hdw = GetEntProp(targ,Prop_Data,"m_nHardwareType");
+			Format(stateinf,sizeof(stateinf),"%sHardwareType %i ",stateinf,hdw);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_state"))
+		{
+			int istate = GetEntProp(targ,Prop_Data,"m_state");
+			Format(stateinf,sizeof(stateinf),"%sState %i ",stateinf,istate);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_eDoorState"))
+		{
+			doorstate = GetEntProp(targ,Prop_Data,"m_eDoorState");
+			Format(stateinf,sizeof(stateinf),"%sDoorState %i ",stateinf,doorstate);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_SleepState"))
+		{
+			sleepstate = GetEntProp(targ,Prop_Data,"m_SleepState");
+			Format(stateinf,sizeof(stateinf),"%sSleepState %i ",stateinf,sleepstate);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_Type"))
+		{
+			int inpctype = GetEntProp(targ,Prop_Data,"m_Type");
+			Format(stateinf,sizeof(stateinf),"%sNPCType %i ",stateinf,inpctype);
+		}
+		if (StrEqual(ent,"math_counter",false))
+		{
+			int offset = FindDataMapInfo(targ, "m_OutValue");
+			Format(stateinf,sizeof(stateinf),"%sCurrentValue %i ",stateinf,RoundFloat(GetEntDataFloat(targ, offset)));
+		}
+		if (StrEqual(ent,"env_global",false))
+		{
+			int offset = FindDataMapInfo(targ, "m_outCounter");
+			Format(stateinf,sizeof(stateinf),"%sCurrentValue %i ",stateinf,RoundFloat(GetEntDataFloat(targ, offset)));
+		}
+		if (HasEntProp(targ,Prop_Data,"m_spawnflags"))
+		{
+			int sf = GetEntProp(targ,Prop_Data,"m_spawnflags");
+			Format(stateinf,sizeof(stateinf),"%sSpawnflags %i ",stateinf,sf);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iszSubject"))
+		{
+			char subj[32];
+			GetEntPropString(targ,Prop_Data,"m_iszSubject",subj,sizeof(subj));
+			Format(stateinf,sizeof(stateinf),"%sSubject %s ",stateinf,subj);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_bReciprocal"))
+		{
+			int recip = GetEntProp(targ,Prop_Data,"m_bReciprocal");
+			Format(stateinf,sizeof(stateinf),"%sReciprocal %i ",stateinf,recip);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_target"))
+		{
+			char targetstr[64];
+			PropFieldType type;
+			FindDataMapInfo(targ,"m_target",type);
+			if (type == PropField_String)
+			{
+				GetEntPropString(targ,Prop_Data,"m_target",targetstr,sizeof(targetstr));
+				Format(stateinf,sizeof(stateinf),"%sTarget %s ",stateinf,targetstr);
+			}
+			else if (type == PropField_Entity)
+			{
+				int targent = GetEntPropEnt(targ,Prop_Data,"m_target");
+				if (targent != -1) Format(stateinf,sizeof(stateinf),"%sTarget %i ",stateinf,targent);
+			}
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iszEntry"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_iszEntry",scrtmp,sizeof(scrtmp));
+			if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"m_iszEntry %s ",scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iszPreIdle"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_iszPreIdle",scrtmp,sizeof(scrtmp));
+			if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszPreIdle %s ",scriptinf,scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iszPlay"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_iszPlay",scrtmp,sizeof(scrtmp));
+			if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszPlay %s ",scriptinf,scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iszPostIdle"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_iszPostIdle",scrtmp,sizeof(scrtmp));
+			if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszPostIdle %s ",scriptinf,scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iszCustomMove"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_iszCustomMove",scrtmp,sizeof(scrtmp));
+			if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszCustomMove %s ",scriptinf,scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iszNextScript"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_iszNextScript",scrtmp,sizeof(scrtmp));
+			if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszNextScript %s ",scriptinf,scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iszEntity"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_iszEntity",scrtmp,sizeof(scrtmp));
+			if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszEntity %s ",scriptinf,scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_fMoveTo"))
+		{
+			int scrtmpi = GetEntProp(targ,Prop_Data,"m_fMoveTo");
+			Format(scriptinf,sizeof(scriptinf),"%sm_fMoveTo %i ",scriptinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_flRadius"))
+		{
+			float scrtmpi = GetEntPropFloat(targ,Prop_Data,"m_flRadius");
+			if (scrtmpi > 0.0)
+				Format(scriptinf,sizeof(scriptinf),"%sm_flRadius %1.f ",scriptinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_flRepeat"))
+		{
+			float scrtmpi = GetEntPropFloat(targ,Prop_Data,"m_flRepeat");
+			Format(scriptinf,sizeof(scriptinf),"%sm_flRepeat %1.f ",scriptinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_bLoopActionSequence"))
+		{
+			int scrtmpi = GetEntProp(targ,Prop_Data,"m_bLoopActionSequence");
+			Format(scriptinf,sizeof(scriptinf),"%sm_bLoopActionSequence %i ",scriptinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_bIgnoreGravity"))
+		{
+			int scrtmpi = GetEntProp(targ,Prop_Data,"m_bIgnoreGravity");
+			Format(scriptinf,sizeof(scriptinf),"%sm_bIgnoreGravity %i ",scriptinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_bSynchPostIdles"))
+		{
+			int scrtmpi = GetEntProp(targ,Prop_Data,"m_bSynchPostIdles");
+			Format(scriptinf,sizeof(scriptinf),"%sm_bSynchPostIdles %i ",scriptinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_bDisableNPCCollisions"))
+		{
+			int scrtmpi = GetEntProp(targ,Prop_Data,"m_bDisableNPCCollisions");
+			Format(scriptinf,sizeof(scriptinf),"%sm_bDisableNPCCollisions %i ",scriptinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iszTemplateEntityNames[0]"))
+		{
+			for (int j = 0;j<16;j++)
+			{
+				char tmpennam[48];
+				Format(tmpennam,sizeof(tmpennam),"m_iszTemplateEntityNames[%i]",j);
+				GetEntPropString(targ,Prop_Data,tmpennam,scrtmp,sizeof(scrtmp));
+				if (strlen(scrtmp) > 0)
+				{
+					if (j < 9) Format(scriptinf,sizeof(scriptinf),"%sTemplate0%i %s ",scriptinf,j+1,scrtmp);
+					else Format(scriptinf,sizeof(scriptinf),"%sTemplate%i %s ",scriptinf,j+1,scrtmp);
+				}
+			}
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iszSound"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_iszSound",scrtmp,sizeof(scrtmp));
+			if (strlen(scrtmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszSound %s ",scriptinf,scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_bCarriedByPlayer"))
+		{
+			int ownert = GetEntProp(targ,Prop_Data,"m_bCarriedByPlayer");
+			int ownerphy = GetEntProp(targ,Prop_Data,"m_bHackedByAlyx");
+			//This property seems to exist on a few ents and changes colors/speed/relations
+			//SetEntProp(targ,Prop_Data,"m_bHackedByAlyx",1);
+			Format(stateinf,sizeof(stateinf),"%sOwner: %i %i ",stateinf,ownert,ownerphy);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iDamageType"))
+		{
+			Format(stateinf,sizeof(stateinf),"%sDamageType: %i ",stateinf,GetEntProp(targ,Prop_Data,"m_iDamageType"));
+		}
+		if (HasEntProp(targ,Prop_Data,"m_bNegated"))
+		{
+			Format(stateinf,sizeof(stateinf),"%sNegated: %i ",stateinf,GetEntProp(targ,Prop_Data,"m_bNegated"));
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iszDamageFilterName"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_iszDamageFilterName",scrtmp,sizeof(scrtmp));
+			if (strlen(scrtmp) > 0) Format(stateinf,sizeof(stateinf),"%sDamageFilter: %s ",stateinf,scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iFilterClass"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_iFilterClass",scrtmp,sizeof(scrtmp));
+			if (strlen(scrtmp) > 0) Format(stateinf,sizeof(stateinf),"%sFilterClass: %s ",stateinf,scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_szMapName"))
+		{
+			char maptochange[128];
+			GetEntPropString(targ,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
+			if (HasEntProp(targ,Prop_Data,"m_szLandmarkName"))
+			{
+				char landmark[64];
+				GetEntPropString(targ,Prop_Data,"m_szLandmarkName",landmark,sizeof(landmark));
+				Format(scriptinf,sizeof(scriptinf),"%sMap %s Landmark %s ",scriptinf,maptochange,landmark);
+			}
+			else Format(scriptinf,sizeof(scriptinf),"%sMap %s ",scriptinf,maptochange);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iDisabled"))
+		{
+			Format(stateinf,sizeof(stateinf),"%sStartDisabled %i ",stateinf,GetEntProp(targ,Prop_Data,"m_iDisabled"));
+		}
+		if ((StrContains(ent,"func_",false) == 0) && (HasEntProp(targ,Prop_Data,"m_toggle_state")))
+		{
+			int togglestate = GetEntProp(targ,Prop_Data,"m_toggle_state");
+			if (togglestate == 1) Format(stateinf,sizeof(stateinf),"%sToggleState %i (Closed) ",stateinf,togglestate);
+			else if (togglestate == 0) Format(stateinf,sizeof(stateinf),"%sToggleState %i (Open) ",stateinf,togglestate);
+			else Format(stateinf,sizeof(stateinf),"%sToggleState %i ",stateinf,togglestate);
+		}
+		if ((StrEqual(ent,"func_brush",false)) && (HasEntProp(targ,Prop_Data,"m_fEffects")))
+		{
+			int enablestate = GetEntProp(targ,Prop_Data,"m_fEffects");
+			if (enablestate == 32) Format(stateinf,sizeof(stateinf),"%sToggleState: Disabled ",stateinf);
+			else Format(stateinf,sizeof(stateinf),"%sToggleState: Enabled ",stateinf);
+		}
+		if ((StrContains(ent,"trigger_",false) == 0) && (HasEntProp(targ,Prop_Data,"m_bDisabled")))
+		{
+			int enablestate = GetEntProp(targ,Prop_Data,"m_bDisabled");
+			if (enablestate == 1) Format(stateinf,sizeof(stateinf),"%sToggleState: Disabled ",stateinf);
+			else Format(stateinf,sizeof(stateinf),"%sToggleState: Enabled ",stateinf);
+		}
+		if (HasEntProp(targ,Prop_Send,"m_hEnt"))
+		{
+			int hEnt = GetEntPropEnt(targ,Prop_Send,"m_hEnt");
+			Format(stateinf,sizeof(stateinf),"%sm_hEnt: %i ",stateinf,hEnt);
+		}
+		if (HasEntProp(targ,Prop_Send,"m_pPlayer"))
+		{
+			int hEnt = GetEntPropEnt(targ,Prop_Send,"m_pPlayer");
+			Format(stateinf,sizeof(stateinf),"%sm_pPlayer: %i ",stateinf,hEnt);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_hLinkedPortal"))
+		{
+			int hEnt = GetEntPropEnt(targ,Prop_Data,"m_hLinkedPortal");
+			Format(stateinf,sizeof(stateinf),"%sm_hLinkedPortal: %i ",stateinf,hEnt);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_bActivated"))
+		{
+			int hEnt = GetEntProp(targ,Prop_Data,"m_bActivated");
+			Format(stateinf,sizeof(stateinf),"%sm_bActivated: %i ",stateinf,hEnt);
+		}
+		if ((HasEntProp(targ,Prop_Data,"m_iHealth")) && (HasEntProp(targ,Prop_Data,"m_iMaxHealth")))
+		{
+			int targh = GetEntProp(targ,Prop_Data,"m_iHealth");
+			int targmh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
+			int held = -1;
+			if (HasEntProp(targ,Prop_Data,"m_bHeld"))
+				held = GetEntProp(targ,Prop_Data,"m_bHeld");
+			if (held != -1)
+			{
+				Format(stateinf,sizeof(stateinf),"%sHealth: %i Max Health: %i Held: %i",stateinf,targh,targmh,held);
+			}
+			else
+			{
+				Format(stateinf,sizeof(stateinf),"%sHealth: %i Max Health: %i",stateinf,targh,targmh);
+			}
+		}
+		TrimString(stateinf);
+		TrimString(scriptinf);
+		if (strlen(targname) > 0)
+			Format(inf,sizeof(inf),"%sName: %s ",inf,targname);
+		if (strlen(globname) > 0)
+			Format(inf,sizeof(inf),"%sGlobalName: %s ",inf,globname);
+		if (ammotype != -1)
+			Format(inf,sizeof(inf),"%sAmmoType: %i",inf,ammotype);
+		if (spawnflagsi != 0)
+			Format(inf,sizeof(inf),"%sEntSpawnflags: %i",inf,spawnflagsi);
+		if (vec[0] != -1.1)
+			Format(inf,sizeof(inf),"%s\nOrigin %f %f %f",inf,vec[0],vec[1],vec[2]);
+		if (angs[0] != -1.1)
+			Format(inf,sizeof(inf),"%s Ang: %i %i %i",inf,RoundFloat(angs[0]),RoundFloat(angs[1]),RoundFloat(angs[2]));
+		if (strlen(exprsc) > 0)
+			Format(inf,sizeof(inf),"%s\nTarget: %s %i %s",inf,exprsc,exprsci,exprtargname);
+		if ((strlen(scriptinf) > 1) && (strlen(stateinf) < 1)) PrintToServer("%s\n%s",inf,scriptinf);
+		if ((strlen(stateinf) > 1) && (strlen(scriptinf) < 1)) PrintToServer("%s\n%s",inf,stateinf);
+		if ((strlen(stateinf) > 1) && (strlen(scriptinf) > 1)) PrintToServer("%s\n%s\n%s",inf,stateinf,scriptinf);
+		if ((strlen(stateinf) < 1) && (strlen(scriptinf) < 1)) PrintToServer("%s",inf);
+	}
+}
+
+public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast)
+{
+	if (showalldeaths)
+	{
+		char clsnamekilled[64];
+		char clsnameatk[64];
+		char clsnameinf[64];
+		int killed = GetEventInt(event, "entindex_killed");
+		int attacker = GetEventInt(event, "entindex_attacker");
+		int inflictor = GetEventInt(event, "entindex_inflictor");
+		if (IsValidEntity(killed))
+		{
+			GetEntityClassname(killed,clsnamekilled,sizeof(clsnamekilled));
+			Format(clsnamekilled,sizeof(clsnamekilled)," %s",clsnamekilled);
+		}
+		if (IsValidEntity(attacker))
+		{
+			GetEntityClassname(attacker,clsnameatk,sizeof(clsnameatk));
+			Format(clsnameatk,sizeof(clsnameatk)," %s",clsnameatk);
+		}
+		if (IsValidEntity(inflictor))
+		{
+			GetEntityClassname(inflictor,clsnameinf,sizeof(clsnameinf));
+			Format(clsnameinf,sizeof(clsnameinf)," %s",clsnameinf);
+		}
+		PrintToServer("EntDeath killed: %i%s attacker: %i%s inflictor: %i%s",killed,clsnamekilled,attacker,clsnameatk,inflictor,clsnameinf);
+		if (showalldeaths > 1)
+		{
+			PrintEntInfoFor(killed);
 		}
 	}
 }
@@ -2875,14 +3279,17 @@ public Action listambientsounds(char sample[PLATFORM_MAX_PATH], int& entity, flo
 
 public void dbghch(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	if (StringToInt(newValue) == 1) showallcreated = true;
-	else showallcreated = false;
+	showallcreated = StringToInt(newValue);
 }
 
 public void dbgcrehch(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	if (StringToInt(newValue) == 1) showalldeleted = true;
-	else showalldeleted = false;
+	showalldeleted = StringToInt(newValue);
+}
+
+public void dbgdeahch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	showalldeaths = StringToInt(newValue);
 }
 
 public void dbgnormsch(Handle convar, const char[] oldValue, const char[] newValue)
