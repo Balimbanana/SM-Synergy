@@ -43,7 +43,7 @@ public void OnPluginStart()
 	SetColl = GetConVarBool(cvar);
 	HookConVarChange(cvar,collsetch);
 	CloseHandle(cvar);
-	spawnplayers = CreateArray(MAXPLAYERS+1);
+	spawnplayers = CreateArray(128);
 	RegConsoleCmd("stuck",stuckblck);
 }
 
@@ -280,7 +280,7 @@ public Action cleanup(Handle timer, Handle data)
 	char clsname[32];
 	ReadPackString(data,clsname,sizeof(clsname));
 	CloseHandle(data);
-	if ((IsValidEntity(cleanupent)) && (cleanupent > MaxClients))
+	if ((IsValidEntity(cleanupent)) && (cleanupent != 0))
 	{
 		char tmpcls[32];
 		GetEntityClassname(cleanupent,tmpcls,sizeof(tmpcls));
@@ -444,7 +444,7 @@ public Action resetcollision(Handle timer, int vehicle)
 			/*
 			float vehicleorg[3];
 			if (HasEntProp(vehicle,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(vehicle,Prop_Data,"m_vecAbsOrigin",vehicleorg);
-			Handle arr = CreateArray(65);
+			Handle arr = CreateArray(128);
 			bool resetcoll = true;
 			findcolliding(-1,cls,vehicle,arr);
 			if (GetArraySize(arr) > 0)
@@ -845,7 +845,7 @@ public void OnClientDisconnect(int client)
 	}
 }
 
-int g_LastButtons[MAXPLAYERS+1];
+int g_LastButtons[128];
 
 public void OnClientDisconnect_Post(int client)
 {
