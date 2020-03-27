@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.25"
-			"Previous"	"1.24"
+			"Latest"  	"1.26"
+			"Previous"	"1.25"
 		}
 		
-		"Notes"	"Added prop_vehicle_crane to cc and cct."
+		"Notes"	"Extended sm_showall_created, sm_showall_deleted, and added sm_showall_deaths with more information if set to 2."
 	}
 	
 	"Files"
