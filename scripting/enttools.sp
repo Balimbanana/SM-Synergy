@@ -2840,7 +2840,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 	if (showallcreated)
 	{
 		PrintToServer("Create %i %s",entity,classname);
-		if (showallcreated > 0)
+		if (showallcreated > 1)
 		{
 			CreateTimer(0.1,CreateDebugSpawn,entity,TIMER_FLAG_NO_MAPCHANGE);
 		}
