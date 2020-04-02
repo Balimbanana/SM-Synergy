@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.54"
+#define PLUGIN_VERSION "0.55"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -1896,6 +1896,7 @@ void ReadEDT(char[] edtfile)
 		bool CVars = false;
 		bool origindefined = false;
 		bool TargnDefined = false;
+		bool EditByTargn = false;
 		bool ReadString = false;
 		bool reading = true;
 		char line[512];
@@ -2024,8 +2025,9 @@ void ReadEDT(char[] edtfile)
 					ExplodeString(cls," ",kvs,64,64);
 					Format(cls,sizeof(cls),"%s",kvs[0]);
 					TrimString(cls);
+					if (TargnDefined) EditByTargn = true;
 				}
-				if ((StrContains(line,"origin",false) != -1) && (!origindefined))
+				if ((StrContains(line,"origin",false) != -1) && (!origindefined) && (!((EditByTargn) && (StrContains(line,"values",false) == -1))))
 				{
 					char removeprev[128];
 					int findclass = StrContains(line,"origin",false);
@@ -2162,6 +2164,7 @@ void ReadEDT(char[] edtfile)
 					DeletingEnt = false;
 					ModifyCase = false;
 					TargnDefined = false;
+					EditByTargn = false;
 				}
 				if ((StrContains(line,"}",false) != -1) && ((EditingEnt) || (DeletingEnt) || (ModifyCase)))
 				{
@@ -2173,7 +2176,7 @@ void ReadEDT(char[] edtfile)
 							PushArrayCell(g_ModifyCase,dupearr);
 						}
 					}
-					else if ((origindefined) && (strlen(cls) > 0))
+					else if ((origindefined) && (strlen(cls) > 0) && (!EditByTargn))
 					{
 						if (DeletingEnt)
 						{
@@ -2273,6 +2276,7 @@ void ReadEDT(char[] edtfile)
 					DeletingEnt = false;
 					ModifyCase = false;
 					TargnDefined = false;
+					EditByTargn = false;
 				}
 			}
 			if ((view_as<int>(filehandle) == 2002874483) || (linenum > 20000))
