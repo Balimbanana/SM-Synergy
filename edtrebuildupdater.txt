@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.54"
-			"Previous"	"0.53"
+			"Latest"  	"0.55"
+			"Previous"	"0.54"
 		}
 		
-		"Notes"	"Fix to modifycase removing parts of the value if they contained the key."
+		"Notes"	"Fix to edit by targetname to replace class and origin when neither are defined in selection."
 	}
 	
 	"Files"
