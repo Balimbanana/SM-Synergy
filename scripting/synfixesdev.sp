@@ -53,6 +53,8 @@ Handle spawnerswait = INVALID_HANDLE;
 Handle globalsarr = INVALID_HANDLE;
 Handle dctimeoutarr = INVALID_HANDLE;
 //Handle nextweapreset = INVALID_HANDLE;
+Handle SFEntInputHook = INVALID_HANDLE;
+Handle addedinputs = INVALID_HANDLE;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float fadingtime[128];
@@ -95,7 +97,7 @@ bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0007"
+#define PLUGIN_VERSION "2.0008"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -317,6 +319,7 @@ public void OnPluginStart()
 	merchantscr = CreateArray(32);
 	merchantscrd = CreateArray(32);
 	//nextweapreset = CreateArray(512);
+	addedinputs = CreateArray(64);
 	RegConsoleCmd("alyx",fixalyx);
 	RegConsoleCmd("barney",fixbarney);
 	RegConsoleCmd("stuck",stuckblck);
@@ -357,12 +360,14 @@ public void OnPluginStart()
 	HookConVarChange(autorebuildh,autorebuildch);
 	CloseHandle(autorebuildh);
 	RegAdminCmd("sm_rebuildents",rebuildents,ADMFLAG_ROOT,".");
+	RegServerCmd("synfixes_listaddedhooks",listaddedhooks);
 	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
 	CreateTimer(0.5,resetclanim,_,TIMER_REPEAT);
 	CreateTimer(0.1,clticks,_,TIMER_REPEAT);
 	CreateTimer(0.1,bmcvars);
 	AddAmbientSoundHook(customsoundchecks);
 	AddNormalSoundHook(customsoundchecksnorm);
+	SFEntInputHook = CreateGlobalForward("SFHookEntityInput", ET_Ignore, Param_String, Param_Cell, Param_String, Param_String, Param_Float);
 }
 
 public Action bmcvars(Handle timer)
@@ -1224,8 +1229,10 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	RegPluginLibrary("SynFixes");
 	CreateNative("GetCustomEntList", Native_GetCustomEntList);
 	CreateNative("SynFixesReadCache", Native_ReadCache);
+	CreateNative("SFAddHookEntityInput", Native_AddToInputHooks);
 	MarkNativeAsOptional("GetCustomEntList");
 	MarkNativeAsOptional("SynFixesReadCache");
+	MarkNativeAsOptional("SFAddHookEntityInput");
 	SynFixesRunning = true;
 	return APLRes_Success;
 }
@@ -4428,7 +4435,7 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			{
 				actmod = 0;
 			}
-			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"logic_relay",false)) || (StrEqual(clsname,"func_door",false)) || (StrEqual(clsname,"trigger_coop",false)) || (StrEqual(clsname,"hud_timer",false)))
+			if ((StrEqual(clsname,"trigger_multiple",false)) || (StrEqual(clsname,"prop_dynamic",false)) || (StrEqual(clsname,"logic_relay",false)) || (StrEqual(clsname,"func_door",false)) || (StrEqual(clsname,"trigger_coop",false)) || (StrEqual(clsname,"hud_timer",false)))
 			{
 				UnhookSingleEntityOutput(caller,output,trigtp);
 				PushArrayCell(ignoretrigs,caller);
@@ -4514,7 +4521,39 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 		readoutputstp(caller,targn,tmpout,"EquipPlayer",origin,actmod);
 		readoutputstp(caller,targn,tmpout,"SetCheckPoint",origin,actmod);
 		readoutputstp(caller,targn,tmpout,"CLCommand",origin,actmod);
+		if (GetArraySize(addedinputs) > 0)
+		{
+			char inputadded[64];
+			for (int i = 0;i<GetArraySize(addedinputs);i++)
+			{
+				GetArrayString(addedinputs,i,inputadded,sizeof(inputadded));
+				readoutputstp(caller,targn,tmpout,inputadded,origin,actmod);
+			}
+		}
 	}
+}
+
+public Action listaddedhooks(int args)
+{
+	if (GetArraySize(addedinputs) > 0)
+	{
+		char inputadded[64];
+		char chkinps[128];
+		for (int i = 0;i<GetArraySize(addedinputs);i++)
+		{
+			GetArrayString(addedinputs,i,inputadded,sizeof(inputadded));
+			PrintToServer("AddedInputHook %s",inputadded);
+			for (int j = 0;j<GetArraySize(inputsarrorigincls);j++)
+			{
+				GetArrayString(inputsarrorigincls,j,chkinps,sizeof(chkinps));
+				if (StrContains(chkinps,inputadded,false) != -1)
+				{
+					PrintToServer("HookForInput %s",chkinps);
+				}
+			}
+		}
+	}
+	return Plugin_Handled;
 }
 
 public Action trigpicker(const char[] output, int caller, int activator, float delay)
@@ -4601,7 +4640,7 @@ public Action createelev(const char[] output, int caller, int activator, float d
 			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",elevorg);
 			if (HasEntProp(caller,Prop_Data,"m_angRotation")) GetEntPropVector(caller,Prop_Data,"m_angRotation",angs);
 			GetEntPropString(caller,Prop_Data,"m_ModelName",mdlname,sizeof(mdlname));
-			if ((strlen(mdlname) > 0) && (StrContains(mapbuf,"r_map3",false) == -1))
+			if ((strlen(mdlname) > 0) && (StrContains(mapbuf,"r_map3",false) == -1) && (StrContains(mapbuf,"01_spymap_ep3",false) == -1))
 			{
 				int sf = GetEntProp(caller,Prop_Data,"m_spawnflags");
 				if ((!(sf & 1<<3)) && (GetEntityCount() < 2000))
@@ -10739,6 +10778,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	char atk[64];
 	char clsname[64];
 	char clsname2[64];
+	char entname[64];
 	int killed = GetEventInt(event, "entindex_killed");
 	int attacker = GetEventInt(event, "entindex_attacker");
 	int inflictor = GetEventInt(event, "entindex_inflictor");
@@ -10930,7 +10970,6 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	}
 	if ((HasEntProp(killed,Prop_Data,"m_iName")) && (StrContains(clsname,"npc_",false) != -1))
 	{
-		char entname[32];
 		GetEntPropString(killed,Prop_Data,"m_iName",entname,sizeof(entname));
 		if (FindStringInArray(entnames,entname) == -1) PushArrayString(entnames,entname);
 	}
@@ -11133,10 +11172,24 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				}
 				CloseHandle(sci);
 			}
+			bool CustEventSet = false;
 			int viccol = -1052689;
 			if ((StrEqual(clsname,"npc_human_grunt",false)) || (StrEqual(clsname,"npc_human_commander",false)) || (StrEqual(clsname,"npc_human_grenadier",false)) || (StrEqual(clsname,"npc_human_medic",false)) || (StrEqual(clsname,"npc_abrams",false)))
 			{
 				viccol = -6921216;
+			}
+			else if (StrEqual(clsname,"npc_bullseye",false))
+			{
+				CustEventSet = true;
+				if (StrEqual(entname,"dra_bull_eye",false))
+				{
+					Format(clsname,sizeof(clsname),"npc_doramn_window");
+				}
+				else if (StrEqual(entname,"dra_bull",false))
+				{
+					Format(clsname,sizeof(clsname),"npc_doramn_power_cell");
+				}
+				else CustEventSet = false;
 			}
 			else if ((StrContains(clsname,"npc_zombie_",false) != -1) || (StrEqual(clsname,"npc_babycrab",false)) || (StrEqual(clsname,"npc_gonarch",false)))
 			{
@@ -11146,6 +11199,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 			{
 				viccol = -16732161;
 				EmitSoundToAll("npc\\ichthyosaur\\die1.wav", killed, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+				CustEventSet = true;
 			}
 			else if (StrEqual(clsname,"npc_snark",false))
 			{
@@ -11156,7 +11210,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				EmitSoundToAll(snd, killed, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
 				viccol = -16732161;
 			}
-			if (((FindStringInArray(customentlist,clsname) != -1) || (StrEqual(clsname,"npc_ichthyosaur",false))) && (!StrEqual(clsname,"monster_alien_grunt",false)) && (!StrEqual(clsname,"monster_gargantua",false)))
+			if (((FindStringInArray(customentlist,clsname) != -1) || (CustEventSet)) && (!StrEqual(clsname,"monster_alien_grunt",false)) && (!StrEqual(clsname,"monster_gargantua",false)))
 			{
 				//-6921216 is blue -16083416 is green -16777041 is red -1052689 is white -3644216 is purple -16732161 is yellow
 				Handle entkilled = CreateEvent("synergy_entity_death");
@@ -11234,10 +11288,10 @@ public Action Event_SynEntityKilled(Handle event, const char[] name, bool Broadc
 {
 	char killername[64];
 	GetEventString(event,"killername",killername,sizeof(killername));
+	int killed = GetEventInt(event, "victimID");
 	if (strlen(killername) < 1)
 	{
 		int attacker = GetEventInt(event,"killerID");
-		int killed = GetEventInt(event, "victimID");
 		if ((IsValidEntity(attacker)) && (attacker != 0) && (killed > 0) && (killed < MaxClients+1))
 		{
 			char clsname[64];
@@ -11383,6 +11437,32 @@ public Action Event_SynEntityKilled(Handle event, const char[] name, bool Broadc
 			SetEventString(event,"weapon",weap);
 			Broadcast = true;
 			return Plugin_Changed;
+		}
+	}
+	else if ((IsValidEntity(killed)) && (killed > MaxClients))
+	{
+		char clsname[24];
+		GetEntityClassname(killed,clsname,sizeof(clsname));
+		char vicname[64];
+		GetEventString(event,"victimname",vicname,sizeof(vicname));
+		if ((StrEqual(clsname,"npc_bullseye",false)) && (StrEqual(vicname,"Combine Ground Turret")))
+		{
+			if (HasEntProp(killed,Prop_Data,"m_hDamageFilter"))
+			{
+				int dmgfilter = GetEntPropEnt(killed,Prop_Data,"m_hDamageFilter");
+				if (IsValidEntity(dmgfilter))
+				{
+					if (HasEntProp(dmgfilter,Prop_Data,"m_iDamageType"))
+					{
+						if (GetEntProp(dmgfilter,Prop_Data,"m_iDamageType") == 64)
+						{
+							return Plugin_Continue;
+						}
+					}
+				}
+			}
+			Broadcast = false;
+			return Plugin_Stop;
 		}
 	}
 	return Plugin_Continue;
@@ -11805,6 +11885,13 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								playerbranches(lineorgrescom[0],delay);
 							}
+							Call_StartForward(SFEntInputHook);
+							Call_PushString(input);
+							Call_PushCell(activator);
+							Call_PushString(lineorgrescom[0]);
+							Call_PushString(lineorgrescom[2]);
+							Call_PushFloat(delay);
+							Call_Finish();
 							int findignore = FindValueInArray(ignoretrigs,caller);
 							if (findignore != -1)
 							{
@@ -11918,6 +12005,13 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								playerbranches(lineorgrescom[0],delay);
 							}
+							Call_StartForward(SFEntInputHook);
+							Call_PushString(input);
+							Call_PushCell(activator);
+							Call_PushString(lineorgrescom[0]);
+							Call_PushString(lineorgrescom[2]);
+							Call_PushFloat(delay);
+							Call_Finish();
 							int findignore = FindValueInArray(ignoretrigs,caller);
 							if (findignore != -1)
 							{
@@ -12007,6 +12101,20 @@ void readoutputsforinputs()
 		if (syn56act)
 		{
 			PushArrayString(inputs,"!picker,");
+		}
+		if (GetArraySize(addedinputs) > 0)
+		{
+			char inputadded[64];
+			for (int i = 0;i<GetArraySize(addedinputs);i++)
+			{
+				GetArrayString(addedinputs,i,inputadded,sizeof(inputadded));
+				Format(inputadded,sizeof(inputadded),",%s,",inputadded);
+				if (FindStringInArray(inputs,inputadded) == -1)
+				{
+					if (debuglvl > 0) PrintToServer("Added Search Hook %s",inputadded);
+					PushArrayString(inputs,inputadded);
+				}
+			}
 		}
 		char lineorgres[128];
 		char lineorgresexpl[4][16];
@@ -13928,7 +14036,7 @@ public Action rehooksaves(Handle timer)
 		}
 	}
 	ClearArray(spawnerswait);
-	if (!weapmanagersplaced)
+	if ((!weapmanagersplaced) && (StrContains(mapbuf,"01_spymap_ep3",false) == -1) && (StrContains(mapbuf,"ep1_c17_02a",false) == -1))
 	{
 		int weapres = CreateEntityByName("game_weapon_manager");
 		if (weapres != -1)
@@ -14307,7 +14415,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		CreateTimer(0.5,rechk,entity,TIMER_FLAG_NO_MAPCHANGE);
 	}
-	if (StrEqual(classname,"npc_gargantua",false))
+	else if (StrEqual(classname,"npc_gargantua",false))
 	{
 		SDKHook(entity, SDKHook_OnTakeDamage, TakeDamageCustom);
 	}
@@ -19843,6 +19951,18 @@ public int Native_ReadCache(Handle plugin, int numParams)
 			readcache(client,entcache,offsetpos);
 		}
 	}
+}
+
+public int Native_AddToInputHooks(Handle plugin, int numParams)
+{
+	if (numParams < 1) return;
+	char inputname[64];
+	GetNativeString(1,inputname,sizeof(inputname));
+	if (strlen(inputname) > 0)
+	{
+		if (FindStringInArray(addedinputs,inputname) == -1) PushArrayString(addedinputs,inputname);
+	}
+	return;
 }
 
 public Action customsoundchecksnorm(int clients[64], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags)
