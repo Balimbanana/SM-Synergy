@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.55"
-			"Previous"	"0.54"
+			"Latest"  	"0.56"
+			"Previous"	"0.55"
 		}
 		
-		"Notes"	"Fix to edit by targetname to replace class and origin when neither are defined in selection."
+		"Notes"	"Added origin check to append origin 0 0 0 if not specified in create."
 	}
 	
 	"Files"
