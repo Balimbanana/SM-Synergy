@@ -33,7 +33,7 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 
-#define PLUGIN_VERSION "0.55"
+#define PLUGIN_VERSION "0.56"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -254,6 +254,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 						char edtclass[64];
 						char edtclassorg[64];
 						bool ItemClassSpecified = false;
+						bool OriginSpecified = false;
 						Format(tmpwriter,sizeof(tmpwriter),"%s{",tmpwriter);
 						for (int j = 0;j<GetArraySize(passedarr);j++)
 						{
@@ -315,6 +316,10 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								{
 									ItemClassSpecified = true;
 								}
+								else if (StrEqual(first,"origin",false))
+								{
+									OriginSpecified = true;
+								}
 							}
 						}
 						if ((strlen(edtclass) > 0) && (strlen(edtclassorg) > 0))
@@ -350,6 +355,10 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 						if ((StrEqual(cls,"item_item_crate",false)) && (!ItemClassSpecified))
 						{
 							Format(tmpwriter,sizeof(tmpwriter),"%s\n\"ItemClass\" \"item_dynamic_resupply\"",tmpwriter);
+						}
+						if (!OriginSpecified)
+						{
+							Format(tmpwriter,sizeof(tmpwriter),"%s\n\"origin\" \"0 0 0\"",tmpwriter);
 						}
 						Format(tmpwriter,sizeof(tmpwriter),"%s\n}\n",tmpwriter);
 						if (dbglvl == 4) PrintToServer("Create %s",cls);
