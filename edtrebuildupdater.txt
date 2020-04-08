@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.56"
-			"Previous"	"0.55"
+			"Latest"  	"0.57"
+			"Previous"	"0.56"
 		}
 		
-		"Notes"	"Added origin check to append origin 0 0 0 if not specified in create."
+		"Notes"	"Fallback checks to edt_getbspmodelfor_ in creates to use *1 if not found and search further."
 	}
 	
 	"Files"

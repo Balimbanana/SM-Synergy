@@ -32,8 +32,9 @@ bool VintageMode = false;
 bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
+bool LogEDTErr = false;
 
-#define PLUGIN_VERSION "0.56"
+#define PLUGIN_VERSION "0.57"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -78,6 +79,11 @@ public void OnPluginStart()
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtremoveglobals", "0", "Remove global names from all entities.", _, true, 0.0, true, 1.0);
 	RemoveGlobals = GetConVarBool(cvar);
 	HookConVarChange(cvar,rmglobalsch);
+	CloseHandle(cvar);
+	cvar = FindConVar("edtlog_getbspmodel");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtlog_getbspmodel", "0", "Logs errors in edt_getbspmodelfor_ values that dont point to existing entities.", _, true, 0.0, true, 1.0);
+	LogEDTErr = GetConVarBool(cvar);
+	HookConVarChange(cvar,loggetbspch);
 	CloseHandle(cvar);
 }
 
@@ -295,7 +301,36 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 											Format(second,sizeof(second),"%s",tmpexpl[3]);
 										}
 									}
-									else PrintToServer("Failed to get BSP Model from Targetname %s",second);
+									else
+									{
+										PrintToServer("Failed to get BSP Model from Targetname %s",second);
+										if (LogEDTErr) LogMessage("Failed to get BSP Model from Targetname %s",second);
+										bool noplaceholder = false;
+										for (int m = 0;m<GetArraySize(passedarr);m++)
+										{
+											char tmpchk[128];
+											GetArrayString(passedarr,m,tmpchk,sizeof(tmpchk));
+											char tmpchk2[128];
+											Format(tmpchk2,sizeof(tmpchk2),"%s",tmpchk);
+											secondpos = StrContains(tmpchk," ",false);
+											if (secondpos != -1)
+											{
+												Format(tmpchk2,sizeof(tmpchk2),"%s",tmpchk2[secondpos]);
+												ReplaceStringEx(tmpchk,sizeof(tmpchk),tmpchk2,"");
+												ReplaceString(tmpchk,sizeof(tmpchk),"\"","");
+												TrimString(tmpchk);
+												if (StrEqual(tmpchk,"model",false))
+												{
+													noplaceholder = true;
+													break;
+												}
+											}
+										}
+										if (!noplaceholder)
+										{
+											Format(tmpwriter,sizeof(tmpwriter),"%s\n\"model\" \"*1\"",tmpwriter);
+										}
+									}
 								}
 								if (StrEqual(first,"edt_getbspmodelfor_classname",false))
 								{
@@ -324,6 +359,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 						}
 						if ((strlen(edtclass) > 0) && (strlen(edtclassorg) > 0))
 						{
+							bool FailedToGetModel = false;
 							char findclass[128];
 							Format(findclass,sizeof(findclass),"\"classname\" \"%s\"",edtclass);
 							char sfindorg[128];
@@ -348,9 +384,83 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										Format(tmpwriter,sizeof(tmpwriter),"%s\n\"model\" \"%s\"",tmpwriter,tmpexpl[3]);
 									}
 								}
-								else PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+								else
+								{
+									bool FoundMdl = false;
+									int findorgnext = StrContains(szMapEntities[findorg+strlen(tmpbuf)],sfindorg,false);
+									while (findorgnext != -1)
+									{
+										if (findorgnext != -1)
+										{
+											int posreset = findorgnext+findorg;
+											Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[posreset]);
+											while (StrContains(tmpbuf,"{",false) != 0)
+											{
+												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[posreset--]);
+											}
+											findend = StrContains(tmpbuf,"}",false);
+											if (findend != -1) Format(tmpbuf,findend+1,"%s",tmpbuf);
+											if (StrContains(tmpbuf,edtclass,false) != -1)
+											{
+												int findmdl = StrContains(tmpbuf,"\"model\"",false);
+												if (findmdl != -1)
+												{
+													Format(tmpbuf,sizeof(tmpbuf),"%s",tmpbuf[findmdl]);
+													ExplodeString(tmpbuf,"\"",tmpexpl,4,64);
+													Format(tmpwriter,sizeof(tmpwriter),"%s\n\"model\" \"%s\"",tmpwriter,tmpexpl[3]);
+													FoundMdl = true;
+													break;
+												}
+											}
+											else
+											{
+												findorg = posreset+strlen(tmpbuf);
+												findorgnext = StrContains(szMapEntities[findorg],sfindorg,false);
+											}
+										}
+									}
+									if (!FoundMdl)
+									{
+										PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+										if (LogEDTErr) LogMessage("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+										FailedToGetModel = true;
+									}
+								}
 							}
-							else PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+							else
+							{
+								PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+								if (LogEDTErr) LogMessage("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+								FailedToGetModel = true;
+							}
+							if (FailedToGetModel)
+							{
+								bool noplaceholder = false;
+								for (int m = 0;m<GetArraySize(passedarr);m++)
+								{
+									char tmpchk[128];
+									GetArrayString(passedarr,m,tmpchk,sizeof(tmpchk));
+									char tmpchk2[128];
+									Format(tmpchk2,sizeof(tmpchk2),"%s",tmpchk);
+									int secondpos = StrContains(tmpchk," ",false);
+									if (secondpos != -1)
+									{
+										Format(tmpchk2,sizeof(tmpchk2),"%s",tmpchk2[secondpos]);
+										ReplaceStringEx(tmpchk,sizeof(tmpchk),tmpchk2,"");
+										ReplaceString(tmpchk,sizeof(tmpchk),"\"","");
+										TrimString(tmpchk);
+										if (StrEqual(tmpchk,"model",false))
+										{
+											noplaceholder = true;
+											break;
+										}
+									}
+								}
+								if (!noplaceholder)
+								{
+									Format(tmpwriter,sizeof(tmpwriter),"%s\n\"model\" \"*1\"",tmpwriter);
+								}
+							}
 						}
 						if ((StrEqual(cls,"item_item_crate",false)) && (!ItemClassSpecified))
 						{
@@ -570,176 +680,179 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 							bool endofcache = false;
 							while (!endofcache)
 							{
-								if (dbglvl == 4) PrintToServer("Edit %s\n%s",cls,szMapEntitiesbuff);
-								passedarr = GetArrayCell(g_EditClassesData,i);
-								if (passedarr != INVALID_HANDLE)
+								if (StrContains(szMapEntitiesbuff,cls,false) != -1)
 								{
-									for (int j = 0;j<GetArraySize(passedarr);j++)
+									if (dbglvl == 4) PrintToServer("Edit %s\n%s",cls,szMapEntitiesbuff);
+									passedarr = GetArrayCell(g_EditClassesData,i);
+									if (passedarr != INVALID_HANDLE)
 									{
-										GetArrayString(passedarr,j,edtdata,sizeof(edtdata));
-										//ExplodeString(edtdata," ",tmpexpl,4,64);
-										findend = StrContains(edtdata," ",false);
-										if (findend != -1)
+										for (int j = 0;j<GetArraySize(passedarr);j++)
 										{
-											Format(edtkey,findend+1,"%s",edtdata);
-										}
-										//Format(edtkey,sizeof(edtkey),"%s",tmpexpl[0]);
-										Format(edtval,sizeof(edtval),"%s",edtdata);
-										ReplaceStringEx(edtval,sizeof(edtval),edtkey,"");
-										TrimString(edtval);
-										if (StrContains(edtkey,"\"",false) != -1) ReplaceString(edtkey,sizeof(edtkey),"\"","");
-										Format(edtkey,sizeof(edtkey),"\"%s\"",edtkey);
-										if (StrContains(edtval,"\"",false) != -1) ReplaceString(edtval,sizeof(edtval),"\"","");
-										int findedit = StrContains(szMapEntitiesbuff,edtkey,false);
-										if ((GetArraySize(passedarr) == 1) && (StrEqual(edtkey,"\"classname\"",false)))
-										{
-											Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
-											ExplodeString(tmpbuf,"\n",tmpexpl,4,64);
-											Format(tmpexpl[1],sizeof(tmpexpl[]),"%s",tmpexpl[0]);
-											findend = StrContains(tmpexpl[0]," ",false);
+											GetArrayString(passedarr,j,edtdata,sizeof(edtdata));
+											//ExplodeString(edtdata," ",tmpexpl,4,64);
+											findend = StrContains(edtdata," ",false);
 											if (findend != -1)
 											{
-												Format(tmpexpl[0],findend+1,"%s",tmpbuf);
-												TrimString(tmpexpl[0]);
+												Format(edtkey,findend+1,"%s",edtdata);
 											}
-											ReplaceStringEx(tmpexpl[1],sizeof(tmpexpl[]),tmpexpl[0],"");
-											ReplaceString(tmpexpl[0],sizeof(tmpexpl[]),"\"","");
-											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),"\"","");
-											TrimString(tmpexpl[1]);
-											if (strlen(tmpexpl[1]) < 3) Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
-											else Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
-											TrimString(replacedata);
-											Format(edtkey,sizeof(edtkey),"%s \"%s\"",edtkey,edtval);
-											ReplaceString(szMapEntities,sizeof(szMapEntities),replacedata,edtkey);
-											if (dbglvl >= 3) PrintToServer("ReplaceAll %s with %s",replacedata,edtkey);
-											break;
-										}
-										if (StrEqual(edtkey,"\"edt_map\"",false))
-										{
-											findedit = StrContains(szMapEntitiesbuff,"\"map\" \"",false);
-											if (findedit != -1)
+											//Format(edtkey,sizeof(edtkey),"%s",tmpexpl[0]);
+											Format(edtval,sizeof(edtval),"%s",edtdata);
+											ReplaceStringEx(edtval,sizeof(edtval),edtkey,"");
+											TrimString(edtval);
+											if (StrContains(edtkey,"\"",false) != -1) ReplaceString(edtkey,sizeof(edtkey),"\"","");
+											Format(edtkey,sizeof(edtkey),"\"%s\"",edtkey);
+											if (StrContains(edtval,"\"",false) != -1) ReplaceString(edtval,sizeof(edtval),"\"","");
+											int findedit = StrContains(szMapEntitiesbuff,edtkey,false);
+											if ((GetArraySize(passedarr) == 1) && (StrEqual(edtkey,"\"classname\"",false)))
 											{
 												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
-												ReplaceStringEx(tmpbuf,sizeof(tmpbuf),"\"map\" ","");
-												findend = StrContains(tmpbuf,"\n",false);
+												ExplodeString(tmpbuf,"\n",tmpexpl,4,64);
+												Format(tmpexpl[1],sizeof(tmpexpl[]),"%s",tmpexpl[0]);
+												findend = StrContains(tmpexpl[0]," ",false);
 												if (findend != -1)
 												{
-													Format(tmpbuf,findend,"%s",tmpbuf);
-													ReplaceString(tmpbuf,sizeof(tmpbuf),"\"","");
-													TrimString(tmpbuf);
-													if (StrEqual(tmpbuf,edtval,false))
+													Format(tmpexpl[0],findend+1,"%s",tmpbuf);
+													TrimString(tmpexpl[0]);
+												}
+												ReplaceStringEx(tmpexpl[1],sizeof(tmpexpl[]),tmpexpl[0],"");
+												ReplaceString(tmpexpl[0],sizeof(tmpexpl[]),"\"","");
+												ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),"\"","");
+												TrimString(tmpexpl[1]);
+												if (strlen(tmpexpl[1]) < 3) Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
+												else Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
+												TrimString(replacedata);
+												Format(edtkey,sizeof(edtkey),"%s \"%s\"",edtkey,edtval);
+												ReplaceString(szMapEntities,sizeof(szMapEntities),replacedata,edtkey);
+												if (dbglvl >= 3) PrintToServer("ReplaceAll %s with %s",replacedata,edtkey);
+												break;
+											}
+											if (StrEqual(edtkey,"\"edt_map\"",false))
+											{
+												findedit = StrContains(szMapEntitiesbuff,"\"map\" \"",false);
+												if (findedit != -1)
+												{
+													Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
+													ReplaceStringEx(tmpbuf,sizeof(tmpbuf),"\"map\" ","");
+													findend = StrContains(tmpbuf,"\n",false);
+													if (findend != -1)
 													{
-														Format(edt_map,sizeof(edt_map),"%s",edtval);
-														edtkey = "";
+														Format(tmpbuf,findend,"%s",tmpbuf);
+														ReplaceString(tmpbuf,sizeof(tmpbuf),"\"","");
+														TrimString(tmpbuf);
+														if (StrEqual(tmpbuf,edtval,false))
+														{
+															Format(edt_map,sizeof(edt_map),"%s",edtval);
+															edtkey = "";
+														}
+														else break;
 													}
-													else break;
 												}
 											}
-										}
-										if (StrEqual(edtkey,"\"edt_landmark\"",false))
-										{
-											findedit = StrContains(szMapEntitiesbuff,"\"landmark\" \"",false);
-											if (findedit != -1)
+											if (StrEqual(edtkey,"\"edt_landmark\"",false))
+											{
+												findedit = StrContains(szMapEntitiesbuff,"\"landmark\" \"",false);
+												if (findedit != -1)
+												{
+													Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
+													ReplaceStringEx(tmpbuf,sizeof(tmpbuf),"\"landmark\" ","");
+													findend = StrContains(tmpbuf,"\n",false);
+													if (findend != -1)
+													{
+														Format(tmpbuf,findend,"%s",tmpbuf);
+														ReplaceString(tmpbuf,sizeof(tmpbuf),"\"","");
+														TrimString(tmpbuf);
+														if (StrEqual(tmpbuf,edtval,false))
+														{
+															Format(edt_landmark,sizeof(edt_landmark),"%s",edtval);
+															edtkey = "";
+														}
+														else break;
+													}
+												}
+											}
+											if (StrEqual(edtkey,"\"portalnumber\"",false))
+											{
+												findedit = StrContains(szMapEntitiesbuff,"\"portalnumber\" \"",false);
+												if (findedit != -1)
+												{
+													Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
+													ReplaceStringEx(tmpbuf,sizeof(tmpbuf),"\"portalnumber\" ","");
+													findend = StrContains(tmpbuf,"\n",false);
+													if (findend != -1)
+													{
+														Format(tmpbuf,findend,"%s",tmpbuf);
+														ReplaceString(tmpbuf,sizeof(tmpbuf),"\"","");
+														TrimString(tmpbuf);
+														if (StrEqual(tmpbuf,edtval,false))
+														{
+															Format(portalnumber,sizeof(portalnumber),"%s",edtval);
+															edtkey = "";
+														}
+														else break;
+													}
+												}
+												else edtkey = "";
+											}
+											if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_removespawnflags\"",false)))
+											{
+												findedit = StrContains(szMapEntitiesbuff,"\"spawnflags\"",false);
+											}
+											//if ((findedit != -1) && (strlen(edt_landmark) > 0) && (strlen(edt_map) > 0))
+											if ((findedit != -1) && (StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0) && (strlen(edtkey) > 1))
 											{
 												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
-												ReplaceStringEx(tmpbuf,sizeof(tmpbuf),"\"landmark\" ","");
-												findend = StrContains(tmpbuf,"\n",false);
+												ExplodeString(tmpbuf,"\n",tmpexpl,4,64);
+												ExplodeString(tmpexpl[0]," ",tmpexpl,4,64);
+												findend = StrContains(tmpexpl[0]," ",false);
 												if (findend != -1)
 												{
-													Format(tmpbuf,findend,"%s",tmpbuf);
-													ReplaceString(tmpbuf,sizeof(tmpbuf),"\"","");
-													TrimString(tmpbuf);
-													if (StrEqual(tmpbuf,edtval,false))
-													{
-														Format(edt_landmark,sizeof(edt_landmark),"%s",edtval);
-														edtkey = "";
-													}
-													else break;
+													Format(tmpexpl[0],findend+1,"%s",tmpbuf);
 												}
-											}
-										}
-										if (StrEqual(edtkey,"\"portalnumber\"",false))
-										{
-											findedit = StrContains(szMapEntitiesbuff,"\"portalnumber\" \"",false);
-											if (findedit != -1)
-											{
-												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
-												ReplaceStringEx(tmpbuf,sizeof(tmpbuf),"\"portalnumber\" ","");
-												findend = StrContains(tmpbuf,"\n",false);
-												if (findend != -1)
+												ReplaceStringEx(tmpexpl[1],sizeof(tmpexpl[]),tmpexpl[0],"");
+												ReplaceString(tmpexpl[0],sizeof(tmpexpl[]),"\"","");
+												ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),"\"","");
+												if (strlen(tmpexpl[1]) < 3) Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
+												else Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
+												TrimString(replacedata);
+												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff);
+												if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)))
 												{
-													Format(tmpbuf,findend,"%s",tmpbuf);
-													ReplaceString(tmpbuf,sizeof(tmpbuf),"\"","");
-													TrimString(tmpbuf);
-													if (StrEqual(tmpbuf,edtval,false))
-													{
-														Format(portalnumber,sizeof(portalnumber),"%s",edtval);
-														edtkey = "";
-													}
-													else break;
+													int curval = StringToInt(tmpexpl[1]);
+													Format(edtval,sizeof(edtval),"%i",curval+StringToInt(edtval));
+													Format(edtkey,sizeof(edtkey),"\"spawnflags\"");
+												}
+												else if (StrEqual(edtkey,"\"edt_removespawnflags\"",false))
+												{
+													int checkneg = StringToInt(tmpexpl[1]);
+													checkneg = checkneg-StringToInt(edtval);
+													if (checkneg < 0) checkneg = 0;
+													Format(edtval,sizeof(edtval),"%i",checkneg);
+													Format(edtkey,sizeof(edtkey),"\"spawnflags\"");
+												}
+												Format(edtkey,sizeof(edtkey),"%s \"%s\"",edtkey,edtval);
+												if (StrEqual(edtkey,replacedata,false)) continue;
+												if (dbglvl >= 3) PrintToServer("Replace %s with %s",replacedata,edtkey);
+												ReplaceString(tmpbuf,sizeof(tmpbuf),replacedata,edtkey);
+												if (StrContains(szMapEntities,szMapEntitiesbuff,false) != -1)
+												{
+													ReplaceStringEx(szMapEntities,sizeof(szMapEntities),szMapEntitiesbuff,tmpbuf);
+													//Additional replaces
+													Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",tmpbuf);
 												}
 											}
-											else edtkey = "";
-										}
-										if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_removespawnflags\"",false)))
-										{
-											findedit = StrContains(szMapEntitiesbuff,"\"spawnflags\"",false);
-										}
-										//if ((findedit != -1) && (strlen(edt_landmark) > 0) && (strlen(edt_map) > 0))
-										if ((findedit != -1) && (StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0) && (strlen(edtkey) > 1))
-										{
-											Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
-											ExplodeString(tmpbuf,"\n",tmpexpl,4,64);
-											ExplodeString(tmpexpl[0]," ",tmpexpl,4,64);
-											findend = StrContains(tmpexpl[0]," ",false);
-											if (findend != -1)
+											else if ((strlen(szMapEntitiesbuff) > 0) && (strlen(edtkey) > 1))
 											{
-												Format(tmpexpl[0],findend+1,"%s",tmpbuf);
-											}
-											ReplaceStringEx(tmpexpl[1],sizeof(tmpexpl[]),tmpexpl[0],"");
-											ReplaceString(tmpexpl[0],sizeof(tmpexpl[]),"\"","");
-											ReplaceString(tmpexpl[1],sizeof(tmpexpl[]),"\"","");
-											if (strlen(tmpexpl[1]) < 3) Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
-											else Format(replacedata,sizeof(replacedata),"\"%s\" \"%s\"",tmpexpl[0],tmpexpl[1]);
-											TrimString(replacedata);
-											Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff);
-											if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)))
-											{
-												int curval = StringToInt(tmpexpl[1]);
-												Format(edtval,sizeof(edtval),"%i",curval+StringToInt(edtval));
-												Format(edtkey,sizeof(edtkey),"\"spawnflags\"");
-											}
-											else if (StrEqual(edtkey,"\"edt_removespawnflags\"",false))
-											{
-												int checkneg = StringToInt(tmpexpl[1]);
-												checkneg = checkneg-StringToInt(edtval);
-												if (checkneg < 0) checkneg = 0;
-												Format(edtval,sizeof(edtval),"%i",checkneg);
-												Format(edtkey,sizeof(edtkey),"\"spawnflags\"");
-											}
-											Format(edtkey,sizeof(edtkey),"%s \"%s\"",edtkey,edtval);
-											if (StrEqual(edtkey,replacedata,false)) continue;
-											if (dbglvl >= 3) PrintToServer("Replace %s with %s",replacedata,edtkey);
-											ReplaceString(tmpbuf,sizeof(tmpbuf),replacedata,edtkey);
-											if (StrContains(szMapEntities,szMapEntitiesbuff,false) != -1)
-											{
+												//{
+												//Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s%s",rmchar,szMapEntitiesbuff);
+												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff);
+												ReplaceString(tmpbuf,sizeof(tmpbuf),"}","");
+												if (StrContains(tmpbuf,"\n\n",false) != -1) ReplaceString(tmpbuf,sizeof(tmpbuf),"\n\n","\n");
+												if (dbglvl >= 3) PrintToServer("Add KV to %s\n%s \"%s\"",cls,edtkey,edtval);
+												Format(tmpbuf,sizeof(tmpbuf),"%s%s \"%s\"\n}\n",tmpbuf,edtkey,edtval);
 												ReplaceStringEx(szMapEntities,sizeof(szMapEntities),szMapEntitiesbuff,tmpbuf);
-												//Additional replaces
+												ReplaceString(szMapEntities,sizeof(szMapEntities),"\n\n","\n");
 												Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",tmpbuf);
 											}
-										}
-										else if ((strlen(szMapEntitiesbuff) > 0) && (strlen(edtkey) > 1))
-										{
-											//{
-											//Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s%s",rmchar,szMapEntitiesbuff);
-											Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff);
-											ReplaceString(tmpbuf,sizeof(tmpbuf),"}","");
-											if (StrContains(tmpbuf,"\n\n",false) != -1) ReplaceString(tmpbuf,sizeof(tmpbuf),"\n\n","\n");
-											if (dbglvl >= 3) PrintToServer("Add KV to %s\n%s \"%s\"",cls,edtkey,edtval);
-											Format(tmpbuf,sizeof(tmpbuf),"%s%s \"%s\"\n}\n",tmpbuf,edtkey,edtval);
-											ReplaceStringEx(szMapEntities,sizeof(szMapEntities),szMapEntitiesbuff,tmpbuf);
-											ReplaceString(szMapEntities,sizeof(szMapEntities),"\n\n","\n");
-											Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",tmpbuf);
 										}
 									}
 								}
@@ -879,7 +992,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 							while (!endofcache)
 							{
 								finderorg = StrContains(szMapEntitiesbuff,clsorg,false);
-								if (finderorg != -1)
+								if ((finderorg != -1) && (StrContains(szMapEntitiesbuff,cls,false) != -1))
 								{
 									if (dbglvl == 4) PrintToServer("Edit %s\n%s",cls,szMapEntitiesbuff);
 									passedarr = GetArrayCell(g_EditClassOrgData,i);
@@ -2487,6 +2600,12 @@ public void rmglobalsch(Handle convar, const char[] oldValue, const char[] newVa
 {
 	if (StringToInt(newValue) > 0) RemoveGlobals = true;
 	else RemoveGlobals = false;
+}
+
+public void loggetbspch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0) LogEDTErr = true;
+	else LogEDTErr = false;
 }
 
 public void vintagech(Handle convar, const char[] oldValue, const char[] newValue)
