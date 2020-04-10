@@ -51,7 +51,7 @@ bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 bool TrainBlockFix = true;
 
-#define PLUGIN_VERSION "1.99964"
+#define PLUGIN_VERSION "1.99965"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -339,8 +339,38 @@ public void OnMapStart()
 				if ((StrEqual(clsname,"npc_citizen",false)) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(jtmp, SDKHook_OnTakeDamage, OnTakeDamage);
 			}
 		}
+		CreateTimer(0.1,RecheckChangeLevels,_,TIMER_FLAG_NO_MAPCHANGE);
 		PrecacheSound("npc\\roller\\code2.wav",true);
 	}
+}
+
+public Action RecheckChangeLevels(Handle timer)
+{
+	Handle arr = CreateArray(32);
+	FindAllByClassname(arr,-1,"trigger_changelevel");
+	if (GetArraySize(arr) > 0)
+	{
+		for (int i = 0;i<GetArraySize(arr);i++)
+		{
+			int entity = GetArrayCell(arr,i);
+			if (IsValidEntity(entity))
+			{
+				if (HasEntProp(entity,Prop_Data,"m_szMapName"))
+				{
+					char mapchk[64];
+					GetEntPropString(entity,Prop_Data,"m_szMapName",mapchk,sizeof(mapchk));
+					char curmap[64];
+					GetCurrentMap(curmap,sizeof(curmap));
+					if (StrEqual(mapchk,curmap,false))
+					{
+						if (debuglvl) PrintToServer("Warning: trigger_changelevel created with same map name as current map. Removing...");
+						AcceptEntityInput(entity,"kill");
+					}
+				}
+			}
+		}
+	}
+	CloseHandle(arr);
 }
 
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs)
@@ -3339,6 +3369,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 			}
 		}
 	}
+	if ((StrContains(classname,"weapon_",false) == 0) && (!StrEqual(classname,"weapon_striderbuster",false)))
+	{
+		SDKHookEx(entity,SDKHook_SpawnPost,resetweapmv);
+	}
 	if (StrEqual(classname,"rpg_missile",false))
 	{
 		if (IsValidEntity(entity))
@@ -3401,6 +3435,73 @@ public Action StartTouchRPG(int entity, int other)
 			int effectchk = GetEntPropEnt(entity,Prop_Data,"m_hEffectEntity");
 			if (((ownerchk == -1) || (ownerchk == 0)) && (effectchk != -1))
 				SetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity",effectchk);
+		}
+	}
+}
+
+public void resetweapmv(int entity)
+{
+	SDKUnhook(entity,SDKHook_SpawnPost,resetweapmv);
+	if (IsValidEntity(entity))
+	{
+		char clsrecheck[32];
+		GetEntityClassname(entity,clsrecheck,sizeof(clsrecheck));
+		if ((StrContains(clsrecheck,"weapon_",false) == 0) && (StrContains(mapbuf,"ep1_c17_02a",false) == -1))
+		{
+			int sf = GetEntProp(entity,Prop_Data,"m_spawnflags");
+			int parent = GetEntPropEnt(entity,Prop_Data,"m_hParent");
+			if ((sf > 0) && (!IsValidEntity(parent)))
+			{
+				SetEntProp(entity,Prop_Data,"m_MoveType",0);
+				float orgs[3];
+				GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",orgs);
+				Handle dp = CreateDataPack();
+				WritePackCell(dp,entity);
+				WritePackFloat(dp,orgs[0]);
+				WritePackFloat(dp,orgs[1]);
+				WritePackFloat(dp,orgs[2]);
+				CreateTimer(0.1,resetweappos,dp,TIMER_FLAG_NO_MAPCHANGE);
+			}
+			if (StrEqual(clsrecheck,"weapon_glock",false))
+			{
+				if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",3);
+			}
+			else if (StrEqual(clsrecheck,"weapon_mp5",false))
+			{
+				if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",4);
+				if (HasEntProp(entity,Prop_Data,"m_iSecondaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iSecondaryAmmoType",9);
+			}
+		}
+	}
+}
+
+public Action resetweappos(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int entity = ReadPackCell(dp);
+		float orgs[3];
+		orgs[0] = ReadPackFloat(dp);
+		orgs[1] = ReadPackFloat(dp);
+		orgs[2] = ReadPackFloat(dp);
+		CloseHandle(dp);
+		if (IsValidEntity(entity))
+		{
+			char clsrecheck[32];
+			GetEntityClassname(entity,clsrecheck,sizeof(clsrecheck));
+			if (StrContains(clsrecheck,"weapon_",false) == 0)
+			{
+				int sf = GetEntProp(entity,Prop_Data,"m_spawnflags");
+				int parent = GetEntPropEnt(entity,Prop_Data,"m_hParent");
+				SetVariantString("spawnflags 0");
+				AcceptEntityInput(entity,"AddOutput");
+				if ((sf > 0) && (!IsValidEntity(parent)))
+				{
+					SetEntProp(entity,Prop_Data,"m_MoveType",0);
+					TeleportEntity(entity,orgs,NULL_VECTOR,NULL_VECTOR);
+				}
+			}
 		}
 	}
 }

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0008"
-			"Previous"	"2.0007"
+			"Latest"  	"2.0009"
+			"Previous"	"2.0008"
 		}
 		
-		"Notes"	"Fixed certain triggers for 20.x branches."
+		"Notes"	"Added check to remove trigger_changelevel if transitioned from previous map."
 	}
 	
 	"Files"

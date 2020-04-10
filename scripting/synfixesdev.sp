@@ -58,6 +58,7 @@ Handle addedinputs = INVALID_HANDLE;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float fadingtime[128];
+float antispamchk[128];
 int WeapList = -1;
 int tauhl2beam = -1;
 int spawneramt = 20;
@@ -97,7 +98,7 @@ bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0008"
+#define PLUGIN_VERSION "2.0009"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1149,8 +1150,38 @@ public void OnMapStart()
 			HookEntityOutput("npc_human_security","OnFoundEnemy",SecFoundEnemy);
 			HookEntityOutput("env_entity_maker","OnEntitySpawned",ptadditionalspawn);
 		}
+		CreateTimer(0.1,RecheckChangeLevels,_,TIMER_FLAG_NO_MAPCHANGE);
 		PrecacheSound("npc\\roller\\code2.wav",true);
 	}
+}
+
+public Action RecheckChangeLevels(Handle timer)
+{
+	Handle arr = CreateArray(32);
+	FindAllByClassname(arr,-1,"trigger_changelevel");
+	if (GetArraySize(arr) > 0)
+	{
+		for (int i = 0;i<GetArraySize(arr);i++)
+		{
+			int entity = GetArrayCell(arr,i);
+			if (IsValidEntity(entity))
+			{
+				if (HasEntProp(entity,Prop_Data,"m_szMapName"))
+				{
+					char mapchk[64];
+					GetEntPropString(entity,Prop_Data,"m_szMapName",mapchk,sizeof(mapchk));
+					char curmap[64];
+					GetCurrentMap(curmap,sizeof(curmap));
+					if (StrEqual(mapchk,curmap,false))
+					{
+						if (debuglvl) PrintToServer("Warning: trigger_changelevel created with same map name as current map. Removing...");
+						AcceptEntityInput(entity,"kill");
+					}
+				}
+			}
+		}
+	}
+	CloseHandle(arr);
 }
 
 void ClearArrayHandles(Handle array)
@@ -10790,6 +10821,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	if ((killed < MaxClients+1) && (killed > 0))
 	{
 		fadingtime[killed] = 0.0;
+		antispamchk[killed] = 0.0;
 		CreateTimer(0.1,checkvalidity,killed);
 	}
 	if (attacker > MaxClients)
@@ -13678,6 +13710,7 @@ public void OnClientDisconnect(int client)
 {
 	votetime[client] = 0.0;
 	fadingtime[client] = 0.0;
+	antispamchk[client] = 0.0;
 	showcc[client] = false;
 	DisplayedChapterTitle[client] = false;
 }
@@ -16503,6 +16536,7 @@ public Action onreload(const char[] output, int caller, int activator, float del
 				if (i < MaxClients+1)
 				{
 					fadingtime[i] = 0.0;
+					antispamchk[i] = 0.0;
 					if (IsValidEntity(i))
 					{
 						if (IsClientConnected(i))
@@ -19184,9 +19218,21 @@ public void OnClientDisconnect_Post(int client)
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
-	//if (buttons & IN_DUCK) {
-	//	PrintToServer("Ducked %i Ducking %i",GetEntProp(client,Prop_Data,"m_bDucked"),GetEntProp(client,Prop_Data,"m_bDucking"));
-	//}
+	if (buttons & IN_DUCK) {
+		if ((GetEntProp(client,Prop_Data,"m_bDucked")) && (GetEntProp(client,Prop_Data,"m_bDucking")))
+		{
+			float Time = GetTickedTime();
+			if (antispamchk[client] <= Time)
+			{
+				antispamchk[client] = Time + 0.1;
+			}
+			else
+			{
+				ClientCommand(client,"-duck");
+				return Plugin_Changed;
+			}
+		}
+	}
 	if (buttons & IN_ATTACK) {
 		if (!(g_LastButtons[client] & IN_ATTACK)) {
 			OnButtonPressTankchk(client,IN_ATTACK);
@@ -19292,6 +19338,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		}
 	}
 	g_LastButtons[client] = buttons;
+	return Plugin_Continue;
 }
 
 public Action resetweapreload(Handle timer, int weap)
@@ -20065,7 +20112,7 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 
 public Action customsoundchecks(char sample[PLATFORM_MAX_PATH], int& entity, float& volume, int& level, int& pitch, float pos[3], int& flags, float& delay)
 {
-	if ((StrContains(sample,"ambient/energy/zap",false) == -1) && (StrContains(sample,"alarm",false) == -1) && (StrContains(sample,"shotgun_fire",false) == -1) && (StrContains(sample,"smg1_fire1.wav",false) == -1) && (StrContains(sample,"music",false) != -1) && (!StrEqual(sample,"common/null.wav",false)))
+	if ((StrContains(sample,"ambient/energy/zap",false) == -1) && (StrContains(sample,"alarm",false) == -1) && (StrContains(sample,"shotgun_fire",false) == -1) && (StrContains(sample,"smg1_fire1.wav",false) == -1) && (StrContains(sample,"music",false) != -1) && (!StrEqual(sample,"common/null.wav",false)) && (StrContains(sample,"env_headcrabcanister",false) == -1))
 	{
 		if (FindValueInArray(delayedsounds,entity) == -1)
 		{
