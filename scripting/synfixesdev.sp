@@ -18350,11 +18350,17 @@ public void resetweapmv(int entity)
 	{
 		char clsrecheck[32];
 		GetEntityClassname(entity,clsrecheck,sizeof(clsrecheck));
-		if ((StrContains(clsrecheck,"weapon_",false) == 0) && (StrContains(mapbuf,"ep1_c17_02a",false) == -1))
+		if ((StrContains(clsrecheck,"weapon_",false) == 0) || (StrContains(clsrecheck,"item_weapon_",false) == 0))
 		{
 			int sf = GetEntProp(entity,Prop_Data,"m_spawnflags");
 			int parent = GetEntPropEnt(entity,Prop_Data,"m_hParent");
-			if ((sf > 0) && (!IsValidEntity(parent)))
+			bool CustChecks = false;
+			if (StrContains(mapbuf,"bm_",false) != -1)
+			{
+				if (sf & 1<<1) CustChecks = true;
+			}
+			else if ((sf & 1<<0) && (!(sf & 1<<1))) CustChecks = true;
+			if ((CustChecks) && (!IsValidEntity(parent)))
 			{
 				SetEntProp(entity,Prop_Data,"m_MoveType",0);
 				float orgs[3];
@@ -18394,7 +18400,7 @@ public Action resetweappos(Handle timer, Handle dp)
 		{
 			char clsrecheck[32];
 			GetEntityClassname(entity,clsrecheck,sizeof(clsrecheck));
-			if (StrContains(clsrecheck,"weapon_",false) == 0)
+			if ((StrContains(clsrecheck,"weapon_",false) == 0) || (StrContains(clsrecheck,"item_weapon_",false) == 0))
 			{
 				int sf = GetEntProp(entity,Prop_Data,"m_spawnflags");
 				int parent = GetEntPropEnt(entity,Prop_Data,"m_hParent");
