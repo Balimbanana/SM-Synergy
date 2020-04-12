@@ -1359,7 +1359,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "HL2: Episode 1");
 	}
-	else if (StrContains(map, "ep2", false) == 0)
+	else if (StrContains(map, "ep2_outland_", false) == 0)
 	{
 		Format(maptag, sizeof(maptag), "HL2: Episode 2");
 	}
@@ -1435,6 +1435,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Slums 2: Extended");
 	}
+	else if ((StrEqual(map, "ravenholmlc1", false)) || (StrContains(map, "rhlc raven", false) == 0))
+	{
+		Format(maptag, sizeof(maptag), "Ravenholm: The Lost Chapter");
+	}
 	else if ((StrContains(map, "ravenholm", false) == 0) || (StrContains(map, "rh ravenholm", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Ravenholm");
@@ -1471,11 +1475,11 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Below The Ice");
 	}
-	else if ((StrContains(map, "dayhardpart", false) == 0) || (StrEqual(map,"dayhard_menu",false)) || (StrEqual(map,"voyage",false)) || (StrEqual(map,"redrum",false)) || (StrEqual(map,"finale",false)) || (StrEqual(map,"breencave",false)) || (StrEqual(map,"dojo",false)))
+	else if ((StrContains(map, "dayhardpart", false) == 0) || (StrContains(map, "dh ", false) == 0) || (StrEqual(map,"dayhard_menu",false)) || (StrEqual(map,"voyage",false)) || (StrEqual(map,"redrum",false)) || (StrEqual(map,"finale",false)) || (StrEqual(map,"breencave",false)) || (StrEqual(map,"dojo",false)))
 	{
 		Format(maptag, sizeof(maptag), "Day Hard");
 	}
-	else if ((StrContains(map,"mine01_0",false) == 0) || (StrContains(map,"mine_01_0",false) == 0))
+	else if ((StrEqual(map,"brighe",false)) || (StrEqual(map,"city-s",false)) || (StrContains(map,"mine01_0",false) == 0) || (StrContains(map,"mine_01_0",false) == 0) || (StrContains(map,"ante ",false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Antlions Everywhere");
 	}
@@ -1490,6 +1494,10 @@ public Action GetMapTag(const char[] map)
 	else if (StrContains(map, "dwn0", false) == 0)
 	{
 		Format(maptag, sizeof(maptag), "DownFall");
+	}
+	else if ((StrContains(map, "Penetration0",false) == 0) || (StrContains(map, "hl2p Penetration0",false) == 0))
+	{
+		Format(maptag, sizeof(maptag), "HL2: Penetration");
 	}
 	else if (StrContains(map, "sttr_ch", false) == 0)
 	{
@@ -1515,6 +1523,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Terminal 7");
 	}
+	else if (StrContains(map, "hc_t0",false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Black Mesa: Hazard Course");
+	}
 	else if ((StrContains(map, "bm_c", false) == 0) || (StrContains(map, "bms ", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Black Mesa");
@@ -1530,6 +1542,10 @@ public Action GetMapTag(const char[] map)
 	else if (StrContains(map, "ptsd2 ", false) == 0)
 	{
 		Format(maptag, sizeof(maptag), "PTSD 2");
+	}
+	else if (StrContains(map, "ptcs ", false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "PTSD Christmas Special");
 	}
 	else if ((StrContains(map, "ptsd ", false) == 0) || (StrContains(map, "ptsd_", false) == 0) || (StrEqual(map,"boneless_ptsd",false)) || (StrEqual(map,"the_end",false)))
 	{
@@ -1581,7 +1597,15 @@ public Action GetMapTag(const char[] map)
 	}
 	else
 	{
-		Format(maptag, sizeof(maptag), "Syn");
+		char gamename[64];
+		GetGameFolderName(gamename,sizeof(gamename));
+		if (StrEqual(gamename,"synergy",false)) Format(maptag, sizeof(maptag), "Syn");
+		else if (StrEqual(gamename,"tf",false)) Format(maptag, sizeof(maptag), "TF2");
+		else
+		{
+			gamename[0] &= ~(1 << 5);
+			Format(maptag,sizeof(maptag),"%s",gamename);
+		}
 	}
 }
 
