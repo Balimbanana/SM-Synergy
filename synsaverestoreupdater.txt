@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.155"
-			"Previous"	"2.154"
+			"Latest"  	"2.156"
+			"Previous"	"2.155"
 		}
 		
-		"Notes"	"Added CVar sm_transitionskipver which will allow the full transition rebuild to run on later versions of Synergy, default is only custom transition info."
+		"Notes"	"Fixed override transition setup for 20.x versions. Fixed reloadmap not checking metadata for other maps of the same name."
 	}
 	
 	"Files"

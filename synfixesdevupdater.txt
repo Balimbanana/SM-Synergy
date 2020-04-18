@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0009"
-			"Previous"	"2.0008"
+			"Latest"  	"2.0010"
+			"Previous"	"2.0009"
 		}
 		
-		"Notes"	"Added check to remove trigger_changelevel if transitioned from previous map."
+		"Notes"	"Added custom vehicle seat adjust previously in SynSpawnInVehicle."
 	}
 	
 	"Files"

@@ -98,7 +98,7 @@ bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0009"
+#define PLUGIN_VERSION "2.0010"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -788,6 +788,7 @@ public void OnMapStart()
 		}
 		HookEntityOutput("trigger_changelevel","OnChangeLevel",mapendchg);
 		HookEntityOutput("func_physbox","OnPhysGunPunt",physpunt);
+		HookEntityOutput("prop_vehicle_jeep","PlayerOn",vehicleseatadjust);
 		HookUserMessage(GetUserMessageId("Fade"),blockfade,true);
 		Format(mapbuf,sizeof(mapbuf),"_%s.ent2",mapbuf);
 		char contentdata[64];
@@ -797,8 +798,8 @@ public void OnMapStart()
 			GetConVarString(cvar,contentdata,sizeof(contentdata));
 			char fixuptmp[16][16];
 			ExplodeString(contentdata," ",fixuptmp,16,16,true);
-			if (StrEqual(fixuptmp[2],"|",false)) Format(contentdata,sizeof(contentdata),"%s",fixuptmp[3]);
-			else Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+			if (StrEqual(fixuptmp[1],"|",false)) Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+			else Format(contentdata,sizeof(contentdata),"%s",fixuptmp[0]);
 		}
 		CloseHandle(cvar);
 		if (strlen(contentdata) > 1)
@@ -2974,7 +2975,7 @@ public Action changeleveldelay(Handle timer, Handle data)
 				GetConVarString(cvar,contentdata,sizeof(contentdata));
 				char fixuptmp[16][16];
 				ExplodeString(contentdata," ",fixuptmp,16,16,true);
-				if (StrEqual(fixuptmp[2],"|",false)) Format(contentdata,sizeof(contentdata),"%s %s",fixuptmp[3],maptochange);
+				if (StrEqual(fixuptmp[1],"|",false)) Format(contentdata,sizeof(contentdata),"%s %s",fixuptmp[2],maptochange);
 				else Format(contentdata,sizeof(contentdata),"%s %s",fixuptmp[2],maptochange);
 				ServerCommand("changelevel %s",contentdata);
 			}
@@ -3027,6 +3028,42 @@ public Action RemoveFromArr(Handle timer, int physbox)
 	{
 		RemoveFromArray(physboxarr,arrindx);
 		RemoveFromArray(physboxharr,arrindx);
+	}
+}
+
+public Action vehicleseatadjust(const char[] output, int caller, int activator, float delay)
+{
+	if ((IsValidEntity(caller)) && (IsValidEntity(activator)) && (activator <= MaxClients) && (activator > 0))
+	{
+		Handle dp = CreateDataPack();
+		WritePackCell(dp,caller);
+		WritePackCell(dp,activator);
+		CreateTimer(2.5,seatadjtimer,dp,TIMER_FLAG_NO_MAPCHANGE);
+	}
+}
+
+public Action seatadjtimer(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int vehicle = ReadPackCell(dp);
+		int client = ReadPackCell(dp);
+		CloseHandle(dp);
+		if ((IsValidEntity(vehicle)) && (IsValidEntity(client)) && (client <= MaxClients) && (client > 0))
+		{
+			char mdl[128];
+			GetEntPropString(vehicle,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+			//PrintToServer("Enter %i %i %s",vehicle,client,mdl);
+			if ((StrEqual(mdl,"models/vehicles/combine_apcdrivable.mdl",false)) || (StrEqual(mdl,"models/combine_apc.mdl",false)))
+			{
+				float seatadj[3];
+				seatadj[0] = 1.0;
+				seatadj[1] = -30.5;
+				seatadj[2] = 60.0;
+				SetEntPropVector(client,Prop_Data,"m_vecOrigin",seatadj);
+			}
+		}
 	}
 }
 /*
@@ -12092,7 +12129,7 @@ public Action ReHookTrigTP(Handle timer, Handle dp)
 void readoutputsforinputs()
 {
 	if (hasread) return;
-	if (debuglvl > 1) PrintToServer("Read outputs for inputs");
+	if (debuglvl > 1) PrintToServer("Read outputs for inputs from %s",mapbuf);
 	hasread = true;
 	Handle inputclasshooks = CreateArray(64);
 	Handle filehandle = OpenFile(mapbuf,"r",true,NULL_STRING);

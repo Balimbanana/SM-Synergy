@@ -60,7 +60,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.155"
+#define PLUGIN_VERSION "2.156"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2935,7 +2935,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 			if (StrEqual(clsname,"prop_door_rotating",false))
 			{
 				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-				if (StrEqual(targn,"door.into.09.garage",false))
+				if ((StrEqual(targn,"door.into.09.garage",false)) || (SynLaterAct))
 				{
 					AcceptEntityInput(i,"kill");
 					porigin[0] = mins[0]-mins[0];
@@ -4321,7 +4321,19 @@ void findentwdis(int ent, char[] clsname)
 
 public Action changelevel(Handle timer)
 {
-	ServerCommand("changelevel %s",mapbuf);
+	char contentdata[72];
+	Handle cvar = FindConVar("content_metadata");
+	if (cvar != INVALID_HANDLE)
+	{
+		GetConVarString(cvar,contentdata,sizeof(contentdata));
+		char fixuptmp[16][16];
+		ExplodeString(contentdata," ",fixuptmp,16,16,true);
+		if (StrEqual(fixuptmp[1],"|",false)) Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+		else Format(contentdata,sizeof(contentdata),"%s",fixuptmp[0]);
+	}
+	CloseHandle(cvar);
+	if (strlen(contentdata) > 0) ServerCommand("changelevel %s %s",contentdata,mapbuf);
+	else ServerCommand("changelevel %s",mapbuf);
 }
 
 void findrmstarts(int start, char[] type)

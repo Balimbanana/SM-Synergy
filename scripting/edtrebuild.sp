@@ -26,6 +26,7 @@ Handle g_EditTargetsData = INVALID_HANDLE;
 Handle g_CreateEnts = INVALID_HANDLE;
 Handle g_ModifyCase = INVALID_HANDLE;
 
+char lastmap[72];
 int dbglvl = 0;
 int method = 0;
 bool VintageMode = false;
@@ -34,7 +35,7 @@ bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 bool LogEDTErr = false;
 
-#define PLUGIN_VERSION "0.57"
+#define PLUGIN_VERSION "0.58"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -85,6 +86,9 @@ public void OnPluginStart()
 	LogEDTErr = GetConVarBool(cvar);
 	HookConVarChange(cvar,loggetbspch);
 	CloseHandle(cvar);
+	cvar = FindConVar("edtprefix");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtprefix", "", "Add prefix to check for EDTs starting with this first. Functions as prefix_mapname.edt.", _, false);
+	CloseHandle(cvar);
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -126,7 +130,9 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		GetConVarString(cvar,contentdata,sizeof(contentdata));
 		char fixuptmp[16][16];
 		ExplodeString(contentdata," ",fixuptmp,16,16,true);
-		Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+		if (StrEqual(fixuptmp[1],"|",false)) Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+		else if (StrEqual(fixuptmp[0],szMapName,false)) Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+		else Format(contentdata,sizeof(contentdata),"%s",fixuptmp[0]);
 	}
 	CloseHandle(cvar);
 	char curmap[128];
@@ -148,9 +154,30 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		}
 	}
 	if (FileExists("cfg/globaledt.edt",false)) ReadEDT("cfg/globaledt.edt");
-	if ((FileExists(curmap,true,NULL_STRING)) || (FileExists(curmap2,true,NULL_STRING)))
+	cvar = FindConVar("edtprefix");
+	if (cvar != INVALID_HANDLE)
 	{
-		if (FileExists(curmap2,true,NULL_STRING)) Format(curmap,sizeof(curmap),"%s",curmap2);
+		char prefix[64];
+		char mapchk[128];
+		GetConVarString(cvar,prefix,sizeof(prefix));
+		if (strlen(prefix) > 0)
+		{
+			Format(prefix,sizeof(prefix),"maps/%s_",prefix);
+			Format(mapchk,sizeof(mapchk),"%s",curmap);
+			ReplaceStringEx(mapchk,sizeof(mapchk),"maps/",prefix,_,_,false);
+			if (FileExists(mapchk,true,NULL_STRING)) Format(curmap2,sizeof(curmap2),"%s",mapchk);
+			else
+			{
+				Format(mapchk,sizeof(mapchk),"%s",curmap2);
+				ReplaceStringEx(mapchk,sizeof(mapchk),"maps/",prefix,_,_,false);
+				if (FileExists(mapchk,true,NULL_STRING)) Format(curmap2,sizeof(curmap2),"%s",mapchk);
+			}
+		}
+	}
+	CloseHandle(cvar);
+	if (FileExists(curmap2,true,NULL_STRING)) Format(curmap,sizeof(curmap),"%s",curmap2);
+	if (FileExists(curmap,true,NULL_STRING))
+	{
 		if (dbglvl) PrintToServer("EDT %s exists",curmap);
 		ReadEDT(curmap);
 		if (method == 1)
@@ -802,7 +829,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 											{
 												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
 												ExplodeString(tmpbuf,"\n",tmpexpl,4,64);
-												ExplodeString(tmpexpl[0]," ",tmpexpl,4,64);
+												ExplodeString(tmpexpl[0],"\" \"",tmpexpl,4,64);
 												findend = StrContains(tmpexpl[0]," ",false);
 												if (findend != -1)
 												{
@@ -1927,7 +1954,19 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			WriteFileString(writefile,szMapEntities,false);
 		}
 		CloseHandle(writefile);
+		if (strlen(lastmap) > 1)
+		{
+			char lastmapchk[72];
+			Format(lastmapchk,sizeof(lastmapchk),"\"map\" \"%s\"",lastmap);
+			if (StrContains(szMapEntities,lastmapchk,false) == -1)
+			{
+				char tmplastmap[512];
+				Format(tmplastmap,sizeof(tmplastmap),"\n{\n\"classname\" \"trigger_changelevel\"\n\"map\" \"%s\"\n\"spawnflags\" \"6\"\n}",lastmap);
+				StrCat(szMapEntities,sizeof(szMapEntities),tmplastmap);
+			}
+		}
 		if (dbglvl > 0) PrintToServer("Finished EntCache Rebuild");
+		Format(lastmap,sizeof(lastmap),"%s",szMapName);
 		return Plugin_Changed;
 	}
 	else if (dbglvl > 0)
@@ -1953,6 +1992,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 	CloseHandle(g_EditTargetsData);
 	CloseHandle(g_EditClassOrgData);
 	CloseHandle(g_CreateEnts);
+	Format(lastmap,sizeof(lastmap),"%s",szMapName);
 	return Plugin_Continue;
 }
 
