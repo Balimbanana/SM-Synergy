@@ -2954,7 +2954,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 			if ((StrEqual(clsname,"npc_alyx",false)) || (StrEqual(clsname,"npc_vortigaunt",false)) || (StrEqual(clsname,"prop_vehicle_jeep_episodic",false)))
 			{
 				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-				if (!StrEqual(mapbuf,"d1_town_05",false))
+				if ((!StrEqual(mapbuf,"d1_town_05",false)) || (SynLaterAct))
 				{
 					if ((StrEqual(targn,"alyx",false)) || (StrEqual(targn,"vort",false)) || (StrEqual(targn,"jeep",false)))
 						alwaystransition = 1;
