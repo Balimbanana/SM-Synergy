@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.58"
-			"Previous"	"0.57"
+			"Latest"  	"0.59"
+			"Previous"	"0.58"
 		}
 		
-		"Notes"	"Added CVar edtprefix to append prefix_mapname.edt for specific EDT loading. Fixed a content_metadata fmt issue. Added failsave trigger_changelevel from previous map."
+		"Notes"	"Fixed issue of multiple edit all by classname only applying first iteration."
 	}
 	
 	"Files"

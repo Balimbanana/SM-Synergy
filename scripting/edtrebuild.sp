@@ -35,7 +35,7 @@ bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 bool LogEDTErr = false;
 
-#define PLUGIN_VERSION "0.58"
+#define PLUGIN_VERSION "0.59"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -2368,12 +2368,9 @@ void ReadEDT(char[] edtfile)
 						else
 						{
 							if (dbglvl) PrintToServer("Edit all %s",cls);
-							if (FindStringInArray(g_EditClasses,cls) == -1)
-							{
-								PushArrayString(g_EditClasses,cls);
-								Handle dupearr = CloneArray(passedarr);
-								PushArrayCell(g_EditClassesData,dupearr);
-							}
+							PushArrayString(g_EditClasses,cls);
+							Handle dupearr = CloneArray(passedarr);
+							PushArrayCell(g_EditClassesData,dupearr);
 						}
 					}
 					else if (strlen(targn) > 0)
