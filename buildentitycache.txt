@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.46"
-			"Previous"	"0.45"
+			"Latest"  	"0.47"
+			"Previous"	"0.46"
 		}
 		
-		"Notes"	"Fix additional spaces in web from gameinfo. Fixed issue of some item origins overlapping while generating spawn equipment."
+		"Notes"	"Added functionality for buildcache tag mapname without needing to have the mount point mounted."
 	}
 	
 	"Files"

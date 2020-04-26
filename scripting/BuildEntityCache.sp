@@ -11,7 +11,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "0.46"
+#define PLUGIN_VERSION "0.47"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -21,7 +21,7 @@ bool Reverse = false;
 bool MapSetInProgress = false;
 bool EndMapSet = false;
 char mapbuf[64];
-char curmap[64];
+char curmap[128];
 char globaldots[48];
 int openbrackets = 0;
 Handle carriedoverweapons = INVALID_HANDLE;
@@ -84,11 +84,59 @@ public Action BuildCacheFor(int client, int args)
 		char specmap[64];
 		if (args == 2)
 		{
-			char tag[16];
+			char tag[24];
 			GetCmdArg(1,tag,sizeof(tag));
 			GetCmdArg(2,specmap,sizeof(specmap));
 			Format(curmap,sizeof(curmap),"maps/%s.bsp",specmap);
 			Format(specmap,sizeof(specmap),"%s_%s",tag,specmap);
+			if (!FileExists(curmap,true,NULL_STRING))
+			{
+				char contentloader[32];
+				Format(contentloader,sizeof(contentloader),"content/%s.dat",tag);
+				if (FileExists(contentloader,true,NULL_STRING))
+				{
+					Handle loaderfindpath = OpenFile(contentloader,"r",true,NULL_STRING);
+					if (loaderfindpath != INVALID_HANDLE)
+					{
+						char rootpath[128];
+						char subpath[64];
+						char line[128];
+						int HasPath = 0;
+						while(!IsEndOfFile(loaderfindpath)&&ReadFileLine(loaderfindpath,line,sizeof(line)))
+						{
+							TrimString(line);
+							if (StrContains(line,"root",false) != -1)
+							{
+								Format(rootpath,sizeof(rootpath),"%s",line);
+								ReplaceString(rootpath,sizeof(rootpath),"\"","",false);
+								ReplaceString(rootpath,sizeof(rootpath),"root","",false);
+								TrimString(rootpath);
+								HasPath++;
+							}
+							if (StrContains(line,"path",false) != -1)
+							{
+								Format(subpath,sizeof(subpath),"%s",line);
+								ReplaceString(subpath,sizeof(subpath),"\"","",false);
+								ReplaceString(subpath,sizeof(subpath),"path","",false);
+								TrimString(subpath);
+								HasPath++;
+							}
+							if (HasPath > 1) break;
+						}
+						if (strlen(subpath) > 0)
+						{
+							Format(curmap,sizeof(curmap),"%s/%s",subpath,curmap);
+							if (strlen(rootpath) > 0)
+							{
+								Format(curmap,sizeof(curmap),"%s/%s",rootpath,curmap);
+							}
+							Format(curmap,sizeof(curmap),"../../%s",curmap);
+							PrintToServer("Search %s",curmap);
+						}
+					}
+					CloseHandle(loaderfindpath);
+				}
+			}
 		}
 		else
 		{
@@ -1458,7 +1506,7 @@ void buildcache(int startline, Handle mapset)
 						}
 						else
 						{
-							WriteFileLine(cachefile,line);
+							WriteFileLine(cachefile,"%s",line);
 						}
 					}
 				}
