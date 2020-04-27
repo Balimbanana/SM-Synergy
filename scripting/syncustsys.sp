@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.2"
+#define PLUGIN_VERSION "0.3"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/syncustsys.txt"
 
 bool HeavyCrowbar = false;
@@ -18,12 +18,16 @@ bool DoubleDamage = false;
 bool RapidFire = false;
 bool PistolExplosions = false;
 bool HealthRegen = false;
+bool DoubleJump = false;
 int HealthRegenStep = 1;
+int g_LastButtons[128];
 float HeavyCrowbarScale = 900.0; //default crowbar dmg 10 up to 9000
+float DoubleJumpHeight = 200.0;
 float centnextatk[2048];
+float LastJump[128];
 char pistolexpldmg[16] = "40";
 Handle thinkingents = INVALID_HANDLE;
-bool CLHasProperty[128][5];
+bool CLHasProperty[128][6];
 
 public Plugin myinfo =
 {
@@ -77,6 +81,16 @@ public void OnPluginStart()
 	HookConVarChange(cvar, healthregenstepch);
 	HealthRegenStep = GetConVarInt(cvar);
 	CloseHandle(cvar);
+	cvar = FindConVar("syn_doublejump");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("syn_doublejump", "0", "Allow double jump.", _, true, 0.0, true, 1.0);
+	HookConVarChange(cvar, doublejumpch);
+	DoubleJump = GetConVarBool(cvar);
+	CloseHandle(cvar);
+	cvar = FindConVar("syn_doublejump_height");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("syn_doublejump_height", "200", "Double jump height.", _, true, 0.0, false);
+	HookConVarChange(cvar, doublejumpheightch);
+	DoubleJumpHeight = GetConVarFloat(cvar);
+	CloseHandle(cvar);
 	RegAdminCmd("syn_adminproperty",ApplyProperty,ADMFLAG_ROOT,".");
 	CreateTimer(1.0,ReHookNPCS,_,TIMER_FLAG_NO_MAPCHANGE);
 	CreateTimer(1.0,HealthRegenTicks,_,TIMER_REPEAT);
@@ -96,6 +110,9 @@ public void OnMapStart()
 		CLHasProperty[i][2] = false;
 		CLHasProperty[i][3] = false;
 		CLHasProperty[i][4] = false;
+		CLHasProperty[i][5] = false;
+		LastJump[i] = 0.0;
+		g_LastButtons[i] = 0;
 	}
 }
 
@@ -219,6 +236,26 @@ public Action ApplyProperty(int client, int args)
 					CLHasProperty[targ][0] = true;
 				}
 				PrintToConsole(client,"Set %N HeavyCrowbar to %i",targ,CLHasProperty[targ][0]);
+			}
+		}
+		else if (StrContains(type,"Jump",false) != -1)
+		{
+			if (args > 2)
+			{
+				CLHasProperty[targ][5] = setval;
+				PrintToConsole(client,"Set %N Double Jump to %i",targ,CLHasProperty[targ][5]);
+			}
+			else
+			{
+				if (CLHasProperty[targ][5])
+				{
+					CLHasProperty[targ][5] = false;
+				}
+				else
+				{
+					CLHasProperty[targ][5] = true;
+				}
+				PrintToConsole(client,"Set %N Double Jump to %i",targ,CLHasProperty[targ][5]);
 			}
 		}
 		else if (StrContains(type,"Double",false) != -1)
@@ -390,6 +427,8 @@ public Action TakeDamageNPCS(int victim, int& attacker, int& inflictor, float& d
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
+	int vehicle = -1;
+	if (HasEntProp(client,Prop_Data,"m_hVehicle")) vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
 	if ((PistolExplosions) || (RapidFire) || (CLHasProperty[client][3]) || (CLHasProperty[client][2]))
 	{
 		if (IsValidEntity(client))
@@ -401,7 +440,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
 					if (IsValidEntity(weap))
 					{
-						if ((PistolExplosions) || (CLHasProperty[client][3]))
+						if (((PistolExplosions) || (CLHasProperty[client][3])) && (vehicle == -1))
 						{
 							char weapcls[32];
 							GetEntityClassname(weap,weapcls,sizeof(weapcls));
@@ -475,6 +514,32 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 		}
 	}
+	if ((DoubleJump) || (CLHasProperty[client][5]))
+	{
+		if (buttons & IN_JUMP)
+		{
+			if (!(g_LastButtons[client] & IN_JUMP))
+			{
+				if ((HasEntProp(client,Prop_Data,"m_hGroundEntity")) && (vehicle == -1))
+				{
+					int groundent = GetEntPropEnt(client,Prop_Data,"m_hGroundEntity");
+					if ((LastJump[client] > GetGameTime()) && (groundent == -1))
+					{
+						float absvel[3];
+						GetEntPropVector(client,Prop_Data,"m_vecAbsVelocity",absvel);
+						absvel[2] = DoubleJumpHeight;
+						TeleportEntity(client,NULL_VECTOR,NULL_VECTOR,absvel);
+						LastJump[client] = 0.0;
+					}
+					else if (groundent != -1)
+					{
+						LastJump[client] = GetGameTime()+0.5;
+					}
+				}
+			}
+		}
+	}
+	g_LastButtons[client] = buttons;
 }
 
 public void ExplodeDelay(int entity)
@@ -489,11 +554,14 @@ public void ExplodeDelay(int entity)
 public void OnClientDisconnect_Post(int client)
 {
 	centnextatk[client] = 0.0;
+	LastJump[client] = 0.0;
+	g_LastButtons[client] = 0;
 	CLHasProperty[client][0] = false;
 	CLHasProperty[client][1] = false;
 	CLHasProperty[client][2] = false;
 	CLHasProperty[client][3] = false;
 	CLHasProperty[client][4] = false;
+	CLHasProperty[client][5] = false;
 }
 
 public bool TraceEntityFilter(int entity, int mask, any data)
@@ -551,4 +619,15 @@ public void healthregench(Handle convar, const char[] oldValue, const char[] new
 public void healthregenstepch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	HealthRegenStep = StringToInt(newValue);
+}
+
+public void doublejumpch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) DoubleJump = true;
+	else DoubleJump = false;
+}
+
+public void doublejumpheightch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	DoubleJumpHeight = StringToFloat(newValue);
 }
