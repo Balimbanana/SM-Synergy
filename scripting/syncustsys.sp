@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.1"
+#define PLUGIN_VERSION "0.2"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/syncustsys.txt"
 
 bool HeavyCrowbar = false;
@@ -23,6 +23,7 @@ float HeavyCrowbarScale = 900.0; //default crowbar dmg 10 up to 9000
 float centnextatk[2048];
 char pistolexpldmg[16] = "40";
 Handle thinkingents = INVALID_HANDLE;
+bool CLHasProperty[128][5];
 
 public Plugin myinfo =
 {
@@ -76,6 +77,7 @@ public void OnPluginStart()
 	HookConVarChange(cvar, healthregenstepch);
 	HealthRegenStep = GetConVarInt(cvar);
 	CloseHandle(cvar);
+	RegAdminCmd("syn_adminproperty",ApplyProperty,ADMFLAG_ROOT,".");
 	CreateTimer(1.0,ReHookNPCS,_,TIMER_FLAG_NO_MAPCHANGE);
 	CreateTimer(1.0,HealthRegenTicks,_,TIMER_REPEAT);
 }
@@ -86,6 +88,14 @@ public void OnMapStart()
 	for (int i = 0;i<2048;i++)
 	{
 		centnextatk[i] = 0.0;
+	}
+	for (int i = 0;i<128;i++)
+	{
+		CLHasProperty[i][0] = false;
+		CLHasProperty[i][1] = false;
+		CLHasProperty[i][2] = false;
+		CLHasProperty[i][3] = false;
+		CLHasProperty[i][4] = false;
 	}
 }
 
@@ -145,6 +155,156 @@ public int Updater_OnPluginUpdated()
 	ReloadPlugin(nullpl);
 }
 
+public Action ApplyProperty(int client, int args)
+{
+	if (args < 2)
+	{
+		PrintToConsole(client,"Syntax: syn_adminproperty <client> <property>");
+		return Plugin_Handled;
+	}
+	else
+	{
+		char name[64];
+		GetCmdArg(1,name,sizeof(name));
+		char type[32];
+		GetCmdArg(2,type,sizeof(type));
+		int targ = -1;
+		for (int i = 1;i<MaxClients+1;i++)
+		{
+			if (IsValidEntity(i))
+			{
+				if (IsClientConnected(i))
+				{
+					if (IsClientInGame(i))
+					{
+						char clname[64];
+						GetClientName(i,clname,sizeof(clname));
+						if (StrContains(clname,name,false) != -1)
+						{
+							targ = i;
+							break;
+						}
+					}
+				}
+			}
+		}
+		if (targ == -1)
+		{
+			PrintToConsole(client,"Unable to find client %s",name);
+			return Plugin_Handled;
+		}
+		bool setval = false;
+		if (args > 2)
+		{
+			char h[4];
+			GetCmdArg(3,h,sizeof(h));
+			if (StringToInt(h) < 1) setval = false;
+			else setval = true;
+		}
+		if (StrEqual(type,"HeavyCrowbar",false))
+		{
+			if (args > 2)
+			{
+				CLHasProperty[targ][0] = setval;
+				PrintToConsole(client,"Set %N HeavyCrowbar to %i",targ,CLHasProperty[targ][0]);
+			}
+			else
+			{
+				if (CLHasProperty[targ][0])
+				{
+					CLHasProperty[targ][0] = false;
+				}
+				else
+				{
+					CLHasProperty[targ][0] = true;
+				}
+				PrintToConsole(client,"Set %N HeavyCrowbar to %i",targ,CLHasProperty[targ][0]);
+			}
+		}
+		else if (StrEqual(type,"DoubleDamage",false))
+		{
+			if (args > 2)
+			{
+				CLHasProperty[targ][1] = setval;
+				PrintToConsole(client,"Set %N DoubleDamage to %i",targ,CLHasProperty[targ][1]);
+			}
+			else
+			{
+				if (CLHasProperty[targ][1])
+				{
+					CLHasProperty[targ][1] = false;
+				}
+				else
+				{
+					CLHasProperty[targ][1] = true;
+				}
+				PrintToConsole(client,"Set %N DoubleDamage to %i",targ,CLHasProperty[targ][1]);
+			}
+		}
+		else if (StrEqual(type,"RapidFire",false))
+		{
+			if (args > 2)
+			{
+				CLHasProperty[targ][2] = setval;
+				PrintToConsole(client,"Set %N RapidFire to %i",targ,CLHasProperty[targ][2]);
+			}
+			else
+			{
+				if (CLHasProperty[targ][2])
+				{
+					CLHasProperty[targ][2] = false;
+				}
+				else
+				{
+					CLHasProperty[targ][2] = true;
+				}
+				PrintToConsole(client,"Set %N RapidFire to %i",targ,CLHasProperty[targ][2]);
+			}
+		}
+		else if (StrEqual(type,"PistolExplosions",false))
+		{
+			if (args > 2)
+			{
+				CLHasProperty[targ][3] = setval;
+				PrintToConsole(client,"Set %N Pistol Explosions to %i",targ,CLHasProperty[targ][3]);
+			}
+			else
+			{
+				if (CLHasProperty[targ][3])
+				{
+					CLHasProperty[targ][3] = false;
+				}
+				else
+				{
+					CLHasProperty[targ][3] = true;
+				}
+				PrintToConsole(client,"Set %N Pistol Explosions to %i",targ,CLHasProperty[targ][3]);
+			}
+		}
+		else if (StrEqual(type,"HealthRegen",false))
+		{
+			if (args > 2)
+			{
+				CLHasProperty[targ][4] = setval;
+				PrintToConsole(client,"Set %N HealthRegen to %i",targ,CLHasProperty[targ][4]);
+			}
+			else
+			{
+				if (CLHasProperty[targ][4])
+				{
+					CLHasProperty[targ][4] = false;
+				}
+				else
+				{
+					CLHasProperty[targ][4] = true;
+				}
+				PrintToConsole(client,"Set %N HealthRegen to %i",targ,CLHasProperty[targ][4]);
+			}
+		}
+	}
+	return Plugin_Handled;
+}
+
 public Action ReHookNPCS(Handle timer)
 {
 	for (int i = MaxClients+1;i<2048;i++)
@@ -163,17 +323,17 @@ public Action ReHookNPCS(Handle timer)
 
 public Action HealthRegenTicks(Handle timer)
 {
-	if (HealthRegen)
+	for (int i = 1;i<MaxClients+1;i++)
 	{
-		for (int i = 1;i<MaxClients+1;i++)
+		if (IsValidEntity(i))
 		{
-			if (IsValidEntity(i))
+			if (IsClientConnected(i))
 			{
-				if (IsClientConnected(i))
+				if (IsClientInGame(i))
 				{
-					if (IsClientInGame(i))
+					if (IsPlayerAlive(i))
 					{
-						if (IsPlayerAlive(i))
+						if ((CLHasProperty[i][4]) || (HealthRegen))
 						{
 							int maxh = GetEntProp(i,Prop_Data,"m_iMaxHealth");
 							int curh = GetEntProp(i,Prop_Data,"m_iHealth");
@@ -205,7 +365,7 @@ public Action TakeDamageNPCS(int victim, int& attacker, int& inflictor, float& d
 {
 	if ((attacker > 0) && (attacker < MaxClients+1) && (IsValidEntity(attacker)) && (damage > 0.1))
 	{
-		if ((HeavyCrowbar) && (HasEntProp(attacker,Prop_Data,"m_hActiveWeapon")))
+		if (((HeavyCrowbar) || (CLHasProperty[attacker][0])) && (HasEntProp(attacker,Prop_Data,"m_hActiveWeapon")))
 		{
 			int curweap = GetEntPropEnt(attacker,Prop_Data,"m_hActiveWeapon");
 			if (IsValidEntity(curweap))
@@ -219,7 +379,7 @@ public Action TakeDamageNPCS(int victim, int& attacker, int& inflictor, float& d
 				}
 			}
 		}
-		if (DoubleDamage)
+		if ((DoubleDamage) || (CLHasProperty[attacker][1]))
 		{
 			damage = damage*2.0;
 			return Plugin_Changed;
@@ -230,7 +390,7 @@ public Action TakeDamageNPCS(int victim, int& attacker, int& inflictor, float& d
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
-	if ((PistolExplosions) || (RapidFire))
+	if ((PistolExplosions) || (RapidFire) || (CLHasProperty[client][3]) || (CLHasProperty[client][2]))
 	{
 		if (IsValidEntity(client))
 		{
@@ -241,7 +401,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
 					if (IsValidEntity(weap))
 					{
-						if (PistolExplosions)
+						if ((PistolExplosions) || (CLHasProperty[client][3]))
 						{
 							char weapcls[32];
 							GetEntityClassname(weap,weapcls,sizeof(weapcls));
@@ -292,7 +452,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								}
 							}
 						}
-						if (RapidFire)
+						if ((RapidFire) || (CLHasProperty[client][2]))
 						{
 							if (HasEntProp(weap,Prop_Data,"m_flNextPrimaryAttack"))
 							{
@@ -329,6 +489,11 @@ public void ExplodeDelay(int entity)
 public void OnClientDisconnect_Post(int client)
 {
 	centnextatk[client] = 0.0;
+	CLHasProperty[client][0] = false;
+	CLHasProperty[client][1] = false;
+	CLHasProperty[client][2] = false;
+	CLHasProperty[client][3] = false;
+	CLHasProperty[client][4] = false;
 }
 
 public bool TraceEntityFilter(int entity, int mask, any data)
