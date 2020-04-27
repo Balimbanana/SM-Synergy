@@ -201,7 +201,7 @@ public Action ApplyProperty(int client, int args)
 			if (StringToInt(h) < 1) setval = false;
 			else setval = true;
 		}
-		if (StrEqual(type,"HeavyCrowbar",false))
+		if (StrContains(type,"Crowbar",false) != -1)
 		{
 			if (args > 2)
 			{
@@ -221,7 +221,7 @@ public Action ApplyProperty(int client, int args)
 				PrintToConsole(client,"Set %N HeavyCrowbar to %i",targ,CLHasProperty[targ][0]);
 			}
 		}
-		else if (StrEqual(type,"DoubleDamage",false))
+		else if (StrContains(type,"Double",false) != -1)
 		{
 			if (args > 2)
 			{
@@ -241,7 +241,7 @@ public Action ApplyProperty(int client, int args)
 				PrintToConsole(client,"Set %N DoubleDamage to %i",targ,CLHasProperty[targ][1]);
 			}
 		}
-		else if (StrEqual(type,"RapidFire",false))
+		else if (StrContains(type,"Rapid",false) != -1)
 		{
 			if (args > 2)
 			{
@@ -261,7 +261,7 @@ public Action ApplyProperty(int client, int args)
 				PrintToConsole(client,"Set %N RapidFire to %i",targ,CLHasProperty[targ][2]);
 			}
 		}
-		else if (StrEqual(type,"PistolExplosions",false))
+		else if (StrContains(type,"Pistol",false) != -1)
 		{
 			if (args > 2)
 			{
@@ -281,7 +281,7 @@ public Action ApplyProperty(int client, int args)
 				PrintToConsole(client,"Set %N Pistol Explosions to %i",targ,CLHasProperty[targ][3]);
 			}
 		}
-		else if (StrEqual(type,"HealthRegen",false))
+		else if (StrContains(type,"Regen",false) != -1)
 		{
 			if (args > 2)
 			{
