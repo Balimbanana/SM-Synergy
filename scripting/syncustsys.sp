@@ -515,8 +515,18 @@ public Action BackToDeathPos(int client, int args)
 	{
 		if (ValidBackPos[client])
 		{
-			ValidBackPos[client] = false;
-			TeleportEntity(client,CLBackPos[client],CLBackAng[client],NULL_VECTOR);
+			if (HasEntProp(client,Prop_Data,"m_hVehicle"))
+			{
+				if (GetEntPropEnt(client,Prop_Data,"m_hVehicle") == -1)
+				{
+					ValidBackPos[client] = false;
+					TeleportEntity(client,CLBackPos[client],CLBackAng[client],NULL_VECTOR);
+				}
+				else
+				{
+					PrintToChat(client,"Unable to use while in vehicle.");
+				}
+			}
 		}
 		else
 		{
