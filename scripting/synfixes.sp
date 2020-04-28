@@ -51,7 +51,7 @@ bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 bool TrainBlockFix = true;
 
-#define PLUGIN_VERSION "1.99965"
+#define PLUGIN_VERSION "1.99966"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -439,7 +439,8 @@ public Action fixbarney(int client, int args)
 
 public Action stuckblck(int client, int args)
 {
-	if ((client == 0) || (!IsPlayerAlive(client))) return Plugin_Handled;
+	if (!IsValidEntity(client)) return Plugin_Handled;
+	if ((client == 0) || (!IsClientInGame(client)) || (!IsPlayerAlive(client))) return Plugin_Handled;
 	int vckent = GetEntPropEnt(client, Prop_Send, "m_hVehicle");
 	char vckcls[32];
 	if (vckent != -1) GetEntityClassname(vckent,vckcls,sizeof(vckcls));

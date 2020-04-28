@@ -1351,7 +1351,7 @@ public Action fixbarney(int client, int args)
 public Action stuckblck(int client, int args)
 {
 	if (!IsValidEntity(client)) return Plugin_Handled;
-	if ((client == 0) || (!IsPlayerAlive(client))) return Plugin_Handled;
+	if ((client == 0) || (!IsClientInGame(client)) || (!IsPlayerAlive(client))) return Plugin_Handled;
 	int vckent = GetEntPropEnt(client, Prop_Send, "m_hVehicle");
 	char vckcls[32];
 	if (vckent != -1) GetEntityClassname(vckent,vckcls,sizeof(vckcls));

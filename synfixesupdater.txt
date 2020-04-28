@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99965"
-			"Previous"	"1.99964"
+			"Latest"  	"1.99966"
+			"Previous"	"1.99965"
 		}
 		
-		"Notes"	"Added check to remove trigger_changelevel if transitioned from previous map. Added weapon spawnflags 1 fix."
+		"Notes"	"Additional checks in stuckblck."
 	}
 	
 	"Files"
