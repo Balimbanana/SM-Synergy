@@ -98,7 +98,7 @@ bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0010"
+#define PLUGIN_VERSION "2.0011"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -472,7 +472,7 @@ public void OnMapStart()
 		Handle nullpl = INVALID_HANDLE;
 		ReloadPlugin(nullpl);
 	}
-	if (GetMapHistorySize() > 0)
+	if (GetMapHistorySize() > -1)
 	{
 		norunagain = false;
 		GetCurrentMap(mapbuf,sizeof(mapbuf));
@@ -12185,10 +12185,10 @@ void readoutputsforinputs()
 				}
 			}
 		}
-		char lineorgres[128];
+		char lineorgres[256];
 		char lineorgresexpl[4][16];
 		char lineoriginfixup[128];
-		char lineadj[128];
+		char lineadj[256];
 		char prevtargn[128];
 		bool hastargn = false;
 		bool hasorigin = false;

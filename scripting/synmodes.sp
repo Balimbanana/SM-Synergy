@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.34"
+#define PLUGIN_VERSION "1.35"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -1795,6 +1795,134 @@ void findentwdis(int ent, char[] clsname)
 	}
 }
 
+public int FindByTargetName(char[] entname)
+{
+	char staticsize[128];
+	Format(staticsize,sizeof(staticsize),"%s",entname);
+	int chkents = SearchForClass(staticsize);
+	if ((chkents != -1) && (chkents != 0)) return chkents;
+	int startent = MaxClients+1;
+	for (int i = startent;i<GetMaxEntities()+1;i++)
+	{
+		if (IsValidEntity(i) && IsEntNetworkable(i))
+		{
+			if (HasEntProp(i,Prop_Data,"m_iName"))
+			{
+				char chkname[64];
+				GetEntPropString(i,Prop_Data,"m_iName",chkname,sizeof(chkname));
+				if (StrEqual(chkname,entname,false))
+				{
+					return i;
+				}
+			}
+		}
+	}
+	return -1;
+}
+
+int SearchForClass(char tmptarg[128])
+{
+	int returnent = -1;
+	findtargnbyclass(-1,"logic_*",tmptarg,returnent);
+	if ((returnent != 0) && (returnent != -1)) return returnent;
+	findtargnbyclass(-1,"info_*",tmptarg,returnent);
+	if ((returnent != 0) && (returnent != -1)) return returnent;
+	findtargnbyclass(-1,"env_*",tmptarg,returnent);
+	if ((returnent != 0) && (returnent != -1)) return returnent;
+	findtargnbyclass(-1,"ai_*",tmptarg,returnent);
+	if ((returnent != 0) && (returnent != -1)) return returnent;
+	findtargnbyclass(-1,"math_*",tmptarg,returnent);
+	if ((returnent != 0) && (returnent != -1)) return returnent;
+	findtargnbyclass(-1,"game_*",tmptarg,returnent);
+	if ((returnent != 0) && (returnent != -1)) return returnent;
+	findtargnbyclass(-1,"point_template",tmptarg,returnent);
+	if ((returnent == 0) || (returnent == -1))
+	{
+		for (int i = MaxClients+1; i<GetMaxEntities(); i++)
+		{
+			if (IsValidEntity(i) && IsEntNetworkable(i))
+			{
+				if (HasEntProp(i,Prop_Data,"m_iName"))
+				{
+					char targn[128];
+					GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+					if (StrContains(targn,"\"",false) != -1) ReplaceString(targn,sizeof(targn),"\"","");
+					if (StrContains(tmptarg,"*",false) == 0)
+					{
+						char targwithout[128];
+						Format(targwithout,sizeof(targwithout),"%s",tmptarg);
+						ReplaceString(targwithout,sizeof(targwithout),"*","");
+						if (StrContains(targn,targwithout) != -1)
+						{
+							GetEntityClassname(i,tmptarg,sizeof(tmptarg));
+							return i;
+						}
+					}
+					else if (StrContains(tmptarg,"*",false) >= 1)
+					{
+						char targwithout[128];
+						Format(targwithout,sizeof(targwithout),"%s",tmptarg);
+						ReplaceString(targwithout,sizeof(targwithout),"*","");
+						if (StrContains(targn,targwithout) == 0)
+						{
+							GetEntityClassname(i,tmptarg,sizeof(tmptarg));
+							return i;
+						}
+					}
+					else if (StrEqual(targn,tmptarg))
+					{
+						GetEntityClassname(i,tmptarg,sizeof(tmptarg));
+						return i;
+					}
+				}
+			}
+		}
+	}
+	return returnent;
+}
+
+public void findtargnbyclass(int ent, char cls[64], char tmptarg[128], int& retent)
+{
+	int thisent = FindEntityByClassname(ent,cls);
+	if ((IsValidEntity(thisent)) && (thisent != -1))
+	{
+		if (HasEntProp(thisent,Prop_Data,"m_iName"))
+		{
+			char targn[128];
+			GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
+			if (StrContains(tmptarg,"*",false) == 0)
+			{
+				char targwithout[128];
+				Format(targwithout,sizeof(targwithout),"%s",tmptarg);
+				ReplaceString(targwithout,sizeof(targwithout),"*","");
+				if (StrContains(targn,targwithout) != -1)
+				{
+					GetEntityClassname(thisent,tmptarg,sizeof(tmptarg));
+					retent = thisent;
+				}
+			}
+			else if (StrContains(tmptarg,"*",false) >= 1)
+			{
+				char targwithout[128];
+				Format(targwithout,sizeof(targwithout),"%s",tmptarg);
+				ReplaceString(targwithout,sizeof(targwithout),"*","");
+				if (StrContains(targn,targwithout) == 0)
+				{
+					GetEntityClassname(thisent,tmptarg,sizeof(tmptarg));
+					retent = thisent;
+				}
+			}
+			else if (StrEqual(targn,tmptarg,false))
+			{
+				GetEntityClassname(thisent,tmptarg,sizeof(tmptarg));
+				retent = thisent;
+			}
+		}
+		findtargnbyclass(thisent++,cls,tmptarg,retent);
+	}
+	return;
+}
+
 public Action findglobals(int ent, char[] clsname)
 {
 	int thisent = FindEntityByClassname(ent,clsname);
@@ -3538,7 +3666,7 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 		if (strlen(targn) > 0) Format(origintargnfind,sizeof(origintargnfind),"%s\"%s\"",targn,originchar);
 		else Format(origintargnfind,sizeof(origintargnfind),"notargn\"%s\"",originchar);
 		int arrindx = -1;
-		char tmpch[128];
+		char tmpch[256];
 		for (int i = 0;i<GetArraySize(inputsarrorigincls);i++)
 		{
 			GetArrayString(inputsarrorigincls,i,tmpch,sizeof(tmpch));
@@ -3549,7 +3677,7 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 			}
 		}
 		if (arrindx == -1) return;
-		char originclschar[128];
+		char originclschar[256];
 		char clsorfixup[16][128];
 		GetArrayString(inputsarrorigincls,arrindx,originclschar,sizeof(originclschar));
 		if (StrContains(originclschar,tmpoutpchk,false) != -1)
@@ -3567,11 +3695,11 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 		Format(inputdef,sizeof(inputdef),",%s,,",input);
 		if ((StrEqual(originchar,clsorfixup[1],false)) || (StrEqual(targn,clsorfixup[0],false)) || (StrContains(inputadded,clsorfixup[1],false)))
 		{
-			char lineorgrescom[16][64];
+			char lineorgrescom[16][128];
 			if ((StrContains(clsorfixup[5],",") != -1) && (StrContains(clsorfixup[5],":") == -1))
 			{
 				if (StrContains(clsorfixup[3],output,false) == -1) return;
-				ExplodeString(clsorfixup[5],",",lineorgrescom,16,64);
+				ExplodeString(clsorfixup[5],",",lineorgrescom,16,128);
 				//ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
 				float delay = StringToFloat(lineorgrescom[3]);
 				if (survivalact) resetvehicles(delay,activator);
@@ -3579,7 +3707,7 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 			}
 			else
 			{
-				ExplodeString(clsorfixup[5],":",lineorgrescom,16,64);
+				ExplodeString(clsorfixup[5],":",lineorgrescom,16,128);
 				if (StrContains(clsorfixup[3],output,false) == -1) return;
 				char delaystr[64];
 				Format(delaystr,sizeof(delaystr),lineorgrescom[3]);
@@ -3609,10 +3737,10 @@ void readoutputsforinputs()
 		Format(inputadded2,sizeof(inputadded2),":Save::");
 		char inputdef2[64];
 		Format(inputdef2,sizeof(inputdef2),",Save,,");
-		char lineorgres[128];
-		char lineorgresexpl[4][16];
+		char lineorgres[256];
+		char lineorgresexpl[4][128];
 		char lineoriginfixup[64];
-		char lineadj[128];
+		char lineadj[256];
 		bool hastargn = false;
 		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
 		{
@@ -3628,7 +3756,7 @@ void readoutputsforinputs()
 				Format(tmpchar,sizeof(tmpchar),"%s",line);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
-				ExplodeString(tmpchar, " ", lineorgresexpl, 4, 16);
+				ExplodeString(tmpchar, " ", lineorgresexpl, 4, 32);
 				Format(lineoriginfixup,sizeof(lineoriginfixup),"%i %i %i\"",RoundFloat(StringToFloat(lineorgresexpl[0])),RoundFloat(StringToFloat(lineorgresexpl[1])),RoundFloat(StringToFloat(lineorgresexpl[2])));
 			}
 			else if (StrContains(line,"\"targetname\"",false) == 0)
@@ -3643,7 +3771,38 @@ void readoutputsforinputs()
 			else if ((StrContains(line,inputadded,false) != -1) || (StrContains(line,inputadded2,false) != -1) || (StrContains(line,inputdef,false) != -1) || (StrContains(line,inputdef2,false) != -1))
 			{
 				Format(lineorgres,sizeof(lineorgres),"%s",line);
-				ReplaceString(lineorgres,sizeof(lineorgres),"\"OnMapSpawn\" ","");
+				if (StrContains(lineorgres,"\"OnMapSpawn\" ",false) != -1)
+				{
+					ReplaceString(lineorgres,sizeof(lineorgres),"\"OnMapSpawn\" ","");
+					if (!hastargn)
+					{
+						ReplaceStringEx(lineorgres,sizeof(lineorgres),"\"","");
+						ExplodeString(lineorgres, ",", lineorgresexpl, 4, 128);
+						Format(lineoriginfixup,sizeof(lineoriginfixup),"%s\"",lineorgresexpl[0]);
+						int targ = FindByTargetName(lineorgresexpl[0]);
+						if ((IsValidEntity(targ)) && (targ != 0))
+						{
+							float orgs[3];
+							if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",orgs);
+							else if (HasEntProp(targ,Prop_Data,"m_vecOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecOrigin",orgs);
+							Format(lineoriginfixup,sizeof(lineoriginfixup),"%s%i %i %i\"",lineoriginfixup,RoundFloat(orgs[0]),RoundFloat(orgs[1]),RoundFloat(orgs[2]));
+						}
+						hastargn = true;
+						char output[64];
+						Format(output,sizeof(output),"%s",lineorgresexpl[2]);
+						Format(lineorgres,sizeof(lineorgres),"%s",lineorgresexpl[2]);
+						int endpos = StrContains(output," ",false);
+						if (endpos != -1)
+						{
+							Format(output,endpos+1,"%s",output);
+						}
+						ReplaceStringEx(lineorgres,sizeof(lineorgres),output,"",_,_,false);
+						TrimString(lineorgres);
+						Format(output,sizeof(output),"\"%s\"",output);
+						ReplaceString(lineorgres,sizeof(lineorgres),":",",");
+						Format(lineorgres,sizeof(lineorgres),"%s \"%s\"",output,lineorgres);
+					}
+				}
 				if (!hastargn)
 				{
 					Format(lineoriginfixup,sizeof(lineoriginfixup),"notargn\"%s",lineoriginfixup);
