@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.3"
-			"Previous"	"0.2"
+			"Latest"  	"0.4"
+			"Previous"	"0.3"
 		}
 		
-		"Notes"	"Added syn_doublejump and syn_doublejump_height."
+		"Notes"	"Added syn_allowback CVar and /back command. Added syn_fastswitch."
 	}
 	
 	"Files"

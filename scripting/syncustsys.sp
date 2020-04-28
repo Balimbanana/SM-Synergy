@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.3"
+#define PLUGIN_VERSION "0.4"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/syncustsys.txt"
 
 bool HeavyCrowbar = false;
@@ -19,6 +19,8 @@ bool RapidFire = false;
 bool PistolExplosions = false;
 bool HealthRegen = false;
 bool DoubleJump = false;
+bool FastSwitch = false;
+bool AllowBack = false;
 int HealthRegenStep = 1;
 int g_LastButtons[128];
 float HeavyCrowbarScale = 900.0; //default crowbar dmg 10 up to 9000
@@ -27,7 +29,10 @@ float centnextatk[2048];
 float LastJump[128];
 char pistolexpldmg[16] = "40";
 Handle thinkingents = INVALID_HANDLE;
-bool CLHasProperty[128][6];
+bool CLHasProperty[128][8];
+bool ValidBackPos[128];
+float CLBackPos[128][3];
+float CLBackAng[128][3];
 
 public Plugin myinfo =
 {
@@ -41,6 +46,8 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	thinkingents = CreateArray(2048);
+	HookEventEx("player_spawn",OnPlayerSpawn,EventHookMode_Post);
+	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
 	Handle cvar = FindConVar("syn_heavycrowbar");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("syn_heavycrowbar", "0", "Allow heavy crowbar.", _, true, 0.0, true, 1.0);
 	HookConVarChange(cvar, heavycrowbch);
@@ -91,7 +98,18 @@ public void OnPluginStart()
 	HookConVarChange(cvar, doublejumpheightch);
 	DoubleJumpHeight = GetConVarFloat(cvar);
 	CloseHandle(cvar);
+	cvar = FindConVar("syn_fastswitch");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("syn_fastswitch", "0", "Allow fast weapon switch.", _, true, 0.0, true, 1.0);
+	HookConVarChange(cvar, fastswitchch);
+	FastSwitch = GetConVarBool(cvar);
+	CloseHandle(cvar);
+	cvar = FindConVar("syn_allowback");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("syn_allowback", "0", "Allow using /back to return to last death position.", _, true, 0.0, true, 1.0);
+	HookConVarChange(cvar, allowbackch);
+	AllowBack = GetConVarBool(cvar);
+	CloseHandle(cvar);
 	RegAdminCmd("syn_adminproperty",ApplyProperty,ADMFLAG_ROOT,".");
+	RegConsoleCmd("back",BackToDeathPos);
 	CreateTimer(1.0,ReHookNPCS,_,TIMER_FLAG_NO_MAPCHANGE);
 	CreateTimer(1.0,HealthRegenTicks,_,TIMER_REPEAT);
 }
@@ -111,8 +129,11 @@ public void OnMapStart()
 		CLHasProperty[i][3] = false;
 		CLHasProperty[i][4] = false;
 		CLHasProperty[i][5] = false;
+		CLHasProperty[i][6] = false;
+		CLHasProperty[i][7] = false;
 		LastJump[i] = 0.0;
 		g_LastButtons[i] = 0;
+		ValidBackPos[i] = false;
 	}
 }
 
@@ -338,12 +359,65 @@ public Action ApplyProperty(int client, int args)
 				PrintToConsole(client,"Set %N HealthRegen to %i",targ,CLHasProperty[targ][4]);
 			}
 		}
+		else if (StrContains(type,"Switch",false) != -1)
+		{
+			if (args > 2)
+			{
+				CLHasProperty[targ][6] = setval;
+				PrintToConsole(client,"Set %N FastSwitch to %i",targ,CLHasProperty[targ][6]);
+			}
+			else
+			{
+				if (CLHasProperty[targ][6])
+				{
+					CLHasProperty[targ][6] = false;
+				}
+				else
+				{
+					CLHasProperty[targ][6] = true;
+				}
+				PrintToConsole(client,"Set %N FastSwitch to %i",targ,CLHasProperty[targ][6]);
+			}
+		}
+		else if (StrContains(type,"Back",false) != -1)
+		{
+			if (args > 2)
+			{
+				CLHasProperty[targ][7] = setval;
+				PrintToConsole(client,"Set %N /back to %i",targ,CLHasProperty[targ][7]);
+			}
+			else
+			{
+				if (CLHasProperty[targ][7])
+				{
+					CLHasProperty[targ][7] = false;
+				}
+				else
+				{
+					CLHasProperty[targ][7] = true;
+				}
+				PrintToConsole(client,"Set %N /back to %i",targ,CLHasProperty[targ][7]);
+			}
+		}
 	}
 	return Plugin_Handled;
 }
 
 public Action ReHookNPCS(Handle timer)
 {
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if (IsValidEntity(i))
+		{
+			if (IsClientConnected(i))
+			{
+				if (IsClientInGame(i))
+				{
+					SDKHook(i,SDKHook_WeaponSwitch,OnWeaponUse);
+				}
+			}
+		}
+	}
 	for (int i = MaxClients+1;i<2048;i++)
 	{
 		if (IsValidEntity(i))
@@ -355,6 +429,123 @@ public Action ReHookNPCS(Handle timer)
 				SDKHook(i,SDKHook_OnTakeDamage,TakeDamageNPCS);
 			}
 		}
+	}
+}
+
+public void OnClientPutInServer(int client)
+{
+	CreateTimer(0.5,clspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public Action clspawnpost(Handle timer, int client)
+{
+	if (IsValidEntity(client) && IsPlayerAlive(client))
+	{
+		SDKHook(client,SDKHook_WeaponSwitch,OnWeaponUse);
+	}
+	else if (IsClientConnected(client))
+	{
+		CreateTimer(0.5,clspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
+	}
+}
+
+public Action OnWeaponUse(int client, int weapon)
+{
+	if ((FastSwitch) || (CLHasProperty[client][6]))
+	{
+		if (IsValidEntity(weapon))
+		{
+			Handle data;
+			data = CreateDataPack();
+			WritePackCell(data, client);
+			WritePackCell(data, weapon);
+			CreateTimer(0.1,resetinst,data,TIMER_FLAG_NO_MAPCHANGE);
+		}
+	}
+	return Plugin_Continue;
+}
+
+public Action resetinst(Handle timer, Handle data)
+{
+	ResetPack(data);
+	int client = ReadPackCell(data);
+	int weap = ReadPackCell(data);
+	CloseHandle(data);
+	if ((IsValidEntity(weap)) && (IsValidEntity(client)) && (HasEntProp(weap,Prop_Send,"m_flNextPrimaryAttack")))
+	{
+		float curtime = GetGameTime();
+		SetEntPropFloat(weap,Prop_Send,"m_flNextPrimaryAttack",curtime,0);
+		SetEntPropFloat(weap,Prop_Send,"m_flNextSecondaryAttack",curtime,0);
+		int viewmdl = GetEntPropEnt(client,Prop_Send,"m_hViewModel");
+		if (IsValidEntity(viewmdl))
+			SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
+		SetEntPropFloat(client,Prop_Send,"m_flNextAttack",curtime);
+	}
+}
+
+public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
+{
+	int client = GetClientOfUserId(GetEventInt(event,"userid"));
+	CreateTimer(0.1,everyspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
+	return Plugin_Continue;
+}
+
+public Action everyspawnpost(Handle timer, int client)
+{
+	if (IsValidEntity(client) && IsPlayerAlive(client))
+	{
+		if (!IsFakeClient(client))
+		{
+			if ((AllowBack) || (CLHasProperty[client][7]))
+			{
+				if (ValidBackPos[client])
+				{
+					PrintToChat(client,"Use /back to return to last death position.");
+				}
+			}
+		}
+	}
+	else if (IsClientConnected(client)) CreateTimer(0.5,everyspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
+}
+
+public Action BackToDeathPos(int client, int args)
+{
+	if ((client == 0) || (!IsValidEntity(client))) return Plugin_Handled;
+	if ((AllowBack) || (CLHasProperty[client][7]))
+	{
+		if (ValidBackPos[client])
+		{
+			ValidBackPos[client] = false;
+			TeleportEntity(client,CLBackPos[client],CLBackAng[client],NULL_VECTOR);
+		}
+		else
+		{
+			PrintToChat(client,"Unable to find last death position or you have already used /back this spawn.");
+		}
+	}
+	else
+	{
+		PrintToChat(client,"Back is currently disabled...");
+	}
+	return Plugin_Handled;
+}
+
+public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast)
+{
+	int killed = GetEventInt(event, "entindex_killed");
+	if ((killed > 0) && (killed < MaxClients+1))
+	{
+		if (HasEntProp(killed,Prop_Data,"m_vecAbsOrigin"))
+		{
+			GetEntPropVector(killed,Prop_Data,"m_vecAbsOrigin",CLBackPos[killed]);
+			ValidBackPos[killed] = true;
+		}
+		else if (HasEntProp(killed,Prop_Send,"m_vecOrigin"))
+		{
+			GetEntPropVector(killed,Prop_Send,"m_vecOrigin",CLBackPos[killed]);
+			ValidBackPos[killed] = true;
+		}
+		if (HasEntProp(killed,Prop_Send,"m_angRotation")) GetEntPropVector(killed,Prop_Data,"m_angRotation",CLBackAng[killed]);
 	}
 }
 
@@ -562,6 +753,9 @@ public void OnClientDisconnect_Post(int client)
 	CLHasProperty[client][3] = false;
 	CLHasProperty[client][4] = false;
 	CLHasProperty[client][5] = false;
+	CLHasProperty[client][6] = false;
+	CLHasProperty[client][7] = false;
+	ValidBackPos[client] = false;
 }
 
 public bool TraceEntityFilter(int entity, int mask, any data)
@@ -630,4 +824,16 @@ public void doublejumpch(Handle convar, const char[] oldValue, const char[] newV
 public void doublejumpheightch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	DoubleJumpHeight = StringToFloat(newValue);
+}
+
+public void fastswitchch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) FastSwitch = true;
+	else FastSwitch = false;
+}
+
+public void allowbackch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) AllowBack = true;
+	else AllowBack = false;
 }
