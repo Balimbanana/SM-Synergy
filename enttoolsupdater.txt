@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.26"
-			"Previous"	"1.25"
+			"Latest"  	"1.27"
+			"Previous"	"1.26"
 		}
 		
-		"Notes"	"Extended sm_showall_created, sm_showall_deleted, and added sm_showall_deaths with more information if set to 2."
+		"Notes"	"A bit more info in listents full. Enhanced search by targetname."
 	}
 	
 	"Files"

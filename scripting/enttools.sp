@@ -9,7 +9,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.26"
+#define PLUGIN_VERSION "1.27"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -223,6 +223,7 @@ public Action CreateStuff(int client, int args)
 			PrintToConsole(client,"Unable to create entity %s",ent);
 			return Plugin_Handled;
 		}
+		int ownerset = -1;
 		Handle passedarr = CreateArray(64);
 		char fullstr[512];
 		Format(fullstr,sizeof(fullstr),"%s",ent);
@@ -294,6 +295,14 @@ public Action CreateStuff(int client, int args)
 							Angles[2] = StringToFloat(tmpexpl[2]);
 						}
 					}
+					else if (StrEqual(tmp,"owner",false))
+					{
+						if (StrEqual(tmp2,"!self",false))
+						{
+							ownerset = client;
+						}
+						else ownerset = StringToInt(tmp2);
+					}
 					if (StrEqual(tmp,"targetname",false))
 						if (targnamedefined)
 							Format(tmp2,sizeof(tmp2),"%s%s",ent,tmp2);
@@ -362,8 +371,30 @@ public Action CreateStuff(int client, int args)
 		PrintToConsole(client,"%s",fullstr);
 		DispatchSpawn(stuff);
 		ActivateEntity(stuff);
+		if ((ownerset != -1) && (ownerset != 0))
+		{
+			Handle dp = CreateDataPack();
+			WritePackCell(dp,ownerset);
+			WritePackCell(dp,stuff);
+			CreateTimer(0.1,ApplyOwner,dp);
+		}
 	}
 	return Plugin_Handled;
+}
+
+public Action ApplyOwner(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int owner = ReadPackCell(dp);
+		int entity = ReadPackCell(dp);
+		CloseHandle(dp);
+		if ((IsValidEntity(owner)) && (IsValidEntity(entity)))
+		{
+			if (HasEntProp(entity,Prop_Data,"m_hOwnerEntity")) SetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity",owner);
+		}
+	}
 }
 
 public Action CreateStuffThere(int client, int args)
@@ -987,6 +1018,53 @@ public Handle findentsarrtargsub(Handle arr, int ent, char[] namechk, char[] cls
 			char fname[128];
 			GetEntPropString(thisent,Prop_Data,"m_iName",fname,sizeof(fname));
 			if (StrContains(fname,"\"",false) != -1) ReplaceString(fname,sizeof(fname),"\"","");
+			if ((StrContains(namechk,"*",false) > 0) && (StrContains(namechk,"*",false) != 0))
+			{
+				char tmppass[64];
+				Format(tmppass,sizeof(tmppass),"%s",namechk);
+				ReplaceString(tmppass,sizeof(tmppass),"*","");
+				if (StrContains(fname,tmppass,false) != -1)
+				{
+					if (FindValueInArray(arr,thisent) == -1) PushArrayCell(arr,thisent);
+				}
+			}
+			else if ((StrContains(namechk,"*",false) == 0) && (StrContains(namechk,"*",false) > 0))
+			{
+				char tmppass[64];
+				Format(tmppass,sizeof(tmppass),"%s",namechk);
+				ReplaceString(tmppass,sizeof(tmppass),"*","");
+				if (StrContains(fname,tmppass,false) != -1)
+				{
+					if (FindValueInArray(arr,thisent) == -1) PushArrayCell(arr,thisent);
+				}
+			}
+			else if (StrContains(namechk,"*",false) == 0)
+			{
+				char tmppass[64];
+				char tmpend[64];
+				char tmpchar[16];
+				Format(tmppass,sizeof(tmppass),"%s",namechk);
+				ReplaceString(tmppass,sizeof(tmppass),"*","");
+				int endpos = StrContains(fname,tmppass,false);
+				if (endpos != -1)
+				{
+					Format(tmpchar,endpos+1,"%s",fname);
+					if (strlen(tmpchar) < 1)
+					{
+						if (FindValueInArray(arr,thisent) == -1) PushArrayCell(arr,thisent);
+					}
+					else
+					{
+						Format(tmpend,sizeof(tmpend),"%s",fname);
+						ReplaceStringEx(tmpend,sizeof(tmpend),tmpchar,"");
+						ReplaceStringEx(tmpend,sizeof(tmpend),tmppass,"");
+						if (strlen(tmpend) < 1)
+						{
+							if (FindValueInArray(arr,thisent) == -1) PushArrayCell(arr,thisent);
+						}
+					}
+				}
+			}
 			if (StrEqual(fname,namechk,false))
 				PushArrayCell(arr, thisent);
 		}
@@ -1001,80 +1079,7 @@ public Handle findentsarrtargsub(Handle arr, int ent, char[] namechk, char[] cls
 public Handle findentsarrtarg(Handle arr, char[] namechk)
 {
 	if (arr == INVALID_HANDLE) return INVALID_HANDLE;
-	for (int i = 1;i<2048;i++)
-	{
-		if (IsValidEntity(i) && IsEntNetworkable(i))
-		{
-			char clsname[64];
-			GetEntityClassname(i,clsname,sizeof(clsname));
-			if ((StrEqual(clsname,namechk,false)) && (FindValueInArray(arr,i) == -1))
-				PushArrayCell(arr, i);
-			if ((HasEntProp(i,Prop_Data,"m_iName")) && (FindValueInArray(arr,i) == -1))
-			{
-				char fname[128];
-				GetEntPropString(i,Prop_Data,"m_iName",fname,sizeof(fname));
-				if (StrContains(fname,"\"",false) != -1) ReplaceString(fname,sizeof(fname),"\"","");
-				if ((StrContains(namechk,"*",false) > 0) && (StrContains(namechk,"*",false) != 0))
-				{
-					char tmppass[64];
-					Format(tmppass,sizeof(tmppass),"%s",namechk);
-					ReplaceString(tmppass,sizeof(tmppass),"*","");
-					if (StrContains(fname,tmppass,false) != -1)
-					{
-						if (FindValueInArray(arr,i) == -1) PushArrayCell(arr,i);
-					}
-				}
-				else if ((StrContains(namechk,"*",false) == 0) && (StrContains(namechk,"*",false) > 0))
-				{
-					char tmppass[64];
-					Format(tmppass,sizeof(tmppass),"%s",namechk);
-					ReplaceString(tmppass,sizeof(tmppass),"*","");
-					if (StrContains(fname,tmppass,false) != -1)
-					{
-						if (FindValueInArray(arr,i) == -1) PushArrayCell(arr,i);
-					}
-				}
-				else if (StrContains(namechk,"*",false) == 0)
-				{
-					char tmppass[64];
-					char tmpend[64];
-					char tmpchar[16];
-					Format(tmppass,sizeof(tmppass),"%s",namechk);
-					ReplaceString(tmppass,sizeof(tmppass),"*","");
-					int endpos = StrContains(fname,tmppass,false);
-					if (endpos != -1)
-					{
-						Format(tmpchar,endpos+1,"%s",fname);
-						if (strlen(tmpchar) < 1)
-						{
-							if (FindValueInArray(arr,i) == -1) PushArrayCell(arr,i);
-						}
-						else
-						{
-							Format(tmpend,sizeof(tmpend),"%s",fname);
-							ReplaceStringEx(tmpend,sizeof(tmpend),tmpchar,"");
-							ReplaceStringEx(tmpend,sizeof(tmpend),tmppass,"");
-							if (strlen(tmpend) < 1)
-							{
-								if (FindValueInArray(arr,i) == -1) PushArrayCell(arr,i);
-							}
-						}
-					}
-				}
-				if ((StrEqual(fname,namechk,false)) && (FindValueInArray(arr,i) == -1))
-					PushArrayCell(arr,i);
-			}
-		}
-	}
-	if (GetArraySize(arr) < 1)
-	{
-		findentsarrtargsub(arr,-1,namechk,"logic_*");
-		findentsarrtargsub(arr,-1,namechk,"env_*");
-		findentsarrtargsub(arr,-1,namechk,"filter_*");
-		findentsarrtargsub(arr,-1,namechk,"point_template");
-		findentsarrtargsub(arr,-1,namechk,"info_vehicle_spawn");
-		findentsarrtargsub(arr,-1,namechk,"math_counter");
-	}
+	findentsarrtargsub(arr,-1,namechk,"*");
 	if (arr != INVALID_HANDLE)
 		if (GetArraySize(arr) > 0) return arr;
 	return INVALID_HANDLE;
@@ -1127,7 +1132,7 @@ public Action listents(int client, int args)
 					angs[0] = -1.1;
 					char exprsc[24];
 					char exprtargname[64];
-					char stateinf[128];
+					char stateinf[256];
 					char scriptinf[256];
 					char scrtmp[64];
 					int doorstate, sleepstate, exprsci;
@@ -1253,6 +1258,16 @@ public Action listents(int client, int args)
 							int targent = GetEntPropEnt(targ,Prop_Data,"m_target");
 							if (targent != -1) Format(stateinf,sizeof(stateinf),"%sTarget %i ",stateinf,targent);
 						}
+					}
+					if (HasEntProp(targ,Prop_Data,"m_hVehicle"))
+					{
+						int targent = GetEntPropEnt(targ,Prop_Data,"m_hVehicle");
+						if (targent != -1) Format(stateinf,sizeof(stateinf),"%sVehicle %i ",stateinf,targent);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_hPlayer"))
+					{
+						int targent = GetEntPropEnt(targ,Prop_Data,"m_hPlayer");
+						if (targent != -1) Format(stateinf,sizeof(stateinf),"%sm_hPlayer %i ",stateinf,targent);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_iszEntry"))
 					{
@@ -1424,6 +1439,41 @@ public Action listents(int client, int args)
 					{
 						int hEnt = GetEntProp(targ,Prop_Data,"m_bActivated");
 						Format(stateinf,sizeof(stateinf),"%sm_bActivated: %i ",stateinf,hEnt);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_bInReload"))
+					{
+						int rel = GetEntProp(targ,Prop_Data,"m_bInReload");
+						Format(stateinf,sizeof(stateinf),"%s\nm_bInReload: %i ",stateinf,rel);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_bFireOnEmpty"))
+					{
+						int rel = GetEntProp(targ,Prop_Data,"m_bFireOnEmpty");
+						Format(stateinf,sizeof(stateinf),"%sm_bFireOnEmpty: %i ",stateinf,rel);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_iPrimaryAmmoType"))
+					{
+						int rel = GetEntProp(targ,Prop_Data,"m_iPrimaryAmmoType");
+						Format(stateinf,sizeof(stateinf),"%sm_iPrimaryAmmoType: %i ",stateinf,rel);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_iSecondaryAmmoType"))
+					{
+						int rel = GetEntProp(targ,Prop_Data,"m_iSecondaryAmmoType");
+						Format(stateinf,sizeof(stateinf),"%sm_iSecondaryAmmoType: %i ",stateinf,rel);
+					}
+					if (HasEntProp(targ,Prop_Send,"m_iEntityQuality"))
+					{
+						int rel = GetEntProp(targ,Prop_Send,"m_iEntityQuality");
+						Format(stateinf,sizeof(stateinf),"%sm_iEntityQuality: %i ",stateinf,rel);
+					}
+					if (HasEntProp(targ,Prop_Send,"m_iEntityLevel"))
+					{
+						int rel = GetEntProp(targ,Prop_Send,"m_iEntityLevel");
+						Format(stateinf,sizeof(stateinf),"%sm_iEntityLevel: %i ",stateinf,rel);
+					}
+					if (HasEntProp(targ,Prop_Send,"m_iItemDefinitionIndex"))
+					{
+						int rel = GetEntProp(targ,Prop_Send,"m_iItemDefinitionIndex");
+						Format(stateinf,sizeof(stateinf),"%sm_iItemDefinitionIndex: %i ",stateinf,rel);
 					}
 					if ((HasEntProp(targ,Prop_Data,"m_iHealth")) && (HasEntProp(targ,Prop_Data,"m_iMaxHealth")))
 					{
@@ -3010,6 +3060,16 @@ void PrintEntInfoFor(int targ)
 				int targent = GetEntPropEnt(targ,Prop_Data,"m_target");
 				if (targent != -1) Format(stateinf,sizeof(stateinf),"%sTarget %i ",stateinf,targent);
 			}
+		}
+		if (HasEntProp(targ,Prop_Data,"m_hVehicle"))
+		{
+			int targent = GetEntPropEnt(targ,Prop_Data,"m_hVehicle");
+			if (targent != -1) Format(stateinf,sizeof(stateinf),"%sVehicle %i ",stateinf,targent);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_hPlayer"))
+		{
+			int targent = GetEntPropEnt(targ,Prop_Data,"m_hPlayer");
+			if (targent != -1) Format(stateinf,sizeof(stateinf),"%sm_hPlayer %i ",stateinf,targent);
 		}
 		if (HasEntProp(targ,Prop_Data,"m_iszEntry"))
 		{
