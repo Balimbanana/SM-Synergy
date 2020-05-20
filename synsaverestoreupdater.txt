@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.157"
-			"Previous"	"2.156"
+			"Latest"  	"2.158"
+			"Previous"	"2.157"
 		}
 		
-		"Notes"	"Fixed issue of transitioning to a new map and the landmark was not found on the new map from previous map. Fixed weapon classnames being too long to store."
+		"Notes"	"Fixed issue of weapon transitions not always restoring player weapons."
 	}
 	
 	"Files"

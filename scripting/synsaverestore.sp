@@ -60,7 +60,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.157"
+#define PLUGIN_VERSION "2.158"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -4086,6 +4086,7 @@ public Action anotherdelay(Handle timer, int client)
 									ActivateEntity(weapindx);
 								}
 							}
+							if (!IsValidEntity(weapindx)) weapindx = GivePlayerItem(client,ammosettype);
 							if (IsValidEntity(weapindx))
 							{
 								int weapamm = StringToInt(ammosetamm);
