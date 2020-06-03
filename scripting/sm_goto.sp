@@ -2,13 +2,15 @@
 #include <sdktools>
 #include <clientprefs>
 #include "dbi.inc"
+#pragma semicolon 1;
+#pragma newdecls required;
 
 float gotocd[MAXPLAYERS+1];
 //Handle colh = INVALID_HANDLE; //OC checks
 Handle bclcookieh = INVALID_HANDLE;
 bool bclcookie[MAXPLAYERS+1];
 
-public Plugin:myinfo =
+public Plugin myinfo =
 {
 	name = "Player-Teleport by Dr. HyperKiLLeR",
 	author = "Dr. HyperKiLLeR Edited by Balimbanana for Synergy",
@@ -84,7 +86,7 @@ public Action reloadclcookies(Handle timer)
 	}
 }
 
-public OnClientCookiesCached(int client)
+public void OnClientCookiesCached(int client)
 {
 	char sValue[32];
 	GetClientCookie(client, bclcookieh, sValue, sizeof(sValue));
@@ -97,49 +99,66 @@ public OnClientCookiesCached(int client)
 		bclcookie[client] = true;
 }
 
+public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_Select)
+	{
+		char szCL[4];
+		menu.GetItem(param2, szCL, sizeof(szCL));
+		int Player = StringToInt(szCL);
+		GoToPlayer(param1,Player);
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+	return 0;
+}
+
 public Action Command_Goto(int Client, int args)
 {
-    //Error:
 	if(args < 1)
 	{
-
-		//Print:
-		PrintToConsole(Client, "Usage: sm_goto <name>");
-		PrintToChat(Client, "Usage:\x04 sm_goto <name>");
-
-		//Return:
-		return Plugin_Handled;
-	}
-	
-	int vckcl = GetEntProp(Client, Prop_Send, "m_hVehicle");
-	if ((GetEntityRenderFx(Client) == RENDERFX_DISTORT) || (vckcl != -1))
-	{
-		PrintToChat(Client,"You cannot do that at this time...");
-		return Plugin_Handled;
-	}
-	
-	float Time = GetTickedTime();
-	
-	if (gotocd[Client] > Time)
-	{
-		PrintToChat(Client,"You cannot do that for another %i seconds...",RoundToCeil(gotocd[Client]-Time));
+		if (GetClientCount(true) > 1)
+		{
+			Menu menu = new Menu(MenuHandler);
+			menu.SetTitle("GoTo Player:");
+			char indx[4];
+			char szName[64];
+			for (int i = 1;i<MaxClients+1;i++)
+			{
+				if (IsValidEntity(i))
+				{
+					if ((IsClientConnected(i)) && (i != Client))
+					{
+						Format(indx,sizeof(indx),"%i",i);
+						GetClientName(i,szName,sizeof(szName));
+						menu.AddItem(indx,szName);
+					}
+				}
+			}
+			menu.ExitButton = true;
+			menu.Display(Client, 120);
+		}
+		else
+		{
+			PrintToConsole(Client, "Usage: sm_goto <name>");
+			PrintToChat(Client, "Usage:\x04 sm_goto <name>");
+		}
 		return Plugin_Handled;
 	}
 	
 	//Declare:
-	int MaxPlayers, Player;
-	char PlayerName[32];
-	float TeleportOrigin[3];
-	float PlayerOrigin[3];
-	char Name[32];
+	int Player;
+	char PlayerName[64];
+	char Name[64];
 	
 	//Initialize:
 	Player = -1;
 	GetCmdArg(1, PlayerName, sizeof(PlayerName));
 	
 	//Find:
-	MaxPlayers = GetMaxClients();
-	for(int X = 1; X <= MaxPlayers; X++)
+	for(int X = 1; X <= MaxClients; X++)
 	{
 
 		//Connected:
@@ -162,67 +181,105 @@ public Action Command_Goto(int Client, int args)
 		//Return:
 		return Plugin_Handled;
 	}
-	//Syn checks
-	int a = GetEntProp(Client,Prop_Data,"m_iTeamNum");
-	int b = GetEntProp(Player,Prop_Data,"m_iTeamNum");
-	if (a != b)
-	{
-		PrintToChat(Client,"Must be on same team.");
-		return Plugin_Handled;
-	}
-	/* OC checks
-	int a = GetClientTeam(Client);
-	int b = GetClientTeam(Player);
-	if (a != b)
-	{
-		PrintToChat(Client,"Must be on same team.");
-		return Plugin_Handled;
-	}
-	*/
-	//Initialize
-	GetClientName(Player, Name, sizeof(Name));
-	GetClientAbsOrigin(Player, PlayerOrigin);
-	
-	if (bclcookie[Player])
-	{
-		PrintToChat(Client,"%s has goto disabled.",Name);
-		return Plugin_Handled;
-	}
-	
-	//Math
-	float tpang[3];
-	GetClientEyeAngles(Player,tpang);
-	tpang[2] = 0.0;
-	
-	TeleportOrigin[0] = PlayerOrigin[0];
-	TeleportOrigin[1] = PlayerOrigin[1];
-	
-	int vck = GetEntProp(Player, Prop_Send, "m_hVehicle");
-	int crouching = GetEntProp(Player, Prop_Send, "m_bDucked");
-	if (vck != -1)
-		TeleportOrigin[2] = (PlayerOrigin[2] + 47.0);
-	else if (crouching)
-	{
-		TeleportOrigin[2] = (PlayerOrigin[2] + 0.1);
-		SetEntProp(Client, Prop_Send, "m_bDucking", 1);
-	}
-	else
-		TeleportOrigin[2] = (PlayerOrigin[2] + 3);
-	/* OC collision check
-	if (GetConVarInt(colh) == 0)
-		TeleportOrigin[2] = (PlayerOrigin[2] + 3);
-	else
-		TeleportOrigin[2] = (PlayerOrigin[2] + 73);
-	*/
-	
-	//Teleport
-	TeleportEntity(Client, TeleportOrigin, tpang, NULL_VECTOR);
-	gotocd[Client] = Time + 20.0;
+	GoToPlayer(Client,Player);
 	
 	return Plugin_Handled;
 }
 
-public Action:Command_Bring(Client,args)
+void GoToPlayer(int Client, int Player)
+{
+	if ((IsValidEntity(Client)) && (IsValidEntity(Player)))
+	{
+		if (IsPlayerAlive(Player))
+		{
+			int vckcl = GetEntProp(Client, Prop_Send, "m_hVehicle");
+			if ((GetEntityRenderFx(Client) == RENDERFX_DISTORT) || (vckcl != -1))
+			{
+				PrintToChat(Client,"You cannot do that at this time...");
+				return;
+			}
+			
+			float Time = GetTickedTime();
+			
+			if (gotocd[Client] > Time)
+			{
+				PrintToChat(Client,"You cannot do that for another %i seconds...",RoundToCeil(gotocd[Client]-Time));
+				return;
+			}
+			float TeleportOrigin[3];
+			float PlayerOrigin[3];
+			char Name[64];
+			//Syn checks
+			int a = GetEntProp(Client,Prop_Data,"m_iTeamNum");
+			int b = GetEntProp(Player,Prop_Data,"m_iTeamNum");
+			if (a != b)
+			{
+				PrintToChat(Client,"Must be on same team.");
+				return;
+			}
+			/* OC checks
+			int a = GetClientTeam(Client);
+			int b = GetClientTeam(Player);
+			if (a != b)
+			{
+				PrintToChat(Client,"Must be on same team.");
+				return;
+			}
+			*/
+			//Initialize
+			GetClientName(Player, Name, sizeof(Name));
+			GetClientAbsOrigin(Player, PlayerOrigin);
+			
+			if (bclcookie[Player])
+			{
+				PrintToChat(Client,"%s has goto disabled.",Name);
+				return;
+			}
+			
+			//Math
+			float tpang[3];
+			GetClientEyeAngles(Player,tpang);
+			tpang[2] = 0.0;
+			
+			TeleportOrigin[0] = PlayerOrigin[0];
+			TeleportOrigin[1] = PlayerOrigin[1];
+			
+			int vck = GetEntProp(Player, Prop_Send, "m_hVehicle");
+			int crouching = GetEntProp(Player, Prop_Send, "m_bDucked");
+			if (vck != -1)
+				TeleportOrigin[2] = (PlayerOrigin[2] + 47.0);
+			else if (crouching)
+			{
+				TeleportOrigin[2] = (PlayerOrigin[2] + 0.1);
+				SetEntProp(Client, Prop_Send, "m_bDucking", 1);
+			}
+			else
+				TeleportOrigin[2] = (PlayerOrigin[2] + 3);
+			/* OC collision check
+			if (GetConVarInt(colh) == 0)
+				TeleportOrigin[2] = (PlayerOrigin[2] + 3);
+			else
+				TeleportOrigin[2] = (PlayerOrigin[2] + 73);
+			*/
+			
+			//Teleport
+			TeleportEntity(Client, TeleportOrigin, tpang, NULL_VECTOR);
+			gotocd[Client] = Time + 20.0;
+		}
+		else
+		{
+			if (Client == 0) PrintToConsole(Client,"Client %N is not alive.",Player);
+			else
+			{
+				PrintToChat(Client,"Client %N is not alive.",Player);
+				PrintToConsole(Client,"Client %N is not alive.",Player);
+			}
+		}
+	}
+	return;
+}
+
+public Action Command_Bring(int Client, int args)
 {
     //Error:
 	if(args < 1)
@@ -237,7 +294,7 @@ public Action:Command_Bring(Client,args)
 	}
 	
 	//Declare:
-	int MaxPlayers, Player;
+	int Player;
 	char PlayerName[32];
 	float TeleportOrigin[3];
 	float PlayerOrigin[3];
@@ -248,8 +305,7 @@ public Action:Command_Bring(Client,args)
 	GetCmdArg(1, PlayerName, sizeof(PlayerName));
 	
 	//Find:
-	MaxPlayers = GetMaxClients();
-	for(int X = 1; X <= MaxPlayers; X++)
+	for(int X = 1; X <= MaxClients; X++)
 	{
 
 		//Connected:
@@ -290,9 +346,10 @@ public Action:Command_Bring(Client,args)
 
 // Trace
 
-stock GetCollisionPoint(client, Float:pos[3])
+stock void GetCollisionPoint(int client, float pos[3])
 {
-	decl Float:vOrigin[3], Float:vAngles[3];
+	float vOrigin[3];
+	float vAngles[3];
 	
 	GetClientEyePosition(client, vOrigin);
 	GetClientEyeAngles(client, vAngles);
@@ -308,9 +365,10 @@ stock GetCollisionPoint(client, Float:pos[3])
 	}
 	
 	CloseHandle(trace);
+	return;
 }
 
-public bool TraceEntityFilterPlayer(entity, contentsMask)
+public bool TraceEntityFilterPlayer(int entity, int contentsMask)
 {
 	return entity > MaxClients;
 }  

@@ -98,7 +98,7 @@ bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0011"
+#define PLUGIN_VERSION "2.0012"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -672,7 +672,7 @@ public void OnMapStart()
 			HookEntityOutput("scripted_scene","OnStart",trigout);
 			HookEntityOutput("logic_choreographed_scene","OnStart",trigout);
 			HookEntityOutput("instanced_scripted_scene","OnStart",trigout);
-			if (StrContains(mapbuf,"r_map3",false) == -1)
+			if ((StrContains(mapbuf,"r_map3",false) == -1) && (StrContains(mapbuf,"pxg_level_",false) == -1))
 			{
 				if (StrContains(mapbuf,"bm_c",false) == -1)
 					HookEntityOutput("func_tracktrain","OnStart",elevatorstart);
@@ -2985,6 +2985,7 @@ public Action changeleveldelay(Handle timer, Handle data)
 			ServerCommand("changelevel ep2 %s",maptochange);
 			ServerCommand("changelevel Custom %s",maptochange);
 			ServerCommand("changelevel syn %s",maptochange);
+			ServerCommand("changelevel hl2 %s",maptochange);
 		}
 		else norunagain = false;
 	}
@@ -14400,7 +14401,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 	}
 	if ((StrContains(classname,"weapon_",false) == 0) && (!StrEqual(classname,"weapon_striderbuster",false)))
 	{
-		SDKHookEx(entity,SDKHook_SpawnPost,resetweapmv);
+		SDKHookEx(entity,SDKHook_Spawn,resetweapmv);
 	}
 	if (StrEqual(classname,"rpg_missile",false))
 	{
@@ -18382,7 +18383,7 @@ public Action resetown(Handle timer, int entity)
 
 public void resetweapmv(int entity)
 {
-	SDKUnhook(entity,SDKHook_SpawnPost,resetweapmv);
+	SDKUnhook(entity,SDKHook_Spawn,resetweapmv);
 	if (IsValidEntity(entity))
 	{
 		char clsrecheck[32];

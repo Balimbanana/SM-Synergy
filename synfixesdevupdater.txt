@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0011"
-			"Previous"	"2.0010"
+			"Latest"  	"2.0012"
+			"Previous"	"2.0011"
 		}
 		
-		"Notes"	"Increased a couple buffers for long targets."
+		"Notes"	"Additional failsave for failed changelevel. Adjusted weapon spawnflags 1 fix."
 	}
 	
 	"Files"
