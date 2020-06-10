@@ -3165,7 +3165,7 @@ public Action resetclanim(Handle timer)
 								GetClientEyePosition(i,vEyePos);
 								GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",vFeetPos);
 								vAngs[0]+=90.0;
-								TR_TraceRayFilter(vEyePos,vAngs,MASK_SHOT,RayType_Infinite,TraceEntityFilter,i);
+								TR_TraceRayFilter(vEyePos,vAngs,MASK_SHOT,RayType_Infinite,TraceEntityFilterPly,i);
 								TR_GetEndPosition(vTRPos);
 								if ((vFeetPos[2] < vTRPos[2]) && (GetVectorDistance(vFeetPos,vTRPos,false) > 10.0))
 								{
@@ -20410,6 +20410,26 @@ public bool TraceEntityFilter(int entity, int mask, any data){
 				if (entity == parent) return false;
 			}
 		}
+		char clsname[32];
+		GetEntityClassname(entity,clsname,sizeof(clsname));
+		if ((StrEqual(clsname,"func_vehicleclip",false)) || (StrEqual(clsname,"npc_sentry_ceiling",false)) || (entity == data))
+			return false;
+	}
+	return true;
+}
+
+public bool TraceEntityFilterPly(int entity, int mask, any data){
+	if ((entity != -1) && (IsValidEntity(entity)))
+	{
+		if (IsValidEntity(data))
+		{
+			if (HasEntProp(data,Prop_Data,"m_hParent"))
+			{
+				int parent = GetEntPropEnt(data,Prop_Data,"m_hParent");
+				if (entity == parent) return false;
+			}
+		}
+		if ((entity < MaxClients+1) && (entity > 0)) return false;
 		char clsname[32];
 		GetEntityClassname(entity,clsname,sizeof(clsname));
 		if ((StrEqual(clsname,"func_vehicleclip",false)) || (StrEqual(clsname,"npc_sentry_ceiling",false)) || (entity == data))
