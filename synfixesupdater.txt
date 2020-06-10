@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99966"
-			"Previous"	"1.99965"
+			"Latest"  	"1.99967"
+			"Previous"	"1.99966"
 		}
 		
-		"Notes"	"Additional checks in stuckblck."
+		"Notes"	"Added sm_fixgroundstuck default 1, moves players above ground when stuck half way in to something."
 	}
 	
 	"Files"

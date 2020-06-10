@@ -50,8 +50,9 @@ bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 bool TrainBlockFix = true;
+bool GroundStuckFix = true;
 
-#define PLUGIN_VERSION "1.99966"
+#define PLUGIN_VERSION "1.99967"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -169,6 +170,18 @@ public void OnPluginStart()
 		HookConVarChange(cvar, trainblckch);
 	}
 	CloseHandle(cvar);
+	if (cvar != INVALID_HANDLE)
+	{
+		GroundStuckFix = GetConVarBool(cvar);
+		HookConVarChange(cvar, groundstuckch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_fixgroundstuck", "1", "Moves players on top of whatever they are stuck half-way in to.", _, true, 0.0, true, 1.0);
+		GroundStuckFix = GetConVarBool(cvar);
+		HookConVarChange(cvar, groundstuckch);
+	}
+	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -204,6 +217,7 @@ public void OnPluginStart()
 	RegConsoleCmd("mm_stats",cmdblock);
 	RegConsoleCmd("mm_select_session",cmdblock);
 	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
+	CreateTimer(0.5,resetclanim,_,TIMER_REPEAT);
 	AutoExecConfig(true, "synfixes");
 }
 
@@ -1294,6 +1308,51 @@ public Action RemoveFromArr(Handle timer, int physbox)
 	{
 		RemoveFromArray(physboxarr,arrindx);
 		RemoveFromArray(physboxharr,arrindx);
+	}
+}
+
+public Action resetclanim(Handle timer)
+{
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if ((IsValidEntity(i)) && (i != 0))
+		{
+			if (IsClientConnected(i))
+			{
+				if (IsClientInGame(i))
+				{
+					if (IsPlayerAlive(i))
+					{
+						if (HasEntProp(i,Prop_Data,"m_bClientSideAnimation"))
+						{
+							SetEntProp(i,Prop_Data,"m_bClientSideAnimation",0);
+							SetEntProp(i,Prop_Data,"m_bClientSideAnimation",1);
+						}
+						if (GroundStuckFix)
+						{
+							if (HasEntProp(i,Prop_Data,"m_hVehicle"))
+							{
+								if (GetEntPropEnt(i,Prop_Data,"m_hVehicle") != -1) continue;
+							}
+							if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin"))
+							{
+								float vEyePos[3], vFeetPos[3], vTRPos[3], vAngs[3];
+								GetClientEyePosition(i,vEyePos);
+								GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",vFeetPos);
+								vAngs[0]+=90.0;
+								TR_TraceRayFilter(vEyePos,vAngs,MASK_SHOT,RayType_Infinite,TraceEntityFilter,i);
+								TR_GetEndPosition(vTRPos);
+								if ((vFeetPos[2] < vTRPos[2]) && (GetVectorDistance(vFeetPos,vTRPos,false) > 10.0))
+								{
+									vFeetPos[2] = vTRPos[2];
+									TeleportEntity(i,vFeetPos,NULL_VECTOR,NULL_VECTOR);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -4003,6 +4062,14 @@ public void trainblckch(Handle convar, const char[] oldValue, const char[] newVa
 		TrainBlockFix = false;
 }
 
+public void groundstuckch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		GroundStuckFix = true;
+	else
+		GroundStuckFix = false;
+}
+
 public void noguidech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) allownoguide = true;
@@ -4014,4 +4081,23 @@ public void noguidech(Handle convar, const char[] oldValue, const char[] newValu
 			guiderocket[i] = true;
 		}
 	}
+}
+
+public bool TraceEntityFilter(int entity, int mask, any data){
+	if ((entity != -1) && (IsValidEntity(entity)))
+	{
+		if (IsValidEntity(data))
+		{
+			if (HasEntProp(data,Prop_Data,"m_hParent"))
+			{
+				int parent = GetEntPropEnt(data,Prop_Data,"m_hParent");
+				if (entity == parent) return false;
+			}
+		}
+		char clsname[32];
+		GetEntityClassname(entity,clsname,sizeof(clsname));
+		if ((StrEqual(clsname,"func_vehicleclip",false)) || (StrEqual(clsname,"npc_sentry_ceiling",false)) || (entity == data))
+			return false;
+	}
+	return true;
 }

@@ -96,9 +96,10 @@ bool BlockEx = true;
 bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
+bool GroundStuckFix = true;
 bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0012"
+#define PLUGIN_VERSION "2.0013"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -273,6 +274,19 @@ public void OnPluginStart()
 		cvar = CreateConVar("sm_fixblockedtrains", "1", "Removes items and weapons that are clipping with func_tracktrains, checks once every 10 seconds.", _, true, 0.0, true, 1.0);
 		TrainBlockFix = GetConVarBool(cvar);
 		HookConVarChange(cvar, trainblckch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("sm_fixgroundstuck");
+	if (cvar != INVALID_HANDLE)
+	{
+		GroundStuckFix = GetConVarBool(cvar);
+		HookConVarChange(cvar, groundstuckch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_fixgroundstuck", "1", "Moves players on top of whatever they are stuck half-way in to.", _, true, 0.0, true, 1.0);
+		GroundStuckFix = GetConVarBool(cvar);
+		HookConVarChange(cvar, groundstuckch);
 	}
 	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
@@ -3138,6 +3152,27 @@ public Action resetclanim(Handle timer)
 						{
 							SetEntProp(i,Prop_Data,"m_bClientSideAnimation",0);
 							SetEntProp(i,Prop_Data,"m_bClientSideAnimation",1);
+						}
+						if (GroundStuckFix)
+						{
+							if (HasEntProp(i,Prop_Data,"m_hVehicle"))
+							{
+								if (GetEntPropEnt(i,Prop_Data,"m_hVehicle") != -1) continue;
+							}
+							if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin"))
+							{
+								float vEyePos[3], vFeetPos[3], vTRPos[3], vAngs[3];
+								GetClientEyePosition(i,vEyePos);
+								GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",vFeetPos);
+								vAngs[0]+=90.0;
+								TR_TraceRayFilter(vEyePos,vAngs,MASK_SHOT,RayType_Infinite,TraceEntityFilter,i);
+								TR_GetEndPosition(vTRPos);
+								if ((vFeetPos[2] < vTRPos[2]) && (GetVectorDistance(vFeetPos,vTRPos,false) > 10.0))
+								{
+									vFeetPos[2] = vTRPos[2];
+									TeleportEntity(i,vFeetPos,NULL_VECTOR,NULL_VECTOR);
+								}
+							}
 						}
 					}
 				}
@@ -20323,6 +20358,14 @@ public void trainblckch(Handle convar, const char[] oldValue, const char[] newVa
 		TrainBlockFix = true;
 	else
 		TrainBlockFix = false;
+}
+
+public void groundstuckch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		GroundStuckFix = true;
+	else
+		GroundStuckFix = false;
 }
 
 public void autorebuildch(Handle convar, const char[] oldValue, const char[] newValue)
