@@ -99,7 +99,7 @@ bool TrainBlockFix = true;
 bool GroundStuckFix = true;
 bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0013"
+#define PLUGIN_VERSION "2.0014"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3167,8 +3167,18 @@ public Action resetclanim(Handle timer)
 								vAngs[0]+=90.0;
 								TR_TraceRayFilter(vEyePos,vAngs,MASK_SHOT,RayType_Infinite,TraceEntityFilterPly,i);
 								TR_GetEndPosition(vTRPos);
+								int hitent = TR_GetEntityIndex();
+								if ((hitent > 0) && (IsValidEntity(hitent)))
+								{
+									char cls[32];
+									GetEntityClassname(hitent,cls,sizeof(cls));
+									if (StrContains(cls,"func_",false) == -1) continue;
+								}
 								if ((vFeetPos[2] < vTRPos[2]) && (GetVectorDistance(vFeetPos,vTRPos,false) > 10.0))
 								{
+									vTRPos[2]+=65.0;
+									if (TR_PointOutsideWorld(vTRPos)) continue;
+									vTRPos[2]-=65.0;
 									vFeetPos[2] = vTRPos[2];
 									TeleportEntity(i,vFeetPos,NULL_VECTOR,NULL_VECTOR);
 								}
@@ -14741,6 +14751,7 @@ public Action MineFieldTouch(const char[] output, int caller, int activator, flo
 	Handle hhitpos = INVALID_HANDLE;
 	TR_TraceRay(orgs,angs,MASK_SHOT,RayType_Infinite);
 	TR_GetEndPosition(fhitpos,hhitpos);
+	CloseHandle(hhitpos);
 	int endpoint = CreateEntityByName("env_explosion");
 	TeleportEntity(endpoint,fhitpos,NULL_VECTOR,NULL_VECTOR);
 	DispatchKeyValue(endpoint,"imagnitude","300");
@@ -19898,6 +19909,7 @@ void findcontrolledtank(int ent, char[] cls, int client)
 							Handle hhitpos = INVALID_HANDLE;
 							TR_TraceRayFilter(orgs,toang,MASK_SHOT,RayType_Infinite,TraceEntityFilter,propanim);
 							TR_GetEndPosition(fhitpos,hhitpos);
+							CloseHandle(hhitpos);
 							float shootvel[3];
 							MakeVectorFromPoints(orgs,fhitpos,shootvel);
 							int orb = CreateEntityByName("generic_actor");

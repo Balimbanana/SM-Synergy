@@ -52,7 +52,7 @@ bool BlockEx = true;
 bool TrainBlockFix = true;
 bool GroundStuckFix = true;
 
-#define PLUGIN_VERSION "1.99967"
+#define PLUGIN_VERSION "1.99968"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1342,8 +1342,18 @@ public Action resetclanim(Handle timer)
 								vAngs[0]+=90.0;
 								TR_TraceRayFilter(vEyePos,vAngs,MASK_SHOT,RayType_Infinite,TraceEntityFilterPly,i);
 								TR_GetEndPosition(vTRPos);
+								int hitent = TR_GetEntityIndex();
+								if ((hitent > 0) && (IsValidEntity(hitent)))
+								{
+									char cls[32];
+									GetEntityClassname(hitent,cls,sizeof(cls));
+									if (StrContains(cls,"func_",false) == -1) continue;
+								}
 								if ((vFeetPos[2] < vTRPos[2]) && (GetVectorDistance(vFeetPos,vTRPos,false) > 10.0))
 								{
+									vTRPos[2]+=65.0;
+									if (TR_PointOutsideWorld(vTRPos)) continue;
+									vTRPos[2]-=65.0;
 									vFeetPos[2] = vTRPos[2];
 									TeleportEntity(i,vFeetPos,NULL_VECTOR,NULL_VECTOR);
 								}
