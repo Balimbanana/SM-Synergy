@@ -27,6 +27,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 Handle g_ModifyCase = INVALID_HANDLE;
 
 char lastmap[72];
+char LineSpanning[256];
 int dbglvl = 0;
 int method = 0;
 bool VintageMode = false;
@@ -34,8 +35,9 @@ bool AntirushDisable = false;
 bool GenerateEnt2 = false;
 bool RemoveGlobals = false;
 bool LogEDTErr = false;
+bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.59"
+#define PLUGIN_VERSION "0.60"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -112,6 +114,8 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 	g_EditTargetsData = CreateArray(128);
 	g_CreateEnts = CreateArray(128);
 	g_ModifyCase = CreateArray(128);
+	IncludeNextLines = false;
+	LineSpanning = "";
 	if (GetArraySize(cvaroriginals) > 0)
 	{
 		for (int i = 0;i<GetArraySize(cvaroriginals);i++)
@@ -2085,9 +2089,9 @@ void ReadEDT(char[] edtfile)
 			}
 			TrimString(line);
 			linenum+=1;
-			if (((strlen(line) > 0) || (ReadString)) && (StrContains(line,"//",false) != 0))
+			if (((strlen(line) > 0) || (ReadString) || (IncludeNextLines)) && (StrContains(line,"//",false) != 0))
 			{
-				if ((strlen(line) < 4) && (StrContains(line,"//",false) != 0) && (!StrEqual(line,"{",false)) && (!StrEqual(line,"}",false)) && (!StrEqual(line,"} }",false)) && (!StrEqual(line,"}}",false)))
+				if ((strlen(line) < 4) && (!IncludeNextLines) && (StrContains(line,"//",false) != 0) && (!StrEqual(line,"{",false)) && (!StrEqual(line,"}",false)) && (!StrEqual(line,"} }",false)) && (!StrEqual(line,"}}",false)))
 				{
 					char additional[32];
 					ReadFileString(filehandle,additional,sizeof(additional));
@@ -2258,6 +2262,10 @@ void ReadEDT(char[] edtfile)
 						}
 						CloseHandle(tmp);
 					}
+				}
+				if ((IncludeNextLines) && (strlen(line) < 2))
+				{
+					Format(LineSpanning,sizeof(LineSpanning),"%s\n\n",LineSpanning);
 				}
 				if (((CreatingEnt) || (EditingEnt) || (DeletingEnt) || (ModifyCase)) && (strlen(line) > 0))
 				{
@@ -2489,9 +2497,9 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 		char fmt[256];
 		ReplaceStringEx(passchar,256,"	"," ");
 		ReplaceString(passchar,256,"	","");
-		ExplodeString(passchar," ",kvs,128,256);
+		int runthrough = ExplodeString(passchar," ",kvs,128,256);
 		int valdef = -1;
-		for (int i = 0;i<64;i++)
+		for (int i = 0;i<runthrough;i++)
 		{
 			if (StrContains(kvs[i+1],"}",false) == 0)
 			{
@@ -2500,7 +2508,7 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 			else
 			{
 				if (StrEqual(kvs[i],"{",false)) i++;
-				if ((strlen(kvs[i]) > 0) && (strlen(kvs[i+1]) > 0))
+				if ((strlen(kvs[i]) > 0) && ((strlen(kvs[i+1]) > 0) || (IncludeNextLines)))
 				{
 					if ((StrContains(passchar,"values",false) > StrContains(passchar,"classname",false)) && (StrContains(passchar,"classname",false) != -1) && (StrContains(passchar,"edit",false) != -1) && (valdef < 1))
 					{
@@ -2534,7 +2542,7 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 						ReplaceString(kvs[i],sizeof(kvs[]),"{","");
 						ReplaceString(kvs[i+1],sizeof(kvs[]),"}","");
 						if ((StrEqual(cls,"targetname",false)) && (StrContains(kvs[i],"\"",false) == 0) && (StrContains(kvs[i+1],"\"",false) > -1)) Format(key,sizeof(key),"%s %s",kvs[i],kvs[i+1]);
-						if (StrContains(kvs[i],"\"",false) == -1) Format(key,sizeof(key),"%s",kvs[i]);
+						if ((StrContains(kvs[i],"\"",false) == -1) && (!IncludeNextLines)) Format(key,sizeof(key),"%s",kvs[i]);
 						else if (StrContains(kvs[i],"\"",false) == 0)
 						{
 							char tmp[128];
@@ -2545,7 +2553,12 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 								Format(key,sizeof(key),"%s",kvs[i]);
 							}
 						}
-						if (StrContains(kvs[i+1],"\"",false) == -1) Format(val,sizeof(val),"%s",kvs[i+1]);
+						else if (IncludeNextLines)
+						{
+							if (!StrEqual(LineSpanning[strlen(LineSpanning)-1],"\n",false)) Format(LineSpanning,sizeof(LineSpanning),"%s %s",LineSpanning,kvs[i]);
+							else Format(LineSpanning,sizeof(LineSpanning),"%s%s",LineSpanning,kvs[i]);
+						}
+						if ((StrContains(kvs[i+1],"\"",false) == -1) && (!IncludeNextLines)) Format(val,sizeof(val),"%s",kvs[i+1]);
 						else if (StrContains(kvs[i+1],"\"",false) == 0)
 						{
 							char tmp[128];
@@ -2554,19 +2567,73 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 							if (StrContains(tmp,"\"",false) > 0)
 							{
 								Format(val,sizeof(val),"%s",kvs[i+1]);
+								if (IncludeNextLines)
+								{
+									Format(LineSpanning,sizeof(LineSpanning),"%s%s",LineSpanning,val);
+									Format(key,sizeof(key),"%s",LineSpanning);
+									int split = StrContains(key," ",false);
+									if (split != -1)
+									{
+										Format(key,split+1,"%s",key);
+										Format(val,sizeof(val),"%s",LineSpanning);
+										ReplaceStringEx(val,sizeof(val),key,"");
+									}
+								}
+								IncludeNextLines = false;
 							}
 							else
 							{
 								for (int j = i+2;j<64;j++)
 								{
-									Format(kvs[i+1],sizeof(kvs[]),"%s %s",kvs[i+1],kvs[j]);
+									if (strlen(kvs[j]) > 0) Format(kvs[i+1],sizeof(kvs[]),"%s %s",kvs[i+1],kvs[j]);
 									if (StrContains(kvs[j],"\"",false) > 0)
 									{
 										set = j;
 										Format(val,sizeof(val),"%s",kvs[i+1]);
+										if (IncludeNextLines)
+										{
+											Format(LineSpanning,sizeof(LineSpanning),"%s%s",LineSpanning,val);
+											Format(key,sizeof(key),"%s",LineSpanning);
+											int split = StrContains(key," ",false);
+											if (split != -1)
+											{
+												Format(key,split+1,"%s",key);
+												Format(val,sizeof(val),"%s",LineSpanning);
+												ReplaceStringEx(val,sizeof(val),key,"");
+											}
+										}
+										IncludeNextLines = false;
 										break;
 									}
 								}
+								if (set == 0)
+								{
+									set = i+2;
+									//no ending quote found might be on next lines
+									Format(val,sizeof(val),"%s",kvs[i+1]);
+									//TrimString(val);
+									if (!IncludeNextLines) Format(LineSpanning,sizeof(LineSpanning),"%s %s\n",key,val);
+									else Format(LineSpanning,sizeof(LineSpanning),"%s\n%s",LineSpanning,val);
+									key = "";
+									IncludeNextLines = true;
+								}
+							}
+						}
+						else if (IncludeNextLines)
+						{
+							Format(LineSpanning,sizeof(LineSpanning),"%s %s",LineSpanning,kvs[i+1]);
+							if (StrContains(kvs[i+2],"\"",false) != -1)
+							{
+								Format(LineSpanning,sizeof(LineSpanning),"%s %s",LineSpanning,kvs[i+2]);
+								Format(key,sizeof(key),"%s",LineSpanning);
+								int split = StrContains(key," ",false);
+								if (split != -1)
+								{
+									Format(key,split+1,"%s",key);
+									Format(val,sizeof(val),"%s",LineSpanning);
+									ReplaceStringEx(val,sizeof(val),key,"");
+								}
+								IncludeNextLines = false;
 							}
 						}
 						if ((strlen(key) > 0) && (StrContains(key,"//",false) != 0))
@@ -2610,6 +2677,7 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 				}
 			}
 		}
+		if (IncludeNextLines) Format(LineSpanning,sizeof(LineSpanning),"%s\n",LineSpanning);
 		//return passedarr;
 		return;
 	}

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.59"
-			"Previous"	"0.58"
+			"Latest"  	"0.60"
+			"Previous"	"0.59"
 		}
 		
-		"Notes"	"Fixed issue of multiple edit all by classname only applying first iteration."
+		"Notes"	"Fixed values spanning additional lines not being interpreted correctly."
 	}
 	
 	"Files"
