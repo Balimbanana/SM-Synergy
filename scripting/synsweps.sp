@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.989"
+#define PLUGIN_VERSION "0.990"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -298,7 +298,7 @@ public void OnMapStart()
 	tauhl1beam = PrecacheModel("sprites/smoke.vmt",true);
 	tauhl2beam = PrecacheModel("sprites/laserbeam.vmt",true);
 	goopbeam = PrecacheModel("sprites/goop/goop_beam.vmt",true);
-	if ((GetMapHistorySize() > 0) && (strlen(equipper) > 0))
+	if ((GetMapHistorySize() > -1) && (strlen(equipper) > 0))
 	{
 		equip = CreateEntityByName("info_player_equip");
 		if (equip != -1)
@@ -1082,6 +1082,8 @@ public Action dropcustweap(int client, int args)
 		{
 			if (HasEntProp(weapdrop,Prop_Data,"m_fEffects")) SetEntProp(weapdrop,Prop_Data,"m_fEffects",128);
 			if (HasEntProp(weapdrop,Prop_Send,"m_fEffects")) SetEntProp(weapdrop,Prop_Send,"m_fEffects",128);
+			if (HasEntProp(weapdrop,Prop_Data,"m_fFlags")) SetEntProp(weapdrop,Prop_Data,"m_fFlags",0);
+			if (HasEntProp(weapdrop,Prop_Send,"m_fFlags")) SetEntProp(weapdrop,Prop_Send,"m_fFlags",0);
 			if (HasEntProp(weapdrop,Prop_Data,"m_nViewModelIndex")) SetEntProp(weapdrop,Prop_Data,"m_nViewModelIndex",0);
 			if (HasEntProp(weapdrop,Prop_Data,"m_usSolidFlags")) SetEntProp(weapdrop,Prop_Data,"m_usSolidFlags",136);
 			SetEntityMoveType(weapdrop,MOVETYPE_VPHYSICS);
@@ -2575,10 +2577,6 @@ public void OnClientDisconnect_Post(int client)
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
-	if (loweredsprint)
-	{
-		if (buttons & IN_SPEED) return Plugin_Continue;
-	}
 	if (buttons & IN_ZOOM) return Plugin_Continue;
 	bool setbuttons = true;
 	static char curweap[24];
@@ -2594,6 +2592,28 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	int useent = GetEntPropEnt(client,Prop_Data,"m_hUseEntity");
 	if ((vehicle == -1) && (useent == -1))
 	{
+		if (loweredsprint)
+		{
+			if (buttons & IN_SPEED)
+			{
+				int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+				if (viewmdl != -1)
+				{
+					int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+					int seqlowered = GetWepAnim(curweap,seq,"ACT_VM_LOWERED");
+					if (StrEqual(curweap,"weapon_uzi",false))
+					{
+						if (CLAttachment[client]) seqlowered = GetWepAnim(curweap,seq,"Uzi_IdleDual");
+					}
+					if (seq != seqlowered)
+					{
+						SetEntProp(viewmdl,Prop_Send,"m_nSequence",seqlowered);
+						InIronSights[client] = false;
+					}
+					return Plugin_Continue;
+				}
+			}
+		}
 		if (buttons & IN_ATTACK)
 		{
 			if (!(g_LastButtons[client] & IN_ATTACK))
