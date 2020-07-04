@@ -8,8 +8,9 @@
 #define REQUIRE_EXTENSIONS
 #pragma semicolon 1;
 #pragma newdecls required;
+#pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.27"
+#define PLUGIN_VERSION "1.28"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -87,6 +88,11 @@ public Action CreateStuff(int client, int args)
 		else
 			PrintToServer("Please specify ent");
 		return Plugin_Handled;
+	}
+	if (client == 0)
+	{
+		if ((IsValidEntity(1)) && (!IsDedicatedServer())) client = 1;
+		else return Plugin_Handled;
 	}
 	if (client == 0)
 	{
@@ -400,7 +406,10 @@ public Action ApplyOwner(Handle timer, Handle dp)
 public Action CreateStuffThere(int client, int args)
 {
 	if (client == 0)
-		return Plugin_Handled;
+	{
+		if ((IsValidEntity(1)) && (!IsDedicatedServer())) client = 1;
+		else return Plugin_Handled;
+	}
 	char ent[64];
 	GetCmdArg(1,ent,sizeof(ent));
 	if (strlen(ent) < 1)
@@ -1725,6 +1734,11 @@ public Action moveentity(int client, int args)
 
 public Action getinf(int client, int args)
 {
+	if (client == 0)
+	{
+		if ((IsValidEntity(1)) && (!IsDedicatedServer())) client = 1;
+		else return Plugin_Handled;
+	}
 	int targ = GetClientAimTarget(client, false);
 	if (targ != -1)
 	{

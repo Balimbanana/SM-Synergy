@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.27"
-			"Previous"	"1.26"
+			"Latest"  	"1.28"
+			"Previous"	"1.27"
 		}
 		
-		"Notes"	"A bit more info in listents full. Enhanced search by targetname."
+		"Notes"	"Added listen-server support for commands."
 	}
 	
 	"Files"
