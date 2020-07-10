@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.35"
+#define PLUGIN_VERSION "1.36"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -36,6 +36,7 @@ bool survivalact = false;
 bool hasread = false;
 bool allowendspawn = false;
 bool ResetOnAllDead = false;
+bool dbglevel = false;
 int WeapList = -1;
 int scoreshow = -1;
 int scoreshowstat = -1;
@@ -187,6 +188,11 @@ public void OnPluginStart()
 	if (mpcvar == INVALID_HANDLE) mpcvar = CreateConVar("mp_reset", "0", "Reload the last checkpoint on all players dead.", _, true, 0.0, true, 1.0);
 	HookConVarChange(mpcvar,reloadonalldeadch);
 	ResetOnAllDead = GetConVarBool(mpcvar);
+	CloseHandle(mpcvar);
+	mpcvar = FindConVar("synmodes_debug");
+	if (mpcvar == INVALID_HANDLE) mpcvar = CreateConVar("synmodes_debug", "0", "Shows debug messages for SynModes.", _, true, 0.0, true, 1.0);
+	HookConVarChange(mpcvar,debugch);
+	dbglevel = GetConVarBool(mpcvar);
 	CloseHandle(mpcvar);
 	Handle resetmodeh = CreateConVar("sm_resetmode", "0", "Reset mode for survival gamemode. 0 is reload checkpoint, 1 is reload map, 2 is respawn all players.", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 0.0, true, 2.0);
 	HookConVarChange(resetmodeh,resetmodech);
@@ -472,6 +478,12 @@ public void reloadonalldeadch(Handle convar, const char[] oldValue, const char[]
 {
 	if (StringToInt(newValue) == 1) ResetOnAllDead = true;
 	else ResetOnAllDead = false;
+}
+
+public void debugch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) dbglevel = true;
+	else dbglevel = false;
 }
 
 public void resetmodech(Handle convar, const char[] oldValue, const char[] newValue)
@@ -1619,6 +1631,7 @@ public Action tpclspawnnew(Handle timer, int i)
 			}
 		}
 		ClearArray(equiparr);
+		MoveCLToSpawnpoint(i);
 	}
 	float pos[3];
 	GetClientAbsOrigin(i, pos);
@@ -1626,6 +1639,15 @@ public Action tpclspawnnew(Handle timer, int i)
 	if ((isvehiclemap) || (((pos[0] <= 10.0) && (pos[0] >= -10.0)) && ((pos[1] <= 10.0) && (pos[1] >= -10.0)) && ((pos[2] <= 10.0) && (pos[2] >= -10.0))))
 	{
 		//Player most likely spawned at 0 0 0, or on a player when they shouldn't have, need to attempt recovery...
+		MoveCLToSpawnpoint(i);
+	}
+	return Plugin_Handled;
+}
+
+void MoveCLToSpawnpoint(int i)
+{
+	if (IsValidEntity(i))
+	{
 		ClearArray(equiparr);
 		if (teamnum[i] == 2) findent(MaxClients+1,"info_player_rebel");
 		else if (teamnum[i] == 3) findent(MaxClients+1,"info_player_combine");
@@ -1687,7 +1709,7 @@ public Action tpclspawnnew(Handle timer, int i)
 					}
 				}
 			}
-			//PrintToServer("CheckPoint %s spawnent %i lastspawned %i",activecheckpoint,spawnent,lastspawned[i]);
+			if (dbglevel) PrintToServer("Spawn Ply %i on CheckPoint %s spawnent %i lastspawned %i",i,activecheckpoint,spawnent,lastspawned[i]);
 			float vec[3];
 			float spawnang[3];
 			if (HasEntProp(spawnent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(spawnent,Prop_Data,"m_vecAbsOrigin",vec);
@@ -1697,7 +1719,6 @@ public Action tpclspawnnew(Handle timer, int i)
 		}
 		ClearArray(equiparr);
 	}
-	return Plugin_Handled;
 }
 
 public void EquipCustom(int equip, int client)
@@ -2858,7 +2879,7 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 		//ForcePlayerSuicide(client);
 		return Plugin_Handled;
 	}
-	CreateTimer(2.0, joincfg, client);
+	CreateTimer(2.0, joincfg, client, TIMER_FLAG_NO_MAPCHANGE);
 	return Plugin_Continue;
 }
 
@@ -3703,7 +3724,11 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 				//ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
 				float delay = StringToFloat(lineorgrescom[3]);
 				if (survivalact) resetvehicles(delay,activator);
-				if (StrContains(lineorgrescom[1],"SetCheckPoint",false) != -1) Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
+				if (StrContains(lineorgrescom[1],"SetCheckPoint",false) != -1)
+				{
+					Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
+					if (dbglevel) PrintToServer("%s input with param %s",lineorgrescom[1],lineorgrescom[2]);
+				}
 			}
 			else
 			{
@@ -3714,7 +3739,11 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 				//ReplaceString(lineorgrescom[1],64,lineorgrescom[1],"");
 				float delay = StringToFloat(lineorgrescom[3]);
 				if (survivalact) resetvehicles(delay,activator);
-				if (StrContains(lineorgrescom[1],"SetCheckPoint",false) != -1) Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
+				if (StrContains(lineorgrescom[1],"SetCheckPoint",false) != -1)
+				{
+					Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
+					if (dbglevel) PrintToServer("%s input with param %s",lineorgrescom[1],lineorgrescom[2]);
+				}
 			}
 		}
 	}
