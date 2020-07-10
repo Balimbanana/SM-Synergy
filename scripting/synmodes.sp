@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.36"
+#define PLUGIN_VERSION "1.37"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -57,6 +57,7 @@ Handle globalsarr = INVALID_HANDLE;
 Handle changelevels = INVALID_HANDLE;
 Handle respawnids = INVALID_HANDLE;
 Handle inputsarrorigincls = INVALID_HANDLE;
+Handle ignoretrigs = INVALID_HANDLE;
 Handle afkids = INVALID_HANDLE;
 bool clspawntimeallow[128];
 int clspawntime[128];
@@ -125,6 +126,7 @@ public void OnPluginStart()
 	respawnids = CreateArray(65);
 	afkids = CreateArray(65);
 	inputsarrorigincls = CreateArray(768);
+	ignoretrigs = CreateArray(1024);
 	Handle instspawntime = INVALID_HANDLE;
 	instspawntime = CreateConVar("sm_instspawntime", "10", "Instspawn time, default is 10", _, true, 0.0, false);
 	clspawntimemax = GetConVarInt(instspawntime);
@@ -3558,6 +3560,7 @@ public void OnMapStart()
 	ClearArray(respawnids);
 	ClearArray(changelevels);
 	ClearArray(inputsarrorigincls);
+	ClearArray(ignoretrigs);
 	WeapList = -1;
 	scoreshow = -1;
 	scoreshowstat = -1;
@@ -3664,17 +3667,20 @@ public Action trigsaves(const char[] output, int caller, int activator, float de
 	{
 		if ((activator < MaxClients+1) && (activator > 0))
 		{
-			if (IsPlayerAlive(activator))
+			if ((IsPlayerAlive(activator)) && (IsValidEntity(caller)))
 			{
-				char targn[64];
-				GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
-				float origin[3];
-				if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
-				else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
-				char tmpout[32];
-				Format(tmpout,sizeof(tmpout),output);
-				readoutputstp(targn,tmpout,"Save",origin,activator);
-				readoutputstp(targn,tmpout,"SetCheckPoint",origin,activator);
+				if (FindValueInArray(ignoretrigs,caller) == -1)
+				{
+					char targn[64];
+					GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
+					float origin[3];
+					if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+					else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
+					char tmpout[32];
+					Format(tmpout,sizeof(tmpout),output);
+					readoutputstp(targn,tmpout,"Save",origin,activator,caller);
+					readoutputstp(targn,tmpout,"SetCheckPoint",origin,activator,caller);
+				}
 			}
 		}
 	}
@@ -3682,19 +3688,22 @@ public Action trigsaves(const char[] output, int caller, int activator, float de
 	{
 		if ((IsValidEntity(caller)) && (IsEntNetworkable(caller)))
 		{
-			char targn[64];
-			if (HasEntProp(caller,Prop_Data,"m_iName")) GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
-			float origin[3];
-			if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
-			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
-			char tmpout[32];
-			Format(tmpout,sizeof(tmpout),output);
-			readoutputstp(targn,tmpout,"SetCheckPoint",origin,activator);
+			if (FindValueInArray(ignoretrigs,caller) == -1)
+			{
+				char targn[64];
+				if (HasEntProp(caller,Prop_Data,"m_iName")) GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
+				float origin[3];
+				if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+				else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
+				char tmpout[32];
+				Format(tmpout,sizeof(tmpout),output);
+				readoutputstp(targn,tmpout,"SetCheckPoint",origin,activator,caller);
+			}
 		}
 	}
 }
 
-void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int activator)
+void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], int activator, int caller)
 {
 	if (GetArraySize(inputsarrorigincls) < 1) readoutputsforinputs();
 	else
@@ -3747,7 +3756,8 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 				if (StrContains(lineorgrescom[1],"SetCheckPoint",false) != -1)
 				{
 					Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
-					if (dbglevel) PrintToServer("%s input with param %s",lineorgrescom[1],lineorgrescom[2]);
+					if (dbglevel) PrintToServer("%s input from %s %s with param %s",lineorgrescom[1],targn,output,lineorgrescom[2]);
+					if (IsValidEntity(caller)) PushArrayCell(ignoretrigs,caller);
 				}
 			}
 			else
@@ -3762,7 +3772,8 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 				if (StrContains(lineorgrescom[1],"SetCheckPoint",false) != -1)
 				{
 					Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
-					if (dbglevel) PrintToServer("%s input with param %s",lineorgrescom[1],lineorgrescom[2]);
+					if (dbglevel) PrintToServer("%s input from %s %s with param %s",lineorgrescom[1],targn,output,lineorgrescom[2]);
+					if (IsValidEntity(caller)) PushArrayCell(ignoretrigs,caller);
 				}
 			}
 		}

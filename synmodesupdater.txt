@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.36"
-			"Previous"	"1.35"
+			"Latest"  	"1.37"
+			"Previous"	"1.36"
 		}
 		
-		"Notes"	"Added CVar synmodes_debug for spawn information prints to server."
+		"Notes"	"Additional checks in trigger hooking and information in debug."
 	}
 	
 	"Files"
