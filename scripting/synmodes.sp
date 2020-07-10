@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.37"
+#define PLUGIN_VERSION "1.38"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -1662,6 +1662,12 @@ void MoveCLToSpawnpoint(int i)
 			if (GetArraySize(equiparr) > 0)
 			{
 				int firstarr = GetArrayCell(equiparr,0);
+				if (dbglevel)
+				{
+					char spawnentcls[32];
+					if (IsValidEntity(firstarr)) GetEntityClassname(firstarr,spawnentcls,sizeof(spawnentcls));
+					PrintToServer("Spawn Ply %i on FallbackPoint %s spawnent %i cls %s lastspawned %i",i,activecheckpoint,firstarr,spawnentcls,lastspawned[i]);
+				}
 				float vec[3];
 				float spawnang[3];
 				if (HasEntProp(firstarr,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(firstarr,Prop_Data,"m_vecAbsOrigin",vec);
@@ -1711,7 +1717,17 @@ void MoveCLToSpawnpoint(int i)
 					}
 				}
 			}
-			if (dbglevel) PrintToServer("Spawn Ply %i on CheckPoint %s spawnent %i lastspawned %i",i,activecheckpoint,spawnent,lastspawned[i]);
+			if (dbglevel)
+			{
+				char spawnentcls[32];
+				char targn[64];
+				if (IsValidEntity(spawnent))
+				{
+					GetEntityClassname(spawnent,spawnentcls,sizeof(spawnentcls));
+					if (HasEntProp(spawnent,Prop_Data,"m_iName")) GetEntPropString(spawnent,Prop_Data,"m_iName",targn,sizeof(targn));
+				}
+				PrintToServer("Spawn Ply %i on CheckPoint %s spawnent %i cls %s targetname \"%s\" lastspawned %i",i,activecheckpoint,spawnent,spawnentcls,targn,lastspawned[i]);
+			}
 			float vec[3];
 			float spawnang[3];
 			if (HasEntProp(spawnent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(spawnent,Prop_Data,"m_vecAbsOrigin",vec);
@@ -1788,7 +1804,7 @@ public void EquipCustom(int equip, int client)
 void findent(int ent, char[] clsname)
 {
 	int thisent = FindEntityByClassname(ent,clsname);
-	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != 0))
 	{
 		int bdisabled = 0;
 		if (HasEntProp(thisent,Prop_Data,"m_bDisabled")) bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
@@ -1798,7 +1814,13 @@ void findent(int ent, char[] clsname)
 			{
 				char targn[64];
 				GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
-				if (StrEqual(targn,activecheckpoint,false)) bdisabled = 0;
+				if (StrEqual(targn,activecheckpoint,false))
+				{
+					bdisabled = 0;
+					ClearArray(equiparr);
+					PushArrayCell(equiparr,thisent);
+					return;
+				}
 				else bdisabled = 1;
 			}
 		}
@@ -1806,6 +1828,7 @@ void findent(int ent, char[] clsname)
 			PushArrayCell(equiparr,thisent);
 		findent(thisent++,clsname);
 	}
+	return;
 }
 
 void findentwdis(int ent, char[] clsname)
