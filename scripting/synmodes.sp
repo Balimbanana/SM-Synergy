@@ -3518,23 +3518,43 @@ public void OnMapStart()
 	hasread = false;
 	activecheckpoint = "";
 	GetCurrentMap(mapbuf,sizeof(mapbuf));
-	Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
-	char buff[64];
-	while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
+	char contentdata[128];
+	Handle cvar = FindConVar("content_metadata");
+	if (cvar != INVALID_HANDLE)
 	{
-		if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
+		GetConVarString(cvar,contentdata,sizeof(contentdata));
+		char fixuptmp[16][16];
+		ExplodeString(contentdata," ",fixuptmp,16,16,true);
+		if (StrEqual(fixuptmp[1],"|",false)) Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+		else Format(contentdata,sizeof(contentdata),"%s",fixuptmp[0]);
+	}
+	CloseHandle(cvar);
+	if (strlen(contentdata) > 1)
+	{
+		Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s%s.ent",contentdata,mapbuf);
+		if (!FileExists(mapbuf,true,NULL_STRING)) ReplaceStringEx(mapbuf,sizeof(mapbuf),".ent2",".ent");
+	}
+	if (!FileExists(mapbuf,true,NULL_STRING))
+	{
+		GetCurrentMap(mapbuf,sizeof(mapbuf));
+		Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
+		char buff[64];
+		while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
 		{
-			if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
+			if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
 			{
-				if (StrContains(buff,mapbuf,false) != -1)
+				if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
 				{
-					Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s",buff);
-					break;
+					if (StrContains(buff,mapbuf,false) != -1)
+					{
+						Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s",buff);
+						break;
+					}
 				}
 			}
 		}
+		CloseHandle(mdirlisting);
 	}
-	CloseHandle(mdirlisting);
 	ClearArray(respawnids);
 	ClearArray(changelevels);
 	ClearArray(inputsarrorigincls);
