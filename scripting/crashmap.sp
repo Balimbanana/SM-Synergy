@@ -70,9 +70,6 @@ public void OnPluginStart()
 	sm_crashmap_enabled = CreateConVar("sm_crashmap_enabled", "1", "Enable Crashed Map Recovery? (1=yes 0=no)", FCVAR_NOTIFY, true, 0.0, true, 1.0);
 	sm_crashmap_maxrestarts = CreateConVar("sm_crashmap_maxrestarts", "5", "How many consecutive crashes until server loads the default map", FCVAR_NOTIFY, true, 3.0);
 	AutoExecConfig(true, "plugin.crashmap");
-	Handle cvar = FindConVar("hostname");
-	if (cvar != INVALID_HANDLE) HookConVarChange(cvar, HostNameChange);
-	CloseHandle(cvar);
 	/*
 	BuildPath(Path_SM, FileLoc, 128, "data/crashmap.txt");
 	if (!FileExists(FileLoc))
@@ -97,7 +94,11 @@ public void OnPluginStart()
 		LogError("SQLite error: %s",Error);
 	//SQL_FastQuery(Handle_Database,"DROP TABLE srvcm;");
 	Handle hostnam = FindConVar("hostname");
-	GetConVarString(hostnam,srvname,sizeof(srvname));
+	if (hostnam != INVALID_HANDLE)
+	{
+		HookConVarChange(hostnam, HostNameChange);
+		GetConVarString(hostnam,srvname,sizeof(srvname));
+	}
 	CloseHandle(hostnam);
 	if (!SQL_FastQuery(Handle_Database,"CREATE TABLE IF NOT EXISTS srvcm('srvname' VARCHAR(32) NOT NULL PRIMARY KEY,'mapname' VARCHAR(32) NOT NULL,'restarts' INT NOT NULL);"))
 	{
@@ -106,6 +107,7 @@ public void OnPluginStart()
 		LogError("SQLite error: %s",Err);
 		return;
 	}
+	RegServerCmd("crashmap_changerestoremap",changerestoremap);
 }
 
 public void OnMapStart()
@@ -205,14 +207,14 @@ public void OnMapStart()
 		//if (StrEqual(MapToLoad,CurrentMap,false));
 		restarts++;
 		char Query[256];
-		Format(Query,256,"UPDATE srvcm SET restarts = %i WHERE srvname = '%s'",restarts,srvname);
+		Format(Query,256,"UPDATE srvcm SET restarts = %i WHERE srvname = '%s';",restarts,srvname);
 		SQL_FastQuery(Handle_Database,Query);
 		hQuery = SQL_Query(Handle_Database,origQuery);
 		LogToFile(logPath, "Restarts is %i on %s", restarts, srvname);
 		
 		if(restarts > GetConVarInt(sm_crashmap_maxrestarts)){
 			LogToFile(logPath, "[CMR] Error! %s is causing the server to crash. Please fix!", MapToLoad);
-			Format(Query,256,"UPDATE srvcm SET restarts = 0 WHERE srvname = '%s'",srvname);
+			Format(Query,256,"UPDATE srvcm SET restarts = 0 WHERE srvname = '%s';",srvname);
 			SQL_FastQuery(Handle_Database,Query);
 			hQuery = SQL_Query(Handle_Database,origQuery);
 			CloseHandle(hQuery);
@@ -220,15 +222,25 @@ public void OnMapStart()
 		}
 		else
 		{
-			Format(Query,256,"UPDATE srvcm SET restarts = %i WHERE srvname = '%s'",restarts,srvname);
+			Format(Query,256,"UPDATE srvcm SET restarts = %i WHERE srvname = '%s';",restarts,srvname);
 			SQL_FastQuery(Handle_Database,Query);
 			hQuery = SQL_Query(Handle_Database,origQuery);
 			CloseHandle(hQuery);
 			LogToFile(logPath,"Q %s \nOQ %s \n map %s",Query,origQuery,MapToLoad);
 		}
-		
-		LogToFile(logPath, "[CMR] %s loaded after server crash.", MapToLoad);
-		ServerCommand("changelevel %s",MapToLoad);
+		char gamedir[16];
+		GetGameFolderName(gamedir,sizeof(gamedir));
+		if (StrEqual(gamedir,"tf_coop_extended",false))
+		{
+			Handle dp = CreateDataPack();
+			WritePackString(dp,MapToLoad);
+			CreateTimer(2.0,ChangeLevelDelay,dp,TIMER_FLAG_NO_MAPCHANGE);
+		}
+		else
+		{
+			LogToFile(logPath, "[CMR] %s loaded after server crash.", MapToLoad);
+			ServerCommand("changelevel %s",MapToLoad);
+		}
 		/*
 		char gamedir[16];
 		GetGameFolderName(gamedir,sizeof(gamedir));
@@ -244,6 +256,36 @@ public void OnMapStart()
 		//ForceChangeLevel(MapToLoad, "Crashed Map Recovery");
 		return;
 	}
+}
+
+public Action ChangeLevelDelay(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		char MapToLoad[256];
+		ReadPackString(dp,MapToLoad,sizeof(MapToLoad));
+		CloseHandle(dp);
+		if (strlen(MapToLoad) > 0)
+		{
+			LogToFile(logPath, "[CMR] %s loaded after server crash.", MapToLoad);
+			ServerCommand("changelevel %s",MapToLoad);
+		}
+	}
+}
+
+public Action changerestoremap(int args)
+{
+	if (args > 0)
+	{
+		char changemap[64];
+		GetCmdArg(1,changemap,sizeof(changemap));
+		char Query[256];
+		Format(Query,256,"UPDATE srvcm SET mapname = '%s', restarts = 0 WHERE srvname = '%s';",changemap,srvname);
+		PrintToServer("Q %s",Query);
+		SQL_FastQuery(Handle_Database,Query);
+	}
+	return Plugin_Handled;
 }
 
 public Action delayedcheck(Handle timer, Handle hQuery)
@@ -264,7 +306,7 @@ public Action delayedcheck(Handle timer, Handle hQuery)
 		}
 		CloseHandle(cvar);
 		char Query[256];
-		Format(Query,256,"UPDATE srvcm SET mapname = '%s', restarts = 0 WHERE srvname = '%s'",CurrentMap,srvname);
+		Format(Query,256,"UPDATE srvcm SET mapname = '%s', restarts = 0 WHERE srvname = '%s';",CurrentMap,srvname);
 		SQL_FastQuery(Handle_Database,Query);
 		//hQuery = SQL_Query(Handle_Database,origQuery);
 	}
