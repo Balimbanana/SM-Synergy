@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.28"
+#define PLUGIN_VERSION "1.29"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -137,6 +137,7 @@ public Action CreateStuff(int client, int args)
 		float PlayerOrigin[3];
 		float Angles[3];
 		float Location[3];
+		char setparent[128];
 		bool vehiclemodeldefined = false;
 		bool vehiclescriptdefined = false;
 		bool targnamedefined = false;
@@ -309,6 +310,10 @@ public Action CreateStuff(int client, int args)
 						}
 						else ownerset = StringToInt(tmp2);
 					}
+					else if (StrEqual(tmp,"parentname",false))
+					{
+						Format(setparent,sizeof(setparent),"%s",tmp2);
+					}
 					if (StrEqual(tmp,"targetname",false))
 						if (targnamedefined)
 							Format(tmp2,sizeof(tmp2),"%s%s",ent,tmp2);
@@ -384,6 +389,19 @@ public Action CreateStuff(int client, int args)
 			WritePackCell(dp,stuff);
 			CreateTimer(0.1,ApplyOwner,dp);
 		}
+		if (strlen(setparent) > 0)
+		{
+			if (StrEqual(setparent,"!self",false))
+			{
+				SetVariantString("!activator");
+				AcceptEntityInput(stuff,"SetParent",client);
+			}
+			else
+			{
+				SetVariantString(setparent);
+				AcceptEntityInput(stuff,"SetParent");
+			}
+		}
 	}
 	return Plugin_Handled;
 }
@@ -425,6 +443,7 @@ public Action CreateStuffThere(int client, int args)
 		bool vehiclemodeldefined = false;
 		bool vehiclescriptdefined = false;
 		bool targnamedefined = false;
+		char setparent[128];
 		GetClientEyeAngles(client, clangles);
 		GetClientEyePosition(client, Location);
 		Location[0] = (Location[0] + (10 * Cosine(DegToRad(clangles[1]))));
@@ -524,6 +543,7 @@ public Action CreateStuffThere(int client, int args)
 			PrintToConsole(client,"Unable to create entity %s",ent);
 			return Plugin_Handled;
 		}
+		int ownerset = -1;
 		char fullstr[512];
 		Format(fullstr,sizeof(fullstr),"%s",ent);
 		Handle passedarr = CreateArray(64);
@@ -595,6 +615,18 @@ public Action CreateStuffThere(int client, int args)
 							clangles[2] = StringToFloat(tmpexpl[2]);
 						}
 					}
+					else if (StrEqual(tmp,"owner",false))
+					{
+						if (StrEqual(tmp2,"!self",false))
+						{
+							ownerset = client;
+						}
+						else ownerset = StringToInt(tmp2);
+					}
+					else if (StrEqual(tmp,"parentname",false))
+					{
+						Format(setparent,sizeof(setparent),"%s",tmp2);
+					}
 					if (StrEqual(tmp,"targetname",false))
 						if (targnamedefined)
 							Format(tmp2,sizeof(tmp2),"%s%s",ent,tmp2);
@@ -664,6 +696,26 @@ public Action CreateStuffThere(int client, int args)
 		TeleportEntity(stuff, fhitpos, NULL_VECTOR, NULL_VECTOR);
 		DispatchSpawn(stuff);
 		ActivateEntity(stuff);
+		if ((ownerset != -1) && (ownerset != 0))
+		{
+			Handle dp = CreateDataPack();
+			WritePackCell(dp,ownerset);
+			WritePackCell(dp,stuff);
+			CreateTimer(0.1,ApplyOwner,dp);
+		}
+		if (strlen(setparent) > 0)
+		{
+			if (StrEqual(setparent,"!self",false))
+			{
+				SetVariantString("!activator");
+				AcceptEntityInput(stuff,"SetParent",client);
+			}
+			else
+			{
+				SetVariantString(setparent);
+				AcceptEntityInput(stuff,"SetParent");
+			}
+		}
 	}
 	return Plugin_Handled;
 }

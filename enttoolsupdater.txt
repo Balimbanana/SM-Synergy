@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.28"
-			"Previous"	"1.27"
+			"Latest"  	"1.29"
+			"Previous"	"1.28"
 		}
 		
-		"Notes"	"Added listen-server support for commands."
+		"Notes"	"Added parentname support for both !self and targetname."
 	}
 	
 	"Files"
