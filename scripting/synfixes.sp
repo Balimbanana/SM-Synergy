@@ -51,8 +51,9 @@ bool appliedlargeplayeradj = false;
 bool BlockEx = true;
 bool TrainBlockFix = true;
 bool GroundStuckFix = true;
+bool BlockChoreoSuicide = true;
 
-#define PLUGIN_VERSION "1.99968"
+#define PLUGIN_VERSION "1.99969"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -170,6 +171,7 @@ public void OnPluginStart()
 		HookConVarChange(cvar, trainblckch);
 	}
 	CloseHandle(cvar);
+	cvar = FindConVar("sm_fixgroundstuck");
 	if (cvar != INVALID_HANDLE)
 	{
 		GroundStuckFix = GetConVarBool(cvar);
@@ -180,6 +182,19 @@ public void OnPluginStart()
 		cvar = CreateConVar("sm_fixgroundstuck", "1", "Moves players on top of whatever they are stuck half-way in to.", _, true, 0.0, true, 1.0);
 		GroundStuckFix = GetConVarBool(cvar);
 		HookConVarChange(cvar, groundstuckch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("sm_blockchoreokill");
+	if (cvar != INVALID_HANDLE)
+	{
+		BlockChoreoSuicide = GetConVarBool(cvar);
+		HookConVarChange(cvar, antikillch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_blockchoreokill", "1", "Prevent players from suiciding while in choreo vehicles.", _, true, 0.0, true, 1.0);
+		BlockChoreoSuicide = GetConVarBool(cvar);
+		HookConVarChange(cvar, antikillch);
 	}
 	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
@@ -216,6 +231,8 @@ public void OnPluginStart()
 	RegConsoleCmd("mm_message",cmdblock);
 	RegConsoleCmd("mm_stats",cmdblock);
 	RegConsoleCmd("mm_select_session",cmdblock);
+	RegConsoleCmd("kill",suicideblock);
+	RegConsoleCmd("explode",suicideblock);
 	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
 	CreateTimer(0.5,resetclanim,_,TIMER_REPEAT);
 	AutoExecConfig(true, "synfixes");
@@ -547,6 +564,31 @@ public Action admblock(int client, int args)
 public Action cmdblock(int client, int args)
 {
 	return Plugin_Handled;
+}
+
+public Action suicideblock(int client, int args)
+{
+	if (BlockChoreoSuicide)
+	{
+		if (IsValidEntity(client))
+		{
+			if (HasEntProp(client,Prop_Send,"m_hVehicle"))
+			{
+				int vck = GetEntProp(client, Prop_Send, "m_hVehicle");
+				if (IsValidEntity(vck))
+				{
+					char vckcls[64];
+					GetEntityClassname(vck,vckcls,sizeof(vckcls));
+					if ((StrContains(vckcls,"choreo",false) != -1) || (StrContains(vckcls,"prisoner_pod",false) != -1))
+					{
+						PrintToChat(client,"> Can't use while in a choreo vehicle.");
+						return Plugin_Handled;
+					}
+				}
+			}
+		}
+	}
+	return Plugin_Continue;
 }
 
 public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
@@ -4078,6 +4120,14 @@ public void groundstuckch(Handle convar, const char[] oldValue, const char[] new
 		GroundStuckFix = true;
 	else
 		GroundStuckFix = false;
+}
+
+public void antikillch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		BlockChoreoSuicide = true;
+	else
+		BlockChoreoSuicide = false;
 }
 
 public void noguidech(Handle convar, const char[] oldValue, const char[] newValue)
