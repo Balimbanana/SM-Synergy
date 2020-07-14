@@ -37,7 +37,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.60"
+#define PLUGIN_VERSION "0.61"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -2557,6 +2557,11 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 						{
 							if (!StrEqual(LineSpanning[strlen(LineSpanning)-1],"\n",false)) Format(LineSpanning,sizeof(LineSpanning),"%s %s",LineSpanning,kvs[i]);
 							else Format(LineSpanning,sizeof(LineSpanning),"%s%s",LineSpanning,kvs[i]);
+							if (StrContains(kvs[i],"\"",false) > 0)
+							{
+								Format(key,sizeof(key),"%s\n",LineSpanning,kvs[i]);
+								IncludeNextLines = false;
+							}
 						}
 						if ((StrContains(kvs[i+1],"\"",false) == -1) && (!IncludeNextLines)) Format(val,sizeof(val),"%s",kvs[i+1]);
 						else if (StrContains(kvs[i+1],"\"",false) == 0)
@@ -2581,9 +2586,13 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 								}
 								IncludeNextLines = false;
 							}
+							else if (StrContains(tmp,"\"",false) == 0)
+							{
+								Format(val,sizeof(val),"\"\"");
+							}
 							else
 							{
-								for (int j = i+2;j<64;j++)
+								for (int j = i+2;j<runthrough;j++)
 								{
 									if (strlen(kvs[j]) > 0) Format(kvs[i+1],sizeof(kvs[]),"%s %s",kvs[i+1],kvs[j]);
 									if (StrContains(kvs[j],"\"",false) > 0)

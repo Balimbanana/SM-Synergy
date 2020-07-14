@@ -9,6 +9,7 @@
 #include <synfixes/npc_alien_grunt>
 #include <synfixes/npc_alien_slave>
 #include <synfixes/npc_apache>
+#include <synfixes/npc_bmsgargantua>
 #include <synfixes/npc_human_assassin>
 #include <synfixes/npc_bullsquid>
 #include <synfixes/npc_gonarch>
@@ -59,6 +60,7 @@ float entrefresh = 0.0;
 float removertimer = 30.0;
 float fadingtime[128];
 float antispamchk[128];
+float LastJump[128];
 int WeapList = -1;
 int tauhl2beam = -1;
 int spawneramt = 20;
@@ -97,9 +99,11 @@ bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
 bool GroundStuckFix = true;
+bool BlockChoreoSuicide = true;
+bool LongJumpMode = false;
 bool norunagain = false;
 
-#define PLUGIN_VERSION "2.0014"
+#define PLUGIN_VERSION "2.0015"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -289,6 +293,32 @@ public void OnPluginStart()
 		HookConVarChange(cvar, groundstuckch);
 	}
 	CloseHandle(cvar);
+	cvar = FindConVar("sm_longjumpmode");
+	if (cvar != INVALID_HANDLE)
+	{
+		LongJumpMode = GetConVarBool(cvar);
+		HookConVarChange(cvar, longjumpmodech);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_longjumpmode", "0", "Set mode of longjump, 0 is HL1 version, 1 is Black Mesa version.", _, true, 0.0, true, 1.0);
+		LongJumpMode = GetConVarBool(cvar);
+		HookConVarChange(cvar, longjumpmodech);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("sm_blockchoreokill");
+	if (cvar != INVALID_HANDLE)
+	{
+		BlockChoreoSuicide = GetConVarBool(cvar);
+		HookConVarChange(cvar, antikillch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_blockchoreokill", "1", "Prevent players from suiciding while in choreo vehicles.", _, true, 0.0, true, 1.0);
+		BlockChoreoSuicide = GetConVarBool(cvar);
+		HookConVarChange(cvar, antikillch);
+	}
+	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -358,6 +388,8 @@ public void OnPluginStart()
 	RegConsoleCmd("mm_message",cmdblock);
 	RegConsoleCmd("mm_stats",cmdblock);
 	RegConsoleCmd("mm_select_session",cmdblock);
+	RegConsoleCmd("kill",suicideblock);
+	RegConsoleCmd("explode",suicideblock);
 	RegConsoleCmd("flushfix",ReallowFlush);
 	AddCommandListener(flushcmd,"blckreset");
 	RegConsoleCmd("changelevel",resetgraphs);
@@ -449,6 +481,12 @@ public Action bmcvars(Handle timer)
 	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_dmg_sentry");
 	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_dmg_sentry","4","Sentries damage.",_,true,0.0,false);
+	CloseHandle(cvarchk);
+	cvarchk = FindConVar("sk_dmg_bmsgargantua_melee");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_dmg_bmsgargantua_melee","30","Black Mesa Gargantua melee damage.",_,true,0.0,false);
+	CloseHandle(cvarchk);
+	cvarchk = FindConVar("sk_bmsgargantua_health");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bmsgargantua_health","800","Black Mesa Gargantua health.",_,true,0.0,false);
 	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_alien_slave_dmg_zap");
 	if (cvarchk == INVALID_HANDLE)
@@ -608,6 +646,7 @@ public void OnMapStart()
 		for (int i = 1;i<MaxClients+1;i++)
 		{
 			guiderocket[i] = true;
+			LastJump[i] = 0.0;
 			DisplayedChapterTitle[i] = false;
 			PushArrayCell(entlist,i);
 		}
@@ -1461,6 +1500,31 @@ public Action cmdblock(int client, int args)
 	return Plugin_Handled;
 }
 
+public Action suicideblock(int client, int args)
+{
+	if (BlockChoreoSuicide)
+	{
+		if (IsValidEntity(client))
+		{
+			if (HasEntProp(client,Prop_Send,"m_hVehicle"))
+			{
+				int vck = GetEntProp(client, Prop_Send, "m_hVehicle");
+				if (IsValidEntity(vck))
+				{
+					char vckcls[64];
+					GetEntityClassname(vck,vckcls,sizeof(vckcls));
+					if ((StrContains(vckcls,"choreo",false) != -1) || (StrContains(vckcls,"prisoner_pod",false) != -1))
+					{
+						PrintToChat(client,"> Can't use while in a choreo vehicle.");
+						return Plugin_Handled;
+					}
+				}
+			}
+		}
+	}
+	return Plugin_Continue;
+}
+
 public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 {
 	if (action == MenuAction_Select)
@@ -1961,7 +2025,8 @@ public Action everyspawnpost(Handle timer, int client)
 				if (hudhint != -1)
 				{
 					char msg[64];
-					Format(msg,sizeof(msg),"Ctrl + Jump LONG JUMP");
+					if (LongJumpMode) Format(msg,sizeof(msg),"Jump + Direction + Jump LONG JUMP");
+					else Format(msg,sizeof(msg),"Ctrl + Jump LONG JUMP");
 					DispatchKeyValue(hudhint,"spawnflags","0");
 					DispatchKeyValue(hudhint,"message",msg);
 					DispatchSpawn(hudhint);
@@ -2307,7 +2372,8 @@ public Action clspawnpost(Handle timer, int client)
 				if (hudhint != -1)
 				{
 					char msg[64];
-					Format(msg,sizeof(msg),"Ctrl + Jump LONG JUMP");
+					if (LongJumpMode) Format(msg,sizeof(msg),"Jump + Direction + Jump LONG JUMP");
+					else Format(msg,sizeof(msg),"Ctrl + Jump LONG JUMP");
 					DispatchKeyValue(hudhint,"spawnflags","0");
 					DispatchKeyValue(hudhint,"message",msg);
 					DispatchSpawn(hudhint);
@@ -5710,7 +5776,8 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							relsetzsec = true;
 						}
 						PushArrayString(passedarr,"model");
-						PushArrayString(passedarr,"models/zombies/zombie_sci.mdl");
+						if (FileExists("models/HDTF/characters/zombies/scientist_zombie.mdl",true,NULL_STRING)) PushArrayString(passedarr,"models/HDTF/characters/zombies/scientist_zombie.mdl");
+						else PushArrayString(passedarr,"models/zombies/zombie_sci.mdl");
 						dp = CreateDataPack();
 						WritePackString(dp,"models/zombies/zombie_sci.mdl");
 						Format(setupent,sizeof(setupent),"zombie");
@@ -13794,6 +13861,7 @@ public void OnClientDisconnect(int client)
 	votetime[client] = 0.0;
 	fadingtime[client] = 0.0;
 	antispamchk[client] = 0.0;
+	LastJump[client] = 0.0;
 	showcc[client] = false;
 	DisplayedChapterTitle[client] = false;
 }
@@ -13857,6 +13925,29 @@ public Action OnTakeDamage(int victim, int& attacker, int& inflictor, float& dam
 		{
 			damage = 0.0;
 			return Plugin_Changed;
+		}
+	}
+	if ((IsValidEntity(attacker)) && (IsValidEntity(victim)))
+	{
+		char cls[32];
+		GetEntityClassname(attacker,cls,sizeof(cls));
+		if ((StrEqual(cls,"func_platrot",false)) || (StrEqual(cls,"func_door",false)))
+		{
+			if (HasEntProp(victim,Prop_Data,"m_hGroundEntity"))
+			{
+				int groundchk = GetEntPropEnt(victim,Prop_Data,"m_hGroundEntity");
+				if (groundchk == attacker)
+				{
+					float orgs[3];
+					if (HasEntProp(victim,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(victim,Prop_Data,"m_vecAbsOrigin",orgs);
+					else if (HasEntProp(victim,Prop_Data,"m_vecOrigin")) GetEntPropVector(victim,Prop_Data,"m_vecOrigin",orgs);
+					orgs[2]+=15.0;
+					TeleportEntity(victim,orgs,NULL_VECTOR,NULL_VECTOR);
+					damage = 0.0;
+					if (debuglvl == 3) PrintToServer("Moved ply %i because of damage from standing ent %i %s",victim,attacker,cls);
+					return Plugin_Changed;
+				}
+			}
 		}
 	}
 	char clsnamechk[32];
@@ -14597,6 +14688,24 @@ public void OnEntityDestroyed(int entity)
 	if (find != -1) RemoveFromArray(grenlist,find);
 	find = FindValueInArray(entlist,entity);
 	if (find != -1) RemoveFromArray(entlist,find);
+	if ((IsValidEntity(entity)) && (entity > MaxClients))
+	{
+		char cls[64];
+		GetEntityClassname(entity,cls,sizeof(cls));
+		if (StrEqual(cls,"npc_bmsgargantua",false))
+		{
+			int effectent = GetEntPropEnt(entity,Prop_Data,"m_hEffectEntity");
+			if ((IsValidEntity(effectent)) && (effectent > MaxClients))
+			{
+				int spr = GetEntPropEnt(effectent,Prop_Data,"m_hEffectEntity");
+				if ((IsValidEntity(spr)) && (spr > MaxClients))
+				{
+					AcceptEntityInput(spr,"kill");
+				}
+				AcceptEntityInput(effectent,"kill");
+			}
+		}
+	}
 	findmovechild(-1);
 }
 
@@ -14800,7 +14909,8 @@ public Action StartTouchLongJump(int entity, int other)
 			if (hudhint != -1)
 			{
 				char msg[64];
-				Format(msg,sizeof(msg),"Ctrl + Jump LONG JUMP");
+				if (LongJumpMode) Format(msg,sizeof(msg),"Jump + Direction + Jump LONG JUMP");
+				else Format(msg,sizeof(msg),"Ctrl + Jump LONG JUMP");
 				DispatchKeyValue(hudhint,"spawnflags","1");
 				DispatchKeyValue(hudhint,"message",msg);
 				DispatchSpawn(hudhint);
@@ -15457,6 +15567,25 @@ public Action custent(Handle timer, int entity)
 					DispatchKeyValue(entity,"classname","monster_gargantua");
 					ReplaceString(cls,sizeof(cls),"monster_gargantua","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				}
+			}
+			else if (StrContains(cls,"npc_bmsgargantua",false) == 0)
+			{
+				if (FileExists("models/xenians/garg.mdl",true,NULL_STRING))
+				{
+					if (FindStringInArray(precachedarr,"npc_bmsgargantua") == -1)
+					{
+						char searchprecache[128];
+						Format(searchprecache,sizeof(searchprecache),"sound/npc/garg/");
+						recursion(searchprecache);
+						PushArrayString(precachedarr,"npc_bmsgargantua");
+					}
+					DispatchKeyValue(entity,"classname","npc_bmsgargantua");
+					ReplaceString(cls,sizeof(cls),"npc_bmsgargantua","");
+					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					SDKHookEx(entity,SDKHook_Think,bmsgargthink);
+					CloseHandle(dp);
+					dp = INVALID_HANDLE;
 				}
 			}
 			else if (StrContains(cls,"npc_snark",false) == 0)
@@ -19283,6 +19412,18 @@ void findentlist(int ent, char[] clsname)
 			SDKHookEx(thisent,SDKHook_Think,monstzomthink);
 			customents = true;
 		}
+		else if (StrEqual(clsofent,"npc_bmsgargantua",false))
+		{
+			if (FindStringInArray(precachedarr,"npc_bmsgargantua") == -1)
+			{
+				char searchprecache[128];
+				Format(searchprecache,sizeof(searchprecache),"sound/npc/garg/");
+				recursion(searchprecache);
+				PushArrayString(precachedarr,"npc_bmsgargantua");
+			}
+			SDKHookEx(thisent,SDKHook_Think,bmsgargthink);
+			customents = true;
+		}
 		if (((StrContains(clsofent,"npc_",false) != -1) || (StrContains(clsofent,"monster_",false) != -1) || (StrEqual(clsofent,"generic_actor",false)) || (StrEqual(clsofent,"generic_monster",false))) && (!StrEqual(clsofent,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(clsofent,"npc_bullseye",false)) && (!StrEqual(clsofent,"env_xen_portal",false)) && (!StrEqual(clsofent,"env_xen_portal_template",false)) && (!StrEqual(clsofent,"npc_maker",false)) && (!StrEqual(clsofent,"npc_template_maker",false)) && (StrContains(clsofent,"info_",false) == -1) && (StrContains(clsofent,"game_",false) == -1) && (StrContains(clsofent,"trigger_",false) == -1) && (FindValueInArray(entlist,thisent) == -1))
 			PushArrayCell(entlist,thisent);
 		findentlist(thisent++,clsname);
@@ -19323,6 +19464,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 		}
 	}
+	int vehicles = -1;
+	if (HasEntProp(client,Prop_Data,"m_hVehicle")) vehicles = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
 	if (buttons & IN_ATTACK) {
 		if (!(g_LastButtons[client] & IN_ATTACK)) {
 			OnButtonPressTankchk(client,IN_ATTACK);
@@ -19395,7 +19538,6 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	}
 	if (impulse == 100)
 	{
-		int vehicles = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
 		if ((vehicles > MaxClients) && (IsValidEntity(vehicles)))
 		{
 			int driver = GetEntProp(client,Prop_Data,"m_iHideHUD");
@@ -19418,8 +19560,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		}
 	}
 	if (buttons & IN_JUMP) {
-		if (!(g_LastButtons[client] & IN_JUMP)) {
-			OnButtonPressJump(client,IN_JUMP);
+		if ((!(g_LastButtons[client] & IN_JUMP)) && (vehicles == -1)) {
+			OnButtonPressJump(client,buttons);
 		}
 	}
 	else if (buttons & IN_USE) {
@@ -19482,55 +19624,107 @@ public void OnButtonPress(int client, int button)
 	}
 }
 
-public void OnButtonPressJump(int client, int button)
+public void OnButtonPressJump(int client, int buttons)
 {
 	if (longjumpactive)
 	{
-		if ((GetEntProp(client,Prop_Send,"m_bDucking")) && (!GetEntProp(client,Prop_Send,"m_bDucked")))
+		if (LongJumpMode)
 		{
-			float loc[3];
-			float orgs[3];
-			float angs[3];
-			float shootvel[3];
-			if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
-			else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
-			if (HasEntProp(client,Prop_Data,"m_angRotation")) GetEntPropVector(client,Prop_Data,"m_angRotation",angs);
-			loc[0] = (orgs[0] + (250 * Cosine(DegToRad(angs[1]))));
-			loc[1] = (orgs[1] + (250 * Sine(DegToRad(angs[1]))));
-			loc[2] = (orgs[2] + 100);
-			MakeVectorFromPoints(orgs,loc,shootvel);
-			ScaleVector(shootvel,3.0);
-			orgs[2]+=1.0;
-			TeleportEntity(client,orgs,NULL_VECTOR,shootvel);
-			if (FindStringInArray(precachedarr,"item_longjump") == -1)
+			if (HasEntProp(client,Prop_Data,"m_hGroundEntity"))
 			{
-				PrecacheSound("weapons\\jumpmod\\jumpmod_long1.wav",true);
-				PrecacheSound("weapons\\jumpmod\\jumpmod_boost1.wav",true);
-				PrecacheSound("weapons\\jumpmod\\jumpmod_boost2.wav",true);
-				if (FileExists("sound/items/airtank1.wav",true,NULL_STRING)) PrecacheSound("items\\airtank1.wav",true);
-				if (FileExists("sound/ambient/gas/cannister_loop.wav",true,NULL_STRING)) PrecacheSound("ambient\\gas\\cannister_loop.wav",true);
-				PushArrayString(precachedarr,"item_longjump");
+				int groundent = GetEntPropEnt(client,Prop_Data,"m_hGroundEntity");
+				if ((LastJump[client] > GetGameTime()) && (groundent == -1))
+				{
+					float absvel[3];
+					GetEntPropVector(client,Prop_Data,"m_vecAbsVelocity",absvel);
+					float loc[3];
+					float orgs[3];
+					float angs[3];
+					float shootvel[3];
+					if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
+					else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
+					if (HasEntProp(client,Prop_Data,"m_angRotation")) GetEntPropVector(client,Prop_Data,"m_angRotation",angs);
+					if ((buttons & IN_MOVERIGHT) && (buttons & IN_FORWARD)) angs[1]-=45.0;
+					else if ((buttons & IN_MOVELEFT) && (buttons & IN_FORWARD)) angs[1]+=45.0;
+					else if ((buttons & IN_MOVERIGHT) && (buttons & IN_BACK)) angs[1]-=135.0;
+					else if ((buttons & IN_MOVELEFT) && (buttons & IN_BACK)) angs[1]+=135.0;
+					else if (buttons & IN_MOVERIGHT) angs[1]-=90.0;
+					else if (buttons & IN_MOVELEFT) angs[1]+=90.0;
+					else if (buttons & IN_BACK) angs[1]-=180.0;
+					loc[0] = (orgs[0] + (225 * Cosine(DegToRad(angs[1]))));
+					loc[1] = (orgs[1] + (225 * Sine(DegToRad(angs[1]))));
+					loc[2] = (orgs[2] + 70);
+					MakeVectorFromPoints(orgs,loc,shootvel);
+					ScaleVector(shootvel,2.0);
+					shootvel[0]+=absvel[0];
+					shootvel[1]+=absvel[1];
+					shootvel[2]+=absvel[2];
+					TeleportEntity(client,NULL_VECTOR,NULL_VECTOR,shootvel);
+					LastJump[client] = 0.0;
+					EmitLongJumpSnd(client);
+				}
+				else if (groundent != -1)
+				{
+					LastJump[client] = GetGameTime()+0.5;
+				}
 			}
-			char snd[64];
-			if (FileExists("sound/weapons/jumpmod/jumpmod_long1.wav",true,NULL_STRING))
-			{
-				int randsnd = GetRandomInt(1,3);
-				if (randsnd == 3) Format(snd,sizeof(snd),"weapons\\jumpmod\\jumpmod_long1.wav");
-				else Format(snd,sizeof(snd),"weapons\\jumpmod\\jumpmod_boost%i.wav",randsnd);
-			}
-			else if (FileExists("sound/items/airtank1.wav",true,NULL_STRING))
-			{
-				Format(snd,sizeof(snd),"items\\airtank1.wav");
-			}
-			else
-			{
-				Format(snd,sizeof(snd),"ambient\\gas\\cannister_loop.wav");
-				EmitSoundToAll(snd, client, SNDCHAN_ITEM, SNDLEVEL_DISHWASHER, _, _, _, _, _, _, _, 0.5);
-				CreateTimer(0.5,StopLoop,client,TIMER_FLAG_NO_MAPCHANGE);
-				snd = "";
-			}
-			if (strlen(snd) > 0) EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
+		else
+		{
+			if ((GetEntProp(client,Prop_Send,"m_bDucking")) && (!GetEntProp(client,Prop_Send,"m_bDucked")))
+			{
+				float loc[3];
+				float orgs[3];
+				float angs[3];
+				float shootvel[3];
+				if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
+				else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
+				if (HasEntProp(client,Prop_Data,"m_angRotation")) GetEntPropVector(client,Prop_Data,"m_angRotation",angs);
+				loc[0] = (orgs[0] + (250 * Cosine(DegToRad(angs[1]))));
+				loc[1] = (orgs[1] + (250 * Sine(DegToRad(angs[1]))));
+				loc[2] = (orgs[2] + 100);
+				MakeVectorFromPoints(orgs,loc,shootvel);
+				ScaleVector(shootvel,3.0);
+				orgs[2]+=1.0;
+				TeleportEntity(client,orgs,NULL_VECTOR,shootvel);
+				EmitLongJumpSnd(client);
+			}
+		}
+	}
+}
+
+void EmitLongJumpSnd(int client)
+{
+	if (IsValidEntity(client))
+	{
+		if (FindStringInArray(precachedarr,"item_longjump") == -1)
+		{
+			PrecacheSound("weapons\\jumpmod\\jumpmod_long1.wav",true);
+			PrecacheSound("weapons\\jumpmod\\jumpmod_boost1.wav",true);
+			PrecacheSound("weapons\\jumpmod\\jumpmod_boost2.wav",true);
+			if (FileExists("sound/items/airtank1.wav",true,NULL_STRING)) PrecacheSound("items\\airtank1.wav",true);
+			if (FileExists("sound/ambient/gas/cannister_loop.wav",true,NULL_STRING)) PrecacheSound("ambient\\gas\\cannister_loop.wav",true);
+			PushArrayString(precachedarr,"item_longjump");
+		}
+		char snd[64];
+		if (FileExists("sound/weapons/jumpmod/jumpmod_long1.wav",true,NULL_STRING))
+		{
+			int randsnd = GetRandomInt(1,3);
+			if (randsnd == 3) Format(snd,sizeof(snd),"weapons\\jumpmod\\jumpmod_long1.wav");
+			else Format(snd,sizeof(snd),"weapons\\jumpmod\\jumpmod_boost%i.wav",randsnd);
+		}
+		else if (FileExists("sound/items/airtank1.wav",true,NULL_STRING))
+		{
+			Format(snd,sizeof(snd),"items\\airtank1.wav");
+		}
+		else
+		{
+			Format(snd,sizeof(snd),"ambient\\gas\\cannister_loop.wav");
+			EmitSoundToAll(snd, client, SNDCHAN_ITEM, SNDLEVEL_DISHWASHER, _, _, _, _, _, _, _, 0.5);
+			CreateTimer(0.5,StopLoop,client,TIMER_FLAG_NO_MAPCHANGE);
+			snd = "";
+		}
+		if (strlen(snd) > 0) EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 	}
 }
 
@@ -20137,7 +20331,7 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 			if (debuglvl == 3) PrintToServer("Added %s to delayed speech.",sample);
 		}
 	}
-	if ((StrContains(sample,"vo\\",false) == 0) && (StrContains(mapbuf,"bms_bm_",false) != -1))
+	if ((StrContains(sample,"vo\\",false) == 0) && (StrContains(mapbuf,"bms_bm_",false) != -1) && (IsValidEntity(entity)))
 	{
 		//int targent = -1;
 		//int npcstate = 0;
@@ -20378,6 +20572,22 @@ public void groundstuckch(Handle convar, const char[] oldValue, const char[] new
 		GroundStuckFix = true;
 	else
 		GroundStuckFix = false;
+}
+
+public void antikillch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		BlockChoreoSuicide = true;
+	else
+		BlockChoreoSuicide = false;
+}
+
+public void longjumpmodech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		LongJumpMode = true;
+	else
+		LongJumpMode = false;
 }
 
 public void autorebuildch(Handle convar, const char[] oldValue, const char[] newValue)

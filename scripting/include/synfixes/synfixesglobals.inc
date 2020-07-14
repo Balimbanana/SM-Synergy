@@ -299,3 +299,76 @@ NPCShootBullet(int entity, char[] curweap, float orgs[3], float angs[3], float m
 		}
 	}
 }
+
+void DoRadialDamage(int entity, float angle, float maxdistance, float radius, char damagecvar[64], int dmgtype, float forcescale)
+{
+	if (IsValidEntity(entity))
+	{
+		if (GetArraySize(entlist) > 0)
+		{
+			char npccls[64];
+			GetEntityClassname(entity,npccls,sizeof(npccls));
+			float curorg[3];
+			if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",curorg);
+			else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",curorg);
+			curorg[0] = (curorg[0] + (90 * Cosine(DegToRad(angle))));
+			curorg[1] = (curorg[1] + (90 * Sine(DegToRad(angle))));
+			curorg[2]+=75.0;
+			float toang[3];
+			float shootvel[3];
+			float enorg[3];
+			float damageForce[3];
+			float dmgset = 20.0;
+			float dmgforce = 40.0;
+			char cvarcls[64];
+			Format(cvarcls,sizeof(cvarcls),"%s",npccls);
+			ReplaceStringEx(cvarcls,sizeof(cvarcls),"npc_","",-1,-1,false);
+			if (strlen(damagecvar) < 1) Format(cvarcls,sizeof(cvarcls),"sk_dmg_%s",cvarcls);
+			else Format(cvarcls,sizeof(cvarcls),"sk_dmg_%s_%s",cvarcls,damagecvar);
+			Handle cvar = FindConVar(cvarcls);
+			if (cvar != INVALID_HANDLE)
+			{
+				dmgset = GetConVarFloat(cvar);
+				dmgforce = dmgset*2.0;
+			}
+			CloseHandle(cvar);
+			damageForce[0] = dmgforce;
+			damageForce[1] = dmgforce;
+			damageForce[2] = dmgforce;
+			for (int j = 0;j<GetArraySize(entlist);j++)
+			{
+				int i = GetArrayCell(entlist,j);
+				if (IsValidEntity(i))
+				{
+					char cls[64];
+					GetEntityClassname(i,cls,sizeof(cls));
+					if ((!StrEqual(cls,npccls,false)) && (!StrEqual(cls,"npc_gargantua",false)) && (!StrEqual(cls,"npc_bullseye",false)) && (!StrEqual(cls,"npc_maker",false)) && (!StrEqual(cls,"npc_template_maker",false)) && (!StrEqual(cls,"env_xen_portal",false)) && (!StrEqual(cls,"env_xen_portal_template",false)))
+					{
+						if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",enorg);
+						else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",enorg);
+						if (GetVectorDistance(curorg,enorg,false) < maxdistance)
+						{
+							MakeVectorFromPoints(curorg,enorg,shootvel);
+							GetVectorAngles(shootvel,toang);
+							if ((toang[1]-angle < radius) || (angle-toang[1] < radius))
+							{
+								TR_TraceRayFilter(curorg,toang,MASK_SHOT,RayType_Infinite,TraceEntityFilter,entity);
+								int hitent = TR_GetEntityIndex();
+								if (hitent == i)
+								{
+									if (forcescale != 0.0)
+									{
+										enorg[2]+=1.0;
+										ScaleVector(shootvel,forcescale);
+										TeleportEntity(i,enorg,NULL_VECTOR,shootvel);
+									}
+									SDKHooks_TakeDamage(i,entity,entity,dmgset,dmgtype,-1,damageForce,curorg);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
