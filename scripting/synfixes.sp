@@ -53,7 +53,7 @@ bool TrainBlockFix = true;
 bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 
-#define PLUGIN_VERSION "1.99969"
+#define PLUGIN_VERSION "1.99970"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3505,6 +3505,22 @@ public void OnEntityDestroyed(int entity)
 {
 	int find = FindValueInArray(entlist,entity);
 	if (find != -1) RemoveFromArray(entlist,find);
+	if ((IsValidEntity(entity)) && (entity > MaxClients))
+	{
+		char cls[64];
+		GetEntityClassname(entity,cls,sizeof(cls));
+		if ((StrContains(cls,"choreo",false) != -1) || (StrEqual(cls,"prop_vehicle_prisoner_pod",false)))
+		{
+			if (HasEntProp(entity,Prop_Data,"m_hPlayer"))
+			{
+				int ply = GetEntPropEnt(entity,Prop_Data,"m_hPlayer");
+				if ((IsValidEntity(ply)) && (ply < MaxClients+1))
+				{
+					AcceptEntityInput(entity,"ExitVehicle",ply);
+				}
+			}
+		}
+	}
 }
 
 public Action resetown(Handle timer, int entity)

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99969"
-			"Previous"	"1.99968"
+			"Latest"  	"1.99970"
+			"Previous"	"1.99969"
 		}
 		
-		"Notes"	"Added CVar sm_blockchoreokill default 1. Blocks suicide while in choreo vehicles."
+		"Notes"	"Added attempt exit deleting choreo vehicles."
 	}
 	
 	"Files"

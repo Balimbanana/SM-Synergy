@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.38"
-			"Previous"	"1.37"
+			"Latest"  	"1.39"
+			"Previous"	"1.38"
 		}
 		
-		"Notes"	"Additional checks in trigger hooking and information in debug."
+		"Notes"	"Added CVar sm_allowvehiclespawn. Added ClearCheckPoint functionality to disable spawning until next checkpoint."
 	}
 	
 	"Files"

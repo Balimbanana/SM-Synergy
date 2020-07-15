@@ -14705,6 +14705,17 @@ public void OnEntityDestroyed(int entity)
 				AcceptEntityInput(effectent,"kill");
 			}
 		}
+		else if ((StrContains(cls,"choreo",false) != -1) || (StrEqual(cls,"prop_vehicle_prisoner_pod",false)))
+		{
+			if (HasEntProp(entity,Prop_Data,"m_hPlayer"))
+			{
+				int ply = GetEntPropEnt(entity,Prop_Data,"m_hPlayer");
+				if ((IsValidEntity(ply)) && (ply < MaxClients+1))
+				{
+					AcceptEntityInput(entity,"ExitVehicle",ply);
+				}
+			}
+		}
 	}
 	findmovechild(-1);
 }

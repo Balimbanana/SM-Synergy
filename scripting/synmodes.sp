@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.38"
+#define PLUGIN_VERSION "1.39"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -37,6 +37,7 @@ bool hasread = false;
 bool allowendspawn = false;
 bool ResetOnAllDead = false;
 bool dbglevel = false;
+bool AllowEnterVehicle = true;
 int WeapList = -1;
 int scoreshow = -1;
 int scoreshowstat = -1;
@@ -99,10 +100,8 @@ public void OnPluginStart()
 	RegConsoleCmd("showscoresdm",scoreboardsh);
 	RegConsoleCmd("instantspawn",setinstspawn);
 	RegAdminCmd("instspawnply",spawnallply,ADMFLAG_BAN,".");
-	
 	equiparr = CreateArray(16);
 	RegConsoleCmd("spec_next",Atkspecpress);
-	
 	Handle instspawn = INVALID_HANDLE;
 	instspawn = CreateConVar("sm_instspawn", "0", "Instspawn, default is 0", _, true, 0.0, true, 2.0);
 	HookConVarChange(instspawn, instspawnch);
@@ -195,6 +194,11 @@ public void OnPluginStart()
 	if (mpcvar == INVALID_HANDLE) mpcvar = CreateConVar("synmodes_debug", "0", "Shows debug messages for SynModes.", _, true, 0.0, true, 1.0);
 	HookConVarChange(mpcvar,debugch);
 	dbglevel = GetConVarBool(mpcvar);
+	CloseHandle(mpcvar);
+	mpcvar = FindConVar("sm_choreovehiclespawn");
+	if (mpcvar == INVALID_HANDLE) mpcvar = CreateConVar("sm_choreovehiclespawn", "1", "Allows spawning inside choreo vehicles.", _, true, 0.0, true, 1.0);
+	HookConVarChange(mpcvar,choreovehiclech);
+	AllowEnterVehicle = GetConVarBool(mpcvar);
 	CloseHandle(mpcvar);
 	Handle resetmodeh = CreateConVar("sm_resetmode", "0", "Reset mode for survival gamemode. 0 is reload checkpoint, 1 is reload map, 2 is respawn all players.", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, true, 0.0, true, 2.0);
 	HookConVarChange(resetmodeh,resetmodech);
@@ -354,7 +358,7 @@ public void instspawnch(Handle convar, const char[] oldValue, const char[] newVa
 					if (!IsPlayerAlive(i))
 					{
 						clused = 0;
-						CreateTimer(0.1,tpclspawnnew,i);
+						CreateTimer(0.1,tpclspawnnew,i,TIMER_FLAG_NO_MAPCHANGE);
 					}
 				}
 			}
@@ -486,6 +490,12 @@ public void debugch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) == 1) dbglevel = true;
 	else dbglevel = false;
+}
+
+public void choreovehiclech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) AllowEnterVehicle = true;
+	else AllowEnterVehicle = false;
 }
 
 public void resetmodech(Handle convar, const char[] oldValue, const char[] newValue)
@@ -687,7 +697,7 @@ public Action Atkspecpress(int client, int args)
 				{
 					clused = i;
 					lastspawned[client]++;
-					CreateTimer(0.1,tpclspawnnew,client);
+					CreateTimer(0.1,tpclspawnnew,client,TIMER_FLAG_NO_MAPCHANGE);
 					nozero = true;
 					break;
 				}
@@ -696,7 +706,7 @@ public Action Atkspecpress(int client, int args)
 		if (!nozero)
 		{
 			clused = 0;
-			CreateTimer(0.1,tpclspawnnew,client);
+			CreateTimer(0.1,tpclspawnnew,client,TIMER_FLAG_NO_MAPCHANGE);
 		}
 		*/
 	}
@@ -714,6 +724,15 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 		}
 		if (instspawnb)
 		{
+			if (StrEqual(activecheckpoint,"Disabled",false))
+			{
+				char resspawn[64];
+				Format(resspawn,sizeof(resspawn),"You will respawn at the next checkpoint.");
+				SetHudTextParams(0.016, 0.05, 5.0, 255, 255, 0, 255, 1, 1.0, 1.0, 1.0);
+				ShowHudText(killed, 3, "%s",resspawn);
+				if (FindStringInArray(respawnids,SteamID[killed]) == -1) PushArrayString(respawnids,SteamID[killed]);
+				return Plugin_Continue;
+			}
 			if (ResetOnAllDead)
 			{
 				bool reset = true;
@@ -763,7 +782,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 		else if (instspawnuse)
 		{
 			clspawntimeallow[killed] = false;
-			if (!survivalact)
+			if ((!survivalact) && (!StrEqual(activecheckpoint,"Disabled",false)))
 			{
 				clspawntime[killed] = clspawntimemax;
 				char resspawn[64];
@@ -772,7 +791,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				ShowHudText(killed, 3, "%s",resspawn);
 				CreateTimer(1.0,respawntime,killed);
 			}
-			else if (survivalact)
+			else if ((survivalact) || (StrEqual(activecheckpoint,"Disabled",false)))
 			{
 				char resspawn[64];
 				Format(resspawn,sizeof(resspawn),"You will respawn at the next checkpoint.");
@@ -782,13 +801,16 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				bool reset = true;
 				for (int i = 1;i<MaxClients+1;i++)
 				{
-					if (IsClientConnected(i))
+					if (IsValidEntity(i))
 					{
-						if (IsClientInGame(i))
+						if (IsClientConnected(i))
 						{
-							if (IsPlayerAlive(i))
+							if (IsClientInGame(i))
 							{
-								reset = false;
+								if (IsPlayerAlive(i))
+								{
+									reset = false;
+								}
 							}
 						}
 					}
@@ -855,11 +877,11 @@ public Action respawntime(Handle timer, int client)
 			clspawntimeallow[client] = false;
 			clused = GetEntPropEnt(client,Prop_Send,"m_hObserverTarget");
 			if ((clused != -1) && (IsPlayerAlive(clused)) && (!cltouchend(clused)))
-				CreateTimer(0.1,tpclspawnnew,client);
+				CreateTimer(0.1,tpclspawnnew,client,TIMER_FLAG_NO_MAPCHANGE);
 			else
 			{
 				clused = 0;
-				CreateTimer(0.1,tpclspawnnew,client);
+				CreateTimer(0.1,tpclspawnnew,client,TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 	}
@@ -1167,7 +1189,7 @@ public Action setupafk(int client, int args)
 						if ((vck == -1) && (teamnum[client] == teamnum[i]) && (client != i))
 						{
 							clused = i;
-							CreateTimer(0.2,tpclspawnnew,client);
+							CreateTimer(0.2,tpclspawnnew,client,TIMER_FLAG_NO_MAPCHANGE);
 							lastspawned[client] = clused+1;
 							return Plugin_Continue;
 						}
@@ -1176,7 +1198,7 @@ public Action setupafk(int client, int args)
 			}
 			if ((!dmset) && (!dmact)) lastspawned[client] = 0;
 			clused = 0;
-			CreateTimer(0.2,tpclspawnnew,client);
+			CreateTimer(0.2,tpclspawnnew,client,TIMER_FLAG_NO_MAPCHANGE);
 		}
 		else if (instspawnuse)
 		{
@@ -1456,6 +1478,8 @@ public Action tpclspawnnew(Handle timer, int i)
 	if ((!IsValidEntity(i)) || (clinspectate[i])) return Plugin_Handled;
 	if (!IsClientInGame(i)) return Plugin_Handled;
 	bool relocglo = false;
+	bool EnterVehicle = false;
+	int vck = -1;
 	if (GetArraySize(globalsarr) < 1)
 	{
 		ClearArray(globalsarr);
@@ -1512,10 +1536,20 @@ public Action tpclspawnnew(Handle timer, int i)
 	if (!IsValidEntity(clused)) clused = 0;
 	if (instspawnuse)
 	{
-		int vck = -1;
 		if (HasEntProp(clused,Prop_Data,"m_hVehicle")) vck = GetEntPropEnt(clused,Prop_Data,"m_hVehicle");
 		if (vck != -1)
-			clused = 0;
+		{
+			if ((AllowEnterVehicle) && (IsValidEntity(vck)))
+			{
+				char vehcls[64];
+				GetEntityClassname(vck,vehcls,sizeof(vehcls));
+				if ((StrEqual(vehcls,"prop_vehicle_prisoner_pod",false)) || (StrContains(vehcls,"choreo",false) != -1))
+				{
+					EnterVehicle = true;
+				}
+			}
+			if (!EnterVehicle) clused = 0;
+		}
 	}
 	if ((isvehiclemap) || (clused == i))
 		clused = 0;
@@ -1538,16 +1572,25 @@ public Action tpclspawnnew(Handle timer, int i)
 	if ((clused > 0) && (IsValidEntity(clused)))
 	{
 		DispatchSpawn(i);
-		int vck = GetEntPropEnt(clused,Prop_Data,"m_hVehicle");
+		vck = GetEntPropEnt(clused,Prop_Data,"m_hVehicle");
 		int crouching = GetEntProp(clused,Prop_Send,"m_bDucked");
 		float pos[3];
 		GetClientAbsOrigin(clused, pos);
 		float plyang[3];
 		GetClientEyeAngles(clused, plyang);
 		plyang[2] = 0.0;
-		if (vck != -1)
+		if (IsValidEntity(vck))
 		{
 			pos[2] += 50.0;
+			if (AllowEnterVehicle)
+			{
+				char vehcls[64];
+				GetEntityClassname(vck,vehcls,sizeof(vehcls));
+				if ((StrEqual(vehcls,"prop_vehicle_prisoner_pod",false)) || (StrContains(vehcls,"choreo",false) != -1))
+				{
+					EnterVehicle = true;
+				}
+			}
 		}
 		else if (crouching)
 		{
@@ -1571,6 +1614,13 @@ public Action tpclspawnnew(Handle timer, int i)
 			}
 		}
 		ClearArray(equiparr);
+		if (EnterVehicle)
+		{
+			Handle dp = CreateDataPack();
+			WritePackCell(dp,i);
+			WritePackCell(dp,vck);
+			CreateTimer(0.1,EnterVehicleDelay,dp,TIMER_FLAG_NO_MAPCHANGE);
+		}
 	}
 	else if ((clused == 0) && (IsClientInGame(i)))
 	{
@@ -1651,14 +1701,14 @@ void MoveCLToSpawnpoint(int i)
 	if (IsValidEntity(i))
 	{
 		ClearArray(equiparr);
-		if (teamnum[i] == 2) findent(MaxClients+1,"info_player_rebel");
-		else if (teamnum[i] == 3) findent(MaxClients+1,"info_player_combine");
-		else if (teamnum[i] == 1) findent(MaxClients+1,"info_player_deathmatch");
-		if ((GetArraySize(equiparr) < 1) && (teamnum[i] != 0)) findent(MaxClients+1,"info_player_deathmatch");
-		if (GetArraySize(equiparr) < 1) findent(MaxClients+1,"info_player_coop");
+		if (teamnum[i] == 2) findent(-1,"info_player_rebel");
+		else if (teamnum[i] == 3) findent(-1,"info_player_combine");
+		else if (teamnum[i] == 1) findent(-1,"info_player_deathmatch");
+		if ((GetArraySize(equiparr) < 1) && (teamnum[i] != 0)) findent(-1,"info_player_deathmatch");
+		if (GetArraySize(equiparr) < 1) findent(-1,"info_player_coop");
 		if (GetArraySize(equiparr) < 1)
 		{
-			findent(MaxClients+1,"info_player_start");
+			findent(-1,"info_player_start");
 			if (GetArraySize(equiparr) > 0)
 			{
 				int firstarr = GetArrayCell(equiparr,0);
@@ -1739,6 +1789,21 @@ void MoveCLToSpawnpoint(int i)
 	}
 }
 
+public Action EnterVehicleDelay(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int client = ReadPackCell(dp);
+		int vehicle = ReadPackCell(dp);
+		CloseHandle(dp);
+		if ((IsValidEntity(client)) && (IsValidEntity(vehicle)))
+		{
+			AcceptEntityInput(vehicle,"EnterVehicleImmediate",client);
+		}
+	}
+}
+
 public void EquipCustom(int equip, int client)
 {
 	if ((IsValidEntity(equip)) && (IsValidEntity(client)))
@@ -1804,7 +1869,7 @@ public void EquipCustom(int equip, int client)
 void findent(int ent, char[] clsname)
 {
 	int thisent = FindEntityByClassname(ent,clsname);
-	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != 0))
+	if ((IsValidEntity(thisent)) && (thisent != 0))
 	{
 		int bdisabled = 0;
 		if (HasEntProp(thisent,Prop_Data,"m_bDisabled")) bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
@@ -3703,13 +3768,14 @@ public Action trigsaves(const char[] output, int caller, int activator, float de
 					Format(tmpout,sizeof(tmpout),output);
 					readoutputstp(targn,tmpout,"Save",origin,activator,caller);
 					readoutputstp(targn,tmpout,"SetCheckPoint",origin,activator,caller);
+					readoutputstp(targn,tmpout,"ClearCheckPoint",origin,activator,caller);
 				}
 			}
 		}
 	}
 	else
 	{
-		if ((IsValidEntity(caller)) && (IsEntNetworkable(caller)))
+		if (IsValidEntity(caller))
 		{
 			if (FindValueInArray(ignoretrigs,caller) == -1)
 			{
@@ -3721,6 +3787,7 @@ public Action trigsaves(const char[] output, int caller, int activator, float de
 				char tmpout[32];
 				Format(tmpout,sizeof(tmpout),output);
 				readoutputstp(targn,tmpout,"SetCheckPoint",origin,activator,caller);
+				readoutputstp(targn,tmpout,"ClearCheckPoint",origin,activator,caller);
 			}
 		}
 	}
@@ -3775,10 +3842,38 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 				ExplodeString(clsorfixup[5],",",lineorgrescom,16,128);
 				//ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
 				float delay = StringToFloat(lineorgrescom[3]);
-				if (survivalact) resetvehicles(delay,activator);
+				if ((survivalact) && (StrContains(lineorgrescom[1],"ClearCheckPoint",false) == -1)) resetvehicles(delay,activator);
 				if (StrContains(lineorgrescom[1],"SetCheckPoint",false) != -1)
 				{
+					if (StrEqual(activecheckpoint,"Disabled",false))
+					{
+						Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
+						ClearArray(respawnids);
+						for (int i = 1; i<MaxClients+1;i++)
+						{
+							clspawntimeallow[i] = true;
+							if (IsValidEntity(i))
+							{
+								if (IsClientConnected(i))
+								{
+									if (IsClientInGame(i))
+									{
+										if (!IsPlayerAlive(i))
+										{
+											CreateTimer(0.1,tpclspawnnew,i,TIMER_FLAG_NO_MAPCHANGE);
+										}
+									}
+								}
+							}
+						}
+					}
 					Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
+					if (dbglevel) PrintToServer("%s input from %s %s with param %s",lineorgrescom[1],targn,output,lineorgrescom[2]);
+					if (IsValidEntity(caller)) PushArrayCell(ignoretrigs,caller);
+				}
+				else if (StrContains(lineorgrescom[1],"ClearCheckPoint",false) != -1)
+				{
+					Format(activecheckpoint,sizeof(activecheckpoint),"Disabled");
 					if (dbglevel) PrintToServer("%s input from %s %s with param %s",lineorgrescom[1],targn,output,lineorgrescom[2]);
 					if (IsValidEntity(caller)) PushArrayCell(ignoretrigs,caller);
 				}
@@ -3791,17 +3886,70 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 				Format(delaystr,sizeof(delaystr),lineorgrescom[3]);
 				//ReplaceString(lineorgrescom[1],64,lineorgrescom[1],"");
 				float delay = StringToFloat(lineorgrescom[3]);
-				if (survivalact) resetvehicles(delay,activator);
+				if ((survivalact) && (StrContains(lineorgrescom[1],"ClearCheckPoint",false) == -1)) resetvehicles(delay,activator);
 				if (StrContains(lineorgrescom[1],"SetCheckPoint",false) != -1)
 				{
+					if (StrEqual(activecheckpoint,"Disabled",false))
+					{
+						Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
+						ClearArray(respawnids);
+						for (int i = 1; i<MaxClients+1;i++)
+						{
+							clspawntimeallow[i] = true;
+							if (IsValidEntity(i))
+							{
+								if (IsClientConnected(i))
+								{
+									if (IsClientInGame(i))
+									{
+										if (!IsPlayerAlive(i))
+										{
+											CreateTimer(0.1,tpclspawnnew,i,TIMER_FLAG_NO_MAPCHANGE);
+										}
+									}
+								}
+							}
+						}
+					}
 					Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
 					if (dbglevel) PrintToServer("%s input from %s %s with param %s",lineorgrescom[1],targn,output,lineorgrescom[2]);
 					if (IsValidEntity(caller)) PushArrayCell(ignoretrigs,caller);
 				}
+				else if (StrContains(lineorgrescom[1],"ClearCheckPoint",false) != -1)
+				{
+					Format(activecheckpoint,sizeof(activecheckpoint),"Disabled");
+					if (dbglevel) PrintToServer("%s input from %s %s with param %s",lineorgrescom[1],targn,output,lineorgrescom[2]);
+					if (IsValidEntity(caller)) PushArrayCell(ignoretrigs,caller);
+				}
+			}
+			int findignore = FindValueInArray(ignoretrigs,caller);
+			if (findignore != -1)
+			{
+				RemoveFromArray(ignoretrigs,findignore);
+				Handle dp = CreateDataPack();
+				WritePackCell(dp,caller);
+				WritePackString(dp,output);
+				CreateTimer(0.5,ReHookTrigTP,dp,TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 	}
 	return;
+}
+
+public Action ReHookTrigTP(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int caller = ReadPackCell(dp);
+		char output[64];
+		ReadPackString(dp,output,sizeof(output));
+		CloseHandle(dp);
+		if (IsValidEntity(caller))
+		{
+			HookSingleEntityOutput(caller,output,trigsaves);
+		}
+	}
 }
 
 void readoutputsforinputs()
@@ -3820,11 +3968,16 @@ void readoutputsforinputs()
 		Format(inputadded2,sizeof(inputadded2),":Save::");
 		char inputdef2[64];
 		Format(inputdef2,sizeof(inputdef2),",Save,,");
+		char inputadded3[64];
+		Format(inputadded3,sizeof(inputadded3),":ClearCheckPoint::");
+		char inputdef3[64];
+		Format(inputdef3,sizeof(inputdef3),",ClearCheckPoint,,");
 		char lineorgres[256];
 		char lineorgresexpl[4][128];
 		char lineoriginfixup[64];
 		char lineadj[256];
 		bool hastargn = false;
+		bool hasorigin = false;
 		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
 		{
 			TrimString(line);
@@ -3832,6 +3985,7 @@ void readoutputsforinputs()
 			{
 				lineoriginfixup = "";
 				hastargn = false;
+				hasorigin = false;
 			}
 			if (StrContains(line,"\"origin\"",false) == 0)
 			{
@@ -3841,6 +3995,7 @@ void readoutputsforinputs()
 				ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 				ExplodeString(tmpchar, " ", lineorgresexpl, 4, 32);
 				Format(lineoriginfixup,sizeof(lineoriginfixup),"%i %i %i\"",RoundFloat(StringToFloat(lineorgresexpl[0])),RoundFloat(StringToFloat(lineorgresexpl[1])),RoundFloat(StringToFloat(lineorgresexpl[2])));
+				hasorigin = true;
 			}
 			else if (StrContains(line,"\"targetname\"",false) == 0)
 			{
@@ -3851,7 +4006,7 @@ void readoutputsforinputs()
 				Format(lineoriginfixup,sizeof(lineoriginfixup),"%s\"%s",tmpchar,lineoriginfixup);
 				hastargn = true;
 			}
-			else if ((StrContains(line,inputadded,false) != -1) || (StrContains(line,inputadded2,false) != -1) || (StrContains(line,inputdef,false) != -1) || (StrContains(line,inputdef2,false) != -1))
+			else if ((StrContains(line,inputadded,false) != -1) || (StrContains(line,inputadded2,false) != -1) || (StrContains(line,inputadded3,false) != -1) || (StrContains(line,inputdef,false) != -1) || (StrContains(line,inputdef2,false) != -1) || (StrContains(line,inputdef3,false) != -1))
 			{
 				Format(lineorgres,sizeof(lineorgres),"%s",line);
 				if (StrContains(lineorgres,"\"OnMapSpawn\" ",false) != -1)
@@ -3869,6 +4024,7 @@ void readoutputsforinputs()
 							if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",orgs);
 							else if (HasEntProp(targ,Prop_Data,"m_vecOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecOrigin",orgs);
 							Format(lineoriginfixup,sizeof(lineoriginfixup),"%s%i %i %i\"",lineoriginfixup,RoundFloat(orgs[0]),RoundFloat(orgs[1]),RoundFloat(orgs[2]));
+							hasorigin = true;
 						}
 						hastargn = true;
 						char output[64];
@@ -3891,10 +4047,16 @@ void readoutputsforinputs()
 					Format(lineoriginfixup,sizeof(lineoriginfixup),"notargn\"%s",lineoriginfixup);
 					hastargn = true;
 				}
+				if (!hasorigin)
+				{
+					Format(lineoriginfixup,sizeof(lineoriginfixup),"%s0 0 0\"",lineoriginfixup);
+					hasorigin = true;
+				}
 				Format(lineadj,sizeof(lineadj),"%s %s",lineoriginfixup,lineorgres);
 				if (FindStringInArray(inputsarrorigincls,lineadj) == -1)
 				{
 					PushArrayString(inputsarrorigincls,lineadj);
+					if (dbglevel) PrintToServer("SynModes Hook %s",lineadj);
 				}
 			}
 			//if (StrContains(line,"\"classname\"",false) == 0)
@@ -3939,7 +4101,7 @@ void resetvehicles(float delay, int activator)
 			else if ((IsValidEntity(i)) && (IsClientInGame(i)) && (!IsPlayerAlive(i)) && (survivalact))
 			{
 				clspawntimeallow[i] = true;
-				CreateTimer(0.1,tpclspawnnew,i);
+				CreateTimer(0.1,tpclspawnnew,i,TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 		CloseHandle(ignorelist);
