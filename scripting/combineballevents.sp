@@ -1,13 +1,15 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#pragma semicolon 1;
+#pragma newdecls required;
 
 //This is basically just a snippet to allow combine ball death event to trigger.
 //This only happens on specific entities such as npc_vortigaunt, where no death event is fired when they are dissolved.
 
-public OnPluginStart()
+public void OnPluginStart()
 {
-	CreateTimer(0.1,findents);
+	CreateTimer(0.1,findents,_,TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Action findents(Handle timer)
@@ -15,7 +17,7 @@ public Action findents(Handle timer)
 	findent(-1,"npc_vortigaunt");
 }
 
-public OnEntityCreated(entity, const char[] classname)
+public void OnEntityCreated(int entity, const char[] classname)
 {
 	if (StrEqual(classname,"npc_vortigaunt",false))
 	{
@@ -23,7 +25,7 @@ public OnEntityCreated(entity, const char[] classname)
 	}
 }
 
-public Action OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype)
+public Action OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
 {
 	if ((damagetype == 67108865) && (attacker > 0) && (attacker < MaxClients+1))
 	{
