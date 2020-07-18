@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.39"
+#define PLUGIN_VERSION "1.40"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -3798,6 +3798,10 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 	if (GetArraySize(inputsarrorigincls) < 1) readoutputsforinputs();
 	else
 	{
+		if (caller != -1)
+		{
+			if (FindValueInArray(ignoretrigs,caller) != -1) return;
+		}
 		char tmpoutpchk[128];
 		Format(tmpoutpchk,sizeof(tmpoutpchk),"\"%s,AddOutput,%s ",targn,output);
 		char originchar[64];
@@ -3835,6 +3839,7 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 		Format(inputdef,sizeof(inputdef),",%s,,",input);
 		if ((StrEqual(originchar,clsorfixup[1],false)) || (StrEqual(targn,clsorfixup[0],false)) || (StrContains(inputadded,clsorfixup[1],false)))
 		{
+			bool ReHook = true;
 			char lineorgrescom[16][128];
 			if ((StrContains(clsorfixup[5],",") != -1) && (StrContains(clsorfixup[5],":") == -1))
 			{
@@ -3842,6 +3847,7 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 				ExplodeString(clsorfixup[5],",",lineorgrescom,16,128);
 				//ReplaceString(lineorgrescom[0],sizeof(lineorgrescom[])," ","");
 				float delay = StringToFloat(lineorgrescom[3]);
+				if (StringToInt(lineorgrescom[4]) != -1) ReHook = false;
 				if ((survivalact) && (StrContains(lineorgrescom[1],"ClearCheckPoint",false) == -1)) resetvehicles(delay,activator);
 				if (StrContains(lineorgrescom[1],"SetCheckPoint",false) != -1)
 				{
@@ -3868,13 +3874,13 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 						}
 					}
 					Format(activecheckpoint,sizeof(activecheckpoint),lineorgrescom[2]);
-					if (dbglevel) PrintToServer("%s input from %s %s with param %s",lineorgrescom[1],targn,output,lineorgrescom[2]);
+					if (dbglevel) PrintToServer("%s input from %s %s with param %s\nFull %s",lineorgrescom[1],targn,output,lineorgrescom[2],originclschar);
 					if (IsValidEntity(caller)) PushArrayCell(ignoretrigs,caller);
 				}
 				else if (StrContains(lineorgrescom[1],"ClearCheckPoint",false) != -1)
 				{
 					Format(activecheckpoint,sizeof(activecheckpoint),"Disabled");
-					if (dbglevel) PrintToServer("%s input from %s %s with param %s",lineorgrescom[1],targn,output,lineorgrescom[2]);
+					if (dbglevel) PrintToServer("%s input from %s %s with param %s\nFull %s",lineorgrescom[1],targn,output,lineorgrescom[2],originclschar);
 					if (IsValidEntity(caller)) PushArrayCell(ignoretrigs,caller);
 				}
 			}
@@ -3884,6 +3890,7 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 				if (StrContains(clsorfixup[3],output,false) == -1) return;
 				char delaystr[64];
 				Format(delaystr,sizeof(delaystr),lineorgrescom[3]);
+				if (StringToInt(lineorgrescom[4]) != -1) ReHook = false;
 				//ReplaceString(lineorgrescom[1],64,lineorgrescom[1],"");
 				float delay = StringToFloat(lineorgrescom[3]);
 				if ((survivalact) && (StrContains(lineorgrescom[1],"ClearCheckPoint",false) == -1)) resetvehicles(delay,activator);
@@ -3922,14 +3929,17 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 					if (IsValidEntity(caller)) PushArrayCell(ignoretrigs,caller);
 				}
 			}
-			int findignore = FindValueInArray(ignoretrigs,caller);
-			if (findignore != -1)
+			if (ReHook)
 			{
-				RemoveFromArray(ignoretrigs,findignore);
-				Handle dp = CreateDataPack();
-				WritePackCell(dp,caller);
-				WritePackString(dp,output);
-				CreateTimer(0.5,ReHookTrigTP,dp,TIMER_FLAG_NO_MAPCHANGE);
+				int findignore = FindValueInArray(ignoretrigs,caller);
+				if (findignore != -1)
+				{
+					RemoveFromArray(ignoretrigs,findignore);
+					Handle dp = CreateDataPack();
+					WritePackCell(dp,caller);
+					WritePackString(dp,output);
+					CreateTimer(0.5,ReHookTrigTP,dp,TIMER_FLAG_NO_MAPCHANGE);
+				}
 			}
 		}
 	}

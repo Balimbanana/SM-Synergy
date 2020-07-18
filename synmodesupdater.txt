@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.39"
-			"Previous"	"1.38"
+			"Latest"  	"1.40"
+			"Previous"	"1.39"
 		}
 		
-		"Notes"	"Added CVar sm_allowvehiclespawn. Added ClearCheckPoint functionality to disable spawning until next checkpoint."
+		"Notes"	"Fixed input hooking with times fired."
 	}
 	
 	"Files"
