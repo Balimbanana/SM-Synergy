@@ -11,7 +11,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "0.47"
+#define PLUGIN_VERSION "0.48"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -749,6 +749,7 @@ void ReadCache(char[] cache, char[] mapedt)
 		WriteFileLine(edtfile,"	{");
 		WriteFileLine(edtfile,"		delete {classname \"info_player_start\"}");
 		WriteFileLine(edtfile,"		edit {classname \"game_text\" values {spawnflags \"1\"} }");
+		WriteFileLine(edtfile,"		edit {classname \"env_message\" values {edt_addedspawnflags \"2\"} }");
 		WriteFileLine(edtfile,"		edit {classname \"func_areaportal\" values {targetname \"disabledPortal\" StartOpen \"1\"} }");
 		WriteFileLine(edtfile,"		edit {classname \"point_viewcontrol\" values {edt_addedspawnflags \"128\"} }");
 		WriteFileLine(edtfile,"		create {classname \"info_spawn_manager\" values {targetname \"syn_spawn_manager\"} }");
@@ -779,7 +780,7 @@ void ReadCache(char[] cache, char[] mapedt)
 			if (StrContains(line,"\"classname\"",false) == 0)
 			{
 				char clschk[172];
-				Format(clschk,sizeof(clschk),line);
+				Format(clschk,sizeof(clschk),"%s",line);
 				char kvs[4][128];
 				ExplodeString(clschk, "\"", kvs, 4, 128, true);
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
@@ -824,7 +825,7 @@ void ReadCache(char[] cache, char[] mapedt)
 						Format(output,sizeof(output),"\n				%s \"info_player_equip,Disable,,%s,%s\"",output,kvs[3],kvs[4]);
 						StrCat(lineedt,sizeof(lineedt),output);
 					}
-					WriteFileLine(edtfile,deletion);
+					WriteFileLine(edtfile,"%s",deletion);
 					
 				}
 				if ((strlen(kvs[1]) > 0) && (!StrEqual(kvs[1],"classname",false)))
@@ -839,6 +840,10 @@ void ReadCache(char[] cache, char[] mapedt)
 					}
 					else if (StrContains(line,"\"hammerid\"",false) == -1)
 					{
+						if ((StrContains(kvs[1],"model",false) == 0) && (StrContains(line,"\"*",false) != -1))
+						{
+							Format(lineedt,sizeof(lineedt),"//%s",lineedt);
+						}
 						PushArrayString(passedarr,lineedt);
 					}
 				}
@@ -1013,7 +1018,18 @@ void ReadCache(char[] cache, char[] mapedt)
 										else Format(tmparr,sizeof(tmparr),"targetname \"syn_vehicle_spawn_%i\"",vehiclespawns);
 									}
 								}
-								if ((StrContains(tmparr,"classname",false) == -1) && (StrContains(tmparr,"}",false) == -1) && (strlen(tmparr) > 0))
+								if (StrContains(tmparr,"//model",false) == 0)
+								{
+									WriteFileLine(edtfile,"				%s",tmparr);
+									Format(tmparr,sizeof(tmparr),"edt_getbspmodelfor_classname \"%s\"",cls);
+									WriteFileLine(edtfile,"				%s",tmparr);
+									Format(tmparr,sizeof(tmparr),"%s",origin);
+									ReplaceString(tmparr,sizeof(tmparr),"\"","",false);
+									ReplaceString(tmparr,sizeof(tmparr),"origin","",false);
+									TrimString(tmparr);
+									Format(tmparr,sizeof(tmparr),"edt_getbspmodelfor_origin \"%s\"",tmparr);
+								}
+								if (((StrContains(tmparr,"classname",false) == -1) || (StrContains(tmparr,"edt_getbspmodelfor_classname",false) != -1)) && (StrContains(tmparr,"}",false) == -1) && (strlen(tmparr) > 0))
 									WriteFileLine(edtfile,"				%s",tmparr);
 							}
 							WriteFileLine(edtfile,"			}");
@@ -1177,6 +1193,7 @@ void ReadCache(char[] cache, char[] mapedt)
 							else if (StrEqual(ammtype,"ammo_shotgun",false)) Format(ammtype,sizeof(ammtype),"ammo_buckshot");
 							else if (StrEqual(ammtype,"ammo_crossbow",false)) Format(ammtype,sizeof(ammtype),"ammo_xbowbolt");
 							else if ((StrEqual(ammtype,"ammo_crowbar",false)) || (StrEqual(ammtype,"ammo_physcannon",false)) || (StrEqual(ammtype,"ammo_portalgun",false)) || (StrEqual(ammtype,"ammo_suit",false))) ammtype = "";
+							else if (StrEqual(ammtype,"ammo_ar2_altfire",false)) ammamount = 1;
 							WriteFileLine(edtfile,"				%s",tmparr);
 							if (strlen(ammtype) > 1) WriteFileLine(edtfile,"					%s \"%i\"",ammtype,ammamount);
 						}
