@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.21"
+#define PLUGIN_VERSION "1.22"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -90,6 +90,8 @@ public Action waitforlive(Handle timer, int client)
 	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && IsValidEntity(client) && !IsFakeClient(client))
 	{
 		bool hasweapons = false;
+		int ViewEnt = -1;
+		if (HasEntProp(client,Prop_Data,"m_hViewEntity")) ViewEnt = GetEntPropEnt(client,Prop_Data,"m_hViewEntity");
 		if (WeapList == -1) WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 		if (WeapList != -1)
 		{
@@ -119,7 +121,7 @@ public Action waitforlive(Handle timer, int client)
 				}
 			}
 		}
-		if (hasweapons) CreateTimer(0.5,spawninvehicle,client,TIMER_FLAG_NO_MAPCHANGE);
+		if ((hasweapons) && (ViewEnt == -1)) CreateTimer(0.5,spawninvehicle,client,TIMER_FLAG_NO_MAPCHANGE);
 		else if (IsValidEntity(spawninthisvehicle)) CreateTimer(1.0,waitforlive,client,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	else if ((IsClientConnected(client)) && (!IsFakeClient(client)))
@@ -172,6 +174,21 @@ public int Updater_OnPluginUpdated()
 	ReloadPlugin(nullpl);
 }
 
+public void OnEntityDestroyed(int entity)
+{
+	if ((entity > 0) && (entity < 2048) && (IsValidEntity(entity)))
+	{
+		if (HasEntProp(entity,Prop_Data,"m_hPlayer"))
+		{
+			int cl = GetEntPropEnt(entity,Prop_Data,"m_hPlayer");
+			if (IsValidEntity(cl))
+			{
+				setupvehicle(entity,cl,false);
+			}
+		}
+	}
+}
+
 void setupvehicle(int vehicle, int client, bool enterexit)
 {
 	if ((!enterexit) && (IsValidEntity(vehicle)))
@@ -201,6 +218,13 @@ void setupvehicle(int vehicle, int client, bool enterexit)
 					}
 				}
 			}
+		}
+		char vehicletype[32];
+		GetEntityClassname(vehicle,vehicletype,sizeof(vehicletype));
+		if (StrEqual(vehicletype,"prop_vehicle_airboat"))
+		{
+			SetEntPropFloat(vehicle,Prop_Data,"m_maxThrottle",1.0);
+			SetEntPropFloat(vehicle,Prop_Data,"m_flMaxRevThrottle",-1.0);
 		}
 	}
 	else if ((enterexit) && (IsValidEntity(vehicle)) && (IsValidEntity(client)))
@@ -590,6 +614,7 @@ public Action vehiclespawn(const char[] output, int caller, int activator, float
 				else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",vehicleorg);
 				if (HasEntProp(caller,Prop_Data,"m_angRotation")) GetEntPropVector(caller,Prop_Data,"m_angRotation",vehicleangs);
 				if (HasEntProp(caller,Prop_Data,"pLastVehicleSpawned")) vehicle = GetEntPropEnt(caller,Prop_Data,"pLastVehicleSpawned");
+				spawninthisvehicle = caller;
 				if ((IsValidEntity(vehicle)) && (vehicle != 0))
 				{
 					for (int j = 0;j<GetArraySize(spawnplayers);j++)
@@ -603,51 +628,85 @@ public Action vehiclespawn(const char[] output, int caller, int activator, float
 								{
 									if ((IsPlayerAlive(i)) && (vehicle != -1))
 									{
-										int curvchk = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
-										if (curvchk == -1)
+										bool hasweapons = false;
+										int ViewEnt = -1;
+										if (HasEntProp(i,Prop_Data,"m_hViewEntity")) ViewEnt = GetEntPropEnt(i,Prop_Data,"m_hViewEntity");
+										if (WeapList == -1) WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
+										if (WeapList != -1)
 										{
-											float plyorg[3];
-											GetClientAbsOrigin(i,plyorg);
-											float chkdist = GetVectorDistance(plyorg,vehicleorg);
-											if (chkdist < 302.0)
+											int curweps = 0;
+											bool validweap = false;
+											for (int l; l<104; l += 4)
 											{
-												ActivateEntity(vehicle);
-												TeleportEntity(i,vehicleorg,vehicleangs,NULL_VECTOR);
-												SetEntPropEnt(i,Prop_Data,"m_hVehicle",vehicle);
-												SetEntPropEnt(i,Prop_Data,"m_hParent",vehicle);
-												SetEntPropEnt(i,Prop_Data,"m_pParent",vehicle);
-												SetEntPropEnt(i,Prop_Data,"m_hMoveParent",vehicle);
-												SetEntProp(i,Prop_Data,"m_iHideHUD",3328);
-												SetEntProp(i,Prop_Data,"m_fFlags",256);
-												SetEntProp(i,Prop_Data,"m_iEFlags",38016016);
-												SetEntProp(i,Prop_Data,"m_MoveType",8);
-												SetEntProp(i,Prop_Data,"m_bDrawViewmodel",0);
-												SetEntProp(i,Prop_Data,"m_CollisionGroup",11);
-												setupvehicle(vehicle,i,true);
-												float orgoverride[3];
-												if (StrEqual(vehicletype,"prop_vehicle_airboat"))
+												int tmpi = GetEntDataEnt2(i,WeapList + l);
+												if ((tmpi != 0) && (IsValidEntity(tmpi)))
 												{
-													orgoverride[0] = -0.08;
-													orgoverride[1] = -10.99;
-													orgoverride[2] = 34.29;
-													SetEntProp(vehicle,Prop_Data,"m_iEFlags",9175056);
-													SetEntPropFloat(vehicle,Prop_Data,"m_maxThrottle",2.3);
-													SetEntPropFloat(vehicle,Prop_Data,"m_flMaxRevThrottle",-2.0);
+													GetEntityClassname(tmpi,clschk,sizeof(clschk));
+													if (strlen(clschk) > 1)
+													{
+														curweps++;
+														if (HasEntProp(i,Prop_Data,"m_hActiveWeapon"))
+														{
+															if (IsValidEntity(GetEntPropEnt(i,Prop_Data,"m_hActiveWeapon"))) validweap = true;
+														}
+														else validweap = true;
+														if ((curweps > 2) && (validweap))
+														{
+															hasweapons = true;
+															break;
+														}
+													}
 												}
-												else
-												{
-													orgoverride[0] = -9.42;
-													orgoverride[1] = -39.47;
-													orgoverride[2] = 29.76;
-												}
-												SetEntPropVector(i,Prop_Data,"m_vecOrigin",orgoverride);
-												int clweap = GetEntPropEnt(i,Prop_Data,"m_hActiveWeapon");
-												if (clweap != -1)
-													if (HasEntProp(clweap,Prop_Data,"m_fEffects")) SetEntProp(clweap,Prop_Data,"m_fEffects",161);
-												vehicle = -1;
 											}
 										}
-										spawninthisvehicle = caller;
+										if ((hasweapons) && (ViewEnt == -1))
+										{
+											int curvchk = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+											if (curvchk == -1)
+											{
+												float plyorg[3];
+												GetClientAbsOrigin(i,plyorg);
+												float chkdist = GetVectorDistance(plyorg,vehicleorg);
+												if (chkdist < 302.0)
+												{
+													ActivateEntity(vehicle);
+													TeleportEntity(i,vehicleorg,vehicleangs,NULL_VECTOR);
+													SetEntPropEnt(i,Prop_Data,"m_hVehicle",vehicle);
+													SetEntPropEnt(i,Prop_Data,"m_hParent",vehicle);
+													SetEntPropEnt(i,Prop_Data,"m_pParent",vehicle);
+													SetEntPropEnt(i,Prop_Data,"m_hMoveParent",vehicle);
+													SetEntProp(i,Prop_Data,"m_iHideHUD",3328);
+													SetEntProp(i,Prop_Data,"m_fFlags",256);
+													SetEntProp(i,Prop_Data,"m_iEFlags",38016016);
+													SetEntProp(i,Prop_Data,"m_MoveType",8);
+													SetEntProp(i,Prop_Data,"m_bDrawViewmodel",0);
+													SetEntProp(i,Prop_Data,"m_CollisionGroup",11);
+													setupvehicle(vehicle,i,true);
+													float orgoverride[3];
+													if (StrEqual(vehicletype,"prop_vehicle_airboat"))
+													{
+														orgoverride[0] = -0.08;
+														orgoverride[1] = -10.99;
+														orgoverride[2] = 34.29;
+														SetEntProp(vehicle,Prop_Data,"m_iEFlags",9175056);
+														SetEntPropFloat(vehicle,Prop_Data,"m_maxThrottle",2.3);
+														SetEntPropFloat(vehicle,Prop_Data,"m_flMaxRevThrottle",-2.0);
+													}
+													else
+													{
+														orgoverride[0] = -9.42;
+														orgoverride[1] = -39.47;
+														orgoverride[2] = 29.76;
+													}
+													SetEntPropVector(i,Prop_Data,"m_vecOrigin",orgoverride);
+													int clweap = GetEntPropEnt(i,Prop_Data,"m_hActiveWeapon");
+													if (clweap != -1)
+														if (HasEntProp(clweap,Prop_Data,"m_fEffects")) SetEntProp(clweap,Prop_Data,"m_fEffects",161);
+													vehicle = -1;
+												}
+											}
+										}
+										else if (IsValidEntity(spawninthisvehicle)) CreateTimer(1.0,waitforlive,i,TIMER_FLAG_NO_MAPCHANGE);
 									}
 									else if (IsPlayerAlive(i))
 									{

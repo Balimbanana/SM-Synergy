@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.21"
-			"Previous"	"1.20"
+			"Latest"  	"1.22"
+			"Previous"	"1.21"
 		}
 		
-		"Notes"	"Fixed collision removal by logic_collision_pair instead of collision group. Fixed issue of active weapon not set before enter vehicle."
+		"Notes"	"Fixed issue of first spawning vehicle on first connect not giving weapons. Fixed deletion protocol."
 	}
 	
 	"Files"
