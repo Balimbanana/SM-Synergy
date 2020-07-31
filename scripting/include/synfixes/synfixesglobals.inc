@@ -31,6 +31,7 @@ float centlasttouch[2048];
 float breaksnd[2048];
 int isattacking[2048];
 int timesattacked[2048];
+int gargfiretarg[2048][5];
 int matmod = -1;
 int slavezap = 10;
 int debuglvl = 0;
@@ -38,6 +39,9 @@ int debugoowlvl = 0;
 int collisiongroup = -1;
 int headgroup = 2;
 int difficulty = 1;
+int bulletindx = -1;
+int iActiveSpawnEnt = -1;
+int iActiveSpawner = -1;
 bool showcc[128];
 bool customents = false;
 bool relsetvort = false;
@@ -193,7 +197,7 @@ void EmitCC(int emitentity, char[] snd, float distance)
 						QueryClientConVar(k,"closecaption",checkccsettings,0);
 						if (HasEntProp(k,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(k,Prop_Data,"m_vecAbsOrigin",orgs);
 						else if (HasEntProp(k,Prop_Send,"m_vecOrigin")) GetEntPropVector(k,Prop_Send,"m_vecOrigin",orgs);
-						float chkdist = GetVectorDistance(emitorgs,orgs,false)
+						float chkdist = GetVectorDistance(emitorgs,orgs,false);
 						if (chkdist < distance)
 						{
 							if (showcc[k])
@@ -209,17 +213,17 @@ void EmitCC(int emitentity, char[] snd, float distance)
 	}
 }
 
-NPCShootBullet(int entity, char[] curweap, float orgs[3], float angs[3], float maxspread)
+void NPCShootBullet(int entity, char[] curweap, float orgs[3], float angs[3], float maxspread)
 {
 	if (IsValidEntity(entity))
 	{
 		float endpos[3];
-		TE_Start("Shotgun Shot");
+		//TE_Start("Shotgun Shot");
 		float bulletstartpos[3];
 		bulletstartpos[0] = (orgs[0] + (60 * Cosine(DegToRad(angs[1]))));
 		bulletstartpos[1] = (orgs[1] + (60 * Sine(DegToRad(angs[1]))));
 		bulletstartpos[2] = orgs[2];
-		TE_WriteVector("m_vecOrigin", bulletstartpos);
+		//TE_WriteVector("m_vecOrigin", bulletstartpos);
 		float spread = GetRandomFloat(-maxspread,maxspread);
 		angs[0] = angs[0]+spread;
 		spread = GetRandomFloat(-maxspread,maxspread);
@@ -232,11 +236,12 @@ NPCShootBullet(int entity, char[] curweap, float orgs[3], float angs[3], float m
 		MakeVectorFromPoints(orgs,endpos,shootvel);
 		int hitgroup = TR_GetHitGroup();
 		int targ = TR_GetEntityIndex();
-		TE_WriteVector("m_vecDir", shootvel);
-		TE_WriteNum("m_iAmmoID", 1);
-		TE_WriteNum("m_iSeed", 0);
-		TE_WriteNum("m_iShots", 1);
+		//TE_WriteVector("m_vecDir", shootvel);
+		//TE_WriteNum("m_iAmmoID", 1);
+		//TE_WriteNum("m_iSeed", 0);
+		//TE_WriteNum("m_iShots", 1);
 		//Can only write players to this effect
+		/*
 		for (int i = 1;i<MaxClients+1;i++)
 		{
 			if (IsValidEntity(i))
@@ -248,6 +253,16 @@ NPCShootBullet(int entity, char[] curweap, float orgs[3], float angs[3], float m
 		TE_WriteFloat("m_flSpread", 0.0);
 		TE_WriteNum("m_bDoImpacts", 1);
 		TE_WriteNum("m_bDoTracers", 1);
+		TE_SendToAll(0.0);
+		*/
+		TE_Start("Client Projectile");
+		ScaleVector(shootvel,10.0);
+		TE_WriteVector("m_vecVelocity",shootvel);
+		ScaleVector(shootvel,0.1);
+		TE_WriteVector("m_vecOrigin",bulletstartpos);
+		TE_WriteNum("m_nModelIndex",bulletindx);
+		TE_WriteNum("m_nLifeTime",1);
+		TE_WriteNum("m_hOwner",entity);
 		TE_SendToAll(0.0);
 		if (HasEntProp(entity,Prop_Data,"m_flFlashTime")) SetEntPropFloat(entity,Prop_Data,"m_flFlashTime",GetGameTime()+0.5);
 		if ((targ != 0) && (IsValidEntity(targ)) && (targ != entity))
@@ -300,6 +315,96 @@ NPCShootBullet(int entity, char[] curweap, float orgs[3], float angs[3], float m
 	}
 }
 
+void RunSeq(int entity, float origin[3], float angs[3], char anim[128], char entryanim[128], int moveto, bool loop)
+{
+	/*
+	moveto:
+	0 : "No"
+	1 : "Walk"
+	2 : "Run"
+	3 : "Custom movement"
+	4 : "Instantaneous"
+	5 : "No - Turn to Face"
+	*/
+	//PrintToServer("RunSeq %i %s %s",entity,entryanim,anim);
+	if ((IsValidEntity(entity)) && (strlen(anim) > 0))
+	{
+		char clsres[64];
+		if ((IsValidEntity(gargfiretarg[entity][4])) && (gargfiretarg[entity][4] != 0))
+		{
+			GetEntityClassname(gargfiretarg[entity][4],clsres,sizeof(clsres));
+			if (StrEqual(clsres,"scripted_sequence",false))
+			{
+				AcceptEntityInput(gargfiretarg[entity][4],"CancelSequence");
+				AcceptEntityInput(gargfiretarg[entity][4],"kill");
+			}
+			gargfiretarg[entity][4] = 0;
+		}
+		if (HasEntProp(entity,Prop_Data,"m_hTargetEnt"))
+		{
+			int scrent = GetEntPropEnt(entity,Prop_Data,"m_hTargetEnt");
+			if (IsValidEntity(scrent))
+			{
+				if (HasEntProp(scrent,Prop_Data,"m_iName"))
+				{
+					char scrname[8];
+					GetEntPropString(scrent,Prop_Data,"m_iName",scrname,sizeof(scrname));
+					if (strlen(scrname) > 0) return;
+				}
+				if (HasEntProp(scrent,Prop_Data,"m_iszPlay"))
+				{
+					char scranim[128];
+					GetEntPropString(scrent,Prop_Data,"m_iszPlay",scranim,sizeof(scranim));
+					if (StrEqual(scranim,anim,false)) return;
+				}
+				AcceptEntityInput(scrent,"CancelSequence");
+				AcceptEntityInput(scrent,"kill");
+			}
+		}
+		int scrgo = CreateEntityByName("scripted_sequence");
+		if (scrgo != -1)
+		{
+			GetEntityClassname(entity,clsres,sizeof(clsres));
+			ReplaceStringEx(clsres,sizeof(clsres),"npc_","",-1,-1,false);
+			char targn[64];
+			GetEntPropString(entity,Prop_Data,"m_iName",targn,sizeof(targn));
+			if (strlen(targn) < 1)
+			{
+				Format(targn,sizeof(targn),"%s%i",clsres,entity);
+				SetEntPropString(entity,Prop_Data,"m_iName",targn);
+			}
+			char mvch[8];
+			Format(mvch,sizeof(mvch),"%i",moveto);
+			if (strlen(entryanim) > 1) DispatchKeyValue(scrgo,"m_iszEntry",entryanim);
+			DispatchKeyValue(scrgo,"m_iszPlay",anim);
+			DispatchKeyValue(scrgo,"m_iszEntity",targn);
+			DispatchKeyValue(scrgo,"m_fMoveTo",mvch);
+			DispatchKeyValue(scrgo,"spawnflags","144");
+			DispatchKeyValue(scrgo,"m_bDisableNPCCollisions","1");
+			if (loop) DispatchKeyValue(scrgo,"m_bLoopActionSequence","1");
+			DispatchKeyValue(scrgo,"OnEndSequence","!self,kill,,0.1,-1");
+			origin[2]+=2.0;
+			angs[0] = 0.0;
+			angs[2] = 0.0;
+			if (TR_PointOutsideWorld(origin))
+			{
+				float vMaxs[3];
+				GetEntPropVector(0,Prop_Data,"m_WorldMaxs",vMaxs);
+				while ((TR_PointOutsideWorld(origin)) && (origin[2] < vMaxs[2]))
+				{
+					origin[2]+=10.0;
+				}
+			}
+			TeleportEntity(scrgo,origin,angs,NULL_VECTOR);
+			DispatchSpawn(scrgo);
+			ActivateEntity(scrgo);
+			AcceptEntityInput(scrgo,"BeginSequence");
+			gargfiretarg[entity][4] = scrgo;
+		}
+	}
+	return;
+}
+
 void DoRadialDamage(int entity, float angle, float maxdistance, float radius, char damagecvar[64], int dmgtype, float forcescale)
 {
 	if (IsValidEntity(entity))
@@ -311,9 +416,11 @@ void DoRadialDamage(int entity, float angle, float maxdistance, float radius, ch
 			float curorg[3];
 			if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",curorg);
 			else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",curorg);
+			/*
 			curorg[0] = (curorg[0] + (90 * Cosine(DegToRad(angle))));
 			curorg[1] = (curorg[1] + (90 * Sine(DegToRad(angle))));
-			curorg[2]+=75.0;
+			*/
+			curorg[2]+=1.0;
 			float toang[3];
 			float shootvel[3];
 			float enorg[3];
@@ -350,25 +457,113 @@ void DoRadialDamage(int entity, float angle, float maxdistance, float radius, ch
 						{
 							MakeVectorFromPoints(curorg,enorg,shootvel);
 							GetVectorAngles(shootvel,toang);
-							if ((toang[1]-angle < radius) || (angle-toang[1] < radius))
+							bool withinradius = CheckWithinRadius(angle,toang[1],radius);
+							if (withinradius)
 							{
-								TR_TraceRayFilter(curorg,toang,MASK_SHOT,RayType_Infinite,TraceEntityFilter,entity);
-								int hitent = TR_GetEntityIndex();
-								if (hitent == i)
+								if (forcescale != 0.0)
 								{
-									if (forcescale != 0.0)
-									{
-										enorg[2]+=1.0;
-										ScaleVector(shootvel,forcescale);
-										TeleportEntity(i,enorg,NULL_VECTOR,shootvel);
-									}
-									SDKHooks_TakeDamage(i,entity,entity,dmgset,dmgtype,-1,damageForce,curorg);
+									enorg[2]+=1.0;
+									ScaleVector(shootvel,forcescale);
+									TeleportEntity(i,enorg,NULL_VECTOR,shootvel);
 								}
+								SDKHooks_TakeDamage(i,entity,entity,dmgset,dmgtype,-1,damageForce,curorg);
 							}
 						}
 					}
 				}
 			}
+			Handle propsarr = CreateArray(1024);
+			FindAllByClassname(propsarr,-1,"prop_physics");
+			if (GetArraySize(propsarr) > 0)
+			{
+				for (int i = 0;i<GetArraySize(propsarr);i++)
+				{
+					int ent = GetArrayCell(propsarr,i);
+					if (IsValidEntity(ent))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",enorg);
+						else if (HasEntProp(ent,Prop_Send,"m_vecOrigin")) GetEntPropVector(ent,Prop_Send,"m_vecOrigin",enorg);
+						if (GetVectorDistance(curorg,enorg,false) < maxdistance)
+						{
+							MakeVectorFromPoints(curorg,enorg,shootvel);
+							GetVectorAngles(shootvel,toang);
+							bool withinradius = CheckWithinRadius(angle,toang[1],radius*1.2);
+							if (withinradius)
+							{
+								curorg[2]-=90.0;
+								enorg[0] = (enorg[0] + (90 * Cosine(DegToRad(angle))));
+								enorg[1] = (enorg[1] + (90 * Sine(DegToRad(angle))));
+								MakeVectorFromPoints(curorg,enorg,shootvel);
+								if (forcescale != 0.0)
+								{
+									enorg[2]+=1.0;
+									ScaleVector(shootvel,forcescale*2.0);
+									TeleportEntity(ent,enorg,NULL_VECTOR,shootvel);
+								}
+								curorg[2]+=90.0;
+								SDKHooks_TakeDamage(ent,entity,entity,dmgset,dmgtype,-1,damageForce,curorg);
+							}
+						}
+					}
+				}
+			}
+			CloseHandle(propsarr);
 		}
 	}
+}
+
+bool CheckWithinRadius(float angle, float toang, float radius)
+{
+	if (angle > toang)
+	{
+		if ((angle-toang > 0) && (angle-toang < radius)) return true;
+		else if ((toang-angle < -1) && (toang-angle > (0.0-radius))) return true;
+		else return false;
+	}
+	else if (toang > angle)
+	{
+		if ((toang-angle > 0) && (toang-angle < radius)) return true;
+		else if ((angle-toang < -1) && (angle-toang > (0.0-radius))) return true;
+		else return false;
+	}
+	return false;
+}
+
+public bool TraceEntityFilter(int entity, int mask, any data){
+	if ((entity != -1) && (IsValidEntity(entity)))
+	{
+		if (IsValidEntity(data))
+		{
+			if (HasEntProp(data,Prop_Data,"m_hParent"))
+			{
+				int parent = GetEntPropEnt(data,Prop_Data,"m_hParent");
+				if (entity == parent) return false;
+			}
+		}
+		char clsname[32];
+		GetEntityClassname(entity,clsname,sizeof(clsname));
+		if ((StrEqual(clsname,"func_vehicleclip",false)) || (StrEqual(clsname,"npc_sentry_ceiling",false)) || (entity == data))
+			return false;
+	}
+	return true;
+}
+
+public bool TraceEntityFilterPly(int entity, int mask, any data){
+	if ((entity != -1) && (IsValidEntity(entity)))
+	{
+		if (IsValidEntity(data))
+		{
+			if (HasEntProp(data,Prop_Data,"m_hParent"))
+			{
+				int parent = GetEntPropEnt(data,Prop_Data,"m_hParent");
+				if (entity == parent) return false;
+			}
+		}
+		if ((entity < MaxClients+1) && (entity > 0)) return false;
+		char clsname[32];
+		GetEntityClassname(entity,clsname,sizeof(clsname));
+		if ((StrEqual(clsname,"func_vehicleclip",false)) || (StrEqual(clsname,"npc_sentry_ceiling",false)) || (entity == data))
+			return false;
+	}
+	return true;
 }

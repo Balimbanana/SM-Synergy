@@ -52,8 +52,9 @@ bool BlockEx = true;
 bool TrainBlockFix = true;
 bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
+bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99970"
+#define PLUGIN_VERSION "1.99971"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -195,6 +196,19 @@ public void OnPluginStart()
 		cvar = CreateConVar("sm_blockchoreokill", "1", "Prevent players from suiciding while in choreo vehicles.", _, true, 0.0, true, 1.0);
 		BlockChoreoSuicide = GetConVarBool(cvar);
 		HookConVarChange(cvar, antikillch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("sm_blocktripmine_damage");
+	if (cvar != INVALID_HANDLE)
+	{
+		BlockTripMineDamage = GetConVarBool(cvar);
+		HookConVarChange(cvar, blocktripmindmgech);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_blocktripmine_damage", "1", "Prevent players from breaking eachothers planted tripmines.", _, true, 0.0, true, 1.0);
+		BlockTripMineDamage = GetConVarBool(cvar);
+		HookConVarChange(cvar, blocktripmindmgech);
 	}
 	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
@@ -2925,6 +2939,22 @@ public void OnClientDisconnect(int client)
 	DisplayedChapterTitle[client] = false;
 }
 
+public Action SynTripmineTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
+{
+	if (BlockTripMineDamage)
+	{
+		int owner = -1;
+		if (HasEntProp(victim,Prop_Data,"m_hOwner")) owner = GetEntPropEnt(victim,Prop_Data,"m_hOwner");
+		if ((owner == -1) && (HasEntProp(victim,Prop_Data,"m_hThrower"))) owner = GetEntPropEnt(victim,Prop_Data,"m_hThrower");
+		if ((IsValidEntity(owner)) && (owner < MaxClients+1) && (attacker > 0) && (attacker < MaxClients+1))
+		{
+			damage = 0.0;
+			return Plugin_Changed;
+		}
+	}
+	return Plugin_Continue;
+}
+
 public Action OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
 {
 	if (HasEntProp(attacker,Prop_Data,"m_hPhysicsAttacker"))
@@ -3427,7 +3457,7 @@ public Action recallreset(Handle timer)
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
-	if ((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false)) && (!StrEqual(classname,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(classname,"npc_bullseye",false)) && (FindValueInArray(entlist,entity) == -1))
+	if (((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false))) && (!StrEqual(classname,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(classname,"npc_enemyfinder",false)) && (!StrEqual(classname,"npc_bullseye",false)) && (!StrEqual(classname,"env_xen_portal",false)) && (!StrEqual(classname,"env_xen_portal_template",false)) && (!StrEqual(classname,"npc_maker",false)) && (!StrEqual(classname,"npc_template_maker",false)) && (StrContains(classname,"info_",false) == -1) && (StrContains(classname,"game_",false) == -1) && (StrContains(classname,"trigger_",false) == -1) && (FindValueInArray(entlist,entity) == -1))
 	{
 		PushArrayCell(entlist,entity);
 		if (((StrEqual(classname,"npc_citizen",false)) || (StrEqual(classname,"npc_alyx",false))) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
@@ -3438,6 +3468,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 			{
 				SetEntProp(entity,Prop_Data,"m_iEFlags",flageffects+1073741824);
 			}
+		}
+		else if ((StrEqual(classname,"npc_tripmine",false)) || (StrEqual(classname,"npc_satchel",false)))
+		{
+			SDKHook(entity, SDKHook_OnTakeDamage, SynTripmineTakeDamage);
 		}
 	}
 	if ((StrEqual(classname,"item_health_drop",false)) || (StrEqual(classname,"item_ammo_drop",false)) || (StrEqual(classname,"item_ammo_pack",false)))
@@ -3931,6 +3965,11 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			OnButtonPress(client,IN_ATTACK2);
 		}
 	}
+	else if (buttons & IN_USE) {
+		if (!(g_LastButtons[client] & IN_USE)) {
+			OnButtonPressUse(client);
+		}
+	}
 	if (impulse == 100)
 	{
 		int vehicles = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
@@ -3982,6 +4021,47 @@ public void OnButtonPress(int client, int button)
 				PrintToChat(client,"Turned on rocket guide.");
 			}
 			findrockets(-1,client);
+		}
+	}
+}
+
+public void OnButtonPressUse(int client)
+{
+	if (IsValidEntity(client))
+	{
+		int targ = GetClientAimTarget(client,false);
+		if ((IsValidEntity(targ)) && (targ != 0))
+		{
+			float orgs[3];
+			float targorgs[3];
+			if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
+			else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
+			if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",targorgs);
+			else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",targorgs);
+			float chkdist = GetVectorDistance(orgs,targorgs,false);
+			char cls[32];
+			GetEntityClassname(targ,cls,sizeof(cls));
+			if ((StrEqual(cls,"npc_tripmine",false)) && (chkdist < 91.0))
+			{
+				if (HasEntProp(targ,Prop_Data,"m_hOwner"))
+				{
+					if (client == GetEntPropEnt(targ,Prop_Data,"m_hOwner"))
+					{
+						int curamm = GetEntProp(client,Prop_Send,"m_iAmmo",_,24);
+						curamm++;
+						AcceptEntityInput(targ,"kill");
+						SetEntProp(client,Prop_Data,"m_iAmmo",curamm,_,24);
+						//plays on same channel as USE EmitGameSoundToAll("HL2Player.PickupWeapon",client);
+						int sndlvl,pitch,channel;
+						float vol;
+						char snd[64];
+						if (GetGameSoundParams("HL2Player.PickupWeapon",channel,sndlvl,vol,pitch,snd,sizeof(snd),client))
+						{
+							EmitSoundToAll(snd, client, SNDCHAN_AUTO, sndlvl, _, vol, pitch);
+						}
+					}
+				}
+			}
 		}
 	}
 }
@@ -4144,6 +4224,14 @@ public void antikillch(Handle convar, const char[] oldValue, const char[] newVal
 		BlockChoreoSuicide = true;
 	else
 		BlockChoreoSuicide = false;
+}
+
+public void blocktripmindmgech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		BlockTripMineDamage = true;
+	else
+		BlockTripMineDamage = false;
 }
 
 public void noguidech(Handle convar, const char[] oldValue, const char[] newValue)

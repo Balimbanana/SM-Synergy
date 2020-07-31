@@ -1,5 +1,3 @@
-int gargfiretarg[2048][5];
-
 void bmsgargthink(int entity)
 {
 	if (IsValidEntity(entity))
@@ -40,10 +38,10 @@ void bmsgargthink(int entity)
 						}
 						Format(boundbtarg,sizeof(boundbtarg),"%sbb",targn);
 						DispatchKeyValue(mdlset,"model","models/xenians/garg.mdl");
-						DispatchKeyValue(mdlset,"solid","6");
+						DispatchKeyValue(mdlset,"solid","0");
 						DispatchKeyValue(mdlset,"DefaultAnim","idle");
 						DispatchKeyValue(mdlset,"DisableShadow","1");
-						DispatchKeyValue(mdlset,"targetname",boundbtarg);
+						//DispatchKeyValue(mdlset,"targetname",boundbtarg);
 						TeleportEntity(mdlset,entpos,entangs,NULL_VECTOR);
 						DispatchSpawn(mdlset);
 						ActivateEntity(mdlset);
@@ -52,12 +50,46 @@ void bmsgargthink(int entity)
 						SetEntPropEnt(entity,Prop_Data,"m_hEffectEntity",mdlset);
 						SetEntProp(entity,Prop_Data,"m_nRenderMode",10);
 						SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
+						if (HasEntProp(entity,Prop_Data,"m_bloodColor")) SetEntProp(entity,Prop_Data,"m_bloodColor",2);
+						int garghitbox = CreateEntityByName("generic_actor");
+						if (garghitbox != -1)
+						{
+							DispatchKeyValue(garghitbox,"model","models/xenians/garg.mdl");
+							DispatchKeyValue(garghitbox,"targetname",boundbtarg);
+							DispatchKeyValue(garghitbox,"RenderMode","10");
+							DispatchKeyValue(garghitbox,"RenderFX","6");
+							DispatchKeyValue(garghitbox,"shadowcastdist","0");
+							DispatchKeyValue(garghitbox,"DisableShadows","1");
+							TeleportEntity(garghitbox,entpos,entangs,NULL_VECTOR);
+							DispatchSpawn(garghitbox);
+							ActivateEntity(garghitbox);
+							SetVariantString("!activator");
+							AcceptEntityInput(garghitbox,"SetParent",entity);
+							if (!IsModelPrecached("models/xenians/garg.mdl")) PrecacheModel("models/xenians/garg.mdl",true);
+							SetEntityModel(garghitbox,"models/xenians/garg.mdl");
+							SetEntPropEnt(garghitbox,Prop_Data,"m_hEffectEntity",entity);
+							SDKHookEx(garghitbox,SDKHook_OnTakeDamage,bmsgargtkdmg);
+							if (HasEntProp(garghitbox,Prop_Data,"m_bloodColor")) SetEntProp(garghitbox,Prop_Data,"m_bloodColor",2);
+							float vMins[3];
+							float vMaxs[3];
+							vMins[0] = -30.0;
+							vMins[1] = -30.0;
+							vMaxs[0] = 30.0;
+							vMaxs[1] = 30.0;
+							vMaxs[2] = 238.0;
+							SetEntPropVector(garghitbox,Prop_Data,"m_vecMins",vMins);
+							SetEntPropVector(garghitbox,Prop_Data,"m_vecMaxs",vMaxs);
+							SetEntProp(garghitbox,Prop_Data,"m_iHealth",999);
+							SetEntProp(garghitbox,Prop_Data,"m_iMaxHealth",999);
+						}
+						/*
 						float vMins[3];
 						float vMaxs[3];
 						GetEntPropVector(mdlset,Prop_Data,"m_vecMins",vMins);
 						GetEntPropVector(mdlset,Prop_Data,"m_vecMaxs",vMaxs);
 						SetEntPropVector(entity,Prop_Data,"m_vecMins",vMins);
 						SetEntPropVector(entity,Prop_Data,"m_vecMaxs",vMaxs);
+						*/
 						int sprite = CreateEntityByName("env_sprite");
 						if (sprite != -1)
 						{
@@ -81,19 +113,11 @@ void bmsgargthink(int entity)
 							SetEntPropVector(sprite,Prop_Data,"m_vecOrigin",offs);
 							SetEntPropEnt(mdlset,Prop_Data,"m_hEffectEntity",sprite);
 						}
-						int logcoll = CreateEntityByName("logic_collision_pair");
-						if (logcoll != -1)
-						{
-							DispatchKeyValue(logcoll,"attach1",targn);
-							DispatchKeyValue(logcoll,"attach2",boundbtarg);
-							DispatchKeyValue(logcoll,"StartDisabled","1");
-							DispatchSpawn(logcoll);
-							ActivateEntity(logcoll);
-							Handle dp = CreateDataPack();
-							WritePackCell(dp,logcoll);
-							WritePackString(dp,"logic_collision_pair");
-							CreateTimer(0.5,cleanup,dp,TIMER_FLAG_NO_MAPCHANGE);
-						}
+						Handle dp = CreateDataPack();
+						WritePackString(dp,targn);
+						WritePackString(dp,boundbtarg);
+						CreateTimer(0.1,GargResetColl,dp,TIMER_FLAG_NO_MAPCHANGE);
+						setuprelations("npc_bmsgargantua");
 					}
 				}
 				int seq = GetEntProp(entity,Prop_Data,"m_nSequence");
@@ -228,7 +252,7 @@ void bmsgargthink(int entity)
 					}
 					if (strlen(sequencename) > 0)
 					{
-						PrintToServer("SetAnim %s",sequencename);
+						//PrintToServer("SetAnim %s",sequencename);
 						SetVariantString(sequencename);
 						AcceptEntityInput(mdlset,"SetAnimation");
 						SetEntPropString(mdlset,Prop_Data,"m_iszDefaultAnim",sequencename);
@@ -240,6 +264,85 @@ void bmsgargthink(int entity)
 					isattacking[entity] = -1;
 					lastseen[entity] = Time+GetRandomFloat(3.0,6.0);
 					targreset = true;
+				}
+				if (HasEntProp(entity,Prop_Data,"m_hTargetEnt"))
+				{
+					int scrent = GetEntPropEnt(entity,Prop_Data,"m_hTargetEnt");
+					if (IsValidEntity(scrent))
+					{
+						if (HasEntProp(scrent,Prop_Data,"m_iName"))
+						{
+							char namechk[4];
+							GetEntPropString(scrent,Prop_Data,"m_iName",namechk,sizeof(namechk));
+							if (strlen(namechk) > 0) return;
+						}
+					}
+				}
+				if (HasEntProp(entity,Prop_Data,"m_SleepState"))
+				{
+					int sleepstate = GetEntProp(entity,Prop_Data,"m_SleepState");
+					if (sleepstate != 0) return;
+				}
+				if (centnextatk[mdlset] <= Time)
+				{
+					//check for prop_physics with models starting with models/props_vehicles, melee maybe?
+					centnextatk[mdlset] = Time+2.0;
+					float loc[3];
+					loc[0] = (entpos[0] + (40 * Cosine(DegToRad(entangs[1]))));
+					loc[1] = (entpos[1] + (40 * Sine(DegToRad(entangs[1]))));
+					loc[2] = (entpos[2] + 10);
+					Handle hhitpos = TR_TraceRayFilterEx(loc,entangs,MASK_SHOT,RayType_Infinite,TraceEntityFilter,entity);
+					int hitent = TR_GetEntityIndex(hhitpos);
+					CloseHandle(hhitpos);
+					if ((!IsValidEntity(hitent)) || (hitent == 0))
+					{
+						loc[0] = (entpos[0] + (40 * Cosine(DegToRad(entangs[1]))));
+						loc[1] = (entpos[1] + (40 * Sine(DegToRad(entangs[1]))));
+						loc[2] = (entpos[2] + 50);
+						hhitpos = TR_TraceRayFilterEx(loc,entangs,MASK_SHOT,RayType_Infinite,TraceEntityFilter,entity);
+						hitent = TR_GetEntityIndex(hhitpos);
+						CloseHandle(hhitpos);
+					}
+					if ((IsValidEntity(hitent)) && (hitent != 0))
+					{
+						char hitcls[32];
+						GetEntityClassname(hitent,hitcls,sizeof(hitcls));
+						if ((StrEqual(hitcls,"prop_physics",false)) || (StrEqual(hitcls,"prop_vehicle_jeep",false)) || (StrEqual(hitcls,"prop_vehicle_airboat",false)))
+						{
+							if (HasEntProp(hitent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(hitent,Prop_Data,"m_vecAbsOrigin",loc);
+							else if (HasEntProp(hitent,Prop_Send,"m_vecOrigin")) GetEntPropVector(hitent,Prop_Send,"m_vecOrigin",loc);
+							if (GetVectorDistance(entpos,loc,false) < 225.0)
+							{
+								if (isattacking[mdlset] == 1)
+								{
+									GargStopFire(entity,mdlset,entpos,entangs);
+								}
+								isattacking[mdlset] = 2;
+								char atkanim[128];
+								Format(atkanim,sizeof(atkanim),"melee%i",GetRandomInt(1,2));
+								RunSeq(entity,entpos,entangs,atkanim,"",2,false);
+								char snd[64];
+								Format(snd,sizeof(snd),"npc\\garg\\garg_claw%i.wav",GetRandomInt(1,4));
+								EmitAmbientSound(snd, entpos, entity, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
+								EmitAmbientSound(snd, entpos, entity, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
+								EmitAmbientSound("npc\\garg\\garg_attack1.wav", entpos, entity, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
+								centnextatk[entity] = Time+1.7;
+								DoRadialDamage(entity,entangs[1],250.0,30.0,"melee",DMG_CLUB,1.5);
+								loc[0] = (entpos[0] + (200 * Cosine(DegToRad(entangs[1]))));
+								loc[1] = (entpos[1] + (200 * Sine(DegToRad(entangs[1]))));
+								loc[2] = (entpos[2] + 150);
+								float shootvel[3];
+								MakeVectorFromPoints(entpos,loc,shootvel);
+								ScaleVector(shootvel,10.0);
+								Handle dp = CreateDataPack();
+								WritePackCell(dp,hitent);
+								WritePackFloat(dp,shootvel[0]);
+								WritePackFloat(dp,shootvel[1]);
+								WritePackFloat(dp,shootvel[2]);
+								CreateTimer(0.5,LaunchTarget,dp,TIMER_FLAG_NO_MAPCHANGE);
+							}
+						}
+					}
 				}
 				int targ = isattacking[entity];
 				if ((IsValidEntity(targ)) && (targ != 0))
@@ -346,7 +449,7 @@ void bmsgargthink(int entity)
 						SetEntPropFloat(mdlset,Prop_Data,"m_flPoseParameter",posepitch,4);
 					}
 					float chkdist = GetVectorDistance(orgs,enorg,false);
-					if (chkdist < 550.0)
+					if (chkdist < 1024.0)
 					{
 						//rotate arms to target
 						posepitch = GetEntPropFloat(mdlset,Prop_Data,"m_flPoseParameter",1);
@@ -421,25 +524,33 @@ void bmsgargthink(int entity)
 						}
 						if (centnextatk[entity] < Time)
 						{
-							if (((toang[1]-angs[1] < 10.0) || (angs[1]-toang[1] < 10.0)) && (chkdist < 250.0))
+							bool withinradius = CheckWithinRadius(entangs[1],toang[1],20.0);
+							float faceang[3];
+							faceang[1] = toang[1];
+							if ((!withinradius) && (chkdist < 350.0))
+							{
+								TeleportEntity(entity,NULL_VECTOR,faceang,NULL_VECTOR);
+								withinradius = true;
+							}
+							if ((chkdist < 250.0) && (withinradius))
 							{
 								if (isattacking[mdlset] == 1)
 								{
-									GargStopFire(entity,mdlset,orgs,angs);
+									GargStopFire(entity,mdlset,orgs,entangs);
 								}
 								isattacking[mdlset] = 2;
 								char atkanim[128];
 								Format(atkanim,sizeof(atkanim),"melee%i",GetRandomInt(1,2));
-								RunSeq(entity,orgs,angs,atkanim,"",2,false);
+								RunSeq(entity,orgs,faceang,atkanim,"",2,false);
 								char snd[64];
 								Format(snd,sizeof(snd),"npc\\garg\\garg_claw%i.wav",GetRandomInt(1,4));
 								EmitAmbientSound(snd, orgs, entity, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
 								EmitAmbientSound(snd, orgs, entity, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
 								EmitAmbientSound("npc\\garg\\garg_attack1.wav", orgs, entity, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
 								centnextatk[entity] = Time+1.7;
-								DoRadialDamage(entity,angs[1],250.0,20.0,"melee",DMG_CLUB,1.5);
+								DoRadialDamage(entity,entangs[1],250.0,40.0,"melee",DMG_CLUB,1.5);
 							}
-							else if (((toang[1]-angs[1] < 10.0) || (angs[1]-toang[1] < 10.0)) && (!isattacking[mdlset]) && (chkdist < 450.0))
+							else if ((withinradius) && (!isattacking[mdlset]) && (chkdist < 450.0))
 							{
 								isattacking[mdlset] = 1;
 								RunSeq(entity,orgs,angs,"fire1","",2,true);
@@ -520,7 +631,7 @@ void bmsgargthink(int entity)
 									DispatchKeyValue(effect,"start_active","1");
 									DispatchKeyValue(effect,"cpoint1",targpointl);
 									TeleportEntity(effect,offorg,NULL_VECTOR,NULL_VECTOR);
-									PrintToServer("Create Effect %i at %1.f %1.f %1.f targ %s",effect,offorg[0],offorg[1],offorg[2],targpointl);
+									//PrintToServer("Create Effect %i at %1.f %1.f %1.f targ %s",effect,offorg[0],offorg[1],offorg[2],targpointl);
 									DispatchSpawn(effect);
 									ActivateEntity(effect);
 									SetVariantString("!activator");
@@ -532,11 +643,11 @@ void bmsgargthink(int entity)
 								}
 								EmitAmbientSound("npc\\garg\\garg_beam_start.wav", orgs, entity, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
 								EmitAmbientSound("npc\\garg\\garg_beam_start.wav", orgs, entity, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
-								DoRadialDamage(entity,angs[1],450.0,15.0,"fire",DMG_BURN|DMG_SONIC,0.0);
+								DoRadialDamage(entity,entangs[1],450.0,15.0,"fire",DMG_BURN|DMG_SONIC,0.0);
 							}
-							else if (((toang[1]-angs[1] < 10.0) || (angs[1]-toang[1] < 10.0)) && (isattacking[mdlset] == 1) && (chkdist < 450.0))
+							else if (((toang[1]-entangs[1] < 10.0) || (entangs[1]-toang[1] < 10.0)) && (isattacking[mdlset] == 1) && (chkdist < 450.0))
 							{
-								DoRadialDamage(entity,angs[1],450.0,15.0,"fire",DMG_BURN|DMG_SONIC,0.0);
+								DoRadialDamage(entity,entangs[1],450.0,15.0,"fire",DMG_BURN|DMG_SONIC,0.0);
 								centnextatk[entity] = Time+0.5;
 							}
 							else if ((isattacking[mdlset] == 2) && (chkdist > 250.0))
@@ -608,21 +719,43 @@ void bmsgargthink(int entity)
 					if ((isattacking[mdlset] == 0) && (chkdist < 2048) && (centnextatk[entity] < Time))
 					{
 						float oowchk[3];
-						oowchk[0] = (entpos[0] + (75 * Cosine(DegToRad(toang[1]))));
-						oowchk[1] = (entpos[1] + (75 * Sine(DegToRad(toang[1]))));
-						oowchk[2] = entpos[2];
-						/*
+						oowchk[0] = (enorg[0] - (75 * Cosine(DegToRad(toang[1]))));
+						oowchk[1] = (enorg[1] - (75 * Sine(DegToRad(toang[1]))));
+						oowchk[2] = enorg[2]+10.0;
 						if (!TR_PointOutsideWorld(oowchk))
 						{
-							oowchk[2]+=268.0;
+							float aimdown[3];
+							aimdown[0] = 90.0;
+							Handle hhitpos = TR_TraceRayFilterEx(oowchk,aimdown,MASK_SHOT,RayType_Infinite,TraceEntityFilter,mdlset);
+							TR_GetEndPosition(oowchk,hhitpos);
+							CloseHandle(hhitpos);
+							oowchk[2]+=250.0;
 							if (!TR_PointOutsideWorld(oowchk))
 							{
-								RunSeq(entity,entpos,toang,"Run_all","",2,false);
+								centnextatk[entity] = Time+1.0;
+								oowchk[2]-=245.0;
+								RunSeq(entity,oowchk,toang,"idle","",2,false);
+							}
+							else
+							{
+								oowchk[0] = (entpos[0] + (50 * Cosine(DegToRad(toang[1]))));
+								oowchk[1] = (entpos[1] + (50 * Sine(DegToRad(toang[1]))));
+								oowchk[2] = entpos[2]+10.0;
+								if (!TR_PointOutsideWorld(oowchk))
+								{
+									hhitpos = TR_TraceRayFilterEx(oowchk,aimdown,MASK_SHOT,RayType_Infinite,TraceEntityFilter,mdlset);
+									TR_GetEndPosition(oowchk,hhitpos);
+									CloseHandle(hhitpos);
+									oowchk[2]+=250.0;
+									if (!TR_PointOutsideWorld(oowchk))
+									{
+										oowchk[2]-=245.0;
+										centnextatk[entity] = Time+1.0;
+										RunSeq(entity,oowchk,toang,"idle","",2,false);
+									}
+								}
 							}
 						}
-						*/
-						centnextatk[entity] = Time+1.0;
-						RunSeq(entity,entpos,toang,"Run_all","",2,false);
 					}
 				}
 				else if ((isattacking[mdlset] == 1) && (!targreset))
@@ -641,14 +774,16 @@ void bmsgargthink(int entity)
 					if (GetArraySize(entlist) > 0)
 					{
 						float curorg[3];
-						curorg[0] = (entpos[0] + (90 * Cosine(DegToRad(entangs[1]))));
-						curorg[1] = (entpos[1] + (90 * Sine(DegToRad(entangs[1]))));
-						curorg[2]+=250.0;//vMaxs
+						curorg[0] = (entpos[0] + (30 * Cosine(DegToRad(entangs[1]))));
+						curorg[1] = (entpos[1] + (30 * Sine(DegToRad(entangs[1]))));
+						curorg[2] = (entpos[2] + 250.0);//vMaxs 250
 						float fhitpos[3];
 						float toang[3];
 						float shootvel[3];
 						float enorg[3];
 						float chkdist = 999.0;
+						float topdist = 0.0;
+						float dist = 0.0;
 						for (int j = 0;j<GetArraySize(entlist);j++)
 						{
 							int i = GetArrayCell(entlist,j);
@@ -656,21 +791,32 @@ void bmsgargthink(int entity)
 							{
 								char cls[64];
 								GetEntityClassname(i,cls,sizeof(cls));
-								if ((!StrEqual(cls,"npc_bmsgargantua",false)) && (!StrEqual(cls,"npc_gargantua",false)) && (!StrEqual(cls,"npc_bullseye",false)) && (!StrEqual(cls,"npc_maker",false)) && (!StrEqual(cls,"npc_template_maker",false)) && (!StrEqual(cls,"env_xen_portal",false)) && (!StrEqual(cls,"env_xen_portal_template",false)))
+								if ((!StrEqual(cls,"npc_bmsgargantua",false)) && (!StrEqual(cls,"npc_enemyfinder",false)) && (!StrEqual(cls,"npc_gargantua",false)) && (!StrEqual(cls,"npc_bullseye",false)) && (!StrEqual(cls,"npc_maker",false)) && (!StrEqual(cls,"npc_template_maker",false)) && (!StrEqual(cls,"env_xen_portal",false)) && (!StrEqual(cls,"env_xen_portal_template",false)))
 								{
+									if (StrEqual(cls,"generic_actor",false))
+									{
+										if (HasEntProp(i,Prop_Data,"m_hEffectEntity"))
+										{
+											if (GetEntPropEnt(i,Prop_Data,"m_hEffectEntity") == entity) continue;
+										}
+									}
 									if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",enorg);
 									else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",enorg);
 									MakeVectorFromPoints(curorg,enorg,shootvel);
 									GetVectorAngles(shootvel,toang);
-									Handle hhitpos = TR_TraceRayFilterEx(curorg,toang,MASK_SHOT,RayType_Infinite,TraceEntityFilter,mdlset);
+									Handle hhitpos = TR_TraceRayFilterEx(curorg,toang,MASK_SHOT,RayType_Infinite,TraceEntityFilter,entity);
 									TR_GetEndPosition(fhitpos,hhitpos);
+									int hitent = TR_GetEntityIndex(hhitpos);
 									CloseHandle(hhitpos);
 									chkdist = GetVectorDistance(fhitpos,enorg,false);
-									//PrintToServer("Hit %1.f %1.f %1.f en %1.f %1.f %1.f",fhitpos[0],fhitpos[1],fhitpos[2],enorg[0],enorg[1],enorg[2]);
-									if (chkdist < 200)
+									dist = GetVectorDistance(entpos,enorg,false);
+									//PrintToServer("Hit %i aim %i %1.f %1.f %1.f en %1.f %1.f %1.f",hitent,i,fhitpos[0],fhitpos[1],fhitpos[2],enorg[0],enorg[1],enorg[2]);
+									if (((chkdist < 200.0) && ((dist < topdist) || (topdist == 0.0))) || (hitent == i))
 									{
+										topdist = dist;
 										isattacking[entity] = i;
-										break;
+										if (dist < 500.0) break;
+										//break;
 									}
 								}
 							}
@@ -686,6 +832,34 @@ void bmsgargthink(int entity)
 							}
 						}
 					}
+					if (((isattacking[entity] == 0) || (!IsValidEntity(isattacking[entity]))) && (centnextatk[mdlset] <= Time) && (!targreset))
+					{
+						//Rand roam
+						float roamorg[3];
+						float randfl = GetRandomFloat(-160.0,160.0);
+						int randdist = GetRandomInt(20,120);
+						roamorg[0] = (entpos[0] + (randdist * Cosine(DegToRad(randfl))));
+						roamorg[1] = (entpos[1] + (randdist * Sine(DegToRad(randfl))));
+						roamorg[2] = (entpos[2] + 250.0);
+						if (TR_PointOutsideWorld(roamorg))
+						{
+							while (TR_PointOutsideWorld(roamorg))
+							{
+								randfl = GetRandomFloat(-160.0,160.0);
+								randdist = GetRandomInt(20,120);
+								roamorg[0] = (entpos[0] + (randdist * Cosine(DegToRad(randfl))));
+								roamorg[1] = (entpos[1] + (randdist * Sine(DegToRad(randfl))));
+								roamorg[2] = (entpos[2] + 10.0);
+							}
+						}
+						roamorg[2] = (entpos[2] + 10.0);
+						float toang[3];
+						float shootvel[3];
+						MakeVectorFromPoints(entpos,roamorg,shootvel);
+						GetVectorAngles(shootvel,toang);
+						RunSeq(entity,roamorg,toang,"idle","",1,false);
+						centnextatk[mdlset] = Time+GetRandomFloat(1.0,3.0);
+					}
 				}
 				targreset = false;
 			}
@@ -699,7 +873,7 @@ void GargStopFire(int entity, int mdlset, float orgs[3], float angs[3])
 	EmitAmbientSound("npc\\garg\\garg_beam_stop.wav", orgs, entity, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
 	for (int i = 0;i<4;i++)
 	{
-		if (IsValidEntity(gargfiretarg[entity][i]))
+		if ((IsValidEntity(gargfiretarg[entity][i])) && (gargfiretarg[entity][i] != 0))
 		{
 			AcceptEntityInput(gargfiretarg[entity][i],"kill");
 			gargfiretarg[entity][i] = 0;
@@ -709,74 +883,135 @@ void GargStopFire(int entity, int mdlset, float orgs[3], float angs[3])
 	RunSeq(entity,orgs,angs,"idle","",0,false);
 }
 
-void RunSeq(int entity, float origin[3], float angs[3], char anim[128], char entryanim[128], int moveto, bool loop)
+public Action bmsgargtkdmg(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
 {
-	/*
-	moveto:
-	0 : "No"
-	1 : "Walk"
-	2 : "Run"
-	3 : "Custom movement"
-	4 : "Instantaneous"
-	5 : "No - Turn to Face"
-	*/
-	//PrintToServer("RunSeq %i %s %s",entity,entryanim,anim);
-	if ((IsValidEntity(entity)) && (strlen(anim) > 0))
+	bool AllowDmg = false;
+	char dmgcls[32];
+	if (IsValidEntity(victim)) GetEntityClassname(victim,dmgcls,sizeof(dmgcls));
+	if (IsValidEntity(attacker))
 	{
-		char clsres[64];
-		if ((IsValidEntity(gargfiretarg[entity][4])) && (gargfiretarg[entity][4] != 0))
+		char atkcls[64];
+		GetEntityClassname(attacker,atkcls,sizeof(atkcls));
+		if (StrContains(atkcls,"grenade",false) != -1)
 		{
-			GetEntityClassname(gargfiretarg[entity][4],clsres,sizeof(clsres));
-			if (StrEqual(clsres,"scripted_sequence",false))
+			AllowDmg = true;
+			if ((attacker > MaxClients) && (attacker == inflictor) && (HasEntProp(attacker,Prop_Data,"m_hEffectEntity")))
 			{
-				AcceptEntityInput(gargfiretarg[entity][4],"CancelSequence");
-				AcceptEntityInput(gargfiretarg[entity][4],"kill");
+				int atkchk = GetEntPropEnt(attacker,Prop_Data,"m_hEffectEntity");
+				if ((IsValidEntity(atkchk)) && (atkchk < MaxClients+1)) attacker = atkchk;
 			}
-			gargfiretarg[entity][4] = 0;
-		}
-		if (HasEntProp(entity,Prop_Data,"m_hTargetEnt"))
-		{
-			int scrent = GetEntPropEnt(entity,Prop_Data,"m_hTargetEnt");
-			if (IsValidEntity(scrent))
-			{
-				if (HasEntProp(scrent,Prop_Data,"m_iszPlay"))
-				{
-					char scranim[128];
-					GetEntPropString(scrent,Prop_Data,"m_iszPlay",scranim,sizeof(scranim));
-					if (StrEqual(scranim,anim,false)) return;
-				}
-				AcceptEntityInput(scrent,"CancelSequence");
-				AcceptEntityInput(scrent,"kill");
-			}
-		}
-		int scrgo = CreateEntityByName("scripted_sequence");
-		if (scrgo != -1)
-		{
-			GetEntityClassname(entity,clsres,sizeof(clsres));
-			ReplaceStringEx(clsres,sizeof(clsres),"npc_","",-1,-1,false);
-			char targn[64];
-			GetEntPropString(entity,Prop_Data,"m_iName",targn,sizeof(targn));
-			if (strlen(targn) < 1)
-			{
-				Format(targn,sizeof(targn),"%s%i",clsres,entity);
-				SetEntPropString(entity,Prop_Data,"m_iName",targn);
-			}
-			char mvch[8];
-			Format(mvch,sizeof(mvch),"%i",moveto);
-			if (strlen(entryanim) > 1) DispatchKeyValue(scrgo,"m_iszEntry",entryanim);
-			DispatchKeyValue(scrgo,"m_iszPlay",anim);
-			DispatchKeyValue(scrgo,"m_iszEntity",targn);
-			DispatchKeyValue(scrgo,"m_fMoveTo",mvch);
-			DispatchKeyValue(scrgo,"spawnflags","176");
-			DispatchKeyValue(scrgo,"m_bDisableNPCCollisions","1");
-			if (loop) DispatchKeyValue(scrgo,"m_bLoopActionSequence","1");
-			DispatchKeyValue(scrgo,"OnEndSequence","!self,kill,,0.1,-1");
-			TeleportEntity(scrgo,origin,angs,NULL_VECTOR);
-			DispatchSpawn(scrgo);
-			ActivateEntity(scrgo);
-			AcceptEntityInput(scrgo,"BeginSequence");
-			gargfiretarg[entity][4] = scrgo;
 		}
 	}
-	return;
+	if (StrEqual(dmgcls,"generic_actor",false))
+	{
+		int dmgvic = GetEntPropEnt(victim,Prop_Data,"m_hEffectEntity");
+		if (IsValidEntity(dmgvic))
+		{
+			float atkorg[3];
+			if (IsValidEntity(attacker))
+			{
+				if (HasEntProp(attacker,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(attacker,Prop_Data,"m_vecAbsOrigin",atkorg);
+			}
+			int health = GetEntProp(dmgvic,Prop_Data,"m_iHealth");
+			if ((health > 0) && ((damagetype == 64) || (AllowDmg)))
+				SDKHooks_TakeDamage(dmgvic,attacker,inflictor,damage,damagetype,-1,atkorg,atkorg);
+		}
+		damage = 0.0;
+		return Plugin_Changed;
+	}
+	//PrintToServer("%i tkdmg from %i %i %1.f type %i",victim,attacker,inflictor,damage,damagetype);
+	if (IsValidEntity(victim))
+	{
+		if ((damagetype == 64) || (AllowDmg))
+		{
+			if ((!IsValidEntity(isattacking[victim])) || (isattacking[victim] == 0))
+			{
+				isattacking[victim] = attacker;
+			}
+		}
+		int health = GetEntProp(victim,Prop_Data,"m_iHealth");
+		if ((health-damage <= 0) || (health < 1))
+		{
+			float orgs[3];
+			float angs[3];
+			if (HasEntProp(victim,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(victim,Prop_Data,"m_vecAbsOrigin",orgs);
+			else if (HasEntProp(victim,Prop_Data,"m_vecOrigin")) GetEntPropVector(victim,Prop_Data,"m_vecOrigin",orgs);
+			if (HasEntProp(victim,Prop_Data,"m_angRotation")) GetEntPropVector(victim,Prop_Data,"m_angRotation",angs);
+			EmitAmbientSound("npc\\garg\\garg_beam_start.wav", orgs, victim, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
+			EmitAmbientSound("npc\\garg\\garg_beam_stop.wav", orgs, victim, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
+			for (int i = 0;i<4;i++)
+			{
+				if ((IsValidEntity(gargfiretarg[victim][i])) && (gargfiretarg[victim][i] != 0))
+				{
+					AcceptEntityInput(gargfiretarg[victim][i],"kill");
+					gargfiretarg[victim][i] = 0;
+				}
+			}
+			int mdlset = GetEntPropEnt(victim,Prop_Data,"m_hEffectEntity");
+			if (IsValidEntity(mdlset))
+			{
+				isattacking[mdlset] = 5;
+			}
+			RunSeq(victim,orgs,angs,"powerup_electrocute","",0,false);
+			CreateTimer(7.2,DissolveGarg,victim,TIMER_FLAG_NO_MAPCHANGE);
+			SetEntProp(victim,Prop_Data,"m_iHealth",0);
+			damage = 0.0;
+			return Plugin_Changed;
+		}
+	}
+	damage = 0.0;
+	return Plugin_Changed;
+}
+
+public Action DissolveGarg(Handle timer, int entity)
+{
+	if ((IsValidEntity(entity)) && (entity != 0))
+	{
+		AcceptEntityInput(entity,"kill");
+	}
+}
+
+public Action LaunchTarget(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		float shootvel[3];
+		int hitent = ReadPackCell(dp);
+		shootvel[0] = ReadPackFloat(dp);
+		shootvel[1] = ReadPackFloat(dp);
+		shootvel[2] = ReadPackFloat(dp);
+		CloseHandle(dp);
+		if (IsValidEntity(hitent))
+		{
+			TeleportEntity(hitent,NULL_VECTOR,NULL_VECTOR,shootvel);
+		}
+	}
+}
+
+public Action GargResetColl(Handle timer, Handle dppass)
+{
+	if (dppass != INVALID_HANDLE)
+	{
+		char targn[128];
+		char boundbtarg[128];
+		ResetPack(dppass);
+		ReadPackString(dppass,targn,sizeof(targn));
+		ReadPackString(dppass,boundbtarg,sizeof(boundbtarg));
+		CloseHandle(dppass);
+		int logcoll = CreateEntityByName("logic_collision_pair");
+		if (logcoll != -1)
+		{
+			DispatchKeyValue(logcoll,"attach1",targn);
+			DispatchKeyValue(logcoll,"attach2",boundbtarg);
+			DispatchKeyValue(logcoll,"StartDisabled","1");
+			DispatchSpawn(logcoll);
+			ActivateEntity(logcoll);
+			AcceptEntityInput(logcoll,"DisableCollisions");
+			Handle dp = CreateDataPack();
+			WritePackCell(dp,logcoll);
+			WritePackString(dp,"logic_collision_pair");
+			CreateTimer(0.5,cleanup,dp,TIMER_FLAG_NO_MAPCHANGE);
+		}
+	}
 }

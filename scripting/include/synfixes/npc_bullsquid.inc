@@ -269,7 +269,7 @@ void squidthink(int entity)
 							centnextatk[entity] = Time+0.5;
 							float damageForce[3];
 							float dmgset = 35.0;
-							float dmgforce = 450.0;
+							float dmgforce = 300.0;
 							Handle squidwhip = FindConVar("sk_bullsquid_whip_dmg");
 							if (squidwhip != INVALID_HANDLE)
 								dmgset = GetConVarFloat(squidwhip);
@@ -282,6 +282,15 @@ void squidthink(int entity)
 							damageForce[1] = dmgforce;
 							damageForce[2] = dmgforce;
 							SDKHooks_TakeDamage(targ,entity,entity,dmgset,DMG_CLUB,-1,damageForce,curorg);
+							enorg[2]+=1.0;
+							float angs[3];
+							if (HasEntProp(entity,Prop_Data,"m_angAbsRotation")) GetEntPropVector(entity,Prop_Data,"m_angAbsRotation",angs);
+							float vecForce[3];
+							vecForce[0] = (enorg[0] + (dmgforce * Cosine(DegToRad(angs[1]))));
+							vecForce[1] = (enorg[1] + (dmgforce * Sine(DegToRad(angs[1]))));
+							vecForce[2] = (enorg[2] + (dmgforce/2));
+							MakeVectorFromPoints(enorg,vecForce,vecForce);
+							TeleportEntity(targ,enorg,NULL_VECTOR,vecForce);
 							CreateTimer(0.8,resetatk,entity,TIMER_FLAG_NO_MAPCHANGE);
 							if (StrContains(mapbuf,"bm_bm_c",false) == -1)
 							{

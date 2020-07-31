@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0015"
-			"Previous"	"2.0014"
+			"Latest"  	"2.0016"
+			"Previous"	"2.0015"
 		}
 		
-		"Notes"	"Added CVar sm_blockchoreokill default 1. Blocks suicide while in choreo vehicles."
+		"Notes"	"Added CVar sm_blocktripmine_damage default 1, blocks player damage to tripmines. Added pickup to planted tripmines."
 	}
 	
 	"Files"

@@ -1,3 +1,5 @@
+float flSentryFireRate = 0.2;
+
 void sentriesthink(int entity)
 {
 	if (IsValidEntity(entity))
@@ -300,7 +302,7 @@ void sentriesthink(int entity)
 				ChangeEdictState(entity);
 				if ((centnextatk[entity] < Time) && (withinradius == 2))
 				{
-					centnextatk[entity] = Time+0.2;
+					centnextatk[entity] = Time+flSentryFireRate;
 					if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",enorg);
 					else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",enorg);
 					if (StrEqual(cls,"npc_sentry_ceiling",false))
@@ -367,7 +369,7 @@ void sentriesthink(int entity)
 									float tmporgs[3];
 									tmporgs[0] = (orgs[0] - (2 * Cosine(DegToRad(toang[1]))));
 									tmporgs[1] = (orgs[1] - (2 * Sine(DegToRad(toang[1]))));
-									tmporgs[2] = orgs[2]+6.0;
+									tmporgs[2] = orgs[2]+5.0;
 									TeleportEntity(bulletmuzzle,tmporgs,toang,NULL_VECTOR);
 								}
 								AcceptEntityInput(bulletmuzzle,"Fire");
@@ -416,11 +418,27 @@ void sentriesthink(int entity)
 					{
 						curorg[2]+=30.0;
 						angs[2]+=90.0;
+						float vecs[3];
+						vecs[0] = 1.0;
+						vecs[1] = 1.0;
+						vecs[2] = 1.0;
+						SetEntPropVector(entity,Prop_Data,"m_vecMaxs",vecs);
+						vecs[0] = -16.0;
+						vecs[1] = -12.0;
+						vecs[2] = -1.0;
+						SetEntPropVector(entity,Prop_Data,"m_vecMins",vecs);
+						vecs[0] = 0.0;
+						vecs[1] = 0.0;
+						vecs[2] = 0.0;
+						SetEntPropVector(entity,Prop_Data,"m_vecOrigin",vecs);
+						if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) SetEntPropVector(entity,Prop_Send,"m_vecOrigin",vecs);
 					}
 					int animprop = GetEntPropEnt(entity,Prop_Data,"m_hParent");
 					int trent;
 					if ((IsValidEntity(animprop)) && (animprop != 0)) trent = animprop;
 					else trent = entity;
+					float topdist = 0.0;
+					float dist = 0.0;
 					for (int j = 0;j<GetArraySize(entlist);j++)
 					{
 						int i = GetArrayCell(entlist,j);
@@ -458,17 +476,22 @@ void sentriesthink(int entity)
 										else withinradius = false;
 									}
 								}
-								float chkdist = GetVectorDistance(fhitpos,enorg,false);
-								if ((chkdist < 100) && (withinradius))
+								dist = GetVectorDistance(fhitpos,enorg,false);
+								//if ((chkdist < 100) && (withinradius))
+								if ((withinradius) && ((dist < 150.0) && ((dist < topdist) || (topdist == 0.0))))
 								{
+									topdist = dist;
 									isattacking[entity] = i;
-									lastseen[entity] = Time + 3.0;
 									//PrintToServer("Targeting %i %s",i,cls);
-									char snd[64];
-									if (StrEqual(sentrycls,"npc_sentry_ceiling",false)) Format(snd,sizeof(snd),"npc\\sentry_ceiling\\ping2.wav");
-									else Format(snd,sizeof(snd),"npc\\sentry_ground\\ping.wav");
-									EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
-									break;
+									if (dist < 100.0)
+									{
+										lastseen[entity] = Time + 3.0;
+										char snd[64];
+										if (StrEqual(sentrycls,"npc_sentry_ceiling",false)) Format(snd,sizeof(snd),"npc\\sentry_ceiling\\ping2.wav");
+										else Format(snd,sizeof(snd),"npc\\sentry_ground\\ping.wav");
+										EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
+										break;
+									}
 								}
 							}
 						}
@@ -528,6 +551,76 @@ void sentriesthink(int entity)
 					}
 				}
 			}
+		}
+	}
+}
+
+public Action SetupSentryDelay(Handle timer, int propphy)
+{
+	if (IsValidEntity(propphy))
+	{
+		int entity = GetEntPropEnt(propphy,Prop_Data,"m_hEffectEntity");
+		if (entity != -1)
+		{
+			float orgs[3];
+			float angs[3];
+			if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",orgs);
+			else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",orgs);
+			if (HasEntProp(entity,Prop_Data,"m_angAbsRotation")) GetEntPropVector(entity,Prop_Data,"m_angAbsRotation",angs);
+			orgs[2]+=3.0;
+			TeleportEntity(propphy,orgs,angs,NULL_VECTOR);
+			SetVariantString("!activator");
+			AcceptEntityInput(entity,"SetParent",propphy);
+		}
+		if (FindStringInArray(precachedarr,"npc_sentry_ground") == -1)
+		{
+			PrecacheSound("weapons\\mp5\\empty.wav",true);
+			recursion("sound/npc/sentry_ground/");
+			PushArrayString(precachedarr,"npc_sentry_ground");
+		}
+		int mhchk = GetEntProp(entity,Prop_Data,"m_iMaxHealth");
+		Handle cvar = FindConVar("sk_sentry_ground_health");
+		if (cvar != INVALID_HANDLE)
+		{
+			int cvarh = GetConVarInt(cvar);
+			if (mhchk != cvarh)
+			{
+				SetEntProp(entity,Prop_Data,"m_iHealth",cvarh);
+				SetEntProp(entity,Prop_Data,"m_iMaxHealth",cvarh);
+			}
+		}
+		CloseHandle(cvar);
+		if (HasEntProp(entity,Prop_Data,"m_bloodColor")) SetEntProp(entity,Prop_Data,"m_bloodColor",3);
+		if (HasEntProp(entity,Prop_Data,"m_MoveType")) SetEntProp(entity,Prop_Data,"m_MoveType",3);
+		//SetEntProp(entity,Prop_Data,"m_MoveType",0);
+		SetEntData(entity, collisiongroup, 17, 4, true);
+		//SetVariantString("1.1");
+		//AcceptEntityInput(entity,"SetModelScale");
+		if (HasEntProp(entity,Prop_Data,"m_flModelScale")) SetEntPropFloat(entity,Prop_Data,"m_flModelScale",1.1);
+		float vecs[3];
+		vecs[0] = 1.0;
+		vecs[1] = 1.0;
+		vecs[2] = 1.0;
+		SetEntPropVector(entity,Prop_Data,"m_vecMaxs",vecs);
+		vecs[0] = -16.0;
+		vecs[1] = -12.0;
+		vecs[2] = -1.0;
+		SetEntPropVector(entity,Prop_Data,"m_vecMins",vecs);
+		//SetEntProp(entity,Prop_Data,"m_MoveType",0);
+		SetEntData(entity, collisiongroup, 17, 4, true);
+		SDKHookEx(entity,SDKHook_Think,sentriesthink);
+		SDKHookEx(entity,SDKHook_OnTakeDamage,notkdmg);
+		char targn[64];
+		GetEntPropString(propphy,Prop_Data,"m_iName",targn,sizeof(targn));
+		int keepupright = CreateEntityByName("phys_keepupright");
+		if (keepupright != -1)
+		{
+			DispatchKeyValue(keepupright,"spawnflags","0");
+			DispatchKeyValue(keepupright,"attach1",targn);
+			DispatchKeyValue(keepupright,"angularlimit","10");
+			DispatchSpawn(keepupright);
+			ActivateEntity(keepupright);
+			AcceptEntityInput(keepupright,"TurnOn");
 		}
 	}
 }

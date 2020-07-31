@@ -4,6 +4,7 @@ void hgruntthink(int entity)
 	{
 		if (HasEntProp(entity,Prop_Data,"m_NPCState"))
 		{
+			//heal scr npc_human_medic
 			int statechk = GetEntProp(entity,Prop_Data,"m_NPCState");
 			int sleepchk = GetEntProp(entity,Prop_Data,"m_SleepState");
 			//0 none - 4 scripting

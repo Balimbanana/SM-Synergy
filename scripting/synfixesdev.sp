@@ -4,6 +4,7 @@
 #include <synfixes>
 #include <synfixes/synfixesglobals>
 #include <synfixes/env_mortar_controller>
+#include <synfixes/env_dispenser>
 #include <synfixes/npc_abrams>
 #include <synfixes/npc_alien_controller>
 #include <synfixes/npc_alien_grunt>
@@ -102,8 +103,9 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool LongJumpMode = false;
 bool norunagain = false;
+bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "2.0015"
+#define PLUGIN_VERSION "2.0016"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -319,6 +321,19 @@ public void OnPluginStart()
 		HookConVarChange(cvar, antikillch);
 	}
 	CloseHandle(cvar);
+	cvar = FindConVar("sm_blocktripmine_damage");
+	if (cvar != INVALID_HANDLE)
+	{
+		BlockTripMineDamage = GetConVarBool(cvar);
+		HookConVarChange(cvar, blocktripmindmgech);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_blocktripmine_damage", "1", "Prevent players from breaking eachothers planted tripmines.", _, true, 0.0, true, 1.0);
+		BlockTripMineDamage = GetConVarBool(cvar);
+		HookConVarChange(cvar, blocktripmindmgech);
+	}
+	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -449,6 +464,15 @@ public Action bmcvars(Handle timer)
 	cvarchk = FindConVar("sk_bullsquid_health");
 	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_health","60",".",_,true,0.0,false);
 	CloseHandle(cvarchk);
+	cvarchk = FindConVar("sk_bullsquid_bite_dmg");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_bite_dmg","25",".",_,true,0.0,false);
+	CloseHandle(cvarchk);
+	cvarchk = FindConVar("sk_bullsquid_whip_dmg");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_whip_dmg","35",".",_,true,0.0,false);
+	CloseHandle(cvarchk);
+	cvarchk = FindConVar("sk_bullsquid_whip_force");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_whip_force","300",".",_,true,0.0,false);
+	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_alien_grunt_health");
 	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_alien_grunt_health","90",".",_,true,0.0,false);
 	CloseHandle(cvarchk);
@@ -499,6 +523,11 @@ public Action bmcvars(Handle timer)
 		slavezap = GetConVarInt(cvarchk);
 	}
 	HookConVarChange(cvarchk,vortzapch);
+	CloseHandle(cvarchk);
+	cvarchk = FindConVar("sk_sentry_firerate");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_sentry_firerate","0.1","Sentry Fire Rate per second.",_,true,0.0,false);
+	flSentryFireRate = GetConVarFloat(cvarchk);
+	HookConVarChange(cvarchk, sentryfireratech);
 	CloseHandle(cvarchk);
 	char savepath[256];
 	BuildPath(Path_SM,savepath,sizeof(savepath),"plugins");
@@ -642,6 +671,7 @@ public void OnMapStart()
 		CloseHandle(merchantscrd);
 		merchantscrd = CreateArray(32);
 		//ClearArray(nextweapreset);
+		bulletindx = PrecacheModel("models/weapons/w_bullet.mdl");
 		FindGlobals(-1);
 		for (int i = 1;i<MaxClients+1;i++)
 		{
@@ -669,6 +699,10 @@ public void OnMapStart()
 		Handle autobuildcv = FindConVar("rebuildents");
 		if (autobuildcv != INVALID_HANDLE) autorebuild = GetConVarInt(autobuildcv);
 		CloseHandle(autobuildcv);
+		if (StrContains(gamedescoriginal,"LFE",false) != -1)
+		{
+			rebuildentsset = true;
+		}
 		bool syn1810act = false;
 		if (StrContains(gamedescoriginal,"synergy",false) != -1)
 		{
@@ -854,12 +888,17 @@ public void OnMapStart()
 			if (StrEqual(fixuptmp[1],"|",false)) Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
 			else Format(contentdata,sizeof(contentdata),"%s",fixuptmp[0]);
 		}
+		else
+		{
+			ReplaceStringEx(mapbuf,sizeof(mapbuf),"_","");
+		}
 		CloseHandle(cvar);
 		if (strlen(contentdata) > 1)
 		{
 			Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s%s",contentdata,mapbuf);
 			if (!FileExists(mapbuf,true,NULL_STRING)) ReplaceStringEx(mapbuf,sizeof(mapbuf),".ent2",".ent");
 		}
+		else if (!FileExists(mapbuf,true,NULL_STRING)) ReplaceStringEx(mapbuf,sizeof(mapbuf),".ent2",".ent");
 		if ((!FileExists(mapbuf,true,NULL_STRING)) && (DirExists("maps/ent_cache",false)))
 		{
 			Handle mdirlisting = OpenDirectory("maps/ent_cache",false);
@@ -872,7 +911,7 @@ public void OnMapStart()
 					{
 						if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
 						{
-							if (StrContains(buff,mapbuf,false) != -1)
+							if (StrContains(mapbuf,buff,false) != -1)
 							{
 								char tmp[64];
 								Format(tmp,sizeof(tmp),"%s",buff);
@@ -929,6 +968,7 @@ public void OnMapStart()
 		findstraymdl(-1,"item_battery");
 		findstraymdl(-1,"env_xen_pushpad");
 		findstraymdl(-1,"env_mortar_controller");
+		findstraymdl(-1,"env_dispenser");
 		findentlist(MaxClients+1,"npc_*");
 		findentlist(MaxClients+1,"monster_*");
 		int jstat = FindEntityByClassname(MaxClients+1,"prop_vehicle_jeep");
@@ -996,6 +1036,7 @@ public void OnMapStart()
 		PushArrayString(customentlist,"npc_tentacle");
 		PushArrayString(customentlist,"npc_gonarch");
 		PushArrayString(customentlist,"npc_babycrab");
+		PushArrayString(customentlist,"npc_bmsgargantua");
 		PushArrayString(customentlist,"npc_synth_scanner");
 		PushArrayString(customentlist,"monster_gman");
 		PushArrayString(customentlist,"monster_scientist");
@@ -1076,6 +1117,7 @@ public void OnMapStart()
 		PushArrayString(customentlist,"env_mortar_controller");
 		PushArrayString(customentlist,"env_mortar_launcher");
 		PushArrayString(customentlist,"env_xen_pushpad");
+		PushArrayString(customentlist,"env_dispenser");
 		PushArrayString(customentlist,"prop_surgerybot");
 		PushArrayString(customentlist,"func_conveyor");
 		PushArrayString(customentlist,"func_minefield");
@@ -1688,6 +1730,8 @@ public void OnClientPutInServer(int client)
 		CreateTimer(0.5,clspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
 		CreateTimer(1.0,ReBuildClientCustoms,_,TIMER_FLAG_NO_MAPCHANGE);
 		if (forcehdr) QueryClientConVar(client,"mat_hdr_level",hdrchk,0);
+		if (StrContains(mapbuf,"bm_c",false) != -1) QueryClientConVar(client,"viewmodel_fov",viewmdlchk,1);
+		else QueryClientConVar(client,"viewmodel_fov",viewmdlchk,0);
 		QueryClientConVar(client,"cc_lang",langchk,0);
 		showcc[client] = false;
 		QueryClientConVar(client,"closecaption",checkccsettings,0);
@@ -2545,6 +2589,18 @@ public void hdrchk(QueryCookie cookie, int client, ConVarQueryResult result, con
 {
 	if ((StrEqual(cvarValue,"0",false)) || (StrEqual(cvarValue,"1",false)))
 		ClientCommand(client,"mat_hdr_level 2");
+}
+
+public void viewmdlchk(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, any value)
+{
+	if ((StringToInt(cvarValue) < 80) && (value == 1))
+	{
+		ClientCommand(client,"viewmodel_fov 86");
+	}
+	else if ((StringToInt(cvarValue) == 86) && (value == 0))
+	{
+		ClientCommand(client,"viewmodel_fov 75");
+	}
 }
 
 public void langchk(QueryCookie cookie, int client, ConVarQueryResult result, const char[] cvarName, const char[] cvarValue, any value)
@@ -3852,6 +3908,7 @@ public Action onxenspawn(const char[] output, int caller, int activator, float d
 {
 	if (customents)
 	{
+		//PrintToServer("NPCMaker %i spawn %i",caller,activator);
 		if (IsValidEntity(caller))
 		{
 			char clschk[24];
@@ -3886,6 +3943,8 @@ public Action onxenspawn(const char[] output, int caller, int activator, float d
 						}
 					}
 				}
+				iActiveSpawnEnt = activator;
+				iActiveSpawner = caller;
 			}
 			else
 			{
@@ -3936,136 +3995,6 @@ public Action reducescale(Handle timer, int entity)
 		}
 	}
 	return Plugin_Handled;
-}
-
-public Action env_mortarcontrolleractivate(int entity, int activator, int caller, UseType type, float value)
-{
-	//PrintToServer("EntUse %i %i %i %i",entity,activator,caller,type);
-	if ((activator < MaxClients) && (activator > 0))
-	{
-		int uiact = GetEntPropEnt(entity,Prop_Data,"m_hEffectEntity");
-		if (IsValidEntity(uiact))
-		{
-			int plyact = GetEntPropEnt(uiact,Prop_Data,"m_player");
-			if (plyact == -1) AcceptEntityInput(uiact,"Activate",activator);
-			else if (plyact == activator) AcceptEntityInput(uiact,"Deactivate",activator);
-		}
-	}
-}
-
-public void env_mortarcontroller(const char[] output, int caller, int activator, float delay)
-{
-	if (IsValidEntity(caller))
-	{
-		//PrintToServer("Output %s from %i to %i",output,activator,caller);
-		if (HasEntProp(caller,Prop_Data,"m_hEffectEntity"))
-		{
-			int pv = GetEntPropEnt(caller,Prop_Data,"m_hEffectEntity");
-			if (IsValidEntity(pv))
-			{
-				float orgs[3];
-				float angs[3];
-				if (HasEntProp(pv,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(pv,Prop_Data,"m_vecAbsOrigin",orgs);
-				else if (HasEntProp(pv,Prop_Send,"m_vecOrigin")) GetEntPropVector(pv,Prop_Send,"m_vecOrigin",orgs);
-				GetEntPropVector(pv,Prop_Data,"m_angAbsRotation",angs);
-				float Time = GetTickedTime();
-				if (StrEqual(output,"PlayerOff",false))
-				{
-					AcceptEntityInput(pv,"Disable",activator);
-					float stop[3];
-					TeleportEntity(pv,NULL_VECTOR,NULL_VECTOR,stop);
-				}
-				else if ((StrEqual(output,"PressedAttack",false)) && (centnextatk[caller] < Time))
-				{
-					int mortarcontrol = GetEntPropEnt(pv,Prop_Data,"m_hEffectEntity");
-					if (IsValidEntity(mortarcontrol))
-					{
-						char mortarfirefrom[64];
-						GetEntPropString(mortarcontrol,Prop_Data,"m_iszResponseContext",mortarfirefrom,sizeof(mortarfirefrom));
-						if (strlen(mortarfirefrom) > 0)
-						{
-							int firefrom = findtrack(-1,"env_mortar_launcher",mortarfirefrom);
-							if ((!IsValidEntity(firefrom)) || (firefrom == 0)) firefrom = pv;
-							if (IsValidEntity(firefrom))
-							{
-								float fhitpos[3];
-								float shootvel[3];
-								float firefrompos[3];
-								float toang[3];
-								Handle hhitpos = INVALID_HANDLE;
-								TR_TraceRayFilter(orgs,angs,MASK_SHOT,RayType_Infinite,TraceEntityFilter,pv);
-								TR_GetEndPosition(fhitpos,hhitpos);
-								CloseHandle(hhitpos);
-								if (HasEntProp(firefrom,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(firefrom,Prop_Data,"m_vecAbsOrigin",firefrompos);
-								else if (HasEntProp(firefrom,Prop_Send,"m_vecOrigin")) GetEntPropVector(firefrom,Prop_Send,"m_vecOrigin",firefrompos);
-								MakeVectorFromPoints(firefrompos,orgs,shootvel);
-								GetVectorAngles(shootvel,toang);
-								int mortar = CreateEntityByName("prop_physics_override");
-								if (mortar != -1)
-								{
-									DispatchKeyValue(mortar,"model","models/props_st/st_missile.mdl");
-									DispatchKeyValue(mortar,"solid","6");
-									DispatchKeyValue(mortar,"spawnflags","32");//16 32
-									DispatchKeyValue(mortar,"inertiaScale","5.0");
-									DispatchKeyValue(mortar,"massScale","5");
-									DispatchKeyValue(mortar,"health","1");
-									DispatchKeyValue(mortar,"classname","grenade_mortar_large");
-									TeleportEntity(mortar,firefrompos,toang,NULL_VECTOR);
-									DispatchSpawn(mortar);
-									ActivateEntity(mortar);
-									ScaleVector(shootvel,2.0);
-									TeleportEntity(mortar,NULL_VECTOR,NULL_VECTOR,shootvel);
-									SetEntPropEnt(mortar,Prop_Data,"m_hEffectEntity",pv);
-									Handle dppass = CreateDataPack();
-									WritePackCell(dppass,mortar);
-									WritePackFloat(dppass,fhitpos[0]);
-									WritePackFloat(dppass,fhitpos[1]);
-									WritePackFloat(dppass,fhitpos[2]);
-									CreateTimer(1.0,passmortar,dppass,TIMER_FLAG_NO_MAPCHANGE);
-									centnextatk[caller] = Time + 3.0;
-									if (FindStringInArray(precachedarr,"env_mortar_launcher") == -1)
-									{
-										char searchprecache[128];
-										Format(searchprecache,sizeof(searchprecache),"sound/weapons/mortar/");
-										recursion(searchprecache);
-										PushArrayString(precachedarr,"env_mortar_launcher");
-									}
-									char snd[128];
-									int randlaunch = GetRandomInt(1,3);
-									if (randlaunch == 3) Format(snd,sizeof(snd),"weapons\\mortar\\mortar_launch_shell.wav");
-									else Format(snd,sizeof(snd),"weapons\\mortar\\mortar_launch%i.wav",randlaunch);
-									EmitSoundToAll(snd, mortar, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
-									HookSingleEntityOutput(mortar,"OnBreak",MortarExplodeByBreak);
-									SDKHook(mortar,SDKHook_StartTouch,MortarExplode);
-								}
-							}
-						}
-					}
-				}
-				else if ((StrContains(output,"Unpressed",false) == -1) && (!StrEqual(output,"PressedAttack",false)))
-				{
-					float loc[3];
-					if (StrEqual(output,"PressedMoveLeft",false)) angs[1]+=90.0;
-					else if (StrEqual(output,"PressedMoveRight",false)) angs[1]-=90.0;
-					else if (StrEqual(output,"PressedBack",false)) angs[1]-=180.0;
-					loc[0] = (orgs[0] + (100.0 * Cosine(DegToRad(angs[1]))));
-					loc[1] = (orgs[1] + (100.0 * Sine(DegToRad(angs[1]))));
-					loc[2] = (orgs[2]);
-					if (!TR_PointOutsideWorld(loc))
-					{
-						float shootvel[3];
-						MakeVectorFromPoints(orgs,loc,shootvel);
-						TeleportEntity(pv,NULL_VECTOR,NULL_VECTOR,shootvel);
-					}
-				}
-				else
-				{
-					float stop[3];
-					TeleportEntity(pv,NULL_VECTOR,NULL_VECTOR,stop);
-				}
-			}
-		}
-	}
 }
 
 public Action SetupMine(int mine)
@@ -4694,6 +4623,8 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			readoutputstp(caller,targn,tmpout,"TakeAmmo",origin,actmod);
 			readoutputstp(caller,targn,tmpout,"TakeAllAmmo",origin,actmod);
 			readoutputstp(caller,targn,tmpout,"Test",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"Activate",origin,actmod);
+			readoutputstp(caller,targn,tmpout,"Break",origin,actmod);
 		}
 		readoutputstp(caller,targn,tmpout,"SetMass",origin,actmod);
 		readoutputstp(caller,targn,tmpout,"Fade",origin,actmod);
@@ -5116,6 +5047,11 @@ void resetspawners(int ent, char[] clsname)
 			{
 				SetEntPropString(thisent,Prop_Data,"m_iszNPCClassname","npc_antlion");
 				DispatchKeyValue(thisent,"NPCType","npc_antlion");
+			}
+			else if ((StrEqual(clschk,"npc_sentry_ground",false)) || (StrEqual(clschk,"npc_sentry_ceiling",false)))
+			{
+				SetEntPropString(thisent,Prop_Data,"m_iszNPCClassname","generic_actor");
+				DispatchKeyValue(thisent,"NPCType","generic_actor");
 			}
 			else
 			{
@@ -6326,6 +6262,12 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							WritePackString(dp,"models/xenians/headcrab.mdl");
 						}
 					}
+					else if (StrEqual(cls,"npc_bmsgargantua",false))
+					{
+						Format(cls,sizeof(cls),"generic_actor");
+						PushArrayString(passedarr,"model");
+						PushArrayString(passedarr,"models/xenians/garg.mdl");
+					}
 					else if (StrEqual(cls,"npc_synth_scanner",false))
 					{
 						Format(cls,sizeof(cls),"npc_cscanner");
@@ -6399,6 +6341,10 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						PushArrayString(passedarr,"2");
 						PushArrayString(passedarr,"DefaultAnim");
 						PushArrayString(passedarr,"idle01");
+					}
+					else if (StrEqual(cls,"env_dispenser",false))
+					{
+						Format(cls,sizeof(cls),"logic_relay");
 					}
 					else if (StrEqual(cls,"func_minefield",false))
 					{
@@ -7678,6 +7624,45 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							GetArrayString(passedarr,findjumptarg,jumptarg,sizeof(jumptarg));
 							SetEntPropString(ent,Prop_Data,"m_iszResponseContext",jumptarg);
 							findinfotarg(-1,jumptarg,ent);
+						}
+					}
+					else if (StrEqual(oldcls,"env_dispenser",false))
+					{
+						char vals[64];
+						int findval = FindStringInArray(passedarr,"spawnmodel");
+						if (findval != -1)
+						{
+							findval++;
+							GetArrayString(passedarr,findval,vals,sizeof(vals));
+							DispatchKeyValue(ent,"model",vals);
+						}
+						findval = FindStringInArray(passedarr,"spawnangles");
+						if (findval != -1)
+						{
+							findval++;
+							GetArrayString(passedarr,findval,vals,sizeof(vals));
+							DispatchKeyValue(ent,"angles",vals);
+						}
+						findval = FindStringInArray(passedarr,"capacity");
+						if (findval != -1)
+						{
+							findval++;
+							GetArrayString(passedarr,findval,vals,sizeof(vals));
+							DispatchKeyValue(ent,"max_health",vals);
+						}
+						findval = FindStringInArray(passedarr,"skinmin");
+						if (findval != -1)
+						{
+							findval++;
+							GetArrayString(passedarr,findval,vals,sizeof(vals));
+							SetEntProp(ent,Prop_Data,"m_iTeamNum",StringToInt(vals));
+						}
+						findval = FindStringInArray(passedarr,"skinmax");
+						if (findval != -1)
+						{
+							findval++;
+							GetArrayString(passedarr,findval,vals,sizeof(vals));
+							SetEntProp(ent,Prop_Data,"m_iInitialTeamNum",StringToInt(vals));
 						}
 					}
 					else if (StrEqual(oldcls,"func_minefield",false))
@@ -9390,6 +9375,40 @@ void readcacheexperimental(int client)
 							GetArrayString(passedarr,findjumptarg,jumptarg,sizeof(jumptarg));
 							SetEntPropString(ent,Prop_Data,"m_iszResponseContext",jumptarg);
 							findinfotarg(-1,jumptarg,ent);
+						}
+					}
+					else if (StrEqual(oldcls,"env_dispenser",false))
+					{
+						char vals[64];
+						int findval = FindStringInArray(passedarr,"spawnmodel");
+						if (findval != -1)
+						{
+							GetArrayString(passedarr,findval,vals,sizeof(vals));
+							DispatchKeyValue(ent,"model",vals);
+						}
+						findval = FindStringInArray(passedarr,"spawnangles");
+						if (findval != -1)
+						{
+							GetArrayString(passedarr,findval,vals,sizeof(vals));
+							DispatchKeyValue(ent,"angles",vals);
+						}
+						findval = FindStringInArray(passedarr,"capacity");
+						if (findval != -1)
+						{
+							GetArrayString(passedarr,findval,vals,sizeof(vals));
+							DispatchKeyValue(ent,"max_health",vals);
+						}
+						findval = FindStringInArray(passedarr,"skinmin");
+						if (findval != -1)
+						{
+							GetArrayString(passedarr,findval,vals,sizeof(vals));
+							isattacking[ent] = StringToInt(vals);
+						}
+						findval = FindStringInArray(passedarr,"skinmax");
+						if (findval != -1)
+						{
+							GetArrayString(passedarr,findval,vals,sizeof(vals));
+							timesattacked[ent] = StringToInt(vals);
 						}
 					}
 					else if (StrEqual(oldcls,"func_minefield",false))
@@ -11383,6 +11402,35 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				EmitSoundToAll("npc\\ichthyosaur\\die1.wav", killed, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 				CustEventSet = true;
 			}
+			else if (StrEqual(clsname,"npc_bmsgargantua",false))
+			{
+				float orgs[3];
+				float angs[3];
+				if (HasEntProp(killed,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(killed,Prop_Data,"m_vecAbsOrigin",orgs);
+				else if (HasEntProp(killed,Prop_Data,"m_vecOrigin")) GetEntPropVector(killed,Prop_Data,"m_vecOrigin",orgs);
+				if (HasEntProp(killed,Prop_Data,"m_angRotation")) GetEntPropVector(killed,Prop_Data,"m_angRotation",angs);
+				EmitAmbientSound("npc\\garg\\garg_beam_start.wav", orgs, killed, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
+				EmitAmbientSound("npc\\garg\\garg_beam_stop.wav", orgs, killed, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
+				for (int i = 0;i<4;i++)
+				{
+					if ((IsValidEntity(gargfiretarg[killed][i])) && (gargfiretarg[killed][i] != 0))
+					{
+						AcceptEntityInput(gargfiretarg[killed][i],"kill");
+						gargfiretarg[killed][i] = 0;
+					}
+				}
+				int mdlset = GetEntPropEnt(killed,Prop_Data,"m_hEffectEntity");
+				if (IsValidEntity(mdlset))
+				{
+					isattacking[mdlset] = 5;
+				}
+				RunSeq(killed,orgs,angs,"powerup_electrocute","",0,true);
+				CreateTimer(7.2,DissolveGarg,killed,TIMER_FLAG_NO_MAPCHANGE);
+				viccol = -16732161;
+				EmitSoundToAll("npc\\garg\\garg_die1.wav", killed, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+				Format(clsname,sizeof(clsname),"npc_gargantua");
+				CustEventSet = true;
+			}
 			else if (StrEqual(clsname,"npc_snark",false))
 			{
 				char snd[64];
@@ -11558,7 +11606,7 @@ public Action Event_SynEntityKilled(Handle event, const char[] name, bool Broadc
 			{
 				viccol = -16777041;
 			}
-			else if ((StrEqual(clsname,"npc_ichthyosaur",false)) || (StrEqual(clsname,"monster_ichthyosaur",false)))
+			else if ((StrEqual(clsname,"npc_ichthyosaur",false)) || (StrEqual(clsname,"monster_ichthyosaur",false)) || (StrEqual(clsname,"npc_bmsgargantua",false)))
 			{
 				viccol = -16732161;
 			}
@@ -12055,6 +12103,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								spawnpointstates(lineorgrescom[2],delay);
 							}
+							else if ((StrEqual(input,"Activate",false)) || (StrEqual(input,"Break",false)))
+							{
+								FindDispensers(input,lineorgrescom[0],delay);
+							}
 							else if (StrEqual(input,"CLCommand",false))
 							{
 								if (strlen(lineorgrescom[2]) > 0) CLToAllComm(lineorgrescom[2],delay);
@@ -12175,6 +12227,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								spawnpointstates(lineorgrescom[2],delay);
 							}
+							else if ((StrEqual(input,"Activate",false)) || (StrEqual(input,"Break",false)))
+							{
+								FindDispensers(input,lineorgrescom[0],delay);
+							}
 							else if (StrEqual(input,"CLCommand",false))
 							{
 								if (strlen(lineorgrescom[2]) > 0) CLToAllComm(lineorgrescom[2],delay);
@@ -12279,6 +12335,8 @@ void readoutputsforinputs()
 			PushArrayString(inputs,",TakeAmmo,");
 			PushArrayString(inputs,",TakeAllAmmo,");
 			PushArrayString(inputs,",Test,,");
+			PushArrayString(inputs,",Activate,,");
+			PushArrayString(inputs,",Break,,");
 		}
 		if (syn56act)
 		{
@@ -13866,6 +13924,22 @@ public void OnClientDisconnect(int client)
 	DisplayedChapterTitle[client] = false;
 }
 
+public Action SynTripmineTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
+{
+	if (BlockTripMineDamage)
+	{
+		int owner = -1;
+		if (HasEntProp(victim,Prop_Data,"m_hOwner")) owner = GetEntPropEnt(victim,Prop_Data,"m_hOwner");
+		if ((owner == -1) && (HasEntProp(victim,Prop_Data,"m_hThrower"))) owner = GetEntPropEnt(victim,Prop_Data,"m_hThrower");
+		if ((IsValidEntity(owner)) && (owner < MaxClients+1) && (attacker > 0) && (attacker < MaxClients+1))
+		{
+			damage = 0.0;
+			return Plugin_Changed;
+		}
+	}
+	return Plugin_Continue;
+}
+
 public Action TakeDamageAnts(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
 {
 	char atkcls[32];
@@ -14451,7 +14525,7 @@ public Action recallreset(Handle timer)
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
-	if (((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false))) && (!StrEqual(classname,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(classname,"npc_bullseye",false)) && (!StrEqual(classname,"env_xen_portal",false)) && (!StrEqual(classname,"env_xen_portal_template",false)) && (!StrEqual(classname,"npc_maker",false)) && (!StrEqual(classname,"npc_template_maker",false)) && (StrContains(classname,"info_",false) == -1) && (StrContains(classname,"game_",false) == -1) && (StrContains(classname,"trigger_",false) == -1) && (FindValueInArray(entlist,entity) == -1))
+	if (((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false))) && (!StrEqual(classname,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(classname,"npc_enemyfinder",false)) && (!StrEqual(classname,"npc_bullseye",false)) && (!StrEqual(classname,"env_xen_portal",false)) && (!StrEqual(classname,"env_xen_portal_template",false)) && (!StrEqual(classname,"npc_maker",false)) && (!StrEqual(classname,"npc_template_maker",false)) && (StrContains(classname,"info_",false) == -1) && (StrContains(classname,"game_",false) == -1) && (StrContains(classname,"trigger_",false) == -1) && (FindValueInArray(entlist,entity) == -1))
 	{
 		PushArrayCell(entlist,entity);
 		if (((StrEqual(classname,"npc_citizen",false)) || (StrEqual(classname,"npc_alyx",false))) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
@@ -14470,6 +14544,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 		else if (StrEqual(classname,"npc_antlion",false))
 		{
 			SDKHook(entity, SDKHook_OnTakeDamage, TakeDamageAnts);
+		}
+		else if ((StrEqual(classname,"npc_tripmine",false)) || (StrEqual(classname,"npc_satchel",false)))
+		{
+			SDKHook(entity, SDKHook_OnTakeDamage, SynTripmineTakeDamage);
 		}
 	}
 	if ((StrEqual(classname,"item_health_drop",false)) || (StrEqual(classname,"item_ammo_drop",false)) || (StrEqual(classname,"item_ammo_pack",false)))
@@ -14538,6 +14616,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 	if ((StrContains(classname,"weapon_",false) == 0) && (!StrEqual(classname,"weapon_striderbuster",false)))
 	{
 		SDKHookEx(entity,SDKHook_Spawn,resetweapmv);
+	}
+	if (StrEqual(classname,"generic_actor",false))
+	{
+		SDKHookEx(entity,SDKHook_Spawn,chkgeneric);
 	}
 	if (StrEqual(classname,"rpg_missile",false))
 	{
@@ -14703,6 +14785,14 @@ public void OnEntityDestroyed(int entity)
 					AcceptEntityInput(spr,"kill");
 				}
 				AcceptEntityInput(effectent,"kill");
+			}
+			for (int i = 0;i<5;i++)
+			{
+				if ((IsValidEntity(gargfiretarg[entity][i])) && (gargfiretarg[entity][i] != 0))
+				{
+					AcceptEntityInput(gargfiretarg[entity][i],"kill");
+					gargfiretarg[entity][i] = -1;
+				}
 			}
 		}
 		else if ((StrContains(cls,"choreo",false) != -1) || (StrEqual(cls,"prop_vehicle_prisoner_pod",false)))
@@ -15024,7 +15114,7 @@ public Action custent(Handle timer, int entity)
 				}
 			}
 		}
-		else if (StrEqual(entcls,"item_ammo_crate",false))
+		if (StrEqual(entcls,"item_ammo_crate",false))
 		{
 			if (HasEntProp(entity,Prop_Data,"m_ModelName"))
 			{
@@ -15053,6 +15143,33 @@ public Action custent(Handle timer, int entity)
 			if (HasEntProp(entity,Prop_Data,"m_nBody"))
 			{
 				if (GetEntProp(entity,Prop_Data,"m_nBody") == 1) SetEntProp(entity,Prop_Data,"m_nBody",0);
+			}
+		}
+		else if (StrContains(entcls,"npc_bmsgargantua",false) == 0)
+		{
+			if (FileExists("models/xenians/garg.mdl",true,NULL_STRING))
+			{
+				if (FindStringInArray(precachedarr,"npc_bmsgargantua") == -1)
+				{
+					char searchprecache[128];
+					Format(searchprecache,sizeof(searchprecache),"sound/npc/garg/");
+					recursion(searchprecache);
+					PushArrayString(precachedarr,"npc_bmsgargantua");
+				}
+				DispatchKeyValue(entity,"classname","npc_bmsgargantua");
+				ReplaceString(cls,sizeof(cls),"npc_bmsgargantua","");
+				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				SDKHookEx(entity,SDKHook_Think,bmsgargthink);
+				SDKHookEx(entity,SDKHook_OnTakeDamage,bmsgargtkdmg);
+				int healthset = 800;
+				Handle cvarh = FindConVar("sk_bmsgargantua_health");
+				if (cvarh != INVALID_HANDLE)
+				{
+					healthset = GetConVarInt(cvarh);
+				}
+				CloseHandle(cvarh);
+				SetEntProp(entity,Prop_Data,"m_iHealth",healthset);
+				SetEntProp(entity,Prop_Data,"m_iMaxHealth",healthset);
 			}
 		}
 		if ((strlen(cls) > 0) && (!StrEqual(entcls,"prop_physics",false)) && (!StrEqual(entcls,"prop_dynamic",false)) && (!StrEqual(entcls,"prop_ragdoll",false)) && (StrContains(entcls,"ai_",false) == -1) && (StrContains(entcls,"logic_",false) == -1) && (StrContains(entcls,"game_",false) == -1))
@@ -15580,25 +15697,6 @@ public Action custent(Handle timer, int entity)
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
 				}
 			}
-			else if (StrContains(cls,"npc_bmsgargantua",false) == 0)
-			{
-				if (FileExists("models/xenians/garg.mdl",true,NULL_STRING))
-				{
-					if (FindStringInArray(precachedarr,"npc_bmsgargantua") == -1)
-					{
-						char searchprecache[128];
-						Format(searchprecache,sizeof(searchprecache),"sound/npc/garg/");
-						recursion(searchprecache);
-						PushArrayString(precachedarr,"npc_bmsgargantua");
-					}
-					DispatchKeyValue(entity,"classname","npc_bmsgargantua");
-					ReplaceString(cls,sizeof(cls),"npc_bmsgargantua","");
-					SetEntPropString(entity,Prop_Data,"m_iName",cls);
-					SDKHookEx(entity,SDKHook_Think,bmsgargthink);
-					CloseHandle(dp);
-					dp = INVALID_HANDLE;
-				}
-			}
 			else if (StrContains(cls,"npc_snark",false) == 0)
 			{
 				if (FileExists("models/xenians/snark.mdl",true,NULL_STRING))
@@ -15800,6 +15898,54 @@ public Action custent(Handle timer, int entity)
 				else
 					WritePackString(dp,"models/xenians/headcrab.mdl");
 			}
+			else if (StrContains(cls,"npc_sentry_ceiling",false) == 0)
+			{
+				DispatchKeyValue(entity,"classname","npc_sentry_ceiling");
+				ReplaceString(cls,sizeof(cls),"npc_sentry_ceiling","");
+				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				if (FileExists("models/NPCs/sentry_ceiling.mdl",true,NULL_STRING))
+				{
+					WritePackString(dp,"models/NPCs/sentry_ceiling.mdl");
+					if (FindStringInArray(precachedarr,"npc_sentry_ground") == -1)
+					{
+						PrecacheSound("weapons\\mp5\\empty.wav",true);
+						recursion("sound/npc/sentry_ceiling/");
+						PushArrayString(precachedarr,"npc_sentry_ground");
+					}
+					int mhchk = GetEntProp(entity,Prop_Data,"m_iMaxHealth");
+					Handle cvar = FindConVar("sk_sentry_ceiling_health");
+					if (cvar != INVALID_HANDLE)
+					{
+						int cvarh = GetConVarInt(cvar);
+						if (mhchk != cvarh)
+						{
+							SetEntProp(entity,Prop_Data,"m_iHealth",cvarh);
+							SetEntProp(entity,Prop_Data,"m_iMaxHealth",cvarh);
+						}
+					}
+					CloseHandle(cvar);
+					SDKHookEx(entity,SDKHook_Think,sentriesthink);
+				}
+			}
+			else if (StrContains(cls,"npc_sentry_ground",false) == 0)
+			{
+				DispatchKeyValue(entity,"classname","npc_sentry_ground");
+				ReplaceString(cls,sizeof(cls),"npc_sentry_ground","");
+				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				if (FileExists("models/NPCs/sentry_ground.mdl",true,NULL_STRING))
+				{
+					WritePackString(dp,"models/NPCs/sentry_ground.mdl");
+					if (FindStringInArray(precachedarr,"npc_sentry_ground") == -1)
+					{
+						PrecacheSound("weapons\\mp5\\empty.wav",true);
+						recursion("sound/npc/sentry_ground/");
+						PushArrayString(precachedarr,"npc_sentry_ground");
+					}
+					if (HasEntProp(entity,Prop_Data,"m_bloodColor")) SetEntProp(entity,Prop_Data,"m_bloodColor",3);
+					SDKHookEx(entity,SDKHook_Think,sentriesthink);
+					SDKHookEx(entity,SDKHook_OnTakeDamage,notkdmg);
+				}
+			}
 			else
 			{
 				CloseHandle(dp);
@@ -15930,657 +16076,88 @@ void setuprelations(char[] cls)
 	}
 	if ((StrEqual(cls,"npc_alien_slave",false)) || (StrEqual(cls,"npc_alien_grunt",false)) || (StrEqual(cls,"npc_alien_grunt_unarmored",false)))
 	{
-		int aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_alien_slave");
-		DispatchKeyValue(aidisp,"target","player");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","99");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","npc_alien_slave");
-		DispatchKeyValue(aidisp,"target","npc_alien_controller");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","npc_alien_controller");
-		DispatchKeyValue(aidisp,"target","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","npc_alien_controller");
-		DispatchKeyValue(aidisp,"target","npc_alien_grunt_unarmored");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","npc_alien_controller");
-		DispatchKeyValue(aidisp,"target","npc_houndeye");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","npc_alien_controller");
-		DispatchKeyValue(aidisp,"target","npc_bullsquid");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_alien_controller");
-		DispatchKeyValue(aidisp,"target","player");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","99");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"target","player");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","99");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","npc_alien_slave");
-		DispatchKeyValue(aidisp,"target","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","99");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"target","npc_human_grenadier");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"target","npc_human_commander");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"target","npc_human_medic");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"target","npc_human_grunt");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_turret_ceiling");
-		DispatchKeyValue(aidisp,"target","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","40");
-		DispatchKeyValue(aidisp,"reciprocal","0");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"target","npc_headcrab");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","99");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"target","npc_gargantua");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","99");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
-		DispatchKeyValue(aidisp,"target","player");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","99");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","npc_alien_slave");
-		DispatchKeyValue(aidisp,"target","monster_alien_grunt");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","99");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
-		DispatchKeyValue(aidisp,"target","npc_human_grenadier");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
-		DispatchKeyValue(aidisp,"target","npc_human_commander");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
-		DispatchKeyValue(aidisp,"target","npc_human_medic");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
-		DispatchKeyValue(aidisp,"target","npc_human_grunt");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_turret_ceiling");
-		DispatchKeyValue(aidisp,"target","monster_alien_grunt");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","40");
-		DispatchKeyValue(aidisp,"reciprocal","0");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
-		DispatchKeyValue(aidisp,"target","npc_headcrab");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","99");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","monster_alien_grunt");
-		DispatchKeyValue(aidisp,"target","npc_gargantua");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","99");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
+		AddRel("npc_alien_slave","player","1","99");
+		AddRel("npc_alien_controller","npc_alien_slave","3","99");
+		AddRel("npc_alien_controller","npc_alien_grunt","3","99");
+		AddRel("npc_alien_controller","npc_alien_grunt_unarmored","3","99");
+		AddRel("npc_alien_controller","npc_houndeye","3","99");
+		AddRel("npc_alien_controller","npc_bullsquid","3","99");
+		AddRel("npc_alien_controller","player","1","99");
+		AddRel("npc_alien_grunt","player","1","99");
+		AddRel("npc_alien_grunt","npc_alien_slave","3","99");
+		AddRel("npc_alien_grunt","npc_human_grenadier","1","80");
+		AddRel("npc_alien_grunt","npc_human_commander","1","80");
+		AddRel("npc_alien_grunt","npc_human_medic","1","80");
+		AddRel("npc_alien_grunt","npc_human_grunt","1","80");
+		AddRel("npc_alien_grunt","npc_turret_ceiling","1","40");
+		AddRel("npc_alien_grunt","npc_headcrab","3","99");
+		AddRel("npc_alien_grunt","npc_gargantua","3","99");
+		AddRel("monster_alien_grunt","player","1","99");
+		AddRel("monster_alien_grunt","npc_alien_slave","3","99");
+		AddRel("monster_alien_grunt","npc_human_grenadier","1","80");
+		AddRel("monster_alien_grunt","npc_human_commander","1","80");
+		AddRel("monster_alien_grunt","npc_human_medic","1","80");
+		AddRel("monster_alien_grunt","npc_human_grunt","1","80");
+		AddRel("monster_alien_grunt","npc_turret_ceiling","1","40");
+		AddRel("monster_alien_grunt","npc_headcrab","3","99");
+		AddRel("monster_alien_grunt","npc_gargantua","3","99");
+		AddRel("monster_alien_grunt","npc_alien_grunt","3","99");
 	}
 	else if (StrEqual(cls,"npc_houndeye",false))
 	{
-		int aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_houndeye");
-		DispatchKeyValue(aidisp,"target","npc_human_scientist");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_houndeye");
-		DispatchKeyValue(aidisp,"target","npc_human_security");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","npc_houndeye");
-		DispatchKeyValue(aidisp,"target","npc_alien_slave");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
+		AddRel(cls,"npc_human_scientist","1","80");
+		AddRel(cls,"npc_human_security","1","80");
+		AddRel(cls,"npc_alien_slave","3","80");
 	}
 	else if ((StrEqual(cls,"npc_zombie_scientist",false)) || (StrEqual(cls,"npc_zombie_security",false)))
 	{
-		int aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_zombie_security");
-		DispatchKeyValue(aidisp,"target","npc_human_security");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","70");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","npc_zombie_security");
-		DispatchKeyValue(aidisp,"target","npc_gman");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","70");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_zombie_scientist");
-		DispatchKeyValue(aidisp,"target","npc_human_security");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","70");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","3");
-		DispatchKeyValue(aidisp,"subject","npc_zombie_scientist");
-		DispatchKeyValue(aidisp,"target","npc_gman");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","70");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_barnacle");
-		DispatchKeyValue(aidisp,"target","npc_human_scientist");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","70");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
+		AddRel("npc_zombie_security","npc_human_security","1","80");
+		AddRel("npc_zombie_security","npc_gman","3","99");
+		AddRel("npc_zombie_scientist","npc_human_security","1","80");
+		AddRel("npc_zombie_scientist","npc_gman","3","99");
+		AddRel("npc_barnacle","npc_human_scientist","1","80");
 	}
 	else if (StrEqual(cls,"npc_human_scientist",false))
 	{
-		int aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_scientist");
-		DispatchKeyValue(aidisp,"target","npc_sentry_ground");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_scientist");
-		DispatchKeyValue(aidisp,"target","npc_human_grunt");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_scientist");
-		DispatchKeyValue(aidisp,"target","npc_human_commander");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_scientist");
-		DispatchKeyValue(aidisp,"target","npc_human_grenadier");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_scientist");
-		DispatchKeyValue(aidisp,"target","npc_human_medic");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_scientist");
-		DispatchKeyValue(aidisp,"target","npc_alien_slave");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_scientist");
-		DispatchKeyValue(aidisp,"target","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_scientist");
-		DispatchKeyValue(aidisp,"target","npc_barnacle");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_scientist");
-		DispatchKeyValue(aidisp,"target","npc_sniper");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
+		AddRel(cls,"npc_sentry_ground","1","80");
+		AddRel(cls,"npc_human_grunt","1","80");
+		AddRel(cls,"npc_human_commander","1","80");
+		AddRel(cls,"npc_human_grenadier","1","80");
+		AddRel(cls,"npc_human_medic","1","80");
+		AddRel(cls,"npc_alien_slave","1","80");
+		AddRel(cls,"npc_alien_grunt","1","80");
+		AddRel(cls,"npc_barnacle","1","80");
+		AddRel(cls,"npc_sniper","1","80");
 	}
 	else if (StrEqual(cls,"npc_human_security",false))
 	{
-		int aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_security");
-		DispatchKeyValue(aidisp,"target","npc_sentry_ground");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_security");
-		DispatchKeyValue(aidisp,"target","npc_human_grunt");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_security");
-		DispatchKeyValue(aidisp,"target","npc_human_commander");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_security");
-		DispatchKeyValue(aidisp,"target","npc_human_grenadier");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_security");
-		DispatchKeyValue(aidisp,"target","npc_human_medic");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_security");
-		DispatchKeyValue(aidisp,"target","npc_alien_slave");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_security");
-		DispatchKeyValue(aidisp,"target","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_human_security");
-		DispatchKeyValue(aidisp,"target","npc_barnacle");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
+		AddRel(cls,"npc_sentry_ground","1","80");
+		AddRel(cls,"npc_human_grunt","1","80");
+		AddRel(cls,"npc_human_commander","1","80");
+		AddRel(cls,"npc_human_grenadier","1","80");
+		AddRel(cls,"npc_human_medic","1","80");
+		AddRel(cls,"npc_alien_slave","1","80");
+		AddRel(cls,"npc_alien_grunt","1","80");
+		AddRel(cls,"npc_barnacle","1","80");
 	}
 	else if (StrEqual(cls,"npc_abrams",false))
 	{
-		int aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_abrams");
-		DispatchKeyValue(aidisp,"target","player");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_abrams");
-		DispatchKeyValue(aidisp,"target","npc_alien_slave");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
-		aidisp = CreateEntityByName("ai_relationship");
-		DispatchKeyValue(aidisp,"disposition","1");
-		DispatchKeyValue(aidisp,"subject","npc_abrams");
-		DispatchKeyValue(aidisp,"target","npc_alien_grunt");
-		DispatchKeyValue(aidisp,"targetname","syn_relations");
-		DispatchKeyValue(aidisp,"rank","80");
-		DispatchKeyValue(aidisp,"reciprocal","1");
-		DispatchKeyValue(aidisp,"StartActive","1");
-		DispatchSpawn(aidisp);
-		ActivateEntity(aidisp);
-		AcceptEntityInput(aidisp,"ApplyRelationship");
-		PushArrayCell(customrelations,aidisp);
+		AddRel(cls,"player","1","80");
+		AddRel(cls,"npc_alien_slave","1","80");
+		AddRel(cls,"npc_alien_grunt","1","80");
+	}
+	else if (StrEqual(cls,"npc_bmsgargantua",false))
+	{
+		AddRel(cls,"npc_zombie","1","70");
+		AddRel(cls,"npc_zombine","1","70");
+		AddRel(cls,"npc_zombie_scientist","1","70");
+		AddRel(cls,"npc_zombie_security","1","70");
+		AddRel(cls,"npc_human_scientist","1","70");
+		AddRel(cls,"npc_human_security","1","70");
+		AddRel(cls,"npc_human_assassin","1","70");
+		AddRel(cls,"npc_human_commander","1","70");
+		AddRel(cls,"npc_human_grenadier","1","70");
+		AddRel(cls,"npc_human_grunt","1","70");
 	}
 	if (GetArraySize(customrelations) > 0)
 	{
@@ -16591,6 +16168,22 @@ void setuprelations(char[] cls)
 		}
 	}
 	return;
+}
+
+void AddRel(char[] cls, char[] target, char[] disp, char[] rank)
+{
+	int aidisp = CreateEntityByName("ai_relationship");
+	DispatchKeyValue(aidisp,"disposition",disp);
+	DispatchKeyValue(aidisp,"subject",cls);
+	DispatchKeyValue(aidisp,"target",target);
+	DispatchKeyValue(aidisp,"targetname","syn_relations");
+	DispatchKeyValue(aidisp,"rank",rank);
+	DispatchKeyValue(aidisp,"reciprocal","1");
+	DispatchKeyValue(aidisp,"StartActive","1");
+	DispatchSpawn(aidisp);
+	ActivateEntity(aidisp);
+	AcceptEntityInput(aidisp,"ApplyRelationship");
+	PushArrayCell(customrelations,aidisp);
 }
 
 void FindRelations(int ent, char[] cls)
@@ -16788,6 +16381,7 @@ public Action onreload(const char[] output, int caller, int activator, float del
 			findstraymdl(-1,"env_xen_portal_template");
 			findstraymdl(-1,"env_xen_pushpad");
 			findstraymdl(-1,"env_mortar_controller");
+			findstraymdl(-1,"env_dispenser");
 			findent(MaxClients+1,"info_player_equip");
 			for (int i = 0;i<GetArraySize(restorecustoments);i++)
 			{
@@ -17106,7 +16700,7 @@ void restoreent(Handle dp)
 			Format(clsname,sizeof(clsname),"npc_vortigaunt");
 		else if ((StrEqual(clsname,"npc_zombie_security",false)) || (StrEqual(clsname,"npc_zombie_security_torso",false)) || (StrEqual(clsname,"npc_gonarch",false)) || (StrEqual(clsname,"npc_zombie_worker",false)))
 			Format(clsname,sizeof(clsname),"npc_zombine");
-		else if (StrEqual(clsname,"npc_osprey",false))
+		else if ((StrEqual(clsname,"npc_osprey",false)) || (StrEqual(clsname,"npc_bmsgargantua",false)))
 			Format(clsname,sizeof(clsname),"generic_actor");
 		else if ((StrEqual(clsname,"npc_houndeye",false)) || (StrEqual(clsname,"monster_houndeye",false)) || (StrEqual(clsname,"npc_bullsquid",false)))
 			Format(clsname,sizeof(clsname),"npc_antlion");
@@ -17160,6 +16754,7 @@ void restoreent(Handle dp)
 			AcceptEntityInput(ent,"kill");
 			ent = -1;
 		}
+		//PrintToServer("RestoreEntDP %i %s %1.f %1.f %1.f",ent,clsname,porigin[0],porigin[1],porigin[2]);
 		if ((ent != -1) && (IsValidEntity(ent)))
 		{
 			bool setmdl = true;
@@ -17561,7 +17156,7 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				Format(clsname,sizeof(clsname),"npc_vortigaunt");
 			else if ((StrEqual(clsname,"npc_zombie_security",false)) || (StrEqual(clsname,"npc_zombie_security_torso",false)) || (StrEqual(clsname,"npc_gonarch",false)) || (StrEqual(clsname,"npc_zombie_worker",false)))
 				Format(clsname,sizeof(clsname),"npc_zombine");
-			else if (StrEqual(clsname,"npc_osprey",false))
+			else if ((StrEqual(clsname,"npc_osprey",false)) || (StrEqual(clsname,"npc_bmsgargantua",false)))
 				Format(clsname,sizeof(clsname),"generic_actor");
 			else if ((StrEqual(clsname,"npc_houndeye",false)) || (StrEqual(clsname,"monster_houndeye",false)) || (StrEqual(clsname,"npc_bullsquid",false)))
 				Format(clsname,sizeof(clsname),"npc_antlion");
@@ -18567,6 +18162,145 @@ public Action resetown(Handle timer, int entity)
 	}
 }
 
+public void chkgeneric(int entity)
+{
+	SDKUnhook(entity,SDKHook_Spawn,chkgeneric);
+	if (HasEntProp(entity,Prop_Data,"m_ModelName"))
+	{
+		char mdl[64];
+		char cls[64];
+		GetEntPropString(entity,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+		GetEntityClassname(entity,cls,sizeof(cls));
+		bool CreateBySpawner = false;
+		if ((strlen(mdl) < 3) && (StrEqual(cls,"generic_actor",false)))
+		{
+			if ((iActiveSpawnEnt == entity) && (IsValidEntity(iActiveSpawner)))
+			{
+				if (HasEntProp(iActiveSpawner,Prop_Data,"m_ChildTargetName"))
+				{
+					GetEntPropString(iActiveSpawner,Prop_Data,"m_ChildTargetName",cls,sizeof(cls));
+					PrintToServer("SpawnerEnt %i %i %s %s",iActiveSpawner,entity,cls,mdl);
+					iActiveSpawner = -1;
+					iActiveSpawnEnt = -1;
+					CreateBySpawner = true;
+				}
+			}
+			else
+			{
+				iActiveSpawner = -1;
+				iActiveSpawnEnt = -1;
+				AcceptEntityInput(entity,"kill");
+				PrintToServer("ErrorEnt %i %s %s",entity,cls,mdl);
+			}
+		}
+		else if (strlen(mdl) < 3)
+		{
+			AcceptEntityInput(entity,"kill");
+			PrintToServer("ErrorEnt %i %s %s",entity,cls,mdl);
+			return;
+		}
+		if ((StrContains(cls,"npc_sentry_ceiling",false) == 0) && (CreateBySpawner))
+		{
+			if (FileExists("models/NPCs/sentry_ceiling.mdl",true,NULL_STRING))
+			{
+				DispatchKeyValue(entity,"model","models/NPCs/sentry_ceiling.mdl");
+				DispatchKeyValue(entity,"classname","npc_sentry_ceiling");
+				ReplaceStringEx(cls,sizeof(cls),"npc_sentry_ceiling","");
+				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				if (!IsModelPrecached("models/NPCs/sentry_ceiling.mdl")) PrecacheModel("models/NPCs/sentry_ceiling.mdl",true);
+				SetEntityModel(entity,"models/NPCs/sentry_ceiling.mdl");
+				if (FindStringInArray(precachedarr,"npc_sentry_ground") == -1)
+				{
+					PrecacheSound("weapons\\mp5\\empty.wav",true);
+					recursion("sound/npc/sentry_ceiling/");
+					PushArrayString(precachedarr,"npc_sentry_ground");
+				}
+				int mhchk = GetEntProp(entity,Prop_Data,"m_iMaxHealth");
+				Handle cvar = FindConVar("sk_sentry_ceiling_health");
+				if (cvar != INVALID_HANDLE)
+				{
+					int cvarh = GetConVarInt(cvar);
+					if (mhchk != cvarh)
+					{
+						SetEntProp(entity,Prop_Data,"m_iHealth",cvarh);
+						SetEntProp(entity,Prop_Data,"m_iMaxHealth",cvarh);
+					}
+				}
+				CloseHandle(cvar);
+				SDKHookEx(entity,SDKHook_Think,sentriesthink);
+			}
+			else
+			{
+				AcceptEntityInput(entity,"kill");
+				PrintToServer("ErrorEnt %i %s %s",entity,cls,mdl);
+			}
+		}
+		else if ((StrContains(cls,"npc_sentry_ground",false) == 0) && (CreateBySpawner))
+		{
+			if (FileExists("models/NPCs/sentry_ground.mdl",true,NULL_STRING))
+			{
+				DispatchKeyValue(entity,"model","models/NPCs/sentry_ground.mdl");
+				DispatchKeyValue(entity,"classname","npc_sentry_ground");
+				ReplaceString(cls,sizeof(cls),"npc_sentry_ground","");
+				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				if (!IsModelPrecached("models/NPCs/sentry_ground.mdl")) PrecacheModel("models/NPCs/sentry_ground.mdl",true);
+				//SetEntityModel(entity,"models/NPCs/sentry_ground.mdl");
+				SetEntPropString(entity,Prop_Data,"m_ModelName","models/NPCs/sentry_ground.mdl");
+				int propphy = CreateEntityByName("prop_physics_override");
+				if (propphy != -1)
+				{
+					char targn[64];
+					char restoretn[64];
+					GetEntPropString(entity,Prop_Data,"m_iName",targn,sizeof(targn));
+					Format(restoretn,sizeof(restoretn),"%s",targn);
+					Format(targn,sizeof(targn),"%s%iprop",targn,entity);
+					DispatchKeyValue(propphy,"model","models/NPCs/sentry_ground.mdl");
+					DispatchKeyValue(propphy,"DisableBoneFollowers","1");
+					DispatchKeyValue(propphy,"DisableShadows","1");
+					DispatchKeyValue(propphy,"rendermode","10");
+					DispatchKeyValue(propphy,"renderfx","6");
+					DispatchKeyValue(propphy,"rendercolor","0 0 0");
+					DispatchKeyValue(propphy,"renderamt","0");
+					DispatchKeyValue(propphy,"modelscale","1.1");
+					DispatchKeyValue(propphy,"targetname",targn);
+					DispatchSpawn(propphy);
+					ActivateEntity(propphy);
+					SetEntPropEnt(propphy,Prop_Data,"m_hEffectEntity",entity);
+					//SetVariantString("!activator");
+					//AcceptEntityInput(entity,"SetParent",propphy);
+					CreateTimer(0.1,SetupSentryDelay,propphy,TIMER_FLAG_NO_MAPCHANGE);
+					int logcoll = CreateEntityByName("logic_collision_pair");
+					if (logcoll != -1)
+					{
+						DispatchKeyValue(logcoll,"attach1",targn);
+						Format(targn,sizeof(targn),"%s%isentry",restoretn,entity);
+						DispatchKeyValue(logcoll,"attach2",targn);
+						DispatchKeyValue(logcoll,"StartDisabled","1");
+						DispatchSpawn(logcoll);
+						ActivateEntity(logcoll);
+						AcceptEntityInput(logcoll,"DisableCollisions");
+						Handle dp2 = CreateDataPack();
+						WritePackCell(dp2,logcoll);
+						WritePackString(dp2,"logic_collision_pair");
+						CreateTimer(0.5,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+						Handle dppass = CreateDataPack();
+						WritePackString(dppass,restoretn);
+						WritePackCell(dppass,entity);
+						WritePackCell(dppass,logcoll);
+						CreateTimer(0.5,restoretargn,dppass,TIMER_FLAG_NO_MAPCHANGE);
+					}
+				}
+			}
+			else
+			{
+				AcceptEntityInput(entity,"kill");
+				PrintToServer("ErrorEnt %i %s %s",entity,cls,mdl);
+			}
+		}
+	}
+	return;
+}
+
 public void resetweapmv(int entity)
 {
 	SDKUnhook(entity,SDKHook_Spawn,resetweapmv);
@@ -19083,7 +18817,8 @@ void findent(int ent, char[] clsname)
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
-		int bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
+		int bdisabled = 0;
+		if (HasEntProp(thisent,Prop_Data,"m_bDisabled")) GetEntProp(thisent,Prop_Data,"m_bDisabled");
 		char targn[4];
 		GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
 		if ((bdisabled == 0) || (strlen(targn) < 2))
@@ -19433,6 +19168,7 @@ void findentlist(int ent, char[] clsname)
 				PushArrayString(precachedarr,"npc_bmsgargantua");
 			}
 			SDKHookEx(thisent,SDKHook_Think,bmsgargthink);
+			SDKHookEx(thisent,SDKHook_OnTakeDamage,bmsgargtkdmg);
 			customents = true;
 		}
 		if (((StrContains(clsofent,"npc_",false) != -1) || (StrContains(clsofent,"monster_",false) != -1) || (StrEqual(clsofent,"generic_actor",false)) || (StrEqual(clsofent,"generic_monster",false))) && (!StrEqual(clsofent,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(clsofent,"npc_bullseye",false)) && (!StrEqual(clsofent,"env_xen_portal",false)) && (!StrEqual(clsofent,"env_xen_portal_template",false)) && (!StrEqual(clsofent,"npc_maker",false)) && (!StrEqual(clsofent,"npc_template_maker",false)) && (StrContains(clsofent,"info_",false) == -1) && (StrContains(clsofent,"game_",false) == -1) && (StrContains(clsofent,"trigger_",false) == -1) && (FindValueInArray(entlist,thisent) == -1))
@@ -19768,6 +19504,27 @@ public void OnButtonPressUse(int client)
 			if (HasEntProp(targ,Prop_Data,"m_NPCState")) npcstate = GetEntProp(targ,Prop_Data,"m_NPCState");
 			char cls[32];
 			GetEntityClassname(targ,cls,sizeof(cls));
+			if ((StrEqual(cls,"npc_tripmine",false)) && (chkdist < 91.0))
+			{
+				if (HasEntProp(targ,Prop_Data,"m_hOwner"))
+				{
+					if (client == GetEntPropEnt(targ,Prop_Data,"m_hOwner"))
+					{
+						int curamm = GetEntProp(client,Prop_Send,"m_iAmmo",_,24);
+						curamm++;
+						AcceptEntityInput(targ,"kill");
+						SetEntProp(client,Prop_Data,"m_iAmmo",curamm,_,24);
+						//plays on same channel as USE EmitGameSoundToAll("HL2Player.PickupWeapon",client);
+						int sndlvl,pitch,channel;
+						float vol;
+						char snd[64];
+						if (GetGameSoundParams("HL2Player.PickupWeapon",channel,sndlvl,vol,pitch,snd,sizeof(snd),client))
+						{
+							EmitSoundToAll(snd, client, SNDCHAN_AUTO, sndlvl, _, vol, pitch);
+						}
+					}
+				}
+			}
 			if ((StrEqual(cls,"npc_merchant",false)) && (chkdist < 100.0)) AcceptEntityInput(targ,"FireUser1",client);
 			if (npcstate != 5)//4 is scripting
 			{
@@ -20593,6 +20350,14 @@ public void antikillch(Handle convar, const char[] oldValue, const char[] newVal
 		BlockChoreoSuicide = false;
 }
 
+public void blocktripmindmgech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		BlockTripMineDamage = true;
+	else
+		BlockTripMineDamage = false;
+}
+
 public void longjumpmodech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) > 0)
@@ -20632,41 +20397,11 @@ public void noguidech(Handle convar, const char[] oldValue, const char[] newValu
 	}
 }
 
-public bool TraceEntityFilter(int entity, int mask, any data){
-	if ((entity != -1) && (IsValidEntity(entity)))
-	{
-		if (IsValidEntity(data))
-		{
-			if (HasEntProp(data,Prop_Data,"m_hParent"))
-			{
-				int parent = GetEntPropEnt(data,Prop_Data,"m_hParent");
-				if (entity == parent) return false;
-			}
-		}
-		char clsname[32];
-		GetEntityClassname(entity,clsname,sizeof(clsname));
-		if ((StrEqual(clsname,"func_vehicleclip",false)) || (StrEqual(clsname,"npc_sentry_ceiling",false)) || (entity == data))
-			return false;
-	}
-	return true;
-}
-
-public bool TraceEntityFilterPly(int entity, int mask, any data){
-	if ((entity != -1) && (IsValidEntity(entity)))
-	{
-		if (IsValidEntity(data))
-		{
-			if (HasEntProp(data,Prop_Data,"m_hParent"))
-			{
-				int parent = GetEntPropEnt(data,Prop_Data,"m_hParent");
-				if (entity == parent) return false;
-			}
-		}
-		if ((entity < MaxClients+1) && (entity > 0)) return false;
-		char clsname[32];
-		GetEntityClassname(entity,clsname,sizeof(clsname));
-		if ((StrEqual(clsname,"func_vehicleclip",false)) || (StrEqual(clsname,"npc_sentry_ceiling",false)) || (entity == data))
-			return false;
-	}
-	return true;
+public void sentryfireratech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	//StringToFloat more accuracy in specified value
+	char iszNew[32];
+	Format(iszNew,sizeof(iszNew),"%s",newValue);
+	if (StrContains(iszNew,".",false) != -1) StrCat(iszNew,sizeof(iszNew),"00");
+	flSentryFireRate = StringToFloat(iszNew);
 }
