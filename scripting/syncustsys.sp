@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.4"
+#define PLUGIN_VERSION "0.5"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/syncustsys.txt"
 
 bool HeavyCrowbar = false;
@@ -20,11 +20,12 @@ bool PistolExplosions = false;
 bool HealthRegen = false;
 bool DoubleJump = false;
 bool FastSwitch = false;
-bool AllowBack = false;
+bool bBackJSC = false;
+int AllowBack = 0;
 int HealthRegenStep = 1;
 int g_LastButtons[128];
 float HeavyCrowbarScale = 900.0; //default crowbar dmg 10 up to 9000
-float DoubleJumpHeight = 200.0;
+float DoubleJumpHeight = 300.0;
 float centnextatk[2048];
 float LastJump[128];
 char pistolexpldmg[16] = "40";
@@ -94,7 +95,7 @@ public void OnPluginStart()
 	DoubleJump = GetConVarBool(cvar);
 	CloseHandle(cvar);
 	cvar = FindConVar("syn_doublejump_height");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("syn_doublejump_height", "200", "Double jump height.", _, true, 0.0, false);
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("syn_doublejump_height", "300", "Double jump height.", _, true, 0.0, false);
 	HookConVarChange(cvar, doublejumpheightch);
 	DoubleJumpHeight = GetConVarFloat(cvar);
 	CloseHandle(cvar);
@@ -104,9 +105,9 @@ public void OnPluginStart()
 	FastSwitch = GetConVarBool(cvar);
 	CloseHandle(cvar);
 	cvar = FindConVar("syn_allowback");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("syn_allowback", "0", "Allow using /back to return to last death position.", _, true, 0.0, true, 1.0);
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("syn_allowback", "0", "Allow using /back to return to last death position. 2 sets to only js and coop maps.", _, true, 0.0, true, 2.0);
 	HookConVarChange(cvar, allowbackch);
-	AllowBack = GetConVarBool(cvar);
+	AllowBack = GetConVarInt(cvar);
 	CloseHandle(cvar);
 	RegAdminCmd("syn_adminproperty",ApplyProperty,ADMFLAG_ROOT,".");
 	RegConsoleCmd("back",BackToDeathPos);
@@ -135,6 +136,14 @@ public void OnMapStart()
 		g_LastButtons[i] = 0;
 		ValidBackPos[i] = false;
 	}
+	if (AllowBack == 2)
+	{
+		char iszMap[64];
+		GetCurrentMap(iszMap,sizeof(iszMap));
+		if ((StrContains(iszMap,"coop",false) != -1) || (StrContains(iszMap,"js",false) != -1)) bBackJSC = true;
+		else bBackJSC = false;
+	}
+	else bBackJSC = false;
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -496,7 +505,7 @@ public Action everyspawnpost(Handle timer, int client)
 	{
 		if (!IsFakeClient(client))
 		{
-			if ((AllowBack) || (CLHasProperty[client][7]))
+			if ((AllowBack == 1) || (bBackJSC) || (CLHasProperty[client][7]))
 			{
 				if (ValidBackPos[client])
 				{
@@ -511,7 +520,7 @@ public Action everyspawnpost(Handle timer, int client)
 public Action BackToDeathPos(int client, int args)
 {
 	if ((client == 0) || (!IsValidEntity(client))) return Plugin_Handled;
-	if ((AllowBack) || (CLHasProperty[client][7]))
+	if ((AllowBack == 1) || (bBackJSC) || (CLHasProperty[client][7]))
 	{
 		if (ValidBackPos[client])
 		{
@@ -844,6 +853,13 @@ public void fastswitchch(Handle convar, const char[] oldValue, const char[] newV
 
 public void allowbackch(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	if (StringToInt(newValue) == 1) AllowBack = true;
-	else AllowBack = false;
+	AllowBack = StringToInt(newValue);
+	if (AllowBack == 2)
+	{
+		char iszMap[64];
+		GetCurrentMap(iszMap,sizeof(iszMap));
+		if ((StrContains(iszMap,"coop",false) != -1) || (StrContains(iszMap,"js",false) != -1)) bBackJSC = true;
+		else bBackJSC = false;
+	}
+	else bBackJSC = false;
 }

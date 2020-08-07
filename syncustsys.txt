@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.4"
-			"Previous"	"0.3"
+			"Latest"  	"0.5"
+			"Previous"	"0.4"
 		}
 		
-		"Notes"	"Added syn_allowback CVar and /back command. Added syn_fastswitch."
+		"Notes"	"Added syn_allowback 2 which allows only for js and coop maps."
 	}
 	
 	"Files"
