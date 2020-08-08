@@ -19304,6 +19304,12 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				}
 			}
 		}
+		else if (StrEqual(curweap,"weapon_physcannon",false))
+		{
+			int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+			centnextsndtime[weap] = GetTickedTime() + 0.5;
+			bPrevOpen[client] = false;
+		}
 	}
 	else if (FixWeapSnd)
 	{
@@ -19319,16 +19325,35 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				{
 					if (HasEntProp(weap,Prop_Send,"m_bOpen"))
 					{
-						int bOpen = GetEntProp(weap,Prop_Send,"m_bOpen");
-						if (bOpen && !bPrevOpen[client])
+						float Time = GetTickedTime();
+						if (centnextsndtime[weap] <= Time)
 						{
-							bPrevOpen[client] = true;
-							EmitSoundToAll("weapons/physcannon/physcannon_claws_open.wav", client, SNDCHAN_WEAPON, 35);
-						}
-						else if (!bOpen && bPrevOpen[client])
-						{
-							bPrevOpen[client] = false;
-							EmitSoundToAll("weapons/physcannon/physcannon_claws_close.wav", client, SNDCHAN_WEAPON, 35);
+							int bOpen = GetEntProp(weap,Prop_Send,"m_bOpen");
+							int iEffState = GetEntProp(weap,Prop_Send,"m_EffectState");
+							if ((bOpen && !bPrevOpen[client]) && (iEffState != 3))
+							{
+								bPrevOpen[client] = true;
+								EmitSoundToAll("weapons/physcannon/physcannon_claws_open.wav", client, SNDCHAN_WEAPON, 35);
+							}
+							else if (!bOpen && bPrevOpen[client])
+							{
+								bPrevOpen[client] = false;
+								EmitSoundToAll("weapons/physcannon/physcannon_claws_close.wav", client, SNDCHAN_WEAPON, 35);
+							}
+							if (buttons & IN_ATTACK2)
+							{
+								if ((iEffState == 3) && (bOpen))
+								{
+									float flIdle = GetEntPropFloat(weap,Prop_Send,"m_flTimeWeaponIdle");
+									float flNextSecond = GetEntPropFloat(weap,Prop_Send,"m_flNextSecondaryAttack");
+									if ((flIdle <= flNextSecond+1.0) && (!isattacking[weap]))
+									{
+										isattacking[weap] = 1;
+										EmitSoundToAll("weapons/physcannon/physcannon_pickup.wav", client, SNDCHAN_WEAPON, 35);
+									}
+								}
+							}
+							else isattacking[weap] = 0;
 						}
 					}
 				}
