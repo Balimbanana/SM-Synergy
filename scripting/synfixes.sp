@@ -54,7 +54,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99971"
+#define PLUGIN_VERSION "1.99972"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -4047,6 +4047,28 @@ public void OnButtonPressUse(int client)
 				{
 					if (client == GetEntPropEnt(targ,Prop_Data,"m_hOwner"))
 					{
+						Handle beamarr = CreateArray(256);
+						FindAllByClassname(beamarr,-1,"beam");
+						if (GetArraySize(beamarr) > 0)
+						{
+							for (int i = 0;i<GetArraySize(beamarr);i++)
+							{
+								int beam = GetArrayCell(beamarr,i);
+								if (IsValidEntity(beam))
+								{
+									if (HasEntProp(beam,Prop_Data,"m_hEndEntity"))
+									{
+										int endent = GetEntPropEnt(beam,Prop_Data,"m_hEndEntity");
+										if (endent == targ)
+										{
+											AcceptEntityInput(beam,"kill");
+											break;
+										}
+									}
+								}
+							}
+						}
+						CloseHandle(beamarr);
 						int curamm = GetEntProp(client,Prop_Send,"m_iAmmo",_,24);
 						curamm++;
 						AcceptEntityInput(targ,"kill");

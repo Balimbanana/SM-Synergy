@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99971"
-			"Previous"	"1.99970"
+			"Latest"  	"1.99972"
+			"Previous"	"1.99971"
 		}
 		
-		"Notes"	"Added CVar sm_blocktripmine_damage default 1, blocks player damage to tripmines. Added pickup to planted tripmines."
+		"Notes"	"Fixed tripmine beam removal."
 	}
 	
 	"Files"

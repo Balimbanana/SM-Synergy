@@ -77,6 +77,8 @@ bool rebuildnodes = false;
 bool allownoguide = true;
 bool guiderocket[128];
 bool isfading[128];
+bool bPrevOpen[128];
+bool bPrevWeapRPG[128];
 bool restrictact = false;
 bool friendlyfire = false;
 bool seqenablecheck = true;
@@ -104,8 +106,9 @@ bool BlockChoreoSuicide = true;
 bool LongJumpMode = false;
 bool norunagain = false;
 bool BlockTripMineDamage = true;
+bool FixWeapSnd = true;
 
-#define PLUGIN_VERSION "2.0016"
+#define PLUGIN_VERSION "2.0017"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -332,6 +335,19 @@ public void OnPluginStart()
 		cvar = CreateConVar("sm_blocktripmine_damage", "1", "Prevent players from breaking eachothers planted tripmines.", _, true, 0.0, true, 1.0);
 		BlockTripMineDamage = GetConVarBool(cvar);
 		HookConVarChange(cvar, blocktripmindmgech);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("sm_fixweaponsounds");
+	if (cvar != INVALID_HANDLE)
+	{
+		FixWeapSnd = GetConVarBool(cvar);
+		HookConVarChange(cvar, fixweapsndch);
+	}
+	else
+	{
+		cvar = CreateConVar("sm_fixweaponsounds", "1", "Fixes predicted sounds not being played.", _, true, 0.0, true, 1.0);
+		FixWeapSnd = GetConVarBool(cvar);
+		HookConVarChange(cvar, fixweapsndch);
 	}
 	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
@@ -2599,7 +2615,7 @@ public void viewmdlchk(QueryCookie cookie, int client, ConVarQueryResult result,
 	}
 	else if ((StringToInt(cvarValue) == 86) && (value == 0))
 	{
-		ClientCommand(client,"viewmodel_fov 75");
+		ClientCommand(client,"viewmodel_fov 65");
 	}
 }
 
@@ -13921,6 +13937,8 @@ public void OnClientDisconnect(int client)
 	antispamchk[client] = 0.0;
 	LastJump[client] = 0.0;
 	showcc[client] = false;
+	bPrevOpen[client] = false;
+	bPrevWeapRPG[client] = false;
 	DisplayedChapterTitle[client] = false;
 }
 
@@ -18673,12 +18691,13 @@ public Action StartTouchprop(int entity, int other)
 
 public Action OnWeaponUse(int client, int weapon)
 {
-	if (instswitch > 0)
+	bPrevOpen[client] = false;
+	if (IsValidEntity(weapon))
 	{
-		if ((IsValidEntity(weapon)) && (weapon != -1))
+		char weapname[32];
+		GetEntityClassname(weapon,weapname,sizeof(weapname));
+		if (instswitch > 0)
 		{
-			char weapname[32];
-			GetEntityClassname(weapon,weapname,sizeof(weapname));
 			if ((StrEqual(weapname,"weapon_physcannon",false)) || (instswitch == 2))
 			{
 				Handle data;
@@ -18686,6 +18705,14 @@ public Action OnWeaponUse(int client, int weapon)
 				WritePackCell(data, client);
 				WritePackCell(data, weapon);
 				CreateTimer(0.1,resetinst,data,TIMER_FLAG_NO_MAPCHANGE);
+			}
+		}
+		if (FixWeapSnd)
+		{
+			if (bPrevWeapRPG[client])
+			{
+				EmitSoundToAll("weapons/sniper/sniper_zoomout.wav", client, SNDCHAN_WEAPON, 30);
+				bPrevWeapRPG[client] = false;
 			}
 		}
 	}
@@ -19278,6 +19305,91 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 		}
 	}
+	else if (FixWeapSnd)
+	{
+		int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
+		if (vehicle == -1)
+		{
+			int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+			if (IsValidEntity(weap))
+			{
+				char curweap[24];
+				GetEntPropString(weap,Prop_Data,"m_iClassname",curweap,sizeof(curweap));
+				if (StrEqual(curweap,"weapon_physcannon",false))
+				{
+					if (HasEntProp(weap,Prop_Send,"m_bOpen"))
+					{
+						int bOpen = GetEntProp(weap,Prop_Send,"m_bOpen");
+						if (bOpen && !bPrevOpen[client])
+						{
+							bPrevOpen[client] = true;
+							EmitSoundToAll("weapons/physcannon/physcannon_claws_open.wav", client, SNDCHAN_WEAPON, 35);
+						}
+						else if (!bOpen && bPrevOpen[client])
+						{
+							bPrevOpen[client] = false;
+							EmitSoundToAll("weapons/physcannon/physcannon_claws_close.wav", client, SNDCHAN_WEAPON, 35);
+						}
+					}
+				}
+				else if (StrEqual(curweap,"weapon_rpg",false))
+				{
+					if (HasEntProp(weap,Prop_Send,"m_bInitialStateUpdate"))
+					{
+						int bInit = GetEntProp(weap,Prop_Send,"m_bInitialStateUpdate");
+						if (!bInit && bPrevOpen[client])
+						{
+							bPrevOpen[client] = false;
+							EmitSoundToAll("weapons/sniper/sniper_zoomin.wav", client, SNDCHAN_WEAPON, 30);
+						}
+						else if (bInit) bPrevOpen[client] = true;
+						bPrevWeapRPG[client] = true;
+						float Time = GetGameTime();
+						float flPrimaryAtk = GetEntPropFloat(weap,Prop_Send,"m_flNextPrimaryAttack");
+						int iRPGAmm = 8;
+						if (HasEntProp(weap,Prop_Send,"m_iPrimaryAmmoType")) iRPGAmm = GetEntProp(weap,Prop_Send,"m_iPrimaryAmmoType");
+						int iCurAmm = GetEntProp(client,Prop_Send,"m_iAmmo",_,iRPGAmm);
+						if ((iCurAmm == 0) && (!isattacking[weap]) && (flPrimaryAtk > Time+2.0))
+						{
+							EmitSoundToAll("weapons/sniper/sniper_zoomout.wav", client, SNDCHAN_WEAPON, 30);
+							isattacking[weap] = 1;
+						}
+						else if (iCurAmm > 0) isattacking[weap] = 0;
+					}
+				}
+				else if (StrEqual(curweap,"weapon_crossbow",false))
+				{
+					int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
+					if ((curclip == 0) && (!bPrevOpen[client]))
+					{
+						if (HasEntProp(weap,Prop_Data,"m_bInReload"))
+						{
+							int bInReload = GetEntProp(weap,Prop_Data,"m_bInReload");
+							if (bInReload)
+							{
+								float Time = GetGameTime();
+								float flPrimaryAtk = GetEntPropFloat(weap,Prop_Send,"m_flNextPrimaryAttack");
+								if (flPrimaryAtk < Time+1.20)
+								{
+									bPrevOpen[client] = true;
+									char shootsnd[64];
+									int chan,sndlvl,pitch;
+									float vol;
+									GetGameSoundParams("Weapon_Crossbow.BoltElectrify",chan,sndlvl,vol,pitch,shootsnd,sizeof(shootsnd),0);
+									if (strlen(shootsnd) > 0)
+									{
+										EmitGameSoundToAll("Weapon_Crossbow.BoltElectrify",client);
+									}
+								}
+							}
+							else bPrevOpen[client] = false;
+						}
+					}
+					else if (curclip > 0) bPrevOpen[client] = false;
+				}
+			}
+		}
+	}
 	if (buttons & IN_ATTACK2) {
 		if (!(g_LastButtons[client] & IN_ATTACK2)) {
 			OnButtonPress(client,IN_ATTACK2);
@@ -19345,28 +19457,62 @@ public void OnButtonPressTankchk(int client, int button)
 
 public void OnButtonPress(int client, int button)
 {
-	if (allownoguide)
+	int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
+	if (vehicle == -1)
 	{
-		char curweap[24];
-		GetClientWeapon(client,curweap,sizeof(curweap));
-		int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
-		if ((StrEqual(curweap,"weapon_rpg",false)) && (vehicle == -1))
+		if (allownoguide)
 		{
-			if (guiderocket[client])
+			char curweap[24];
+			GetClientWeapon(client,curweap,sizeof(curweap));
+			if (StrEqual(curweap,"weapon_rpg",false))
 			{
-				guiderocket[client] = false;
-				PrintToChat(client,"Turned off rocket guide.");
-				int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
-				SetEntProp(weap,Prop_Send,"m_bGuiding",0);
-				SetEntProp(weap,Prop_Data,"m_bInReload",0);
-				SetEntProp(weap,Prop_Data,"m_nSequence",2);
+				if (guiderocket[client])
+				{
+					guiderocket[client] = false;
+					PrintToChat(client,"Turned off rocket guide.");
+					int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+					SetEntProp(weap,Prop_Send,"m_bGuiding",0);
+					SetEntProp(weap,Prop_Data,"m_bInReload",0);
+					SetEntProp(weap,Prop_Data,"m_nSequence",2);
+					EmitSoundToAll("weapons/sniper/sniper_zoomout.wav", client, SNDCHAN_WEAPON, 30);
+				}
+				else
+				{
+					guiderocket[client] = true;
+					PrintToChat(client,"Turned on rocket guide.");
+					EmitSoundToAll("weapons/sniper/sniper_zoomin.wav", client, SNDCHAN_WEAPON, 30);
+				}
+				findrockets(-1,client);
 			}
-			else
+		}
+		if (FixWeapSnd)
+		{
+			int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+			if (IsValidEntity(weap))
 			{
-				guiderocket[client] = true;
-				PrintToChat(client,"Turned on rocket guide.");
+				char curweap[24];
+				GetEntPropString(weap,Prop_Data,"m_iClassname",curweap,sizeof(curweap));
+				if (StrEqual(curweap,"weapon_physcannon",false))
+				{
+					if (HasEntProp(weap,Prop_Send,"m_bOpen"))
+					{
+						int bOpen = GetEntProp(weap,Prop_Send,"m_bOpen");
+						int iEffState = GetEntProp(weap,Prop_Send,"m_EffectState");
+						if (!bOpen)
+						{
+							EmitSoundToAll("weapons/physcannon/physcannon_tooheavy.wav", client, SNDCHAN_WEAPON, 35);
+						}
+						else if (iEffState == 2)
+						{
+							EmitSoundToAll("weapons/physcannon/physcannon_pickup.wav", client, SNDCHAN_WEAPON, 35);
+						}
+						else if (iEffState == 3)
+						{
+							EmitSoundToAll("weapons/physcannon/physcannon_drop.wav", client, SNDCHAN_WEAPON, 35);
+						}
+					}
+				}
 			}
-			findrockets(-1,client);
 		}
 	}
 }
@@ -19510,6 +19656,28 @@ public void OnButtonPressUse(int client)
 				{
 					if (client == GetEntPropEnt(targ,Prop_Data,"m_hOwner"))
 					{
+						Handle beamarr = CreateArray(256);
+						FindAllByClassname(beamarr,-1,"beam");
+						if (GetArraySize(beamarr) > 0)
+						{
+							for (int i = 0;i<GetArraySize(beamarr);i++)
+							{
+								int beam = GetArrayCell(beamarr,i);
+								if (IsValidEntity(beam))
+								{
+									if (HasEntProp(beam,Prop_Data,"m_hEndEntity"))
+									{
+										int endent = GetEntPropEnt(beam,Prop_Data,"m_hEndEntity");
+										if (endent == targ)
+										{
+											AcceptEntityInput(beam,"kill");
+											break;
+										}
+									}
+								}
+							}
+						}
+						CloseHandle(beamarr);
 						int curamm = GetEntProp(client,Prop_Send,"m_iAmmo",_,24);
 						curamm++;
 						AcceptEntityInput(targ,"kill");
@@ -20356,6 +20524,14 @@ public void blocktripmindmgech(Handle convar, const char[] oldValue, const char[
 		BlockTripMineDamage = true;
 	else
 		BlockTripMineDamage = false;
+}
+
+public void fixweapsndch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		FixWeapSnd = true;
+	else
+		FixWeapSnd = false;
 }
 
 public void longjumpmodech(Handle convar, const char[] oldValue, const char[] newValue)

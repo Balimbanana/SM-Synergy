@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0016"
-			"Previous"	"2.0015"
+			"Latest"  	"2.0017"
+			"Previous"	"2.0016"
 		}
 		
-		"Notes"	"Added CVar sm_blocktripmine_damage default 1, blocks player damage to tripmines. Added pickup to planted tripmines."
+		"Notes"	"Added CVar sm_fixweaponsounds default 1, fixes some missing sounds from physcannon, rpg, and crossbow. Fixed tripmine beam removal."
 	}
 	
 	"Files"
