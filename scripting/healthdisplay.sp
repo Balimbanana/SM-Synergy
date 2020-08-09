@@ -13,7 +13,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.99"
+#define PLUGIN_VERSION "1.991"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin myinfo = 
@@ -408,6 +408,7 @@ public Action cleararr(Handle timer)
 	addht("npc_combinegunship");
 	addht("npc_combinedropship");
 	addht("npc_turret_ceiling");
+	addht("npc_turret_ground");
 	addht("npc_manhack");
 	addht("npc_strider");
 	addht("npc_stalker");
@@ -657,7 +658,7 @@ public Action ShowTimer(Handle timer)
 						if (targ != -1)
 							GetEntityClassname(targ,clsname,sizeof(clsname));
 					}
-					if ((targ != -1) && (IsValidEntity(targ)))
+					if ((targ != -1) && (IsValidEntity(targ)) && ((targ > MaxClients) || (ShowPlayers)))
 					{
 						if (StrEqual(clsname,"player",false))
 						{
@@ -1505,6 +1506,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_combinegunship");
 		addht("npc_combinedropship");
 		addht("npc_turret_ceiling");
+		addht("npc_turret_ground");
 		addht("npc_manhack");
 		addht("npc_strider");
 		addht("npc_stalker");
