@@ -573,174 +573,310 @@ public Action ShowTimer(Handle timer)
 {
 	for (int client = 1;client<MaxClients+1;client++)
 	{
-		if (IsClientInGame(client))
+		if (IsValidEntity(client))
 		{
-			if (IsPlayerAlive(client) && !IsFakeClient(client) && (bclcookie[client] != 3))
+			if (IsClientInGame(client))
 			{
-				int targ = -1;
-				float PlayerOrigin[3];
-				float Location[3];
-				float clang[3];
-				GetClientEyePosition(client, Location);
-				GetClientEyeAngles(client,clang);
-				Handle hhitpos = INVALID_HANDLE;
-				if (targmode == 1)
+				if (IsPlayerAlive(client) && !IsFakeClient(client) && (bclcookie[client] != 3))
 				{
-					TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
-					targ = TR_GetEntityIndex(hhitpos);
-				}
-				else if (targmode == 2)
-				{
-					TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
-					int tmptarg = TR_GetEntityIndex(hhitpos);
-					targ = GetClientAimTarget(client,false);
-					if (targ != tmptarg)
+					int targ = -1;
+					float PlayerOrigin[3];
+					float Location[3];
+					float clang[3];
+					GetClientEyePosition(client, Location);
+					GetClientEyeAngles(client,clang);
+					Handle hhitpos = INVALID_HANDLE;
+					if (targmode == 1)
 					{
-						if (IsValidEntity(targ))
+						TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
+						targ = TR_GetEntityIndex(hhitpos);
+					}
+					else if (targmode == 2)
+					{
+						TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
+						int tmptarg = TR_GetEntityIndex(hhitpos);
+						targ = GetClientAimTarget(client,false);
+						if (targ != tmptarg)
 						{
-							char clsname[32];
-							GetEntityClassname(targ,clsname,sizeof(clsname));
-							int vck = GetEntProp(client,Prop_Send,"m_hVehicle");
-							if ((StrContains(clsname,"clip",false) != -1) || ((StrContains(clsname,"prop_vehicle",false) != -1) && (vck != -1)))
+							if (IsValidEntity(targ))
 							{
-								PlayerOrigin[0] = (Location[0] + (60 * Cosine(DegToRad(clang[1]))));
-								PlayerOrigin[1] = (Location[1] + (60 * Sine(DegToRad(clang[1]))));
-								PlayerOrigin[2] = (Location[2] + 10);
-								Location[0] = (PlayerOrigin[0] + (10 * Cosine(DegToRad(clang[1]))));
-								Location[1] = (PlayerOrigin[1] + (10 * Sine(DegToRad(clang[1]))));
-								Location[2] = (PlayerOrigin[2] + 10);
-								if (vck != -1)
+								char clsname[32];
+								GetEntityClassname(targ,clsname,sizeof(clsname));
+								int vck = GetEntProp(client,Prop_Send,"m_hVehicle");
+								if ((StrContains(clsname,"clip",false) != -1) || ((StrContains(clsname,"prop_vehicle",false) != -1) && (vck != -1)))
 								{
-									Location[0] = (PlayerOrigin[0] - (10 * Cosine(DegToRad(clang[1]))));
-									Location[1] = (PlayerOrigin[1] - (10 * Sine(DegToRad(clang[1]))));
-									Location[2] = (PlayerOrigin[2] - 10);
+									PlayerOrigin[0] = (Location[0] + (60 * Cosine(DegToRad(clang[1]))));
+									PlayerOrigin[1] = (Location[1] + (60 * Sine(DegToRad(clang[1]))));
+									PlayerOrigin[2] = (Location[2] + 10);
+									Location[0] = (PlayerOrigin[0] + (10 * Cosine(DegToRad(clang[1]))));
+									Location[1] = (PlayerOrigin[1] + (10 * Sine(DegToRad(clang[1]))));
+									Location[2] = (PlayerOrigin[2] + 10);
+									if (vck != -1)
+									{
+										Location[0] = (PlayerOrigin[0] - (10 * Cosine(DegToRad(clang[1]))));
+										Location[1] = (PlayerOrigin[1] - (10 * Sine(DegToRad(clang[1]))));
+										Location[2] = (PlayerOrigin[2] - 10);
+									}
+									Handle hhitposthrough = INVALID_HANDLE;
+									TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
+									targ = TR_GetEntityIndex(hhitposthrough);
+									CloseHandle(hhitposthrough);
+									if (targ != -1)
+										GetEntityClassname(targ,clsname,sizeof(clsname));
 								}
-								Handle hhitposthrough = INVALID_HANDLE;
-								TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
-								targ = TR_GetEntityIndex(hhitposthrough);
-								CloseHandle(hhitposthrough);
-								if (targ != -1)
-									GetEntityClassname(targ,clsname,sizeof(clsname));
+								else targ = -1;
 							}
 							else targ = -1;
 						}
-						else targ = -1;
 					}
-				}
-				else
-				{
-					targ = GetClientAimTarget(client,false);
-				}
-				CloseHandle(hhitpos);
-				if ((targ != -1) && ((targ > MaxClients) || (ShowPlayers)))
-				{
-					char clsname[32];
-					GetEntityClassname(targ,clsname,sizeof(clsname));
-					int vck = GetEntProp(client,Prop_Send,"m_hVehicle");
-					if ((StrContains(clsname,"clip",false) != -1) || ((StrContains(clsname,"prop_vehicle",false) != -1) && (vck != -1)))
+					else
 					{
-						PlayerOrigin[0] = (Location[0] + (60 * Cosine(DegToRad(clang[1]))));
-						PlayerOrigin[1] = (Location[1] + (60 * Sine(DegToRad(clang[1]))));
-						PlayerOrigin[2] = (Location[2] + 10);
-						Location[0] = (PlayerOrigin[0] + (10 * Cosine(DegToRad(clang[1]))));
-						Location[1] = (PlayerOrigin[1] + (10 * Sine(DegToRad(clang[1]))));
-						Location[2] = (PlayerOrigin[2] + 10);
-						if (vck != -1)
-						{
-							Location[0] = (PlayerOrigin[0] - (10 * Cosine(DegToRad(clang[1]))));
-							Location[1] = (PlayerOrigin[1] - (10 * Sine(DegToRad(clang[1]))));
-							Location[2] = (PlayerOrigin[2] - 10);
-						}
-						Handle hhitposthrough = INVALID_HANDLE;
-						TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
-						targ = TR_GetEntityIndex(hhitposthrough);
-						CloseHandle(hhitposthrough);
-						if (targ != -1)
-							GetEntityClassname(targ,clsname,sizeof(clsname));
+						targ = GetClientAimTarget(client,false);
 					}
-					if ((targ != -1) && (IsValidEntity(targ)) && ((targ > MaxClients) || (ShowPlayers)))
+					CloseHandle(hhitpos);
+					if ((targ != -1) && ((targ > MaxClients) || (ShowPlayers)))
 					{
-						if (StrEqual(clsname,"player",false))
+						char clsname[32];
+						GetEntityClassname(targ,clsname,sizeof(clsname));
+						int vck = GetEntProp(client,Prop_Send,"m_hVehicle");
+						if ((StrContains(clsname,"clip",false) != -1) || ((StrContains(clsname,"prop_vehicle",false) != -1) && (vck != -1)))
 						{
-							Format(clsname,sizeof(clsname),"%N",targ);
-							int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
-							int maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
-							float Time = GetTickedTime();
-							if ((antispamchk[client] <= Time) && (curh > 0))
+							PlayerOrigin[0] = (Location[0] + (60 * Cosine(DegToRad(clang[1]))));
+							PlayerOrigin[1] = (Location[1] + (60 * Sine(DegToRad(clang[1]))));
+							PlayerOrigin[2] = (Location[2] + 10);
+							Location[0] = (PlayerOrigin[0] + (10 * Cosine(DegToRad(clang[1]))));
+							Location[1] = (PlayerOrigin[1] + (10 * Sine(DegToRad(clang[1]))));
+							Location[2] = (PlayerOrigin[2] + 10);
+							if (vck != -1)
 							{
-								antispamchk[client] = Time + 0.07;
-								if (!SynModesAct) PrintTheMsg(client,curh,maxh,clsname,true);
-								else
-								{
-									int CurTeam = GetCLTeam(client);
-									int TargTeam = GetCLTeam(targ);
-									if (CurTeam != TargTeam) PrintTheMsg(client,curh,maxh,clsname,false);
-									else PrintTheMsg(client,curh,maxh,clsname,true);
-								}
+								Location[0] = (PlayerOrigin[0] - (10 * Cosine(DegToRad(clang[1]))));
+								Location[1] = (PlayerOrigin[1] - (10 * Sine(DegToRad(clang[1]))));
+								Location[2] = (PlayerOrigin[2] - 10);
 							}
-							continue;
+							Handle hhitposthrough = INVALID_HANDLE;
+							TR_TraceRayFilter(Location,clang,MASK_VISIBLE_AND_NPCS,RayType_Infinite,TraceEntityFilter,client);
+							targ = TR_GetEntityIndex(hhitposthrough);
+							CloseHandle(hhitposthrough);
+							if (targ != -1)
+								GetEntityClassname(targ,clsname,sizeof(clsname));
 						}
-						if (StrEqual(clsname,"generic_actor",false))
+						if ((targ != -1) && (IsValidEntity(targ)) && ((targ > MaxClients) || (ShowPlayers)))
 						{
-							char targn[64];
-							if (HasEntProp(targ,Prop_Data,"m_iName"))
+							if (StrEqual(clsname,"player",false))
 							{
-								GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
-								if (StrContains(targn,"lamar",false) != -1)
-									Format(clsname,sizeof(clsname),"npc_lamarr");
-								else if (HasEntProp(targ,Prop_Data,"m_hParent"))
+								Format(clsname,sizeof(clsname),"%N",targ);
+								int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
+								int maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
+								float Time = GetTickedTime();
+								if ((antispamchk[client] <= Time) && (curh > 0))
 								{
-									int parchk = GetEntPropEnt(targ,Prop_Data,"m_hParent");
-									if ((parchk != 0) && (IsValidEntity(parchk)))
+									antispamchk[client] = Time + 0.07;
+									if (!SynModesAct) PrintTheMsg(client,curh,maxh,clsname,true);
+									else
 									{
-										targ = parchk;
-										GetEntityClassname(targ,clsname,sizeof(clsname));
+										int CurTeam = GetCLTeam(client);
+										int TargTeam = GetCLTeam(targ);
+										if (CurTeam != TargTeam) PrintTheMsg(client,curh,maxh,clsname,false);
+										else PrintTheMsg(client,curh,maxh,clsname,true);
 									}
 								}
+								continue;
 							}
-						}
-						char targn[64];
-						if (SynNPCInfRunning)
-						{
-							Handle npcnameentsl = GetNPCEnts();
-							if (npcnameentsl != INVALID_HANDLE)
+							if (StrEqual(clsname,"generic_actor",false))
 							{
-								int findname = FindValueInArray(npcnameentsl,targ);
-								if (findname != -1)
+								char targn[64];
+								if (HasEntProp(targ,Prop_Data,"m_iName"))
 								{
-									Handle npcnamestrl = GetNPCNames();
-									GetArrayString(npcnamestrl,findname,targn,sizeof(targn));
-									if (strlen(targn) > 0)
+									GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+									if (StrContains(targn,"lamar",false) != -1)
+										Format(clsname,sizeof(clsname),"npc_lamarr");
+									else if (HasEntProp(targ,Prop_Data,"m_hParent"))
 									{
-										if (!GetNPCAlly(clsname,targ))
+										int parchk = GetEntPropEnt(targ,Prop_Data,"m_hParent");
+										if ((parchk != 0) && (IsValidEntity(parchk)))
 										{
-											Format(clsname,sizeof(clsname),"npc_%s",targn);
-											addht(clsname);
+											targ = parchk;
+											GetEntityClassname(targ,clsname,sizeof(clsname));
 										}
-										Format(clsname,sizeof(clsname),"npc_%s",targn);
 									}
-									CloseHandle(npcnamestrl);
 								}
 							}
-							CloseHandle(npcnameentsl);
+							char targn[64];
+							if (SynNPCInfRunning)
+							{
+								Handle npcnameentsl = GetNPCEnts();
+								if (npcnameentsl != INVALID_HANDLE)
+								{
+									int findname = FindValueInArray(npcnameentsl,targ);
+									if (findname != -1)
+									{
+										Handle npcnamestrl = GetNPCNames();
+										GetArrayString(npcnamestrl,findname,targn,sizeof(targn));
+										if (strlen(targn) > 0)
+										{
+											if (!GetNPCAlly(clsname,targ))
+											{
+												Format(clsname,sizeof(clsname),"npc_%s",targn);
+												addht(clsname);
+											}
+											Format(clsname,sizeof(clsname),"npc_%s",targn);
+										}
+										CloseHandle(npcnamestrl);
+									}
+								}
+								CloseHandle(npcnameentsl);
+							}
+							if ((HasEntProp(targ,Prop_Data,"m_nRenderMode")) && (!StrEqual(clsname,"npc_houndeye",false)) && (!StrEqual(clsname,"npc_bullsquid",false)))
+								if (GetEntProp(targ,Prop_Data,"m_nRenderMode") == 10) targ = 0;
+							if (HasEntProp(targ,Prop_Data,"m_NPCState"))
+								if (GetEntProp(targ,Prop_Data,"m_NPCState") == 7) targ = 0;
 						}
-						if ((HasEntProp(targ,Prop_Data,"m_nRenderMode")) && (!StrEqual(clsname,"npc_houndeye",false)) && (!StrEqual(clsname,"npc_bullsquid",false)))
-							if (GetEntProp(targ,Prop_Data,"m_nRenderMode") == 10) targ = 0;
-						if (HasEntProp(targ,Prop_Data,"m_NPCState"))
-							if (GetEntProp(targ,Prop_Data,"m_NPCState") == 7) targ = 0;
-					}
-					if  ((targ == -1) || (targ == 0) || (!IsValidEntity(targ))) continue;
-					if ((targ != -1) && ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"monster_",false) != -1)) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
-					{
-						bool ismonster = false;
-						bool friendly = true;
-						if (!GetNPCAlly(clsname,targ))
+						if  ((targ == -1) || (targ == 0) || (!IsValidEntity(targ))) continue;
+						if ((targ != -1) && ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"monster_",false) != -1)) && (!StrEqual(clsname,"npc_furniture")) && (!StrEqual(clsname,"npc_bullseye")) && (StrContains(clsname,"grenade",false) == -1) && (StrContains(clsname,"satchel",false) == -1) && (!IsInViewCtrl(client)) || (StrEqual(clsname,"prop_vehicle_apc",false)))
 						{
-							friendly = false;
-						}
-						if (!bclcookie3[client])
-						{
-							if (!friendly)
+							bool ismonster = false;
+							bool friendly = true;
+							if (!GetNPCAlly(clsname,targ))
+							{
+								friendly = false;
+							}
+							if (!bclcookie3[client])
+							{
+								if (!friendly)
+								{
+									int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
+									if (StrContains(clsname,"monster_",false) != -1)
+									{
+										ReplaceString(clsname,sizeof(clsname),"monster_","");
+										ismonster = true;
+									}
+									else ReplaceString(clsname,sizeof(clsname),"npc_","");
+									int maxh = 20;
+									if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
+									{
+										maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
+										if (StrEqual(clsname,"combine_camera",false))
+											maxh = 50;
+										else if (StrEqual(clsname,"antlion_grub",false))
+											maxh = 1;
+										else if (StrEqual(clsname,"combinedropship",false))
+											maxh = 100;
+										else if ((maxh == 0) && ((StrEqual(clsname,"turret_ceiling",false)) || (StrEqual(clsname,"security_camera",false))))
+											maxh = 1000;
+										else if (maxh == 0)
+										{
+											char cvarren[32];
+											if (ismonster) Format(cvarren,sizeof(cvarren),"hl1_sk_%s_health",clsname);
+											else Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
+											Handle cvarchk = FindConVar(cvarren);
+											if (cvarchk == INVALID_HANDLE)
+												maxh = 20;
+											else
+												maxh = GetConVarInt(cvarchk);
+										}
+									}
+									clsname[0] &= ~(1 << 5);
+									float Time = GetTickedTime();
+									if ((antispamchk[client] <= Time) && (curh > 0))
+									{
+										if (StrEqual(clsname,"combine_s",false))
+										{
+											char cmodel[64];
+											GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+											if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
+												Format(clsname,sizeof(clsname),"Combine Elite");
+											else if (StrContains(cmodel,"models/sttr_easyrider",false) == 0)
+												Format(clsname,sizeof(clsname),"Easy Rider");
+											else if (StrContains(cmodel,"models/helghast/",false) == 0)
+												Format(clsname,sizeof(clsname),"Helghast Soldier");
+											else if (GetEntProp(targ,Prop_Data,"m_nSkin") == 1)
+												Format(clsname,sizeof(clsname),"Combine Shotgunner");
+											else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
+												Format(clsname,sizeof(clsname),"Combine Guard");
+											else
+												Format(clsname,sizeof(clsname),"Combine Soldier");
+										}
+										else if (StrEqual(clsname,"citizen",false))
+										{
+											char targn[64];
+											char cmodel[64];
+											GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+											if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+											if (StrEqual(cmodel,"models/odessa.mdl",false)) Format(clsname,sizeof(clsname),"Odessa Cubbage");
+											else if (StrContains(cmodel,"models/humans/group03m/",false) == 0) Format(clsname,sizeof(clsname),"Rebel Medic");
+											else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
+											else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
+											else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Larry");
+											else if (StrContains(targn,"anne",false) != -1) Format(clsname,sizeof(clsname),"Anne");
+											else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Arthur");
+											else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Sarah");
+											else if (StrContains(targn,"mary",false) != -1) Format(clsname,sizeof(clsname),"Mary");
+											else if (StrContains(targn,"matt",false) != -1) Format(clsname,sizeof(clsname),"Matt");
+											else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Mina");
+											else if (StrEqual(targn,"arlene",false)) Format(clsname,sizeof(clsname),"Arlene");
+											else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"John");
+											else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Mitch");
+											else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
+											else if (StrContains(targn,"oleg",false) != -1) Format(clsname,sizeof(clsname),"Oleg");
+											else if (StrEqual(targn,"Richard",false)) Format(clsname,sizeof(clsname),"Richard");
+											else if (StrEqual(targn,"laura",false)) Format(clsname,sizeof(clsname),"Laura");
+											else if (StrEqual(targn,"winston",false)) Format(clsname,sizeof(clsname),"Winston");
+											else if (StrEqual(targn,"stanley",false)) Format(clsname,sizeof(clsname),"Stanley");
+											else if (StrEqual(targn,"tobias",false)) Format(clsname,sizeof(clsname),"Laszlo Tobias");
+											else if (StrEqual(targn,"chester",false)) Format(clsname,sizeof(clsname),"Chester");
+											else if (StrEqual(targn,"warehouse_citizen_leon",false)) Format(clsname,sizeof(clsname),"Leon");
+											else if ((StrEqual(targn,"jackCarver",false)) || (StrEqual(targn,"jack",false))) Format(clsname,sizeof(clsname),"Jack");
+											else if ((StrContains(targn,"ugly",false) == 0) && (StrEqual(cmodel,"models/Humans/Group01/male_02.mdl",false))) Format(clsname,sizeof(clsname),"The Ugly");
+											else if ((StrContains(targn,"bad",false) == 0) && (StrEqual(cmodel,"models/Humans/Group01/male_03.mdl",false))) Format(clsname,sizeof(clsname),"The Bad");
+											else if (StrEqual(targn,"mike",false)) Format(clsname,sizeof(clsname),"Mike");
+											else if (StrEqual(targn,"Larson",false)) Format(clsname,sizeof(clsname),"Larson");
+											else if (StrEqual(targn,"Eloise",false)) Format(clsname,sizeof(clsname),"Eloise");
+											else if (StrEqual(targn,"Noah",false)) Format(clsname,sizeof(clsname),"Noah");
+											else if (StrEqual(targn,"Eve",false)) Format(clsname,sizeof(clsname),"Eve");
+											else if ((StrEqual(targn,"Olivia",false)) || (StrEqual(targn,"actor_olivia",false))) Format(clsname,sizeof(clsname),"Olivia");
+											else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
+											else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
+											if (GetNPCAllyTarg(targn)) friendly = true;
+										}
+										else if (StrEqual(clsname,"turret_floor",false))
+										{
+											Format(clsname,sizeof(clsname),"Floor Turret");
+										}
+										else if (StrEqual(clsname,"cscanner",false))
+										{
+											char cmodel[64];
+											GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+											if (StrEqual(cmodel,"models/shield_scanner.mdl",false)) Format(clsname,sizeof(clsname),"Claw Scanner");
+										}
+										else if (StrEqual(clsname,"vortigaunt",false))
+										{
+											char cmodel[64];
+											GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+											if (StrEqual(cmodel,"models/vortigaunt_doctor.mdl",false)) Format(clsname,sizeof(clsname),"Uriah");
+											else if (StrEqual(cmodel,"models/vortigaunt_slave.mdl",false)) Format(clsname,sizeof(clsname),"Vortigaunt Slave");
+										}
+										else if (StrEqual(clsname,"antlion",false))
+										{
+											char cmodel[64];
+											GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
+											if (StrEqual(cmodel,"models/antlion_worker.mdl",false)) Format(clsname,sizeof(clsname),"Antlion Worker");
+										}
+										else if (StrEqual(clsname,"antlionguard",false))
+										{
+											Format(clsname,sizeof(clsname),"Antlion Guard");
+											if (GetEntProp(targ,Prop_Data,"m_bCavernBreed") == 1) Format(clsname,sizeof(clsname),"Antlion Guardian");
+										}
+										else if (StrEqual(clsname,"rollermine",false))
+										{
+											curh = 1;
+											maxh = 1;
+										}
+										antispamchk[client] = Time + 0.07;
+										PrintTheMsg(client,curh,maxh,clsname,friendly);
+									}
+								}
+							}
+							else if (bclcookie3[client] == 1)
 							{
 								int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
 								if (StrContains(clsname,"monster_",false) != -1)
@@ -788,12 +924,13 @@ public Action ShowTimer(Handle timer)
 										else if (StrContains(cmodel,"models/helghast/",false) == 0)
 											Format(clsname,sizeof(clsname),"Helghast Soldier");
 										else if (GetEntProp(targ,Prop_Data,"m_nSkin") == 1)
-											Format(clsname,sizeof(clsname),"Combine Shotgunner");
+												Format(clsname,sizeof(clsname),"Combine Shotgunner");
 										else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
 											Format(clsname,sizeof(clsname),"Combine Guard");
 										else
 											Format(clsname,sizeof(clsname),"Combine Soldier");
 									}
+									else if (StrEqual(clsname,"combinedropship",false)) Format(clsname,sizeof(clsname),"Combine Dropship");
 									else if (StrEqual(clsname,"citizen",false))
 									{
 										char targn[64];
@@ -812,10 +949,8 @@ public Action ShowTimer(Handle timer)
 										else if (StrContains(targn,"matt",false) != -1) Format(clsname,sizeof(clsname),"Matt");
 										else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Mina");
 										else if (StrEqual(targn,"arlene",false)) Format(clsname,sizeof(clsname),"Arlene");
-										else if (StrEqual(targn,"john",false)) Format(clsname,sizeof(clsname),"John");
-										else if (StrContains(targn,"mitch",false) != -1) Format(clsname,sizeof(clsname),"Mitch");
 										else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
-										else if (StrContains(targn,"oleg",false) != -1) Format(clsname,sizeof(clsname),"Oleg");
+										else if (StrEqual(targn,"oleg",false)) Format(clsname,sizeof(clsname),"Oleg");
 										else if (StrEqual(targn,"Richard",false)) Format(clsname,sizeof(clsname),"Richard");
 										else if (StrEqual(targn,"laura",false)) Format(clsname,sizeof(clsname),"Laura");
 										else if (StrEqual(targn,"winston",false)) Format(clsname,sizeof(clsname),"Winston");
@@ -873,184 +1008,52 @@ public Action ShowTimer(Handle timer)
 									PrintTheMsg(client,curh,maxh,clsname,friendly);
 								}
 							}
-						}
-						else if (bclcookie3[client] == 1)
-						{
-							int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
-							if (StrContains(clsname,"monster_",false) != -1)
+							else
 							{
-								ReplaceString(clsname,sizeof(clsname),"monster_","");
-								ismonster = true;
-							}
-							else ReplaceString(clsname,sizeof(clsname),"npc_","");
-							int maxh = 20;
-							if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
-							{
-								maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
-								if (StrEqual(clsname,"combine_camera",false))
-									maxh = 50;
-								else if (StrEqual(clsname,"antlion_grub",false))
-									maxh = 1;
-								else if (StrEqual(clsname,"combinedropship",false))
-									maxh = 100;
-								else if ((maxh == 0) && ((StrEqual(clsname,"turret_ceiling",false)) || (StrEqual(clsname,"security_camera",false))))
-									maxh = 1000;
-								else if (maxh == 0)
+								char friendfoe[32];
+								Format(friendfoe,sizeof(friendfoe),clsname);
+								int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
+								if (StrContains(clsname,"monster_",false) != -1)
 								{
-									char cvarren[32];
-									if (ismonster) Format(cvarren,sizeof(cvarren),"hl1_sk_%s_health",clsname);
-									else Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
-									Handle cvarchk = FindConVar(cvarren);
-									if (cvarchk == INVALID_HANDLE)
-										maxh = 20;
-									else
-										maxh = GetConVarInt(cvarchk);
+									ReplaceString(clsname,sizeof(clsname),"monster_","");
+									ismonster = true;
 								}
-							}
-							clsname[0] &= ~(1 << 5);
-							float Time = GetTickedTime();
-							if ((antispamchk[client] <= Time) && (curh > 0))
-							{
-								if (StrEqual(clsname,"combine_s",false))
+								else ReplaceString(clsname,sizeof(clsname),"npc_","");
+								int maxh = 20;
+								if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
 								{
-									char cmodel[64];
-									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-									if (StrEqual(cmodel,"models/combine_super_soldier.mdl",false))
-										Format(clsname,sizeof(clsname),"Combine Elite");
-									else if (StrContains(cmodel,"models/sttr_easyrider",false) == 0)
-										Format(clsname,sizeof(clsname),"Easy Rider");
-									else if (StrContains(cmodel,"models/helghast/",false) == 0)
-										Format(clsname,sizeof(clsname),"Helghast Soldier");
-									else if (GetEntProp(targ,Prop_Data,"m_nSkin") == 1)
-											Format(clsname,sizeof(clsname),"Combine Shotgunner");
-									else if (StrEqual(cmodel,"models/combine_soldier_prisonguard.mdl",false))
-										Format(clsname,sizeof(clsname),"Combine Guard");
-									else
-										Format(clsname,sizeof(clsname),"Combine Soldier");
+									maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
+									if (StrEqual(clsname,"combine_camera",false))
+										maxh = 50;
+									else if (StrEqual(clsname,"antlion_grub",false))
+										maxh = 1;
+									else if (StrEqual(clsname,"combinedropship",false))
+										maxh = 100;
+									else if (StrEqual(clsname,"turret_ceiling",false))
+										maxh = 1000;
+									else if (maxh == 0)
+									{
+										char cvarren[32];
+										if (ismonster) Format(cvarren,sizeof(cvarren),"hl1_sk_%s_health",clsname);
+										else Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
+										Handle cvarchk = FindConVar(cvarren);
+										if (cvarchk == INVALID_HANDLE)
+											maxh = 20;
+										else
+											maxh = GetConVarInt(cvarchk);
+									}
 								}
-								else if (StrEqual(clsname,"combinedropship",false)) Format(clsname,sizeof(clsname),"Combine Dropship");
-								else if (StrEqual(clsname,"citizen",false))
-								{
-									char targn[64];
-									char cmodel[64];
-									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-									if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
-									if (StrEqual(cmodel,"models/odessa.mdl",false)) Format(clsname,sizeof(clsname),"Odessa Cubbage");
-									else if (StrContains(cmodel,"models/humans/group03m/",false) == 0) Format(clsname,sizeof(clsname),"Rebel Medic");
-									else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
-									else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
-									else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Larry");
-									else if (StrContains(targn,"anne",false) != -1) Format(clsname,sizeof(clsname),"Anne");
-									else if (StrContains(targn,"arthur",false) != -1) Format(clsname,sizeof(clsname),"Arthur");
-									else if (StrContains(targn,"sarah",false) != -1) Format(clsname,sizeof(clsname),"Sarah");
-									else if (StrContains(targn,"mary",false) != -1) Format(clsname,sizeof(clsname),"Mary");
-									else if (StrContains(targn,"matt",false) != -1) Format(clsname,sizeof(clsname),"Matt");
-									else if (StrEqual(targn,"mina",false)) Format(clsname,sizeof(clsname),"Mina");
-									else if (StrEqual(targn,"arlene",false)) Format(clsname,sizeof(clsname),"Arlene");
-									else if ((StrEqual(targn,"argento",false)) || (StrEqual(targn,"rebel_argento",false))) Format(clsname,sizeof(clsname),"Argento");
-									else if (StrEqual(targn,"oleg",false)) Format(clsname,sizeof(clsname),"Oleg");
-									else if (StrEqual(targn,"Richard",false)) Format(clsname,sizeof(clsname),"Richard");
-									else if (StrEqual(targn,"laura",false)) Format(clsname,sizeof(clsname),"Laura");
-									else if (StrEqual(targn,"winston",false)) Format(clsname,sizeof(clsname),"Winston");
-									else if (StrEqual(targn,"stanley",false)) Format(clsname,sizeof(clsname),"Stanley");
-									else if (StrEqual(targn,"tobias",false)) Format(clsname,sizeof(clsname),"Laszlo Tobias");
-									else if (StrEqual(targn,"chester",false)) Format(clsname,sizeof(clsname),"Chester");
-									else if (StrEqual(targn,"warehouse_citizen_leon",false)) Format(clsname,sizeof(clsname),"Leon");
-									else if ((StrEqual(targn,"jackCarver",false)) || (StrEqual(targn,"jack",false))) Format(clsname,sizeof(clsname),"Jack");
-									else if ((StrContains(targn,"ugly",false) == 0) && (StrEqual(cmodel,"models/Humans/Group01/male_02.mdl",false))) Format(clsname,sizeof(clsname),"The Ugly");
-									else if ((StrContains(targn,"bad",false) == 0) && (StrEqual(cmodel,"models/Humans/Group01/male_03.mdl",false))) Format(clsname,sizeof(clsname),"The Bad");
-									else if (StrEqual(targn,"mike",false)) Format(clsname,sizeof(clsname),"Mike");
-									else if (StrEqual(targn,"Larson",false)) Format(clsname,sizeof(clsname),"Larson");
-									else if (StrEqual(targn,"Eloise",false)) Format(clsname,sizeof(clsname),"Eloise");
-									else if (StrEqual(targn,"Noah",false)) Format(clsname,sizeof(clsname),"Noah");
-									else if (StrEqual(targn,"Eve",false)) Format(clsname,sizeof(clsname),"Eve");
-									else if ((StrEqual(targn,"Olivia",false)) || (StrEqual(targn,"actor_olivia",false))) Format(clsname,sizeof(clsname),"Olivia");
-									else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
-									else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
-									if (GetNPCAllyTarg(targn)) friendly = true;
-								}
-								else if (StrEqual(clsname,"turret_floor",false))
-								{
-									Format(clsname,sizeof(clsname),"Floor Turret");
-								}
-								else if (StrEqual(clsname,"cscanner",false))
-								{
-									char cmodel[64];
-									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-									if (StrEqual(cmodel,"models/shield_scanner.mdl",false)) Format(clsname,sizeof(clsname),"Claw Scanner");
-								}
-								else if (StrEqual(clsname,"vortigaunt",false))
-								{
-									char cmodel[64];
-									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-									if (StrEqual(cmodel,"models/vortigaunt_doctor.mdl",false)) Format(clsname,sizeof(clsname),"Uriah");
-									else if (StrEqual(cmodel,"models/vortigaunt_slave.mdl",false)) Format(clsname,sizeof(clsname),"Vortigaunt Slave");
-								}
-								else if (StrEqual(clsname,"antlion",false))
-								{
-									char cmodel[64];
-									GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-									if (StrEqual(cmodel,"models/antlion_worker.mdl",false)) Format(clsname,sizeof(clsname),"Antlion Worker");
-								}
-								else if (StrEqual(clsname,"antlionguard",false))
-								{
-									Format(clsname,sizeof(clsname),"Antlion Guard");
-									if (GetEntProp(targ,Prop_Data,"m_bCavernBreed") == 1) Format(clsname,sizeof(clsname),"Antlion Guardian");
-								}
-								else if (StrEqual(clsname,"rollermine",false))
+								if (StrEqual(clsname,"rollermine",false))
 								{
 									curh = 1;
 									maxh = 1;
 								}
-								antispamchk[client] = Time + 0.07;
-								PrintTheMsg(client,curh,maxh,clsname,friendly);
-							}
-						}
-						else
-						{
-							char friendfoe[32];
-							Format(friendfoe,sizeof(friendfoe),clsname);
-							int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
-							if (StrContains(clsname,"monster_",false) != -1)
-							{
-								ReplaceString(clsname,sizeof(clsname),"monster_","");
-								ismonster = true;
-							}
-							else ReplaceString(clsname,sizeof(clsname),"npc_","");
-							int maxh = 20;
-							if (HasEntProp(targ,Prop_Data,"m_iMaxHealth"))
-							{
-								maxh = GetEntProp(targ,Prop_Data,"m_iMaxHealth");
-								if (StrEqual(clsname,"combine_camera",false))
-									maxh = 50;
-								else if (StrEqual(clsname,"antlion_grub",false))
-									maxh = 1;
-								else if (StrEqual(clsname,"combinedropship",false))
-									maxh = 100;
-								else if (StrEqual(clsname,"turret_ceiling",false))
-									maxh = 1000;
-								else if (maxh == 0)
+								float Time = GetTickedTime();
+								if ((antispamchk[client] <= Time) && (curh > 0))
 								{
-									char cvarren[32];
-									if (ismonster) Format(cvarren,sizeof(cvarren),"hl1_sk_%s_health",clsname);
-									else Format(cvarren,sizeof(cvarren),"sk_%s_health",clsname);
-									Handle cvarchk = FindConVar(cvarren);
-									if (cvarchk == INVALID_HANDLE)
-										maxh = 20;
-									else
-										maxh = GetConVarInt(cvarchk);
+									antispamchk[client] = Time + 0.07;
+									PrintTheMsgf(client,curh,maxh,friendfoe,targ);
 								}
-							}
-							if (StrEqual(clsname,"rollermine",false))
-							{
-								curh = 1;
-								maxh = 1;
-							}
-							float Time = GetTickedTime();
-							if ((antispamchk[client] <= Time) && (curh > 0))
-							{
-								antispamchk[client] = Time + 0.07;
-								PrintTheMsgf(client,curh,maxh,friendfoe,targ);
 							}
 						}
 					}
