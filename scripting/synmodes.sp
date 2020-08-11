@@ -1577,7 +1577,8 @@ public Action tpclspawnnew(Handle timer, int i)
 		float pos[3];
 		GetClientAbsOrigin(clused, pos);
 		float plyang[3];
-		GetClientEyeAngles(clused, plyang);
+		if (HasEntProp(clused,Prop_Send,"m_angRotation")) GetEntPropVector(clused,Prop_Send,"m_angRotation",plyang);
+		else GetClientEyeAngles(clused, plyang);
 		plyang[2] = 0.0;
 		if (IsValidEntity(vck))
 		{
@@ -4045,7 +4046,7 @@ void readoutputsforinputs()
 						{
 							Format(output,endpos+1,"%s",output);
 						}
-						ReplaceStringEx(lineorgres,sizeof(lineorgres),output,"",_,_,false);
+						if (strlen(output) > 0) ReplaceStringEx(lineorgres,sizeof(lineorgres),output,"",_,_,false);
 						TrimString(lineorgres);
 						Format(output,sizeof(output),"\"%s\"",output);
 						ReplaceString(lineorgres,sizeof(lineorgres),":",",");

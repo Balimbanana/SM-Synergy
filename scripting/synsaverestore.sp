@@ -3694,7 +3694,7 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 	if (transitionply)
 	{
 		int client = GetClientOfUserId(GetEventInt(event,"userid"));
-		CreateTimer(0.1, transitionspawn, client);
+		CreateTimer(0.1, transitionspawn, client, TIMER_FLAG_NO_MAPCHANGE);
 	}
 	return Plugin_Continue;
 }
@@ -4163,7 +4163,7 @@ public Action anotherdelay(Handle timer, int client)
 					}
 				}
 			}
-			if ((GetArraySize(equiparr) < 1) && (!StrEqual(mapbuf,"bm_c0a0c",false)) && (!StrEqual(mapbuf,"sp_intro",false)) && (!StrEqual(mapbuf,"d1_trainstation_05",false)) && (!StrEqual(mapbuf,"ce_01",false))) CreateTimer(0.1,delayequip,client);
+			if ((GetArraySize(equiparr) < 1) && (!StrEqual(mapbuf,"bm_c0a0c",false)) && (!StrEqual(mapbuf,"bm_c1a0a",false)) && (!StrEqual(mapbuf,"sp_intro",false)) && (!StrEqual(mapbuf,"d1_trainstation_05",false)) && (!StrEqual(mapbuf,"ce_01",false))) CreateTimer(0.1,delayequip,client);
 		}
 	}
 }

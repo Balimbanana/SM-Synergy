@@ -2276,7 +2276,7 @@ public Action clspawnpost(Handle timer, int client)
 			}
 			int vck = -1;
 			if (HasEntProp(client,Prop_Send,"m_hVehicle")) vck = GetEntProp(client, Prop_Send, "m_hVehicle");
-			if ((vck == -1) && ((FindStringInArray(weaparr,"weapon_physcannon") == -1) || (GetEntProp(client,Prop_Send,"m_bWearingSuit") > 0)))
+			if ((vck == -1) && ((FindStringInArray(weaparr,"weapon_physcannon") == -1) || (GetEntProp(client,Prop_Send,"m_bWearingSuit") > 0)) && (StrContains(mapbuf,"bm_c1a0a",false) == -1) && (StrContains(mapbuf,"d1_trainstation_05",false) == -1))
 			{
 				for (int j; j<GetArraySize(equiparr); j++)
 				{
