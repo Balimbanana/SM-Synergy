@@ -108,7 +108,7 @@ bool norunagain = false;
 bool BlockTripMineDamage = true;
 bool FixWeapSnd = true;
 
-#define PLUGIN_VERSION "2.0017"
+#define PLUGIN_VERSION "2.0018"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -15079,6 +15079,17 @@ public Action custent(Handle timer, int entity)
 			SetVariantString("npc_ichthyosaur D_LI 99");
 			AcceptEntityInput(entity,"SetRelationship");
 		}
+		else if (StrEqual(entcls,"env_laserdot",false))
+		{
+			if (HasEntProp(entity,Prop_Data,"m_hOwnerEntity"))
+			{
+				int owner = GetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity");
+				if ((IsValidEntity(owner)) && (owner > 0) && (owner < MaxClients+1))
+				{
+					if (!guiderocket[owner]) SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
+				}
+			}
+		}
 		else if (StrContains(entcls,"prop_vehicle",false) == 0)
 		{
 			if (HasEntProp(entity,Prop_Data,"m_vehicleScript"))
@@ -19500,12 +19511,56 @@ public void OnButtonPress(int client, int button)
 					SetEntProp(weap,Prop_Data,"m_bInReload",0);
 					SetEntProp(weap,Prop_Data,"m_nSequence",2);
 					EmitSoundToAll("weapons/sniper/sniper_zoomout.wav", client, SNDCHAN_WEAPON, 30);
+					Handle laserdotarr = CreateArray(256);
+					FindAllByClassname(laserdotarr,-1,"env_laserdot");
+					if (GetArraySize(laserdotarr) > 0)
+					{
+						for (int i = 0;i<GetArraySize(laserdotarr);i++)
+						{
+							int laserdot = GetArrayCell(laserdotarr,i);
+							if (IsValidEntity(laserdot))
+							{
+								if (HasEntProp(laserdot,Prop_Data,"m_hOwnerEntity"))
+								{
+									int owner = GetEntPropEnt(laserdot,Prop_Data,"m_hOwnerEntity");
+									if (owner == client)
+									{
+										SetEntProp(laserdot,Prop_Data,"m_nRenderFX",6);
+										break;
+									}
+								}
+							}
+						}
+					}
+					CloseHandle(laserdotarr);
 				}
 				else
 				{
 					guiderocket[client] = true;
 					PrintToChat(client,"Turned on rocket guide.");
 					EmitSoundToAll("weapons/sniper/sniper_zoomin.wav", client, SNDCHAN_WEAPON, 30);
+					Handle laserdotarr = CreateArray(256);
+					FindAllByClassname(laserdotarr,-1,"env_laserdot");
+					if (GetArraySize(laserdotarr) > 0)
+					{
+						for (int i = 0;i<GetArraySize(laserdotarr);i++)
+						{
+							int laserdot = GetArrayCell(laserdotarr,i);
+							if (IsValidEntity(laserdot))
+							{
+								if (HasEntProp(laserdot,Prop_Data,"m_hOwnerEntity"))
+								{
+									int owner = GetEntPropEnt(laserdot,Prop_Data,"m_hOwnerEntity");
+									if (owner == client)
+									{
+										SetEntProp(laserdot,Prop_Data,"m_nRenderFX",0);
+										break;
+									}
+								}
+							}
+						}
+					}
+					CloseHandle(laserdotarr);
 				}
 				findrockets(-1,client);
 			}
