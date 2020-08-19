@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.158"
-			"Previous"	"2.157"
+			"Latest"  	"2.159"
+			"Previous"	"2.158"
 		}
 		
-		"Notes"	"Fixed issue of weapon transitions not always restoring player weapons."
+		"Notes"	"Added CVar sm_transitionreset_mode, 1 is same default method used with clear/save, 2 is cancelrestore."
 	}
 	
 	"Files"

@@ -37,6 +37,7 @@ int WeapList = -1;
 int reloadtype = 0;
 int logsv = -1;
 int logplyprox = -1;
+int saveresetm = 1;
 float votetime = 0.0;
 float perclimit = 0.80; //Set by cvar sm_voterestore
 float perclimitsave = 0.60; //Set by cvar sm_votecreatesave
@@ -60,7 +61,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.158"
+#define PLUGIN_VERSION "2.159"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -171,6 +172,19 @@ public void OnPluginStart()
 	else SkipVer = false;
 	HookConVarChange(transitiondbgh, transitionskipverch);
 	CloseHandle(transitiondbgh);
+	Handle saveresetmode = FindConVar("sm_transitionreset_mode");
+	if (saveresetmode != INVALID_HANDLE)
+	{
+		HookConVarChange(saveresetmode, transitionresetmch);
+		saveresetm = GetConVarInt(saveresetmode);
+	}
+	else
+	{
+		saveresetmode = CreateConVar("sm_transitionreset_mode", "1", "Sets method of reset transition data, 1 is clear/save, 2 is cancelrestore.", _, true, 0.0, true, 2.0);
+		HookConVarChange(saveresetmode, transitionresetmch);
+		saveresetm = GetConVarInt(saveresetmode);
+	}
+	CloseHandle(saveresetmode);
 	RegServerCmd("changelevel",resettransition);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	AutoExecConfig(true, "synsaverestore");
@@ -284,6 +298,17 @@ public void transitionskipverch(Handle convar, const char[] oldValue, const char
 	else SkipVer = false;
 }
 
+public void transitionresetmch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	saveresetm = StringToInt(newValue);
+	if (GetMapHistorySize() > -1)
+	{
+		if ((IsValidEntity(logsv)) && (logsv != 0)) AcceptEntityInput(logsv,"kill");
+		if (saveresetm == 1) logsv = CreateEntityByName("logic_autosave");
+		else if (saveresetm == 2) logsv = CreateEntityByName("logic_playerproxy");
+	}
+}
+
 public Action votereloadchk(int client, int args)
 {
 	Handle panel = CreatePanel();
@@ -378,7 +403,8 @@ public Action savecurgame(int client, int args)
 	}
 	else
 	{
-		logsv = CreateEntityByName("logic_autosave");
+		if (saveresetm == 1) logsv = CreateEntityByName("logic_autosave");
+		else if (saveresetm == 2) logsv = CreateEntityByName("logic_playerproxy");
 		if ((logsv != -1) && (IsValidEntity(logsv)))
 		{
 			DispatchKeyValue(logsv,"NewLevelUnit","1");
@@ -790,7 +816,8 @@ public Action savecurgamedp(Handle timer, any dp)
 			}
 			else
 			{
-				logsv = CreateEntityByName("logic_autosave");
+				if (saveresetm == 1) logsv = CreateEntityByName("logic_autosave");
+				else if (saveresetm == 2) logsv = CreateEntityByName("logic_playerproxy");
 				if ((logsv != -1) && (IsValidEntity(logsv)))
 				{
 					DispatchKeyValue(logsv,"NewLevelUnit","1");
@@ -1522,7 +1549,8 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 				}
 				else
 				{
-					logsv = CreateEntityByName("logic_autosave");
+					if (saveresetm == 1) logsv = CreateEntityByName("logic_autosave");
+					else if (saveresetm == 2) logsv = CreateEntityByName("logic_playerproxy");
 					if ((logsv != -1) && (IsValidEntity(logsv)))
 					{
 						DispatchKeyValue(logsv,"NewLevelUnit","1");
@@ -1575,7 +1603,8 @@ public void OnMapStart()
 				AcceptEntityInput(logplyprox,"CancelRestorePlayers");
 			}
 		}
-		logsv = CreateEntityByName("logic_autosave");
+		if (saveresetm == 1) logsv = CreateEntityByName("logic_autosave");
+		else if (saveresetm == 2) logsv = CreateEntityByName("logic_playerproxy");
 		if ((logsv != -1) && (IsValidEntity(logsv)))
 		{
 			DispatchKeyValue(logsv,"NewLevelUnit","1");
@@ -3762,7 +3791,8 @@ public void OnClientAuthorized(int client, const char[] szAuth)
 			}
 			else
 			{
-				logsv = CreateEntityByName("logic_autosave");
+				if (saveresetm == 1) logsv = CreateEntityByName("logic_autosave");
+				else if (saveresetm == 2) logsv = CreateEntityByName("logic_playerproxy");
 				if ((logsv != -1) && (IsValidEntity(logsv)))
 				{
 					DispatchKeyValue(logsv,"NewLevelUnit","1");
@@ -3852,7 +3882,11 @@ void saveresetveh(bool rmsave)
 					}
 				}
 			}
-			AcceptEntityInput(logsv,"Save");
+			if (IsValidEntity(logsv))
+			{
+				if (saveresetm == 1) AcceptEntityInput(logsv,"Save");
+				else if (saveresetm == 2) AcceptEntityInput(logsv,"CancelRestorePlayers");
+			}
 			for (int i = 1;i<MaxClients+1;i++)
 			{
 				if ((vehicles[i] != 0) && (IsValidEntity(vehicles[i])))
