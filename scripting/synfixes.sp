@@ -48,13 +48,14 @@ bool playerteleports = false;
 bool hasread = false;
 bool DisplayedChapterTitle[65];
 bool appliedlargeplayeradj = false;
-bool BlockEx = true;
+bool bBlockEx = true;
+bool bFixRebind = false;
 bool TrainBlockFix = true;
 bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99972"
+#define PLUGIN_VERSION "1.99973"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -149,14 +150,27 @@ public void OnPluginStart()
 	cvar = FindConVar("sm_blockex");
 	if (cvar != INVALID_HANDLE)
 	{
-		BlockEx = GetConVarBool(cvar);
+		bBlockEx = GetConVarBool(cvar);
 		HookConVarChange(cvar, blckexch);
 	}
 	else
 	{
 		cvar = CreateConVar("sm_blockex", "1", ".", _, true, 0.0, true, 1.0);
-		BlockEx = GetConVarBool(cvar);
+		bBlockEx = GetConVarBool(cvar);
 		HookConVarChange(cvar, blckexch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("syn_fixrebind");
+	if (cvar != INVALID_HANDLE)
+	{
+		bFixRebind = GetConVarBool(cvar);
+		HookConVarChange(cvar, sfixrebindch);
+	}
+	else
+	{
+		cvar = CreateConVar("syn_fixrebind", "0", "Rebinds a few default keys automatically.", _, true, 0.0, true, 1.0);
+		bFixRebind = GetConVarBool(cvar);
+		HookConVarChange(cvar, sfixrebindch);
 	}
 	CloseHandle(cvar);
 	cvar = FindConVar("sm_fixblockedtrains");
@@ -1171,8 +1185,11 @@ public Action clspawnpost(Handle timer, int client)
 		}
 		SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 		SDKHook(client, SDKHook_WeaponSwitch, OnWeaponUse);
-		ClientCommand(client,"bind f1 vote_yes");
-		ClientCommand(client,"bind f2 vote_no");
+		if (bFixRebind)
+		{
+			ClientCommand(client,"bind f1 vote_yes");
+			ClientCommand(client,"bind f2 vote_no");
+		}
 	}
 	else if (IsClientConnected(client))
 	{
@@ -2929,7 +2946,7 @@ public Action cleanup(Handle timer, Handle data)
 public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 {
 	ClientCommand(client,"alias sv_shutdown \"echo nope\"");
-	if (BlockEx) ClientCommand(client,"alias exec \"echo nope\"");
+	if (bBlockEx) ClientCommand(client,"alias exec \"echo nope\"");
 	return true;
 }
 
@@ -4218,10 +4235,14 @@ public void plytrigch(Handle convar, const char[] oldValue, const char[] newValu
 
 public void blckexch(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	if (StringToInt(newValue) > 0)
-		BlockEx = true;
-	else
-		BlockEx = false;
+	if (StringToInt(newValue) > 0) bBlockEx = true;
+	else bBlockEx = false;
+}
+
+public void sfixrebindch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0) bFixRebind = true;
+	else bFixRebind = false;
 }
 
 public void trainblckch(Handle convar, const char[] oldValue, const char[] newValue)

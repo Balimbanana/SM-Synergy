@@ -97,7 +97,8 @@ bool DisplayedChapterTitle[128];
 bool appliedlargeplayeradj = false;
 bool antlionguardhard = false;
 bool incfixer = false;
-bool BlockEx = true;
+bool bBlockEx = true;
+bool bFixRebind = false;
 bool RestartedMap = false;
 bool AutoFixEp2Req = false;
 bool TrainBlockFix = true;
@@ -108,7 +109,7 @@ bool norunagain = false;
 bool BlockTripMineDamage = true;
 bool FixWeapSnd = true;
 
-#define PLUGIN_VERSION "2.0018"
+#define PLUGIN_VERSION "2.0019"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -249,14 +250,27 @@ public void OnPluginStart()
 	cvar = FindConVar("sm_blockex");
 	if (cvar != INVALID_HANDLE)
 	{
-		BlockEx = GetConVarBool(cvar);
+		bBlockEx = GetConVarBool(cvar);
 		HookConVarChange(cvar, blckexch);
 	}
 	else
 	{
 		cvar = CreateConVar("sm_blockex", "1", ".", _, true, 0.0, true, 1.0);
-		BlockEx = GetConVarBool(cvar);
+		bBlockEx = GetConVarBool(cvar);
 		HookConVarChange(cvar, blckexch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("syn_fixrebind");
+	if (cvar != INVALID_HANDLE)
+	{
+		bFixRebind = GetConVarBool(cvar);
+		HookConVarChange(cvar, sfixrebindch);
+	}
+	else
+	{
+		cvar = CreateConVar("syn_fixrebind", "0", "Rebinds a few default keys automatically.", _, true, 0.0, true, 1.0);
+		bFixRebind = GetConVarBool(cvar);
+		HookConVarChange(cvar, sfixrebindch);
 	}
 	CloseHandle(cvar);
 	cvar = FindConVar("sm_autofixreq_ep2");
@@ -2448,8 +2462,11 @@ public Action clspawnpost(Handle timer, int client)
 			SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 			SDKHook(client, SDKHook_WeaponSwitch, OnWeaponUse);
 			//Rebinds for default applications
-			ClientCommand(client,"bind f1 vote_yes");
-			ClientCommand(client,"bind f2 vote_no");
+			if (bFixRebind)
+			{
+				ClientCommand(client,"bind f1 vote_yes");
+				ClientCommand(client,"bind f2 vote_no");
+			}
 			CreateTimer(0.1,restoresound,client,TIMER_FLAG_NO_MAPCHANGE);
 			ClientCommand(client,"snd_restart");
 			char briefing[128];
@@ -3000,8 +3017,13 @@ public Action resetgraphs(int client, int args)
 		{
 			char findnode[128];
 			char mapname[128];
+			char ctag[16];
 			GetCmdArg(1,mapname,sizeof(mapname));
-			if (args > 1) GetCmdArg(2,mapname,sizeof(mapname));
+			if (args > 1)
+			{
+				Format(ctag,sizeof(ctag),"%s_",mapname);
+				GetCmdArg(2,mapname,sizeof(mapname));
+			}
 			if (strlen(mapname) > 0)
 			{
 				TrimString(mapname);
@@ -3041,6 +3063,40 @@ public Action resetgraphs(int client, int args)
 					}
 					CloseHandle(srvcvar);
 				}
+			}
+			char chkedt[128];
+			Format(chkedt,sizeof(chkedt),"maps/%s%s.edt",ctag,mapname);
+			if (!FileExists(chkedt,true,NULL_STRING)) Format(chkedt,sizeof(chkedt),"maps/%s%s.edt2",ctag,mapname);
+			if (!FileExists(chkedt,true,NULL_STRING)) Format(chkedt,sizeof(chkedt),"maps/%s.edt",mapname);
+			if (!FileExists(chkedt,true,NULL_STRING)) Format(chkedt,sizeof(chkedt),"maps/%s.edt2",mapname);
+			if (FileExists(chkedt,true,NULL_STRING))
+			{
+				Handle readpreinstruct = OpenFile(chkedt,"r",true,NULL_STRING);
+				if (readpreinstruct != INVALID_HANDLE)
+				{
+					char line[128];
+					int linesread = 0;
+					while(!IsEndOfFile(readpreinstruct)&&ReadFileLine(readpreinstruct,line,sizeof(line)))
+					{
+						TrimString(line);
+						linesread++;
+						if (StrContains(line,"sv_content_optional",false) != -1)
+						{
+							ReplaceString(line,sizeof(line),"sv_content_optional","",false);
+							ReplaceString(line,sizeof(line),"\"","",false);
+							TrimString(line);
+							Handle srvcvar = FindConVar("sv_content_optional");
+							if (srvcvar != INVALID_HANDLE)
+							{
+								SetConVarString(srvcvar,line,true,false);
+							}
+							CloseHandle(srvcvar);
+							break;
+						}
+						if (linesread > 30) break;
+					}
+				}
+				CloseHandle(readpreinstruct);
 			}
 			Format(findnode,sizeof(findnode),"maps\\graphs\\%s.ain",mapname);
 			if (FileExists(findnode,false))
@@ -14726,6 +14782,14 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		SDKHook(entity, SDKHook_OnTakeDamage, TakeDamageCustom);
 	}
+	else if (StrEqual(classname,"npc_hunter",false))
+	{
+		if (!FileExists("models/hunter.mdl",true,NULL_STRING))
+		{
+			PrintToServer("Attempted to create hunter without Ep2 mounted!");
+			AcceptEntityInput(entity,"kill");
+		}
+	}
 }
 
 public void OnEntityDestroyed(int entity)
@@ -14823,6 +14887,27 @@ public void OnEntityDestroyed(int entity)
 					AcceptEntityInput(entity,"ExitVehicle",ply);
 				}
 			}
+		}
+		else if (StrEqual(cls,"npc_rollermine",false))
+		{
+			StopSound(entity,SNDCHAN_WEAPON,"npc/roller/mine/rmine_seek_loop2.wav");
+			StopSound(entity,SNDCHAN_WEAPON,"npc/roller/mine/rmine_moveslow_loop1.wav");
+			StopSound(entity,SNDCHAN_WEAPON,"npc/roller/mine/rmine_movefast_loop1.wav");
+			float entpos[3];
+			if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",entpos);
+			else if (HasEntProp(entity,Prop_Data,"m_vecOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecOrigin",entpos);
+			EmitAmbientSound("npc/roller/mine/rmine_seek_loop2.wav", entpos, entity, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
+			EmitAmbientSound("npc/roller/mine/rmine_moveslow_loop1.wav", entpos, entity, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
+			EmitAmbientSound("npc/roller/mine/rmine_movefast_loop1.wav", entpos, entity, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
+		}
+		else if (StrEqual(cls,"npc_turret_floor",false))
+		{
+			StopSound(entity,SNDCHAN_VOICE,"npc/turret_floor/alarm.wav");
+			StopSound(entity,SNDCHAN_WEAPON,"npc/turret_floor/alarm.wav");
+			float entpos[3];
+			if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",entpos);
+			else if (HasEntProp(entity,Prop_Data,"m_vecOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecOrigin",entpos);
+			EmitAmbientSound("npc/turret_floor/alarm.wav", entpos, entity, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 0.0);
 		}
 	}
 	findmovechild(-1);
@@ -19218,7 +19303,7 @@ void findentlist(int ent, char[] clsname)
 public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 {
 	ClientCommand(client,"alias sv_shutdown \"echo nope\"");
-	if (BlockEx) ClientCommand(client,"alias exec \"echo nope\"");
+	if (bBlockEx) ClientCommand(client,"alias exec \"echo nope\"");
 	return true;
 }
 
@@ -20560,10 +20645,14 @@ public void incfixerch(Handle convar, const char[] oldValue, const char[] newVal
 
 public void blckexch(Handle convar, const char[] oldValue, const char[] newValue)
 {
-	if (StringToInt(newValue) > 0)
-		BlockEx = true;
-	else
-		BlockEx = false;
+	if (StringToInt(newValue) > 0) bBlockEx = true;
+	else bBlockEx = false;
+}
+
+public void sfixrebindch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0) bFixRebind = true;
+	else bFixRebind = false;
 }
 
 public void ep2reqch(Handle convar, const char[] oldValue, const char[] newValue)
