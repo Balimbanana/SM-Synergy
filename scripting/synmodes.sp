@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.40"
+#define PLUGIN_VERSION "1.41"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -1887,7 +1887,14 @@ void findent(int ent, char[] clsname)
 					PushArrayCell(equiparr,thisent);
 					return;
 				}
-				else bdisabled = 1;
+				else
+				{
+					if (bdisabled == 0)
+					{
+						PushArrayCell(equiparr,thisent);
+					}
+					bdisabled = 1;
+				}
 			}
 		}
 		if (bdisabled == 0)
