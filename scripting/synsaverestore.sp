@@ -61,7 +61,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.159"
+#define PLUGIN_VERSION "2.160"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3783,7 +3783,7 @@ public void OnClientAuthorized(int client, const char[] szAuth)
 				}
 			}
 		}
-		if (!nodel)
+		if ((!nodel) && (!StrEqual(mapbuf,"ep1_citadel_00",false)))
 		{
 			if ((logsv != -1) && (IsValidEntity(logsv)))
 			{

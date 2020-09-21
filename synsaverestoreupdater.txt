@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.159"
-			"Previous"	"2.158"
+			"Latest"  	"2.160"
+			"Previous"	"2.159"
 		}
 		
-		"Notes"	"Added CVar sm_transitionreset_mode, 1 is same default method used with clear/save, 2 is cancelrestore."
+		"Notes"	"Configuration for ep1_citadel_00."
 	}
 	
 	"Files"
