@@ -55,7 +55,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99973"
+#define PLUGIN_VERSION "1.99974"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1812,10 +1812,10 @@ public Action createelev(const char[] output, int caller, int activator, float d
 			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",elevorg);
 			if (HasEntProp(caller,Prop_Data,"m_angRotation")) GetEntPropVector(caller,Prop_Data,"m_angRotation",angs);
 			GetEntPropString(caller,Prop_Data,"m_ModelName",mdlname,sizeof(mdlname));
-			if (strlen(mdlname) > 0)
+			if ((strlen(mdlname) > 0) && (StrContains(mapbuf,"r_map3",false) == -1) && (StrContains(mapbuf,"01_spymap_ep3",false) == -1))
 			{
 				int sf = GetEntProp(caller,Prop_Data,"m_spawnflags");
-				if ((!(sf & 4)) && (GetEntityCount() < 2000))
+				if ((!(sf & 1<<3)) && (GetEntityCount() < 2000))
 				{
 					int brushent;
 					if (StrContains(mdlname,"*",false) == 0)

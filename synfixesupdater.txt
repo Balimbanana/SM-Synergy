@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99973"
-			"Previous"	"1.99972"
+			"Latest"  	"1.99974"
+			"Previous"	"1.99973"
 		}
 		
-		"Notes"	"Added CVar syn_fixrebind for turning on or off a couple default binds."
+		"Notes"	"Additional checks createelev."
 	}
 	
 	"Files"
