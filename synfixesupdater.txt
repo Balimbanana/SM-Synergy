@@ -4,16 +4,17 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99974"
-			"Previous"	"1.99973"
+			"Latest"  	"1.99975"
+			"Previous"	"1.99974"
 		}
 		
-		"Notes"	"Additional checks createelev."
+		"Notes"	"Added native SFAddHookEntityInput from dev."
 	}
 	
 	"Files"
 	{
 		"Plugin"	"Path_SM/plugins/synfixes.smx"
 		"Source"	"Path_SM/scripting/synfixes.sp"
+		"Source"	"Path_SM/scripting/include/synfixes.txt"
 	}
 }

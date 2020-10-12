@@ -1,6 +1,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include <synfixes>
 #undef REQUIRE_PLUGIN
 #undef REQUIRE_EXTENSIONS
 #tryinclude <SteamWorks>
@@ -25,6 +26,8 @@ Handle elevlist = INVALID_HANDLE;
 Handle inputsarrorigincls = INVALID_HANDLE;
 Handle ignoretrigs = INVALID_HANDLE;
 Handle dctimeoutarr = INVALID_HANDLE;
+Handle SFEntInputHook = INVALID_HANDLE;
+Handle addedinputs = INVALID_HANDLE;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 int WeapList = -1;
@@ -55,7 +58,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99974"
+#define PLUGIN_VERSION "1.99975"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -241,6 +244,7 @@ public void OnPluginStart()
 	inputsarrorigincls = CreateArray(768);
 	ignoretrigs = CreateArray(1024);
 	dctimeoutarr = CreateArray(MAXPLAYERS+1);
+	addedinputs = CreateArray(64);
 	RegConsoleCmd("alyx",fixalyx);
 	RegConsoleCmd("barney",fixbarney);
 	RegConsoleCmd("stuck",stuckblck);
@@ -264,6 +268,7 @@ public void OnPluginStart()
 	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
 	CreateTimer(0.5,resetclanim,_,TIMER_REPEAT);
 	AutoExecConfig(true, "synfixes");
+	SFEntInputHook = CreateGlobalForward("SFHookEntityInput", ET_Ignore, Param_String, Param_Cell, Param_String, Param_String, Param_Float);
 }
 
 public void OnMapStart()
@@ -456,6 +461,24 @@ public int Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	RegPluginLibrary("SynFixes");
+	//CreateNative("GetCustomEntList", Native_GetCustomEntList);
+	//CreateNative("SynFixesReadCache", Native_ReadCache);
+	CreateNative("SFAddHookEntityInput", Native_AddToInputHooks);
+	//MarkNativeAsOptional("GetCustomEntList");
+	//MarkNativeAsOptional("SynFixesReadCache");
+	MarkNativeAsOptional("SFAddHookEntityInput");
+	SynFixesRunning = true;
+	return APLRes_Success;
+}
+
+public void OnPluginEnd()
+{
+	if (SynFixesRunning) SynFixesRunning = false;
 }
 
 public Action fixalyx(int client, int args)
@@ -1757,6 +1780,15 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			if (playerteleports) readoutputstp(caller,targn,tmpout,"Teleport",origin,actmod);
 			if (vehiclemaphook) readoutputstp(caller,targn,tmpout,"Save",origin,actmod);
 			readoutputstp(caller,targn,tmpout,"SetCheckPoint",origin,actmod);
+			if (GetArraySize(addedinputs) > 0)
+			{
+				char inputadded[64];
+				for (int i = 0;i<GetArraySize(addedinputs);i++)
+				{
+					GetArrayString(addedinputs,i,inputadded,sizeof(inputadded));
+					readoutputstp(caller,targn,tmpout,inputadded,origin,actmod);
+				}
+			}
 		}
 		else
 		{
@@ -1769,6 +1801,15 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 			if (playerteleports) readoutputstp(caller,targn,tmpout,"Teleport",origin,actmod);
 			if (vehiclemaphook) readoutputstp(caller,targn,tmpout,"Save",origin,actmod);
 			readoutputstp(caller,targn,tmpout,"SetCheckPoint",origin,actmod);
+			if (GetArraySize(addedinputs) > 0)
+			{
+				char inputadded[64];
+				for (int i = 0;i<GetArraySize(addedinputs);i++)
+				{
+					GetArrayString(addedinputs,i,inputadded,sizeof(inputadded));
+					readoutputstp(caller,targn,tmpout,inputadded,origin,actmod);
+				}
+			}
 		}
 	}
 }
@@ -2160,6 +2201,13 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								spawnpointstates(lineorgrescom[2],delay);
 							}
+							Call_StartForward(SFEntInputHook);
+							Call_PushString(input);
+							Call_PushCell(activator);
+							Call_PushString(lineorgrescom[0]);
+							Call_PushString(lineorgrescom[2]);
+							Call_PushFloat(delay);
+							Call_Finish();
 							int findignore = FindValueInArray(ignoretrigs,caller);
 							if (findignore != -1)
 							{
@@ -2193,6 +2241,13 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								spawnpointstates(lineorgrescom[2],delay);
 							}
+							Call_StartForward(SFEntInputHook);
+							Call_PushString(input);
+							Call_PushCell(activator);
+							Call_PushString(lineorgrescom[0]);
+							Call_PushString(lineorgrescom[2]);
+							Call_PushFloat(delay);
+							Call_Finish();
 							int findignore = FindValueInArray(ignoretrigs,caller);
 							if (findignore != -1)
 							{
@@ -2255,6 +2310,20 @@ void readoutputsforinputs()
 		if (syn56act)
 		{
 			PushArrayString(inputs,"!picker,");
+		}
+		if (GetArraySize(addedinputs) > 0)
+		{
+			char inputadded[64];
+			for (int i = 0;i<GetArraySize(addedinputs);i++)
+			{
+				GetArrayString(addedinputs,i,inputadded,sizeof(inputadded));
+				Format(inputadded,sizeof(inputadded),",%s,",inputadded);
+				if (FindStringInArray(inputs,inputadded) == -1)
+				{
+					if (debuglvl > 0) PrintToServer("Added Search Hook %s",inputadded);
+					PushArrayString(inputs,inputadded);
+				}
+			}
 		}
 		char lineorgres[128];
 		char lineorgresexpl[4][16];
@@ -4120,6 +4189,18 @@ void findrockets(int ent, int client)
 			clrocket[client] = thisent;
 		}
 		findrockets(thisent++,client);
+	}
+	return;
+}
+
+public int Native_AddToInputHooks(Handle plugin, int numParams)
+{
+	if (numParams < 1) return;
+	char inputname[64];
+	GetNativeString(1,inputname,sizeof(inputname));
+	if (strlen(inputname) > 0)
+	{
+		if (FindStringInArray(addedinputs,inputname) == -1) PushArrayString(addedinputs,inputname);
 	}
 	return;
 }
