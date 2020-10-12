@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.160"
-			"Previous"	"2.159"
+			"Latest"  	"2.161"
+			"Previous"	"2.160"
 		}
 		
-		"Notes"	"Configuration for ep1_citadel_00."
+		"Notes"	"Additional checks in custom ent list."
 	}
 	
 	"Files"

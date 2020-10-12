@@ -61,7 +61,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.160"
+#define PLUGIN_VERSION "2.161"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -542,291 +542,295 @@ public Action savecurgamedp(Handle timer, any dp)
 	if (SynFixesRunning)
 	{
 		Handle custentlist = GetCustomEntList();
-		Handle custentinf = OpenFile(custentinffile,"w");
-		Handle arr = CreateArray(256);
-		FindAllByClassname(arr,-1,"logic_*");
-		int maxpass = GetMaxEntities();
-		bool usearr = false;
-		bool saveafter = false;
-		if (GetArraySize(arr) > 0) maxpass++;
-		for (int j = MaxClients+1;j<maxpass;j++)
+		if (custentlist != INVALID_HANDLE)
 		{
-			int i = j;
-			if (i == GetMaxEntities())
+			Handle custentinf = OpenFile(custentinffile,"w");
+			Handle arr = CreateArray(256);
+			FindAllByClassname(arr,-1,"logic_*");
+			int maxpass = GetMaxEntities();
+			bool usearr = false;
+			bool saveafter = false;
+			if (GetArraySize(arr) > 0) maxpass++;
+			for (int j = MaxClients+1;j<maxpass;j++)
 			{
-				j = 0;
-				i = GetArrayCell(arr,0);
-				maxpass = GetArraySize(arr);
-				usearr = true;
-			}
-			else if (usearr)
-			{
-				i = GetArrayCell(arr,j);
-			}
-			if (IsValidEntity(i))
-			{
-				char cls[64];
-				GetEntityClassname(i,cls,sizeof(cls));
-				if (StrEqual(cls,"logic_merchant_relay",false))
+				int i = j;
+				if (i == GetMaxEntities())
 				{
-					//Let default save system handle this entitiy for outputs.
-					Format(cls,sizeof(cls),"logic_relay");
-					SetEntPropString(i,Prop_Data,"m_iClassname",cls);
-					saveafter = true;
+					j = 0;
+					i = GetArrayCell(arr,0);
+					maxpass = GetArraySize(arr);
+					usearr = true;
 				}
-				if (FindStringInArray(custentlist,cls) != -1)
+				else if (usearr)
 				{
-					WriteFileLine(custentinf,"{");
-					char targn[32];
-					char mdl[64];
-					float porigin[3];
-					float angs[3];
-					float speed = 0.0;
-					if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
-					else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
-					GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-					char vehscript[64];
-					char additionalequip[32];
-					char spawnercls[64];
-					char spawnertargn[64];
-					char parentname[32];
-					char npctarg[4];
-					char npctargpath[32];
-					char defanim[32];
-					char response[64];
-					int doorstate, sleepstate, sequence, parentattach, body, maxh, curh, sf, hdw, skin, state, npctype, invulnerable;
-					if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
-					if (HasEntProp(i,Prop_Data,"m_iMaxHealth")) maxh = GetEntProp(i,Prop_Data,"m_iMaxHealth");
-					if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-					if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
-					if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
-					if (HasEntProp(i,Prop_Data,"m_spawnEquipment")) GetEntPropString(i,Prop_Data,"m_spawnEquipment",additionalequip,sizeof(additionalequip));
-					if (HasEntProp(i,Prop_Data,"m_iszResponseContext")) GetEntPropString(i,Prop_Data,"m_iszResponseContext",response,sizeof(response));
-					if (HasEntProp(i,Prop_Data,"m_spawnflags"))
+					i = GetArrayCell(arr,j);
+				}
+				if (IsValidEntity(i))
+				{
+					char cls[64];
+					GetEntityClassname(i,cls,sizeof(cls));
+					if (StrEqual(cls,"logic_merchant_relay",false))
 					{
-						sf = GetEntProp(i,Prop_Data,"m_spawnflags");
+						//Let default save system handle this entitiy for outputs.
+						Format(cls,sizeof(cls),"logic_relay");
+						SetEntPropString(i,Prop_Data,"m_iClassname",cls);
+						saveafter = true;
 					}
-					if (HasEntProp(i,Prop_Data,"m_nSkin"))
+					if (FindStringInArray(custentlist,cls) != -1)
 					{
-						skin = GetEntProp(i,Prop_Data,"m_nSkin");
-					}
-					if (HasEntProp(i,Prop_Data,"m_nHardwareType"))
-					{
-						hdw = GetEntProp(i,Prop_Data,"m_nHardwareType");
-					}
-					if (HasEntProp(i,Prop_Data,"m_state"))
-					{
-						state = GetEntProp(i,Prop_Data,"m_state");
-					}
-					if (HasEntProp(i,Prop_Data,"m_hParent"))
-					{
-						int parchk = GetEntPropEnt(i,Prop_Data,"m_hParent");
-						if (IsValidEntity(parchk))
+						WriteFileLine(custentinf,"{");
+						char targn[32];
+						char mdl[64];
+						float porigin[3];
+						float angs[3];
+						float speed = 0.0;
+						if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
+						else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
+						GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+						char vehscript[64];
+						char additionalequip[32];
+						char spawnercls[64];
+						char spawnertargn[64];
+						char parentname[32];
+						char npctarg[4];
+						char npctargpath[32];
+						char defanim[32];
+						char response[64];
+						int doorstate, sleepstate, sequence, parentattach, body, maxh, curh, sf, hdw, skin, state, npctype, invulnerable;
+						if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
+						if (HasEntProp(i,Prop_Data,"m_iMaxHealth")) maxh = GetEntProp(i,Prop_Data,"m_iMaxHealth");
+						if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
+						if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
+						if (HasEntProp(i,Prop_Data,"m_vehicleScript")) GetEntPropString(i,Prop_Data,"m_vehicleScript",vehscript,sizeof(vehscript));
+						if (HasEntProp(i,Prop_Data,"m_spawnEquipment")) GetEntPropString(i,Prop_Data,"m_spawnEquipment",additionalequip,sizeof(additionalequip));
+						if (HasEntProp(i,Prop_Data,"m_iszResponseContext")) GetEntPropString(i,Prop_Data,"m_iszResponseContext",response,sizeof(response));
+						if (HasEntProp(i,Prop_Data,"m_spawnflags"))
 						{
-							if (HasEntProp(parchk,Prop_Data,"m_iName")) GetEntPropString(parchk,Prop_Data,"m_iName",parentname,sizeof(parentname));
+							sf = GetEntProp(i,Prop_Data,"m_spawnflags");
 						}
-					}
-					if (HasEntProp(i,Prop_Data,"m_eDoorState")) doorstate = GetEntProp(i,Prop_Data,"m_eDoorState");
-					if (HasEntProp(i,Prop_Data,"m_SleepState")) sleepstate = GetEntProp(i,Prop_Data,"m_SleepState");
-					else sleepstate = -10;
-					if (HasEntProp(i,Prop_Data,"m_Type"))
-					{
-						npctype = GetEntProp(i,Prop_Data,"m_Type");
-					}
-					if (HasEntProp(i,Prop_Data,"m_hTargetEnt"))
-					{
-						int targent = GetEntPropEnt(i,Prop_Data,"m_hTargetEnt");
-						if ((IsValidEntity(targent)) && (IsEntNetworkable(targent)))
+						if (HasEntProp(i,Prop_Data,"m_nSkin"))
 						{
-							if (HasEntProp(targent,Prop_Data,"m_iName")) GetEntPropString(targent,Prop_Data,"m_iName",npctarg,sizeof(npctarg));
-							if (strlen(npctarg) < 1) Format(npctarg,sizeof(npctarg),"%i",targent);
+							skin = GetEntProp(i,Prop_Data,"m_nSkin");
 						}
-					}
-					if (HasEntProp(i,Prop_Data,"m_target"))
-					{
-						PropFieldType type;
-						FindDataMapInfo(i,"m_target",type);
-						if (type == PropField_String)
+						if (HasEntProp(i,Prop_Data,"m_nHardwareType"))
 						{
-							GetEntPropString(i,Prop_Data,"m_target",npctargpath,sizeof(npctargpath));
+							hdw = GetEntProp(i,Prop_Data,"m_nHardwareType");
 						}
-						else if ((type == PropField_Entity) && (strlen(npctarg) < 1))
+						if (HasEntProp(i,Prop_Data,"m_state"))
 						{
-							int targent = GetEntPropEnt(i,Prop_Data,"m_target");
-							if (targent != -1) Format(npctarg,sizeof(npctarg),"%i",targent);
+							state = GetEntProp(i,Prop_Data,"m_state");
 						}
-						if ((strlen(npctargpath) < 1) && (HasEntProp(i,Prop_Data,"m_vecDesiredPosition")))
+						if (HasEntProp(i,Prop_Data,"m_hParent"))
 						{
-							float findtargetpos[3];
-							GetEntPropVector(i,Prop_Data,"m_vecDesiredPosition",findtargetpos);
-							char findpath[128];
-							findpathtrack(-1,findtargetpos,findpath);
-							if (strlen(findpath) > 0) Format(npctargpath,sizeof(npctargpath),"%s",findpath);
+							int parchk = GetEntPropEnt(i,Prop_Data,"m_hParent");
+							if (IsValidEntity(parchk))
+							{
+								if (HasEntProp(parchk,Prop_Data,"m_iName")) GetEntPropString(parchk,Prop_Data,"m_iName",parentname,sizeof(parentname));
+							}
 						}
-					}
-					if (HasEntProp(i,Prop_Data,"m_iszNPCClassname")) GetEntPropString(i,Prop_Data,"m_iszNPCClassname",spawnercls,sizeof(spawnercls));
-					if (HasEntProp(i,Prop_Data,"m_ChildTargetName")) GetEntPropString(i,Prop_Data,"m_ChildTargetName",spawnertargn,sizeof(spawnertargn));
-					if (HasEntProp(i,Prop_Data,"m_nSequence")) sequence = GetEntProp(i,Prop_Data,"m_nSequence");
-					if (HasEntProp(i,Prop_Data,"m_iParentAttachment")) parentattach = GetEntProp(i,Prop_Data,"m_iParentAttachment");
-					if (HasEntProp(i,Prop_Data,"m_nBody")) body = GetEntProp(i,Prop_Data,"m_nBody");
-					if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
-					if (HasEntProp(i,Prop_Data,"m_flSpeed")) speed = GetEntPropFloat(i,Prop_Data,"m_flSpeed");
-					if (HasEntProp(i,Prop_Data,"m_bInvulnerable")) invulnerable = GetEntProp(i,Prop_Data,"m_bInvulnerable");
-					char pushch[256];
-					Format(pushch,sizeof(pushch),"\"origin\" \"%f %f %f\"",porigin[0],porigin[1],porigin[2]);
-					WriteFileLine(custentinf,pushch);
-					Format(pushch,sizeof(pushch),"\"angles\" \"%f %f %f\"",angs[0],angs[1],angs[2]);
-					WriteFileLine(custentinf,pushch);
-					if (strlen(vehscript) > 0)
-					{
-						Format(pushch,sizeof(pushch),"\"vehiclescript\" \"%s\"",vehscript);
+						if (HasEntProp(i,Prop_Data,"m_eDoorState")) doorstate = GetEntProp(i,Prop_Data,"m_eDoorState");
+						if (HasEntProp(i,Prop_Data,"m_SleepState")) sleepstate = GetEntProp(i,Prop_Data,"m_SleepState");
+						else sleepstate = -10;
+						if (HasEntProp(i,Prop_Data,"m_Type"))
+						{
+							npctype = GetEntProp(i,Prop_Data,"m_Type");
+						}
+						if (HasEntProp(i,Prop_Data,"m_hTargetEnt"))
+						{
+							int targent = GetEntPropEnt(i,Prop_Data,"m_hTargetEnt");
+							if ((IsValidEntity(targent)) && (IsEntNetworkable(targent)))
+							{
+								if (HasEntProp(targent,Prop_Data,"m_iName")) GetEntPropString(targent,Prop_Data,"m_iName",npctarg,sizeof(npctarg));
+								if (strlen(npctarg) < 1) Format(npctarg,sizeof(npctarg),"%i",targent);
+							}
+						}
+						if (HasEntProp(i,Prop_Data,"m_target"))
+						{
+							PropFieldType type;
+							FindDataMapInfo(i,"m_target",type);
+							if (type == PropField_String)
+							{
+								GetEntPropString(i,Prop_Data,"m_target",npctargpath,sizeof(npctargpath));
+							}
+							else if ((type == PropField_Entity) && (strlen(npctarg) < 1))
+							{
+								int targent = GetEntPropEnt(i,Prop_Data,"m_target");
+								if (targent != -1) Format(npctarg,sizeof(npctarg),"%i",targent);
+							}
+							if ((strlen(npctargpath) < 1) && (HasEntProp(i,Prop_Data,"m_vecDesiredPosition")))
+							{
+								float findtargetpos[3];
+								GetEntPropVector(i,Prop_Data,"m_vecDesiredPosition",findtargetpos);
+								char findpath[128];
+								findpathtrack(-1,findtargetpos,findpath);
+								if (strlen(findpath) > 0) Format(npctargpath,sizeof(npctargpath),"%s",findpath);
+							}
+						}
+						if (HasEntProp(i,Prop_Data,"m_iszNPCClassname")) GetEntPropString(i,Prop_Data,"m_iszNPCClassname",spawnercls,sizeof(spawnercls));
+						if (HasEntProp(i,Prop_Data,"m_ChildTargetName")) GetEntPropString(i,Prop_Data,"m_ChildTargetName",spawnertargn,sizeof(spawnertargn));
+						if (HasEntProp(i,Prop_Data,"m_nSequence")) sequence = GetEntProp(i,Prop_Data,"m_nSequence");
+						if (HasEntProp(i,Prop_Data,"m_iParentAttachment")) parentattach = GetEntProp(i,Prop_Data,"m_iParentAttachment");
+						if (HasEntProp(i,Prop_Data,"m_nBody")) body = GetEntProp(i,Prop_Data,"m_nBody");
+						if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
+						if (HasEntProp(i,Prop_Data,"m_flSpeed")) speed = GetEntPropFloat(i,Prop_Data,"m_flSpeed");
+						if (HasEntProp(i,Prop_Data,"m_bInvulnerable")) invulnerable = GetEntProp(i,Prop_Data,"m_bInvulnerable");
+						char pushch[256];
+						Format(pushch,sizeof(pushch),"\"origin\" \"%f %f %f\"",porigin[0],porigin[1],porigin[2]);
 						WriteFileLine(custentinf,pushch);
-					}
-					Format(pushch,sizeof(pushch),"\"spawnflags\" \"%i\"",sf);
-					WriteFileLine(custentinf,pushch);
-					if (strlen(targn) > 0)
-					{
-						Format(pushch,sizeof(pushch),"\"targetname\" \"%s\"",targn);
+						Format(pushch,sizeof(pushch),"\"angles\" \"%f %f %f\"",angs[0],angs[1],angs[2]);
 						WriteFileLine(custentinf,pushch);
-					}
-					if (strlen(mdl) > 0)
-					{
-						Format(pushch,sizeof(pushch),"\"model\" \"%s\"",mdl);
+						if (strlen(vehscript) > 0)
+						{
+							Format(pushch,sizeof(pushch),"\"vehiclescript\" \"%s\"",vehscript);
+							WriteFileLine(custentinf,pushch);
+						}
+						Format(pushch,sizeof(pushch),"\"spawnflags\" \"%i\"",sf);
 						WriteFileLine(custentinf,pushch);
-					}
-					if (sleepstate != -10)
-					{
-						Format(pushch,sizeof(pushch),"\"sleepstate\" \"%i\"",sleepstate);
+						if (strlen(targn) > 0)
+						{
+							Format(pushch,sizeof(pushch),"\"targetname\" \"%s\"",targn);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (strlen(mdl) > 0)
+						{
+							Format(pushch,sizeof(pushch),"\"model\" \"%s\"",mdl);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (sleepstate != -10)
+						{
+							Format(pushch,sizeof(pushch),"\"sleepstate\" \"%i\"",sleepstate);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (strlen(additionalequip) > 0)
+						{
+							Format(pushch,sizeof(pushch),"\"additionalequipment\" \"%s\"",additionalequip);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (strlen(parentname) > 0)
+						{
+							Format(pushch,sizeof(pushch),"\"parentname\" \"%s\"",parentname);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (strlen(npctarg) > 0)
+						{
+							Format(pushch,sizeof(pushch),"\"targetentity\" \"%s\"",npctarg);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (strlen(npctargpath) > 0)
+						{
+							Format(pushch,sizeof(pushch),"\"target\" \"%s\"",npctargpath);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (strlen(defanim) > 0)
+						{
+							Format(pushch,sizeof(pushch),"\"DefaultAnim\" \"%s\"",defanim);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (strlen(spawnercls) > 0)
+						{
+							Format(pushch,sizeof(pushch),"\"NPCType\" \"%s\"",spawnercls);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (strlen(spawnertargn) > 0)
+						{
+							Format(pushch,sizeof(pushch),"\"NPCTargetname\" \"%s\"",spawnertargn);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (curh != 0)
+						{
+							Format(pushch,sizeof(pushch),"\"health\" \"%i\"",curh);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (maxh != 0)
+						{
+							Format(pushch,sizeof(pushch),"\"max_health\" \"%i\"",maxh);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (invulnerable != 0)
+						{
+							Format(pushch,sizeof(pushch),"\"invulnerable\" \"%i\"",invulnerable);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (skin != 0)
+						{
+							Format(pushch,sizeof(pushch),"\"skin\" \"%i\"",skin);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (hdw != 0)
+						{
+							Format(pushch,sizeof(pushch),"\"hardware\" \"%i\"",hdw);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (state != 0)
+						{
+							Format(pushch,sizeof(pushch),"\"npcstate\" \"%i\"",state);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (npctype != 0)
+						{
+							Format(pushch,sizeof(pushch),"\"citizentype\" \"%i\"",npctype);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (doorstate != 0)
+						{
+							Format(pushch,sizeof(pushch),"\"doorstate\" \"%i\"",doorstate);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (sequence != 0)
+						{
+							Format(pushch,sizeof(pushch),"\"sequence\" \"%i\"",sequence);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (parentattach != 0)
+						{
+							Format(pushch,sizeof(pushch),"\"parentattachment\" \"%i\"",parentattach);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (body != 0)
+						{
+							Format(pushch,sizeof(pushch),"\"body\" \"%i\"",body);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (speed > 0.0)
+						{
+							Format(pushch,sizeof(pushch),"\"speed\" \"%1.f\"",speed);
+							WriteFileLine(custentinf,pushch);
+						}
+						if (strlen(response) > 0)
+						{
+							Format(pushch,sizeof(pushch),"\"ResponseContext\" \"%s\"",response);
+							WriteFileLine(custentinf,pushch);
+						}
+						Format(pushch,sizeof(pushch),"\"classname\" \"%s\"",cls);
 						WriteFileLine(custentinf,pushch);
+						WriteFileLine(custentinf,"}");
 					}
-					if (strlen(additionalequip) > 0)
-					{
-						Format(pushch,sizeof(pushch),"\"additionalequipment\" \"%s\"",additionalequip);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (strlen(parentname) > 0)
-					{
-						Format(pushch,sizeof(pushch),"\"parentname\" \"%s\"",parentname);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (strlen(npctarg) > 0)
-					{
-						Format(pushch,sizeof(pushch),"\"targetentity\" \"%s\"",npctarg);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (strlen(npctargpath) > 0)
-					{
-						Format(pushch,sizeof(pushch),"\"target\" \"%s\"",npctargpath);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (strlen(defanim) > 0)
-					{
-						Format(pushch,sizeof(pushch),"\"DefaultAnim\" \"%s\"",defanim);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (strlen(spawnercls) > 0)
-					{
-						Format(pushch,sizeof(pushch),"\"NPCType\" \"%s\"",spawnercls);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (strlen(spawnertargn) > 0)
-					{
-						Format(pushch,sizeof(pushch),"\"NPCTargetname\" \"%s\"",spawnertargn);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (curh != 0)
-					{
-						Format(pushch,sizeof(pushch),"\"health\" \"%i\"",curh);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (maxh != 0)
-					{
-						Format(pushch,sizeof(pushch),"\"max_health\" \"%i\"",maxh);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (invulnerable != 0)
-					{
-						Format(pushch,sizeof(pushch),"\"invulnerable\" \"%i\"",invulnerable);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (skin != 0)
-					{
-						Format(pushch,sizeof(pushch),"\"skin\" \"%i\"",skin);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (hdw != 0)
-					{
-						Format(pushch,sizeof(pushch),"\"hardware\" \"%i\"",hdw);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (state != 0)
-					{
-						Format(pushch,sizeof(pushch),"\"npcstate\" \"%i\"",state);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (npctype != 0)
-					{
-						Format(pushch,sizeof(pushch),"\"citizentype\" \"%i\"",npctype);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (doorstate != 0)
-					{
-						Format(pushch,sizeof(pushch),"\"doorstate\" \"%i\"",doorstate);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (sequence != 0)
-					{
-						Format(pushch,sizeof(pushch),"\"sequence\" \"%i\"",sequence);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (parentattach != 0)
-					{
-						Format(pushch,sizeof(pushch),"\"parentattachment\" \"%i\"",parentattach);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (body != 0)
-					{
-						Format(pushch,sizeof(pushch),"\"body\" \"%i\"",body);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (speed > 0.0)
-					{
-						Format(pushch,sizeof(pushch),"\"speed\" \"%1.f\"",speed);
-						WriteFileLine(custentinf,pushch);
-					}
-					if (strlen(response) > 0)
-					{
-						Format(pushch,sizeof(pushch),"\"ResponseContext\" \"%s\"",response);
-						WriteFileLine(custentinf,pushch);
-					}
-					Format(pushch,sizeof(pushch),"\"classname\" \"%s\"",cls);
-					WriteFileLine(custentinf,pushch);
-					WriteFileLine(custentinf,"}");
 				}
 			}
-		}
-		CloseHandle(arr);
-		CloseHandle(custentinf);
-		CloseHandle(custentlist);
-		if (saveafter)
-		{
-			if ((logsv != 0) && (logsv != -1) && (IsValidEntity(logsv)))
+			CloseHandle(arr);
+			CloseHandle(custentinf);
+			CloseHandle(custentlist);
+			if (saveafter)
 			{
-				saveresetveh(false);
-			}
-			else
-			{
-				if (saveresetm == 1) logsv = CreateEntityByName("logic_autosave");
-				else if (saveresetm == 2) logsv = CreateEntityByName("logic_playerproxy");
-				if ((logsv != -1) && (IsValidEntity(logsv)))
+				if ((logsv != 0) && (logsv != -1) && (IsValidEntity(logsv)))
 				{
-					DispatchKeyValue(logsv,"NewLevelUnit","1");
-					DispatchSpawn(logsv);
-					ActivateEntity(logsv);
 					saveresetveh(false);
 				}
+				else
+				{
+					if (saveresetm == 1) logsv = CreateEntityByName("logic_autosave");
+					else if (saveresetm == 2) logsv = CreateEntityByName("logic_playerproxy");
+					if ((logsv != -1) && (IsValidEntity(logsv)))
+					{
+						DispatchKeyValue(logsv,"NewLevelUnit","1");
+						DispatchSpawn(logsv);
+						ActivateEntity(logsv);
+						saveresetveh(false);
+					}
+				}
 			}
 		}
+		else CloseHandle(custentlist);
 	}
 	if (strlen(savedir) > 0)
 	{

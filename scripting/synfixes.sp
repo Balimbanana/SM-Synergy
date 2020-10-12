@@ -58,7 +58,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99975"
+#define PLUGIN_VERSION "1.99976"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -466,11 +466,11 @@ public int Updater_OnPluginUpdated()
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	RegPluginLibrary("SynFixes");
-	//CreateNative("GetCustomEntList", Native_GetCustomEntList);
-	//CreateNative("SynFixesReadCache", Native_ReadCache);
+	CreateNative("GetCustomEntList", Native_GetCustomEntList);
+	CreateNative("SynFixesReadCache", Native_ReadCache);
 	CreateNative("SFAddHookEntityInput", Native_AddToInputHooks);
-	//MarkNativeAsOptional("GetCustomEntList");
-	//MarkNativeAsOptional("SynFixesReadCache");
+	MarkNativeAsOptional("GetCustomEntList");
+	MarkNativeAsOptional("SynFixesReadCache");
 	MarkNativeAsOptional("SFAddHookEntityInput");
 	SynFixesRunning = true;
 	return APLRes_Success;
@@ -4191,6 +4191,22 @@ void findrockets(int ent, int client)
 		findrockets(thisent++,client);
 	}
 	return;
+}
+
+public int Native_GetCustomEntList(Handle plugin, int numParams)
+{
+	return view_as<int>(INVALID_HANDLE);
+	//return _:customentlist;
+}
+
+public int Native_ReadCache(Handle plugin, int numParams)
+{
+	if ((numParams < 3) || (numParams > 3))
+	{
+		PrintToServer("Error: SynFixesReadCache must have three parameters. <client> <pathtocache> <spawnoffset>");
+		return 0;
+	}
+	return 0;
 }
 
 public int Native_AddToInputHooks(Handle plugin, int numParams)

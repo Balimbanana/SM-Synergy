@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99975"
-			"Previous"	"1.99974"
+			"Latest"  	"1.99976"
+			"Previous"	"1.99975"
 		}
 		
-		"Notes"	"Added native SFAddHookEntityInput from dev."
+		"Notes"	"Added stub natives."
 	}
 	
 	"Files"
