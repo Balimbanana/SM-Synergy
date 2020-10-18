@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.41"
+#define PLUGIN_VERSION "1.42"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -1029,9 +1029,12 @@ void setupdmfor(char[] gametype)
 	if ((globalset == -1) && (dmact) && (hasstarted))
 	{
 		globalset = CreateEntityByName("info_global_settings");
-		DispatchKeyValue(globalset,"IsVehicleMap","1");
-		DispatchSpawn(globalset);
-		ActivateEntity(globalset);
+		if (IsValidEntity(globalset))
+		{
+			DispatchKeyValue(globalset,"IsVehicleMap","1");
+			DispatchSpawn(globalset);
+			ActivateEntity(globalset);
+		}
 	}
 	else if ((dmact) && (hasstarted))
 	{
@@ -3076,18 +3079,21 @@ public Action roundstart(Handle event, const char[] name, bool dontBroadcast)
 			GetClientAbsOrigin(i, pos);
 			GetClientEyeAngles(i, plyeyeang);
 			int cam = CreateEntityByName("point_viewcontrol");
-			TeleportEntity(cam, pos, plyeyeang, nullvec);
-			DispatchKeyValue(cam, "spawnflags","45");
-			DispatchKeyValue(cam, "targetname","roundstartpv");
-			DispatchSpawn(cam);
-			ActivateEntity(cam);
-			AcceptEntityInput(cam,"Enable",i);
-			SetVariantString("!activator");
-			AcceptEntityInput(cam,"SetParent",i);
-			changeteamcd[i] = Time + roundstarttime + 2.0;
-			SetEntProp(i,Prop_Data,"m_iHealth",100);
-			SetEntProp(i,Prop_Data,"m_ArmorValue",0);
-			CreateTimer(0.1,stopcams,cam,TIMER_FLAG_NO_MAPCHANGE);
+			if (IsValidEntity(cam))
+			{
+				TeleportEntity(cam, pos, plyeyeang, nullvec);
+				DispatchKeyValue(cam, "spawnflags","45");
+				DispatchKeyValue(cam, "targetname","roundstartpv");
+				DispatchSpawn(cam);
+				ActivateEntity(cam);
+				AcceptEntityInput(cam,"Enable",i);
+				SetVariantString("!activator");
+				AcceptEntityInput(cam,"SetParent",i);
+				changeteamcd[i] = Time + roundstarttime + 2.0;
+				SetEntProp(i,Prop_Data,"m_iHealth",100);
+				SetEntProp(i,Prop_Data,"m_ArmorValue",0);
+				CreateTimer(0.1,stopcams,cam,TIMER_FLAG_NO_MAPCHANGE);
+			}
 		}
 	}
 	PrintCenterTextAll("Starting next round in %1.f seconds\nFrags To Win: %i Round End in %1.1f mins",roundstarttime,fraglimit,roundtime/60.0);
@@ -3112,11 +3118,14 @@ public Action stopcams(Handle timer, int cam)
 public Action nextroundrelease(Handle timer)
 {
 	int loginp = CreateEntityByName("logic_auto");
-	DispatchKeyValue(loginp,"spawnflags","1");
-	DispatchKeyValue(loginp,"OnMapSpawn","roundstartpv,Disable,,0,-1");
-	DispatchKeyValue(loginp,"OnMapSpawn","roundstartpv,kill,,0.1,-1");
-	DispatchSpawn(loginp);
-	ActivateEntity(loginp);
+	if (IsValidEntity(loginp))
+	{
+		DispatchKeyValue(loginp,"spawnflags","1");
+		DispatchKeyValue(loginp,"OnMapSpawn","roundstartpv,Disable,,0,-1");
+		DispatchKeyValue(loginp,"OnMapSpawn","roundstartpv,kill,,0.1,-1");
+		DispatchSpawn(loginp);
+		ActivateEntity(loginp);
+	}
 	roundstartedat = GetTickedTime()+roundtime;
 	if (strlen(g_sDMSoundTrack) > 0)
 	{
@@ -3251,13 +3260,16 @@ public Action roundintermission(Handle event, const char[] name, bool dontBroadc
 			GetClientAbsOrigin(i, pos);
 			GetClientEyeAngles(i, plyeyeang);
 			int cam = CreateEntityByName("point_viewcontrol");
-			TeleportEntity(cam, pos, plyeyeang, nullvec);
-			CreateTimer(0.1,stopcams,cam,TIMER_FLAG_NO_MAPCHANGE);
-			DispatchKeyValue(cam, "spawnflags","45");
-			DispatchKeyValue(cam, "targetname","roundendpv");
-			DispatchSpawn(cam);
-			ActivateEntity(cam);
-			AcceptEntityInput(cam,"Enable",i);
+			if (IsValidEntity(cam))
+			{
+				TeleportEntity(cam, pos, plyeyeang, nullvec);
+				CreateTimer(0.1,stopcams,cam,TIMER_FLAG_NO_MAPCHANGE);
+				DispatchKeyValue(cam, "spawnflags","45");
+				DispatchKeyValue(cam, "targetname","roundendpv");
+				DispatchSpawn(cam);
+				ActivateEntity(cam);
+				AcceptEntityInput(cam,"Enable",i);
+			}
 		}
 	}
 	PrintCenterTextAll("Starting next round in %1.f seconds",endfreezetime);

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.41"
-			"Previous"	"1.40"
+			"Latest"  	"1.42"
+			"Previous"	"1.41"
 		}
 		
-		"Notes"	"Additional checks in fallbackspawnpoint."
+		"Notes"	"Additional validation."
 	}
 	
 	"Files"
