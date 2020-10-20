@@ -58,7 +58,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99976"
+#define PLUGIN_VERSION "1.99977"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2325,10 +2325,10 @@ void readoutputsforinputs()
 				}
 			}
 		}
-		char lineorgres[128];
+		char lineorgres[256];
 		char lineorgresexpl[4][16];
 		char lineoriginfixup[128];
-		char lineadj[128];
+		char lineadj[256];
 		char prevtargn[128];
 		bool hastargn = false;
 		bool hasorigin = false;
@@ -2442,7 +2442,7 @@ void readoutputsforinputs()
 				if ((StrContains(line,"\"origin\"",false) == 0) && (!hasorigin))
 				{
 					char tmpchar[64];
-					Format(tmpchar,sizeof(tmpchar),line);
+					Format(tmpchar,sizeof(tmpchar),"%s",line);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 					ExplodeString(tmpchar, " ", lineorgresexpl, 4, 16);
@@ -2453,7 +2453,7 @@ void readoutputsforinputs()
 				else if (StrContains(line,"\"targetname\"",false) == 0)
 				{
 					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
+					Format(tmpchar,sizeof(tmpchar),"%s",line);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" \"","");
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","");
 					Format(prevtargn,sizeof(prevtargn),"%s",tmpchar);
@@ -2466,7 +2466,7 @@ void readoutputsforinputs()
 				else if (StrContains(line,"\"classname\"",false) == 0)
 				{
 					char clschk[128];
-					Format(clschk,sizeof(clschk),line);
+					Format(clschk,sizeof(clschk),"%s",line);
 					ExplodeString(clschk, "\"", kvs, 64, 128, true);
 					ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 					ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
@@ -2490,7 +2490,7 @@ void readoutputsforinputs()
 					}
 					if (formatinput)
 					{
-						Format(lineorgres,sizeof(lineorgres),line);
+						Format(lineorgres,sizeof(lineorgres),"%s",line);
 						ReplaceString(lineorgres,sizeof(lineorgres),"\"OnMapSpawn\" ","");
 						if ((!hastargn) && (StrContains(line,",AddOutput,",false) == -1))
 						{
@@ -2501,7 +2501,7 @@ void readoutputsforinputs()
 						{
 							char linenamef[8][128];
 							char tmpchar[128];
-							Format(tmpchar,sizeof(tmpchar),line);
+							Format(tmpchar,sizeof(tmpchar),"%s",line);
 							ExplodeString(tmpchar,"\"",linenamef,8,128);
 							Format(tmpchar,sizeof(tmpchar),linenamef[3]);
 							ExplodeString(tmpchar,",",linenamef,8,128);
@@ -2518,7 +2518,7 @@ void readoutputsforinputs()
 								PrintToServer("%s",lineadj);
 							}
 							char outpchk[128];
-							Format(outpchk,sizeof(outpchk),line);
+							Format(outpchk,sizeof(outpchk),"%s",line);
 							ExplodeString(outpchk, "\"", kvs, 64, 128, true);
 							ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 							ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99976"
-			"Previous"	"1.99975"
+			"Latest"  	"1.99977"
+			"Previous"	"1.99976"
 		}
 		
-		"Notes"	"Added stub natives."
+		"Notes"	"Fixed one of the native stubs."
 	}
 	
 	"Files"
