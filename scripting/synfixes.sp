@@ -58,7 +58,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99977"
+#define PLUGIN_VERSION "1.99978"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -4216,7 +4216,14 @@ public int Native_AddToInputHooks(Handle plugin, int numParams)
 	GetNativeString(1,inputname,sizeof(inputname));
 	if (strlen(inputname) > 0)
 	{
-		if (FindStringInArray(addedinputs,inputname) == -1) PushArrayString(addedinputs,inputname);
+		if (GetArraySize(addedinputs) > 0)
+		{
+			if (FindStringInArray(addedinputs,inputname) == -1) PushArrayString(addedinputs,inputname);
+		}
+		else
+		{
+			PushArrayString(addedinputs,inputname);
+		}
 	}
 	return;
 }

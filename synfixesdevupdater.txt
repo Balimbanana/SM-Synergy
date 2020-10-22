@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0019"
-			"Previous"	"2.0018"
+			"Latest"  	"2.0020"
+			"Previous"	"2.0019"
 		}
 		
-		"Notes"	"Added CVar syn_fixrebind for turning on or off a couple default binds. Added sv_content_optional detection in map changed edt to correctly apply."
+		"Notes"	"Added CVar synfixes_fixsoundscapes. Fixed hooked added inputs too early."
 	}
 	
 	"Files"

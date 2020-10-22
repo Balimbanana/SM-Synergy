@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99977"
-			"Previous"	"1.99976"
+			"Latest"  	"1.99978"
+			"Previous"	"1.99977"
 		}
 		
 		"Notes"	"Fixed one of the native stubs."

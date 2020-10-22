@@ -108,8 +108,9 @@ bool LongJumpMode = false;
 bool norunagain = false;
 bool BlockTripMineDamage = true;
 bool FixWeapSnd = true;
+bool bFixSoundScapes = true;
 
-#define PLUGIN_VERSION "2.0019"
+#define PLUGIN_VERSION "2.0020"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -135,6 +136,7 @@ public Plugin myinfo =
 float perclimit = 0.66;
 float delaylimit = 66.0;
 float votetime[128];
+int cllastsscape[128];
 int clused = 0;
 int voteact = 0;
 
@@ -362,6 +364,19 @@ public void OnPluginStart()
 		cvar = CreateConVar("sm_fixweaponsounds", "1", "Fixes predicted sounds not being played.", _, true, 0.0, true, 1.0);
 		FixWeapSnd = GetConVarBool(cvar);
 		HookConVarChange(cvar, fixweapsndch);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("synfixes_fixsoundscapes");
+	if (cvar != INVALID_HANDLE)
+	{
+		bFixSoundScapes = GetConVarBool(cvar);
+		HookConVarChange(cvar, fixsndscapech);
+	}
+	else
+	{
+		cvar = CreateConVar("synfixes_fixsoundscapes", "1", "Fixes soundscapes not applied correctly.", _, true, 0.0, true, 1.0);
+		bFixSoundScapes = GetConVarBool(cvar);
+		HookConVarChange(cvar, fixsndscapech);
 	}
 	CloseHandle(cvar);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
@@ -1278,6 +1293,10 @@ public void OnMapStart()
 		}
 		CreateTimer(0.1,RecheckChangeLevels,_,TIMER_FLAG_NO_MAPCHANGE);
 		PrecacheSound("npc\\roller\\code2.wav",true);
+		PrecacheSound("npc\\roller\\mine\\rmine_moveslow_loop1.wav",true);
+		PrecacheSound("npc\\roller\\mine\\rmine_movefast_loop1.wav",true);
+		PrecacheSound("npc\\roller\\mine\\rmine_seek_loop2.wav",true);
+		PrecacheSound("npc\\turret_floor\\alarm.wav",true);
 	}
 }
 
@@ -3375,6 +3394,26 @@ public Action resetclanim(Handle timer)
 									vTRPos[2]-=65.0;
 									vFeetPos[2] = vTRPos[2];
 									TeleportEntity(i,vFeetPos,NULL_VECTOR,NULL_VECTOR);
+								}
+							}
+						}
+						if (bFixSoundScapes)
+						{
+							if (HasEntProp(i,Prop_Data,"ent"))
+							{
+								int sscape = GetEntPropEnt(i,Prop_Data,"ent");
+								if (IsValidEntity(sscape))
+								{
+									if (sscape != cllastsscape[i])
+									{
+										cllastsscape[i] = sscape;
+										if ((HasEntProp(sscape,Prop_Data,"m_bDisabled")) && (HasEntProp(sscape,Prop_Data,"m_soundscapeName")))
+										{
+											char sndscape[64];
+											GetEntPropString(sscape,Prop_Data,"m_soundscapeName",sndscape,sizeof(sndscape));
+											ClientCommand(i,"playsoundscape \"%s\"",sndscape);
+										}
+									}
 								}
 							}
 						}
@@ -13988,6 +14027,7 @@ public Action cleanup(Handle timer, Handle data)
 
 public void OnClientDisconnect(int client)
 {
+	cllastsscape[client] = 0;
 	votetime[client] = 0.0;
 	fadingtime[client] = 0.0;
 	antispamchk[client] = 0.0;
@@ -19440,6 +19480,10 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							{
 								if ((iEffState == 3) && (bOpen))
 								{
+									if (GetEntProp(weap,Prop_Send,"m_bMegaState"))
+									{
+										
+									}
 									float flIdle = GetEntPropFloat(weap,Prop_Send,"m_flTimeWeaponIdle");
 									float flNextSecond = GetEntPropFloat(weap,Prop_Send,"m_flNextSecondaryAttack");
 									if ((flIdle <= flNextSecond+1.0) && (!isattacking[weap]))
@@ -20393,7 +20437,14 @@ public int Native_AddToInputHooks(Handle plugin, int numParams)
 	GetNativeString(1,inputname,sizeof(inputname));
 	if (strlen(inputname) > 0)
 	{
-		if (FindStringInArray(addedinputs,inputname) == -1) PushArrayString(addedinputs,inputname);
+		if (GetArraySize(addedinputs) > 0)
+		{
+			if (FindStringInArray(addedinputs,inputname) == -1) PushArrayString(addedinputs,inputname);
+		}
+		else
+		{
+			PushArrayString(addedinputs,inputname);
+		}
 	}
 	return;
 }
@@ -20701,6 +20752,14 @@ public void fixweapsndch(Handle convar, const char[] oldValue, const char[] newV
 		FixWeapSnd = true;
 	else
 		FixWeapSnd = false;
+}
+
+public void fixsndscapech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		bFixSoundScapes = true;
+	else
+		bFixSoundScapes = false;
 }
 
 public void longjumpmodech(Handle convar, const char[] oldValue, const char[] newValue)
