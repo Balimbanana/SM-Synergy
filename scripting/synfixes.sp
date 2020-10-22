@@ -244,7 +244,7 @@ public void OnPluginStart()
 	inputsarrorigincls = CreateArray(768);
 	ignoretrigs = CreateArray(1024);
 	dctimeoutarr = CreateArray(MAXPLAYERS+1);
-	addedinputs = CreateArray(64);
+	if (addedinputs == INVALID_HANDLE) addedinputs = CreateArray(64);
 	RegConsoleCmd("alyx",fixalyx);
 	RegConsoleCmd("barney",fixbarney);
 	RegConsoleCmd("stuck",stuckblck);
@@ -4216,6 +4216,7 @@ public int Native_AddToInputHooks(Handle plugin, int numParams)
 	GetNativeString(1,inputname,sizeof(inputname));
 	if (strlen(inputname) > 0)
 	{
+		if (addedinputs == INVALID_HANDLE) addedinputs = CreateArray(64);
 		if (GetArraySize(addedinputs) > 0)
 		{
 			if (FindStringInArray(addedinputs,inputname) == -1) PushArrayString(addedinputs,inputname);
