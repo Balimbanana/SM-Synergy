@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.13"
-			"Previous"	"1.12"
+			"Latest"  	"1.14"
+			"Previous"	"1.13"
 		}
 		
 		"Notes"	"Update to new declarations."
