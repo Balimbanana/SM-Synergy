@@ -110,7 +110,7 @@ bool BlockTripMineDamage = true;
 bool FixWeapSnd = true;
 bool bFixSoundScapes = true;
 
-#define PLUGIN_VERSION "2.0020"
+#define PLUGIN_VERSION "2.0021"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -918,6 +918,8 @@ public void OnMapStart()
 			if (FileExists("resource/closecaption_cit2german.txt",true,NULL_STRING)) AddFileToDownloadsTable("resource/closecaption_cit2german.txt");
 			if (FileExists("resource/closecaption_cit2spanish.txt",true,NULL_STRING)) AddFileToDownloadsTable("resource/closecaption_cit2spanish.txt");
 		}
+		if (FileExists("materials/sprites/merchant_buysyn.vmt",true,NULL_STRING)) AddFileToDownloadsTable("materials/sprites/merchant_buysyn.vmt");
+		if (FileExists("materials/sprites/merchant_buysyn.vtf",true,NULL_STRING)) AddFileToDownloadsTable("materials/sprites/merchant_buysyn.vtf");
 		HookEntityOutput("trigger_changelevel","OnChangeLevel",mapendchg);
 		HookEntityOutput("func_physbox","OnPhysGunPunt",physpunt);
 		HookEntityOutput("prop_vehicle_jeep","PlayerOn",vehicleseatadjust);
@@ -942,8 +944,22 @@ public void OnMapStart()
 		{
 			Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s%s",contentdata,mapbuf);
 			if (!FileExists(mapbuf,true,NULL_STRING)) ReplaceStringEx(mapbuf,sizeof(mapbuf),".ent2",".ent");
+			else
+			{
+				char mapcachecheck[128];
+				Format(mapcachecheck,sizeof(mapcachecheck),"%s",mapbuf);
+				ReplaceStringEx(mapcachecheck,sizeof(mapcachecheck),".ent2",".ent");
+				if (GetFileTime(mapbuf,FileTime_LastChange) < GetFileTime(mapcachecheck,FileTime_LastChange)) Format(mapbuf,sizeof(mapbuf),"%s",mapcachecheck);
+			}
 		}
 		else if (!FileExists(mapbuf,true,NULL_STRING)) ReplaceStringEx(mapbuf,sizeof(mapbuf),".ent2",".ent");
+		else
+		{
+			char mapcachecheck[128];
+			Format(mapcachecheck,sizeof(mapcachecheck),"%s",mapbuf);
+			ReplaceStringEx(mapcachecheck,sizeof(mapcachecheck),".ent2",".ent");
+			if (GetFileTime(mapbuf,FileTime_LastChange) < GetFileTime(mapcachecheck,FileTime_LastChange)) Format(mapbuf,sizeof(mapbuf),"%s",mapcachecheck);
+		}
 		if ((!FileExists(mapbuf,true,NULL_STRING)) && (DirExists("maps/ent_cache",false)))
 		{
 			Handle mdirlisting = OpenDirectory("maps/ent_cache",false);
@@ -6882,7 +6898,8 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					{
 						bool foundmdl = false;
 						char merchicon[64];
-						Format(merchicon,sizeof(merchicon),"sprites/merchant_buy.vmt");
+						if (FileExists("materials/sprites/merchant_buy.vmt",true,NULL_STRING)) Format(merchicon,sizeof(merchicon),"sprites/merchant_buy.vmt");
+						else Format(merchicon,sizeof(merchicon),"sprites/merchant_buysyn.vmt");
 						int starticonon = 1;
 						float posabove = 80.0;
 						for (int i = 0;i<GetArraySize(passedarr);i++)
@@ -6898,6 +6915,10 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							else if (StrEqual(arrstart,"ShowIcon",false)) starticonon = StringToInt(arrnext);
 							else if (StrEqual(arrstart,"IconHeight",false)) posabove = StringToFloat(arrnext);
 							else if (StrEqual(arrstart,"OnPlayerUse",false)) DispatchKeyValue(ent,"OnUser1",arrnext);
+							else if (StrEqual(arrstart,"MerchantSound",false))
+							{
+								if (HasEntProp(ent,Prop_Data,"m_initialDelay")) SetEntPropFloat(ent,Prop_Data,"m_initialDelay",StringToFloat(arrnext));
+							}
 						}
 						if (!foundmdl)
 						{
@@ -6932,6 +6953,11 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						}
 						else PrintToServer("Merchant Icon \"%s\" not found",merchiconfull);
 						HookSingleEntityOutput(ent,"OnUser1",MerchantUse);
+						int flageffects = GetEntProp(ent,Prop_Data,"m_iEFlags");
+						if (!(flageffects & 1<<30))
+						{
+							SetEntProp(ent,Prop_Data,"m_iEFlags",flageffects+1073741824);
+						}
 					}
 					else if (StrEqual(oldcls,"game_player_equip",false))
 					{
@@ -10037,6 +10063,9 @@ public Action resetatk(Handle timer, int entity)
 			damageForce[0] = dmgforce;
 			damageForce[1] = dmgforce;
 			damageForce[2] = dmgforce;
+			char szHoundSquad[32];
+			char szEntSquad[32];
+			if (HasEntProp(entity,Prop_Data,"m_SquadName")) GetEntPropString(entity,Prop_Data,"m_SquadName",szHoundSquad,sizeof(szHoundSquad));
 			for (int i = 1; i<GetMaxEntities(); i++)
 			{
 				if (IsValidEntity(i) && IsEntNetworkable(i))
@@ -10045,6 +10074,15 @@ public Action resetatk(Handle timer, int entity)
 					GetEntityClassname(i,clsname,sizeof(clsname));
 					if (((!StrEqual(clsname,"npc_houndeye",false)) && (!StrEqual(clsname,"npc_bullsquid",false)) && (!StrEqual(clsname,"npc_gargantua",false)) && (!StrEqual(clsname,"npc_snark",false)) && (!StrEqual(clsname,"npc_alien_slave",false)) && (!StrEqual(clsname,"npc_tentacle",false))) && ((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_dynamic",false) != -1) || (StrContains(clsname,"prop_physics",false) != -1)))
 					{
+						if (strlen(szHoundSquad) > 0)
+						{
+							szEntSquad = "";
+							if (HasEntProp(i,Prop_Data,"m_SquadName"))
+							{
+								GetEntPropString(i,Prop_Data,"m_SquadName",szEntSquad,sizeof(szEntSquad));
+								if (StrEqual(szHoundSquad,szEntSquad,false)) continue;
+							}
+						}
 						float entpos[3];
 						GetEntPropVector(i, Prop_Send, "m_vecOrigin", entpos);
 						float chkdist = GetVectorDistance(entpos,curorg,false);
@@ -17458,7 +17496,8 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				else if (StrEqual(oldcls,"npc_merchant",false))
 				{
 					char merchicon[64];
-					Format(merchicon,sizeof(merchicon),"sprites/merchant_buy.vmt");
+					if (FileExists("materials/sprites/merchant_buy.vmt",true,NULL_STRING)) Format(merchicon,sizeof(merchicon),"sprites/merchant_buy.vmt");
+					else Format(merchicon,sizeof(merchicon),"sprites/merchant_buysyn.vmt");
 					int starticonon = 1;
 					float posabove = 80.0;
 					for (int i = 0;i<GetArraySize(dp);i++)
@@ -17473,6 +17512,10 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 						else if (StrEqual(arrstart,"ShowIcon",false)) starticonon = StringToInt(arrnext);
 						else if (StrEqual(arrstart,"IconHeight",false)) posabove = StringToFloat(arrnext);
 						else if (StrEqual(arrstart,"OnPlayerUse",false)) DispatchKeyValue(ent,"OnUser1",arrnext);
+						else if (StrEqual(arrstart,"MerchantSound",false))
+						{
+							if (HasEntProp(ent,Prop_Data,"m_initialDelay")) SetEntPropFloat(ent,Prop_Data,"m_initialDelay",StringToFloat(arrnext));
+						}
 					}
 					DispatchKeyValue(ent,"citizentype","4");
 					SetEntProp(ent,Prop_Data,"m_bInvulnerable",1);
@@ -17497,6 +17540,11 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 						AcceptEntityInput(sprite,"SetParent",ent);
 					}
 					HookSingleEntityOutput(ent,"OnUser1",MerchantUse);
+					int flageffects = GetEntProp(ent,Prop_Data,"m_iEFlags");
+					if (!(flageffects & 1<<30))
+					{
+						SetEntProp(ent,Prop_Data,"m_iEFlags",flageffects+1073741824);
+					}
 				}
 				else if ((StrEqual(oldcls,"npc_human_security",false)) || (StrEqual(oldcls,"npc_human_scientist",false)) || (StrEqual(oldcls,"npc_human_scientist_female",false)))
 				{
@@ -18981,7 +19029,7 @@ void findent(int ent, char[] clsname)
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
 		int bdisabled = 0;
-		if (HasEntProp(thisent,Prop_Data,"m_bDisabled")) GetEntProp(thisent,Prop_Data,"m_bDisabled");
+		if (HasEntProp(thisent,Prop_Data,"m_bDisabled")) bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
 		char targn[4];
 		GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
 		if ((bdisabled == 0) || (strlen(targn) < 2))
@@ -18999,19 +19047,22 @@ void findentlist(int ent, char[] clsname)
 		GetEntityClassname(thisent,clsofent,sizeof(clsofent));
 		if ((StrEqual(clsofent,"npc_template_maker",false)) || (StrEqual(clsofent,"npc_maker",false)))
 		{
-			int maxnpc = GetEntProp(thisent,Prop_Data,"m_nMaxNumNPCs");
-			char rescls[32];
-			if (HasEntProp(thisent,Prop_Data,"m_iszNPCClassname")) GetEntPropString(thisent,Prop_Data,"m_iszNPCClassname",rescls,sizeof(rescls));
-			if ((restrictact) && ((StrEqual(rescls,"npc_vortigaunt",false)) || (StrEqual(rescls,"npc_helicopter",false)) || (StrEqual(rescls,"npc_combinegunship",false))))
+			if (HasEntProp(thisent,Prop_Data,"m_nMaxNumNPCs"))
 			{
-				SetVariantInt(1);
-				AcceptEntityInput(thisent,"SetMaxChildren");
-			}
-			else if ((maxnpc > spawneramt) && (restrictact))
-			{
-				if (debuglvl == 1) PrintToServer("%i has %i max npcs resetting to %i",thisent,maxnpc,spawneramt);
-				SetVariantInt(spawneramt);
-				AcceptEntityInput(thisent,"SetMaxChildren");
+				int maxnpc = GetEntProp(thisent,Prop_Data,"m_nMaxNumNPCs");
+				char rescls[32];
+				if (HasEntProp(thisent,Prop_Data,"m_iszNPCClassname")) GetEntPropString(thisent,Prop_Data,"m_iszNPCClassname",rescls,sizeof(rescls));
+				if ((restrictact) && ((StrEqual(rescls,"npc_vortigaunt",false)) || (StrEqual(rescls,"npc_helicopter",false)) || (StrEqual(rescls,"npc_combinegunship",false))))
+				{
+					SetVariantInt(1);
+					AcceptEntityInput(thisent,"SetMaxChildren");
+				}
+				else if ((maxnpc > spawneramt) && (restrictact))
+				{
+					if (debuglvl == 1) PrintToServer("%i has %i max npcs resetting to %i",thisent,maxnpc,spawneramt);
+					SetVariantInt(spawneramt);
+					AcceptEntityInput(thisent,"SetMaxChildren");
+				}
 			}
 		}
 		if (StrEqual(clsofent,"npc_houndeye",false))
@@ -19354,6 +19405,7 @@ public void OnClientDisconnect_Post(int client)
 	g_LastButtons[client] = 0;
 	clrocket[client] = 0;
 	centnextatk[client] = 0.0;
+	custentactive[client] = 0;
 	Format(restorelang[client],sizeof(restorelang[]),"");
 }
 
@@ -19902,7 +19954,11 @@ public void OnButtonPressUse(int client)
 					}
 				}
 			}
-			if ((StrEqual(cls,"npc_merchant",false)) && (chkdist < 100.0)) AcceptEntityInput(targ,"FireUser1",client);
+			if ((StrEqual(cls,"npc_merchant",false)) && (chkdist < 100.0))
+			{
+				AcceptEntityInput(targ,"FireUser1",client);
+				MerchSpeakRef(targ,client,0);
+			}
 			if (npcstate != 5)//4 is scripting
 			{
 				if ((StrEqual(cls,"npc_human_security",false)) || (StrEqual(cls,"npc_human_scientist",false)) || (StrEqual(cls,"npc_human_scientist_female",false)))

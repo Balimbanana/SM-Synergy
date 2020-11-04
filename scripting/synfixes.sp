@@ -58,7 +58,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99978"
+#define PLUGIN_VERSION "1.99979"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -4001,8 +4001,11 @@ void findent(int ent, char[] clsname)
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
-		int bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
-		if (bdisabled == 0)
+		int bdisabled = 0;
+		if (HasEntProp(thisent,Prop_Data,"m_bDisabled")) bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
+		char targn[4];
+		GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
+		if ((bdisabled == 0) || (strlen(targn) < 2))
 			PushArrayCell(equiparr,thisent);
 		findent(thisent++,clsname);
 	}

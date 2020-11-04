@@ -29,6 +29,7 @@ float lastseen[2048];
 float centnextsndtime[2048];
 float centlasttouch[2048];
 float breaksnd[2048];
+int custentactive[128];
 int isattacking[2048];
 int timesattacked[2048];
 int gargfiretarg[2048][5];
@@ -566,4 +567,21 @@ public bool TraceEntityFilterPly(int entity, int mask, any data){
 			return false;
 	}
 	return true;
+}
+
+public Action ResetSoundEnd(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int entity = ReadPackCell(dp);
+		char snd[128];
+		ReadPackString(dp,snd,sizeof(snd));
+		int channel = ReadPackCell(dp);
+		CloseHandle(dp);
+		if ((IsValidEntity(entity)) && (strlen(snd) > 0))
+		{
+			StopSound(entity,channel,snd);
+		}
+	}
 }
