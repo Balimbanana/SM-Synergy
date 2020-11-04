@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.990"
+#define PLUGIN_VERSION "0.991"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -5779,7 +5779,22 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								if (StrEqual(curweap,"weapon_uzi",false)) seqlowered = GetWepAnim(curweap,seq,"Uzi_IdleDual");
 								else seqlowered = GetWepAnim(curweap,seq,"ACT_VM_IDLE_SILENCED");
 							}
-							else seqlowered = GetWepAnim(curweap,seq,"ACT_VM_IDLE");
+							else
+							{
+								if (HasEntProp(weap,Prop_Data,"m_iClip1"))
+								{
+									if (GetEntProp(weap,Prop_Data,"m_iClip1") > 0) seqlowered = GetWepAnim(curweap,seq,"ACT_VM_IDLE");
+									else
+									{
+										seqlowered = GetWepAnim(curweap,seq,"ACT_VM_IDLE_EMPTY");
+										if (seqlowered == 0)
+										{
+											seqlowered = GetWepAnim(curweap,seq,"ACT_VM_IDLE");
+										}
+									}
+								}
+								else seqlowered = GetWepAnim(curweap,seq,"ACT_VM_IDLE");
+							}
 							SetEntProp(viewmdl,Prop_Send,"m_nSequence",seqlowered);
 						}
 					}

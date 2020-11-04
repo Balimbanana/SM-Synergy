@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.990"
-			"Previous"	"0.989"
+			"Latest"  	"0.991"
+			"Previous"	"0.990"
 		}
 		
 		"Notes"	"Fixed weapon lowered while sprinting for scr weapons in 56.16."
