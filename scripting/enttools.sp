@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.29"
+#define PLUGIN_VERSION "1.30"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -28,12 +28,16 @@ int showalldeaths = 0;
 bool showallnormsounds = false;
 bool showallambsounds = false;
 
+char CLClsSet[128][32];
+Handle modelsarr = INVALID_HANDLE;
+
 public void OnPluginStart()
 {
 	RegAdminCmd("createhere",CreateStuff,ADMFLAG_BAN,"cc");
 	RegAdminCmd("createthere",CreateStuffThere,ADMFLAG_BAN,"cct");
 	RegAdminCmd("cc",CreateStuff,ADMFLAG_BAN,"cc");
 	RegAdminCmd("cct",CreateStuffThere,ADMFLAG_BAN,"cct");
+	RegAdminCmd("ccmenu",CreateModel,ADMFLAG_BAN,"cctmdl");
 	RegAdminCmd("setmdl",SetTargMdl,ADMFLAG_ROOT,".");
 	RegAdminCmd("cinp",cinp,ADMFLAG_BAN,"ent_fire");
 	RegAdminCmd("entinput",cinp,ADMFLAG_BAN,"ent_fire");
@@ -67,6 +71,7 @@ public void OnPluginStart()
 	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
 	AddNormalSoundHook(listnormsounds);
 	AddAmbientSoundHook(listambientsounds);
+	modelsarr = CreateArray(1024);
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -718,6 +723,142 @@ public Action CreateStuffThere(int client, int args)
 		}
 	}
 	return Plugin_Handled;
+}
+
+public Action CreateModel(int client, int args)
+{
+	Menu menu = new Menu(MenuHandlerCreateTop);
+	menu.SetTitle("Create As");
+	menu.AddItem("prop_physics_override", "Create as prop_physics");
+	menu.AddItem("prop_dynamic_override", "Create as prop_dynamic");
+	menu.ExitButton = true;
+	menu.Display(client, 120);
+	return Plugin_Handled;
+}
+
+void DisplayModelLists(int client)
+{
+	if (GetArraySize(modelsarr) < 1)
+	{
+		Handle hOpendir = OpenDirectory("models",true,NULL_STRING);
+		if (hOpendir != INVALID_HANDLE)
+		{
+			char buff[128];
+			while (ReadDirEntry(hOpendir, buff, sizeof(buff)))
+			{
+				if ((!(hOpendir == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
+				{
+					Format(buff,sizeof(buff),"models/%s",buff);
+					if (StrContains(buff,".mdl",false) != -1)
+					{
+						PushArrayString(modelsarr,buff);
+					}
+					else if (StrContains(buff,".",false) == -1)
+					{
+						recursion(buff);
+					}
+				}
+			}
+		}
+		CloseHandle(hOpendir);
+	}
+	Menu menu = new Menu(MenuHandlerCreateSub);
+	menu.SetTitle("Models:");
+	if (GetArraySize(modelsarr) > 0)
+	{
+		char mdlpaths[256];
+		for (int i = 0;i<GetArraySize(modelsarr);i++)
+		{
+			GetArrayString(modelsarr,i,mdlpaths,sizeof(mdlpaths));
+			menu.AddItem(mdlpaths,mdlpaths);
+		}
+	}
+	menu.ExitButton = true;
+	menu.Display(client, 300);
+	return;
+}
+
+void recursion(char[] startpath)
+{
+	if (DirExists(startpath,true,NULL_STRING))
+	{
+		Handle hOpendir = OpenDirectory(startpath,true,NULL_STRING);
+		if (hOpendir != INVALID_HANDLE)
+		{
+			char buff[256];
+			while (ReadDirEntry(hOpendir, buff, sizeof(buff)))
+			{
+				if ((!(hOpendir == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
+				{
+					Format(buff,sizeof(buff),"%s/%s",startpath,buff);
+					if (StrContains(buff,".mdl",false) != -1)
+					{
+						PushArrayString(modelsarr,buff);
+					}
+					else if (StrContains(buff,".",false) == -1)
+					{
+						recursion(buff);
+					}
+				}
+			}
+		}
+		CloseHandle(hOpendir);
+	}
+	return;
+}
+
+public int MenuHandlerCreateTop(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_Select)
+	{
+		char info[128];
+		menu.GetItem(param2, info, sizeof(info));
+		Format(CLClsSet[param1],sizeof(CLClsSet[]),"%s",info);
+		DisplayModelLists(param1);
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+	return 0;
+}
+
+public int MenuHandlerCreateSub(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_Select)
+	{
+		char info[256];
+		menu.GetItem(param2, info, sizeof(info));
+		int mdlcreate = CreateEntityByName(CLClsSet[param1]);
+		if (mdlcreate != -1)
+		{
+			float Location[3];
+			float fhitpos[3];
+			float clangles[3];
+			GetClientEyeAngles(param1, clangles);
+			GetClientEyePosition(param1, Location);
+			Location[0] = (Location[0] + (10 * Cosine(DegToRad(clangles[1]))));
+			Location[1] = (Location[1] + (10 * Sine(DegToRad(clangles[1]))));
+			Location[2] = (Location[2] + 10);
+			Handle hhitpos = INVALID_HANDLE;
+			TR_TraceRay(Location,clangles,MASK_SHOT,RayType_Infinite);
+			TR_GetEndPosition(fhitpos,hhitpos);
+			//To ensure it spawns above the ground
+			fhitpos[2]+=15.0;
+			CloseHandle(hhitpos);
+			DispatchKeyValue(mdlcreate,"solid","6");
+			DispatchKeyValue(mdlcreate,"model",info);
+			TeleportEntity(mdlcreate, fhitpos, NULL_VECTOR, NULL_VECTOR);
+			DispatchSpawn(mdlcreate);
+			ActivateEntity(mdlcreate);
+		}
+		PrintToChat(param1,"Create %s %s",CLClsSet[param1],info);
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+	return 0;
 }
 
 public Action cinp(int client, int args)
@@ -1461,6 +1602,10 @@ public Action listents(int client, int args)
 					if (HasEntProp(targ,Prop_Data,"m_iDisabled"))
 					{
 						Format(stateinf,sizeof(stateinf),"%sStartDisabled %i ",stateinf,GetEntProp(targ,Prop_Data,"m_iDisabled"));
+					}
+					if (HasEntProp(targ,Prop_Data,"m_bDisabled"))
+					{
+						Format(stateinf,sizeof(stateinf),"%sDisabled %i ",stateinf,GetEntProp(targ,Prop_Data,"m_bDisabled"));
 					}
 					if ((StrContains(ent,"func_",false) == 0) && (HasEntProp(targ,Prop_Data,"m_toggle_state")))
 					{

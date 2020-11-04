@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.29"
-			"Previous"	"1.28"
+			"Latest"  	"1.30"
+			"Previous"	"1.29"
 		}
 		
-		"Notes"	"Added parentname support for both !self and targetname."
+		"Notes"	"Added Disabled information to listents full. Added ccmenu."
 	}
 	
 	"Files"
