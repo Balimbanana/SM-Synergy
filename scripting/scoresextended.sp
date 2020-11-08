@@ -27,7 +27,7 @@ int score[128];
 int bitChanged[128];
 int timesretried = 0;
 float Healchk[128];
-#define PLUGIN_VERSION "0.9"
+#define PLUGIN_VERSION "0.91"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/scoresextendedupdater.txt"
 
 enum
@@ -54,8 +54,9 @@ public void OnPluginStart()
 	hSEresetgame = CreateConVar("se_resetongamechange", "1", "0 is never reset, 1 resets all clients scores on game/mod change, 2 resets on map change.", _, true, 0.0, true, 2.0);
 	hSEscoreforheal = CreateConVar("se_scoreforheal", "1", "Allows clients to get score when healing other players.", _, true, 0.0, true, 1.0);
 	hSEscoreperhit = CreateConVar("se_scoreperhit", "1", "Allows clients to get score per hit depending on how much damage they do.", _, true, 0.0, true, 1.0);
-	hSEdisable = CreateConVar("se_disable", "0", "Disables loading scores, use for specific map configurations.", _, true, 0.0, true, 1.0);
 	hSEqdbg = CreateConVar("se_qdbg", "0", "Shows queries.", _, true, 0.0, true, 1.0);
+	AutoExecConfig(true,"scoresextended");
+	CreateTimer(0.1,AdditionalCV);
 	RegConsoleCmd("drophealth", eyeposchk);
 	bool conf = SQL_CheckConfig("ScoresExtended");
 	if (!conf)
@@ -76,11 +77,16 @@ public void OnPluginStart()
 	{
 		SQL_TConnect(threadedcon,"ScoresExtended");
 	}
-	reloadscoreclients();
+	CreateTimer(0.11, reloadscoreclients);
 	CreateTimer(0.1, hooknpcs);
 	//Fallback saves, clients already save on map change and disconnect.
 	//But if the server crashes, clients could lose all progress on current map.
 	CreateTimer(10.0, SaveClients, _, TIMER_REPEAT);
+}
+
+public Action AdditionalCV(Handle timer)
+{
+	hSEdisable = CreateConVar("se_disable", "0", "Disables loading scores, use for specific map configurations.", _, true, 0.0, true, 1.0);
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -96,7 +102,7 @@ public int Updater_OnPluginUpdated()
 	ReloadPlugin(INVALID_HANDLE);
 }
 
-void reloadscoreclients()
+public Action reloadscoreclients(Handle timer)
 {
 	for (int client = 1; client<MaxClients+1 ;client++)
 	{
@@ -174,7 +180,16 @@ public void threadedcon(Handle owner, Handle hndl, const char[] error, any data)
 		{
 			if (timesretried > 3)
 			{
-				LogError("SESQL Failed to connect after 4 retries... %s",error);
+				LogError("SESQL Failed to connect after 4 retries...\n%s\nUsing local database...",error);
+				char Err[100];
+				Handle_Database = SQLite_UseDatabase("sourcemod-local",Err,sizeof(Err));
+				if (Handle_Database == INVALID_HANDLE)
+					LogError("SQLite error: %s",Err);
+				if (!SQL_FastQuery(Handle_Database,"CREATE TABLE IF NOT EXISTS persistentscores('SteamID' VARCHAR(32) NOT NULL PRIMARY KEY,'h1' INT NOT NULL,'h2' INT NOT NULL,'h3' INT NOT NULL,'lastcdata' VARCHAR(32) NOT NULL);"))
+				{
+					SQL_GetError(Handle_Database,Err,100);
+					LogError("SQLite error: %s",Err);
+				}
 			}
 			else CreateTimer(1.0,retrycon,_,TIMER_FLAG_NO_MAPCHANGE);
 		}
