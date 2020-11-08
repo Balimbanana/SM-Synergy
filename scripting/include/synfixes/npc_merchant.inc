@@ -1,5 +1,8 @@
 Handle merchantscr = INVALID_HANDLE;
 Handle merchantscrd = INVALID_HANDLE;
+Handle hMerchCVar = INVALID_HANDLE;
+char szMerchPropType[32];
+int iMerchantCType = 0;
 
 public Action MerchantUse(const char[] output, int caller, int activator, float delay)
 {
@@ -19,6 +22,7 @@ public Action MerchantUse(const char[] output, int caller, int activator, float 
 					int finddp = FindStringInArray(merchantscr,scr);
 					if (finddp == -1)
 					{
+						//char rebuildupper[32][32];
 						Handle dp = CreateDataPack();
 						Handle filehandlesub = OpenFile(scr,"r",true,NULL_STRING);
 						if (filehandlesub != INVALID_HANDLE)
@@ -35,6 +39,25 @@ public Action MerchantUse(const char[] output, int caller, int activator, float 
 								}
 								else if (StrContains(scrline," ",false) > 1)
 								{
+									/*
+									int maxrun = ExplodeString(scrline," ",rebuildupper,32,32);
+									scrline = "";
+									for(int j = 0;j<maxrun;j++)
+									{
+										if (strlen(rebuildupper[j]) > 0)
+										{
+											if (j == maxrun-1) Format(scrline,sizeof(scrline),"%s $%s",scrline,rebuildupper[j]);
+											else
+											{
+												if (strlen(scrline) < 1)
+													Format(scrline,sizeof(scrline),"%s",rebuildupper[j]);
+												else
+													Format(scrline,sizeof(scrline),"%s %s",scrline,rebuildupper[j]);
+											}
+										}
+									}
+									if (strlen(scrline) > 0)
+									*/
 									WritePackString(dp,scrline);
 								}
 							}
@@ -90,6 +113,15 @@ void DisplayMerchMenu(int activator, int finddp)
 			ReadPackString(dp,data,sizeof(data));
 		}
 		Menu menu = new Menu(MenuHandlersub);
+		switch(iMerchantCType)
+		{
+			case 0:
+				Format(title,sizeof(title),"%s Cost: Kills",title);
+			case 1:
+				Format(title,sizeof(title),"%s Cost: Score",title);
+			case 2:
+				Format(title,sizeof(title),"%s Cost: Custom",title);
+		}
 		menu.SetTitle(title);
 		char item[64];
 		char itemdisplay[64];
@@ -136,12 +168,39 @@ public int MenuHandlersub(Menu menu, MenuAction action, int param1, int param2)
 			TrimString(data[2]);
 			Format(data[1],sizeof(data[]),"%s",data[2]);
 		}
-		int points = GetEntProp(param1,Prop_Data,"m_iFrags");
+		int points = 0;
+		switch(iMerchantCType)
+		{
+			case 0:
+				points = GetEntProp(param1,Prop_Data,"m_iFrags");
+			case 1:
+				points = GetEntProp(param1,Prop_Data,"m_iPoints");
+			case 2:
+			{
+				if (HasEntProp(param1,Prop_Data,szMerchPropType))
+				{
+					points = GetEntProp(param1,Prop_Data,szMerchPropType);
+				}
+			}
+		}
 		int cost = StringToInt(data[1]);
 		//PrintToServer("Activator %i has %i cost is %i",param1,points,cost);
 		if (points >= cost)
 		{
-			SetEntProp(param1,Prop_Data,"m_iFrags",points-cost);
+			switch(iMerchantCType)
+			{
+				case 0:
+					SetEntProp(param1,Prop_Data,"m_iFrags",points-cost);
+				case 1:
+					SetEntProp(param1,Prop_Data,"m_iPoints",points-cost);
+				case 2:
+				{
+					if (HasEntProp(param1,Prop_Data,szMerchPropType))
+					{
+						SetEntProp(param1,Prop_Data,szMerchPropType,points-cost);
+					}
+				}
+			}
 			CreateCustomItem(param1,data[0],cost);
 			MerchSpeakRef(custentactive[param1],param1,1);
 		}
@@ -216,10 +275,37 @@ void CreateCustomItem(int client, char[] info, int cost)
 		}
 		else
 		{
-			int points = GetEntProp(client,Prop_Data,"m_iFrags");
+			int points = 0;
+			switch(iMerchantCType)
+			{
+				case 0:
+					points = GetEntProp(client,Prop_Data,"m_iFrags");
+				case 1:
+					points = GetEntProp(client,Prop_Data,"m_iPoints");
+				case 2:
+				{
+					if (HasEntProp(client,Prop_Data,szMerchPropType))
+					{
+						points = GetEntProp(client,Prop_Data,szMerchPropType);
+					}
+				}
+			}
 			PrintToChat(client,"Failed to create \"%s\" ask for it to be added to ent list.",basecls);
 			PrintToChat(client,"You have been refunded %i",cost);
-			SetEntProp(client,Prop_Data,"m_iFrags",points+cost);
+			switch(iMerchantCType)
+			{
+				case 0:
+					SetEntProp(client,Prop_Data,"m_iFrags",points+cost);
+				case 1:
+					SetEntProp(client,Prop_Data,"m_iPoints",points+cost);
+				case 2:
+				{
+					if (HasEntProp(client,Prop_Data,szMerchPropType))
+					{
+						SetEntProp(client,Prop_Data,szMerchPropType,points+cost);
+					}
+				}
+			}
 		}
 	}
 }
@@ -624,6 +710,103 @@ bool MerchSpeakRef(int entity, int client, int response)
 								WritePackString(dp,snd);
 								WritePackCell(dp,SNDCHAN_VOICE);
 								CreateTimer(7.0,ResetSoundEnd,dp,TIMER_FLAG_NO_MAPCHANGE);
+							}
+							if (strlen(snd) > 0)
+							{
+								if (response == 2) EmitSoundToClient(client,snd,entity,SNDCHAN_VOICE,SNDLEVEL_NORMAL);
+								else EmitSoundToAll(snd, entity, SNDCHAN_VOICE, SNDLEVEL_NORMAL);
+							}
+						}
+						case 7:
+						{
+							//Vort
+							if (FindStringInArray(precachedarr,"npc_merchant_vort") == -1)
+							{
+								recursion("sound/vo/canals/");
+								recursion("sound/vo/npc/vortigaunt/");
+								PushArrayString(precachedarr,"npc_merchant_vort");
+							}
+							if (response == 0)
+							{
+								switch (GetRandomInt(0,8))
+								{
+									case 0:
+										Format(snd,sizeof(snd),"vo\\canals\\vort_reckoning.wav");
+									case 1:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\beofservice.wav");
+									case 2:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\dreamed.wav");
+									case 3:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\fmhonorsus.wav");
+									case 4:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\greetingsfm.wav");
+									case 5:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\isitthefm.wav");
+									case 6:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\itishonor.wav");
+									case 7:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\mystery.wav");
+									case 8:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\vmono_17.wav");
+								}
+							}
+							else if (response == 1)
+							{
+								switch (GetRandomInt(0,8))
+								{
+									case 0:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\affirmed.wav");
+									case 1:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\allwehave.wav");
+									case 2:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\asyouwish.wav");
+									case 3:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\certainly.wav");
+									case 4:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\done.wav");
+									case 5:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\fmcanuse.wav");
+									case 6:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\gladly.wav");
+									case 7:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\honorours.wav");
+									case 8:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\keepfmsafe.wav");
+								}
+							}
+							else if (response == 2)
+							{
+								switch (GetRandomInt(0,11))
+								{
+									case 0:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\alldear.wav");
+									case 1:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\calm.wav");
+									case 2:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\giveover.wav");
+									case 3:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\hopeless.wav");
+									case 4:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\opaque.wav");
+									case 5:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\regrettable.wav");
+									case 6:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\seenworse.wav");
+									case 7:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\undeserving.wav");
+									case 8:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\vanswer01.wav");
+									case 9:
+									{
+										int randsnd = GetRandomInt(1,14);
+										if (randsnd < 10) Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\vanswer0%i.wav",randsnd);
+										else Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\vanswer%i.wav",randsnd);
+									}
+									case 10:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\vmono_12.wav");
+									case 11:
+										Format(snd,sizeof(snd),"vo\\npc\\vortigaunt\\vmono_25.wav");
+								}
 							}
 							if (strlen(snd) > 0)
 							{

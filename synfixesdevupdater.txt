@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0021"
-			"Previous"	"2.0020"
+			"Latest"  	"2.0022"
+			"Previous"	"2.0021"
 		}
 		
-		"Notes"	"Fixed first spawn in getting equipped with ents that they should not."
+		"Notes"	"Added CVars and title info for npc_merchant."
 	}
 	
 	"Files"

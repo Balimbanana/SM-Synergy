@@ -110,7 +110,7 @@ bool BlockTripMineDamage = true;
 bool FixWeapSnd = true;
 bool bFixSoundScapes = true;
 
-#define PLUGIN_VERSION "2.0021"
+#define PLUGIN_VERSION "2.0022"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -379,6 +379,31 @@ public void OnPluginStart()
 		HookConVarChange(cvar, fixsndscapech);
 	}
 	CloseHandle(cvar);
+	cvar = FindConVar("npc_merchant_currency");
+	if (cvar != INVALID_HANDLE)
+	{
+		iMerchantCType = GetConVarInt(cvar);
+		HookConVarChange(cvar, merchcurrencych);
+	}
+	else
+	{
+		cvar = CreateConVar("npc_merchant_currency", "0", "0 is kills. 1 is points. 2 is property defined by npc_merchant_currency_type.", _, true, 0.0, true, 2.0);
+		iMerchantCType = GetConVarInt(cvar);
+		HookConVarChange(cvar, merchcurrencych);
+	}
+	CloseHandle(cvar);
+	hMerchCVar = FindConVar("npc_merchant_currency_type");
+	if (hMerchCVar != INVALID_HANDLE)
+	{
+		GetConVarString(hMerchCVar, szMerchPropType, sizeof(szMerchPropType));
+		HookConVarChange(hMerchCVar, merchcurrencypropch);
+	}
+	else
+	{
+		hMerchCVar = CreateConVar("npc_merchant_currency_type", "m_iFrags", ".", _, true, 0.0, true, 2.0);
+		GetConVarString(hMerchCVar, szMerchPropType, sizeof(szMerchPropType));
+		HookConVarChange(hMerchCVar, merchcurrencypropch);
+	}
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -20817,6 +20842,16 @@ public void fixsndscapech(Handle convar, const char[] oldValue, const char[] new
 		bFixSoundScapes = true;
 	else
 		bFixSoundScapes = false;
+}
+
+public void merchcurrencych(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	iMerchantCType = StringToInt(newValue);
+}
+
+public void merchcurrencypropch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	Format(szMerchPropType,sizeof(szMerchPropType),"%s",newValue);
 }
 
 public void longjumpmodech(Handle convar, const char[] oldValue, const char[] newValue)

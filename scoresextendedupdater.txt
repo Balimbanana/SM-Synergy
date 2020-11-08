@@ -1,0 +1,19 @@
+"Updater"
+{
+	"Information"
+	{
+		"Version"
+		{
+			"Latest"  	"0.9"
+			"Previous"	"0.8"
+		}
+		
+		"Notes"	"Init."
+	}
+	
+	"Files"
+	{
+		"Plugin"	"Path_SM/plugins/scoresextended.smx"
+		"Source"	"Path_SM/scripting/scoresextended.sp"
+	}
+}
