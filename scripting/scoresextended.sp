@@ -297,7 +297,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 
 void StoreScores(int client)
 {
-	if ((strlen(SteamIDbuf[client]) < 1) || (!IsValidEntity(client)) || (Handle_Database == INVALID_HANDLE)) return;
+	if ((strlen(SteamIDbuf[client]) < 1) || (!IsValidEntity(client)) || (Handle_Database == INVALID_HANDLE) || (hSEdisable.BoolValue)) return;
 	if (!bitChanged[client]) return;
 	char Query[256];
 	char szTmp[64];
