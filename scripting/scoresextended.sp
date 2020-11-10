@@ -27,7 +27,7 @@ int score[128];
 int bitChanged[128];
 int timesretried = 0;
 float Healchk[128];
-#define PLUGIN_VERSION "0.91"
+#define PLUGIN_VERSION "0.92"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/scoresextendedupdater.txt"
 
 enum
@@ -246,7 +246,8 @@ public Action waitforvalid(Handle timer, any client)
 			score[client] = 0;
 			bitChanged[client] = 7;
 		}
-		Format(clmap[client],sizeof(clmap[]),"%s",contentdata);
+		if ((StrEqual(contentdata,"custom",false)) || (StrEqual(contentdata,"oc",false)) || (StrEqual(contentdata,"ocps",false)) || (StrEqual(contentdata,"syn",false))) Format(clmap[client],sizeof(clmap[]),"");
+		else Format(clmap[client],sizeof(clmap[]),"%s",contentdata);
 		bitChanged[client] |= SE_CDataChanged;
 	}
 	else if (IsClientConnected(client))
