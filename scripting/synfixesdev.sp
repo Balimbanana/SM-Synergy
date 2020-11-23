@@ -110,7 +110,7 @@ bool BlockTripMineDamage = true;
 bool FixWeapSnd = true;
 bool bFixSoundScapes = true;
 
-#define PLUGIN_VERSION "2.0022"
+#define PLUGIN_VERSION "2.0023"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2537,6 +2537,7 @@ public Action clspawnpost(Handle timer, int client)
 			{
 				ShowMOTDPanel(client,mapname,briefing,MOTDPANEL_TYPE_FILE);
 			}
+			cllastsscape[client] = -1;
 		}
 	}
 	else if (IsClientConnected(client))
@@ -3452,7 +3453,17 @@ public Action resetclanim(Handle timer)
 										{
 											char sndscape[64];
 											GetEntPropString(sscape,Prop_Data,"m_soundscapeName",sndscape,sizeof(sndscape));
+											Handle cvar = FindConVar("sv_cheats");
+											if (cvar != INVALID_HANDLE)
+											{
+												if (GetConVarInt(cvar) < 1)
+												{
+													SendConVarValue(i,cvar,"1");
+												}
+											}
+											CloseHandle(cvar);
 											ClientCommand(i,"playsoundscape \"%s\"",sndscape);
+											ClientCommand(i,"blckreset");
 										}
 									}
 								}
