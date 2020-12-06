@@ -2285,10 +2285,10 @@ void ReadEDT(char[] edtfile)
 					{
 						/*
 						bCorruptHandle = true;
-						if (LogEDTErr) LogMessage("EDTError on line %i %s",linenum,line);
-						else PrintToServer("EDTError on line %i %s",linenum,line);
 						break;
 						*/
+						if (LogEDTErr) LogMessage("EDTError on line %i %s",linenum,line);
+						else PrintToServer("EDTError on line %i %s",linenum,line);
 						if (FileExists(edtfile,false)) filehandle = OpenFile(edtfile,"rt",false);
 						else filehandle = OpenFile(edtfile,"rt",true,NULL_STRING);
 						FileSeek(filehandle,iFilePos,SEEK_SET);
