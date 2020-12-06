@@ -37,7 +37,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.61"
+#define PLUGIN_VERSION "0.62"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -2071,9 +2071,13 @@ void ReadEDT(char[] edtfile)
 		char originch[128];
 		int linenum = 0;
 		Handle passedarr = CreateArray(64);
+		int iCurHndl = view_as<int>(passedarr);
 		Handle filehandle = INVALID_HANDLE;
 		if (FileExists(edtfile,false)) filehandle = OpenFile(edtfile,"rt",false);
 		else filehandle = OpenFile(edtfile,"rt",true,NULL_STRING);
+		int iFHandle = view_as<int>(filehandle);
+		int iFilePos = -1;
+		//bool bCorruptHandle = false;
 		while(reading && (!IsEndOfFile(filehandle)))
 		{
 			if (!ReadString) reading = ReadFileLine(filehandle,line,sizeof(line));
@@ -2269,12 +2273,28 @@ void ReadEDT(char[] edtfile)
 				}
 				if (((CreatingEnt) || (EditingEnt) || (DeletingEnt) || (ModifyCase)) && (strlen(line) > 0))
 				{
-					FormatKVs(passedarr,line,cls);
-					/*
-					Handle tmphndl = FormatKVs(passedarr,line,cls);
-					passedarr = CloneArray(tmphndl);
-					CloseHandle(tmphndl);
-					*/
+					if (iCurHndl != view_as<int>(passedarr))
+					{
+						PrintToServer("EDTError on line %i %s",linenum,line);
+						CloseHandle(passedarr);
+						passedarr = CreateArray(64);
+						iCurHndl = view_as<int>(passedarr);
+					}
+					else FormatKVs(passedarr,line,cls);
+					if (iFHandle != view_as<int>(filehandle))
+					{
+						/*
+						bCorruptHandle = true;
+						if (LogEDTErr) LogMessage("EDTError on line %i %s",linenum,line);
+						else PrintToServer("EDTError on line %i %s",linenum,line);
+						break;
+						*/
+						if (FileExists(edtfile,false)) filehandle = OpenFile(edtfile,"rt",false);
+						else filehandle = OpenFile(edtfile,"rt",true,NULL_STRING);
+						FileSeek(filehandle,iFilePos,SEEK_SET);
+						iFHandle = view_as<int>(filehandle);
+					}
+					else iFilePos = FilePosition(filehandle);
 				}
 				if ((StrContains(line,"}",false) != -1) && (CreatingEnt))
 				{
@@ -2323,7 +2343,11 @@ void ReadEDT(char[] edtfile)
 							PushArrayCell(g_CreateEnts,dupearr);
 						}
 					}
-					else PrintToServer("EDT Error: Attempted to create entity with no classname on line %i",linenum);
+					else
+					{
+						if (LogEDTErr) LogMessage("EDT Error: Attempted to create entity with no classname on line %i",linenum);
+						else PrintToServer("EDT Error: Attempted to create entity with no classname on line %i",linenum);
+					}
 					ClearArray(passedarr);
 					cls = "";
 					targn = "";
@@ -2455,6 +2479,7 @@ void ReadEDT(char[] edtfile)
 		}
 		if (dbglvl > 1) PrintToServer("EDTRead Ended at line %i",linenum+1);
 		CloseHandle(passedarr);
+		//if (!bCorruptHandle) CloseHandle(filehandle);
 		CloseHandle(filehandle);
 		//Re-apply after for late setup
 		if (GetArraySize(cvarmods) > 0)
@@ -2522,6 +2547,7 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 							i+=4;
 							//valdef = StrContains(kvs[i],"origin",false)+2;
 						}
+						if (i+1 >= runthrough) break;
 					}
 					if (StrContains(kvs[i],"values",false) == 0)
 					{
@@ -2665,6 +2691,7 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 							}
 							if (strlen(key) > 0)
 							{
+								if ((i >= runthrough) || (i < 0)) break;
 								Format(fmt,sizeof(fmt),"%s %s",key,val);
 								if (view_as<int>(passedarr) != 1634494062)
 								{
