@@ -2555,7 +2555,7 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 							i+=4;
 							//valdef = StrContains(kvs[i],"origin",false)+2;
 						}
-						if (i+1 >= runthrough) break;
+						//if (i+1 >= runthrough) break;
 					}
 					if (StrContains(kvs[i],"values",false) == 0)
 					{
@@ -2699,7 +2699,7 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 							}
 							if (strlen(key) > 0)
 							{
-								if ((i >= runthrough) || (i < 0)) break;
+								//if ((i >= runthrough) || (i < 0)) break;
 								Format(fmt,sizeof(fmt),"%s %s",key,val);
 								if (view_as<int>(passedarr) != 1634494062)
 								{
