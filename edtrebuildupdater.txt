@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.62"
-			"Previous"	"0.61"
+			"Latest"  	"0.63"
+			"Previous"	"0.62"
 		}
 		
-		"Notes"	"Additional fallbacks for corruption in handles."
+		"Notes"	"Additional fallbacks for corruption in handles. Added edtlog_enable which stores in edt.log."
 	}
 	
 	"Files"

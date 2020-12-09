@@ -27,7 +27,8 @@ Handle g_CreateEnts = INVALID_HANDLE;
 Handle g_ModifyCase = INVALID_HANDLE;
 
 char lastmap[72];
-char LineSpanning[256];
+char LineSpanning[512];
+char szEDTLog[256];
 int dbglvl = 0;
 int method = 0;
 bool VintageMode = false;
@@ -37,7 +38,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.62"
+#define PLUGIN_VERSION "0.63"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -53,6 +54,8 @@ public void OnPluginStart()
 {
 	cvaroriginals = CreateArray(64);
 	cvarmods = CreateArray(64);
+	BuildPath(Path_SM,szEDTLog,sizeof(szEDTLog),"logs");
+	Format(szEDTLog,sizeof(szEDTLog),"%s/EDT.log",szEDTLog);
 	Handle cvar = FindConVar("edtdbg");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtdbg", "0", "Set debug level of EDT read.", _, true, 0.0, true, 4.0);
 	dbglvl = GetConVarInt(cvar);
@@ -83,8 +86,8 @@ public void OnPluginStart()
 	RemoveGlobals = GetConVarBool(cvar);
 	HookConVarChange(cvar,rmglobalsch);
 	CloseHandle(cvar);
-	cvar = FindConVar("edtlog_getbspmodel");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtlog_getbspmodel", "0", "Logs errors in edt_getbspmodelfor_ values that dont point to existing entities.", _, true, 0.0, true, 1.0);
+	cvar = FindConVar("edtlog_enable");
+	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtlog_enable", "0", "Logs EDT parse and apply errors. Stores log in EDT.log", _, true, 0.0, true, 1.0);
 	LogEDTErr = GetConVarBool(cvar);
 	HookConVarChange(cvar,loggetbspch);
 	CloseHandle(cvar);
@@ -103,6 +106,11 @@ public void OnLibraryAdded(const char[] name)
 
 public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 {
+	if (strlen(szEDTLog) < 1)
+	{
+		BuildPath(Path_SM,szEDTLog,sizeof(szEDTLog),"logs");
+		Format(szEDTLog,sizeof(szEDTLog),"%s/EDT.log",szEDTLog);
+	}
 	g_DeleteClasses = CreateArray(128);
 	g_DeleteClassOrigin = CreateArray(128);
 	g_DeleteTargets = CreateArray(128);
@@ -335,7 +343,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 									else
 									{
 										PrintToServer("Failed to get BSP Model from Targetname %s",second);
-										if (LogEDTErr) LogMessage("Failed to get BSP Model from Targetname %s",second);
+										if (LogEDTErr) LogToFile(szEDTLog,"Failed to get BSP Model from Targetname %s",second);
 										bool noplaceholder = false;
 										for (int m = 0;m<GetArraySize(passedarr);m++)
 										{
@@ -453,7 +461,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 									if (!FoundMdl)
 									{
 										PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
-										if (LogEDTErr) LogMessage("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+										if (LogEDTErr) LogToFile(szEDTLog,"Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
 										FailedToGetModel = true;
 									}
 								}
@@ -461,7 +469,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 							else
 							{
 								PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
-								if (LogEDTErr) LogMessage("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+								if (LogEDTErr) LogToFile(szEDTLog,"Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
 								FailedToGetModel = true;
 							}
 							if (FailedToGetModel)
@@ -2287,10 +2295,10 @@ void ReadEDT(char[] edtfile)
 						bCorruptHandle = true;
 						break;
 						*/
-						if (LogEDTErr) LogMessage("EDTError on line %i %s",linenum,line);
+						if (LogEDTErr) LogToFile(szEDTLog,"EDTError on line %i %s",linenum,line);
 						else PrintToServer("EDTError on line %i %s",linenum,line);
-						if (FileExists(edtfile,false)) filehandle = OpenFile(edtfile,"rt",false);
-						else filehandle = OpenFile(edtfile,"rt",true,NULL_STRING);
+						if (FileExists(edtfile,false)) filehandle = OpenFile(edtfile,"r",false);
+						else filehandle = OpenFile(edtfile,"r",true,NULL_STRING);
 						FileSeek(filehandle,iFilePos,SEEK_SET);
 						iFHandle = view_as<int>(filehandle);
 					}
@@ -2345,7 +2353,7 @@ void ReadEDT(char[] edtfile)
 					}
 					else
 					{
-						if (LogEDTErr) LogMessage("EDT Error: Attempted to create entity with no classname on line %i",linenum);
+						if (LogEDTErr) LogToFile(szEDTLog,"EDT Error: Attempted to create entity with no classname on line %i",linenum);
 						else PrintToServer("EDT Error: Attempted to create entity with no classname on line %i",linenum);
 					}
 					ClearArray(passedarr);
