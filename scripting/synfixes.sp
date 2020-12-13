@@ -58,7 +58,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99979"
+#define PLUGIN_VERSION "1.99980"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1946,6 +1946,7 @@ void readoutputs(int scriptent, char[] targn)
 		Handle passedarr = CreateArray(64);
 		float fileorigin[3];
 		char clsscript[32];
+		char tmpchar[128];
 		GetEntityClassname(scriptent,clsscript,sizeof(clsscript));
 		while(!IsEndOfFile(filehandle)&&ReadFileLine(filehandle,line,sizeof(line)))
 		{
@@ -1954,8 +1955,7 @@ void readoutputs(int scriptent, char[] targn)
 			{
 				if (StrContains(line,"\"targetname\"",false) == 0)
 				{
-					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
+					Format(tmpchar,sizeof(tmpchar),"%s",line);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" ","",false);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 					TrimString(tmpchar);
@@ -1963,8 +1963,7 @@ void readoutputs(int scriptent, char[] targn)
 				}
 				else if (StrContains(line,"\"template0",false) == 0)
 				{
-					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
+					Format(tmpchar,sizeof(tmpchar),"%s",line);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"template0","",false);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 					strcopy(tmpchar,sizeof(tmpchar),tmpchar[2]);
@@ -1973,8 +1972,7 @@ void readoutputs(int scriptent, char[] targn)
 				}
 				else if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
 				{
-					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
+					Format(tmpchar,sizeof(tmpchar),"%s",line);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"actor\" ","",false);
 					ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 					TrimString(tmpchar);
@@ -2004,8 +2002,7 @@ void readoutputs(int scriptent, char[] targn)
 							DispatchKeyValue(ent,ktmp,ktmp2);
 						}
 					}
-					char tmpchar[128];
-					Format(tmpchar,sizeof(tmpchar),line);
+					Format(tmpchar,sizeof(tmpchar),"%s",line);
 					ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
 					ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 					ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
@@ -2066,8 +2063,7 @@ void readoutputs(int scriptent, char[] targn)
 					}
 					if (StrContains(line,"\"origin\"",false) == 0)
 					{
-						char tmpchar[128];
-						Format(tmpchar,sizeof(tmpchar),line);
+						Format(tmpchar,sizeof(tmpchar),"%s",line);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"origin\" ","",false);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 						char origch[16][16];
@@ -2078,8 +2074,7 @@ void readoutputs(int scriptent, char[] targn)
 					}
 					if (StrContains(line,"\"targetname\"",false) == 0)
 					{
-						char tmpchar[128];
-						Format(tmpchar,sizeof(tmpchar),line);
+						Format(tmpchar,sizeof(tmpchar),"%s",line);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"targetname\" ","",false);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 						TrimString(tmpchar);
@@ -2087,8 +2082,7 @@ void readoutputs(int scriptent, char[] targn)
 					}
 					if ((StrContains(line,"\"actor\"",false) == 0) && (StrEqual(clsscript,"ai_goal_follow",false)))
 					{
-						char tmpchar[128];
-						Format(tmpchar,sizeof(tmpchar),line);
+						Format(tmpchar,sizeof(tmpchar),"%s",line);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"actor\" ","",false);
 						ReplaceString(tmpchar,sizeof(tmpchar),"\"","",false);
 						TrimString(tmpchar);
@@ -2098,7 +2092,6 @@ void readoutputs(int scriptent, char[] targn)
 					int arrindx = FindStringInArray(passedarr,"classname");
 					if (arrindx != -1)
 					{
-						char tmpchar[128];
 						GetArrayString(passedarr,arrindx+1,tmpchar,sizeof(tmpchar));
 						ExplodeString(tmpchar, "\"", kvs, 64, 128, true);
 						ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
@@ -2109,7 +2102,6 @@ void readoutputs(int scriptent, char[] targn)
 					{
 						int loginp = CreateEntityByName("logic_auto");
 						DispatchKeyValue(loginp,"spawnflags","1");
-						char tmpchar[128];
 						char tmpchar2[128];
 						char sname[128];
 						GetEntPropString(scriptent,Prop_Data,"m_iName",sname,sizeof(sname));
