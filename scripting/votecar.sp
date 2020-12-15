@@ -56,7 +56,7 @@ enum voteType
 
 voteType g_voteType = question;
 
-#define PLUGIN_VERSION "1.14"
+#define PLUGIN_VERSION "1.15"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/votecarupdater.txt"
 
 public Plugin myinfo = 
@@ -167,16 +167,22 @@ public Action votecar(int client, int args)
 {
 	Menu menu = new Menu(MenuHandler);
 	menu.SetTitle("Type of Vehicle");
-	
-	menu.AddItem("1","Jeep 2-Seater");
-	menu.AddItem("2","Airboat");
-	menu.AddItem("3","Van");
-	menu.AddItem("4","Truck");
-	menu.AddItem("5","Elite Jeep");
-	if (usejal)
-		menu.AddItem("6","Jalopy");
-	if (useapc)
-		menu.AddItem("7","APC");
+	if ((restrictbyveh) && (StrContains(mapbuf,"d1_canals_",false) != -1))
+	{
+		menu.AddItem("2","Airboat");
+	}
+	else
+	{
+		menu.AddItem("1","Jeep 2-Seater");
+		menu.AddItem("2","Airboat");
+		menu.AddItem("3","Van");
+		menu.AddItem("4","Truck");
+		menu.AddItem("5","Elite Jeep");
+		if (usejal)
+			menu.AddItem("6","Jalopy");
+		if (useapc)
+			menu.AddItem("7","APC");
+	}
 	if (plyvehicle[client])
 		menu.AddItem("remvh","Remove Vehicle");
 	
@@ -450,7 +456,7 @@ bool CCreateVehicle(int client, char[] vehiclemodel)
 					if (state == 1)
 					{
 						isvehiclemap = true;
-						if ((StrEqual(mapbuf,"ep2_outland_02",false)) || (StrEqual(mapbuf,"jump_portal_b83",false)))
+						if ((StrEqual(mapbuf,"ep2_outland_02",false)) || (StrEqual(mapbuf,"d3_c17_07",false)) || (StrEqual(mapbuf,"jump_portal_b83",false)))
 							isvehiclemap = false;
 					}
 					else if (state == 0)
@@ -483,9 +489,17 @@ bool CCreateVehicle(int client, char[] vehiclemodel)
 		Location[2] = (PlayerOrigin[2] + 10);
 		Handle hhitpos = INVALID_HANDLE;
 		TR_TraceRay(Location,clangles,MASK_SHOT,RayType_Infinite);
-		TR_GetEndPosition(fhitpos,hhitpos);
+		TR_GetEndPosition(fhitpos);
 		fhitpos[2] += 10.0;
 		float chkdist = GetVectorDistance(PlayerOrigin,fhitpos,false);
+		if (RoundFloat(chkdist) > 500)
+		{
+			fhitpos[0] = (PlayerOrigin[0] + (60 * Cosine(DegToRad(clangles[1]))));
+			fhitpos[1] = (PlayerOrigin[1] + (60 * Sine(DegToRad(clangles[1]))));
+			fhitpos[2] = PlayerOrigin[2] + 100.0;
+			chkdist = GetVectorDistance(PlayerOrigin,fhitpos,false);
+			fhitpos[2]-=100.0;
+		}
 		
 		if ((RoundFloat(chkdist) >= carwalldist+20) && (RoundFloat(chkdist) <= 500))
 		{
