@@ -11,7 +11,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "0.48"
+#define PLUGIN_VERSION "0.49"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -457,6 +457,20 @@ public Action BuildEDTFor(int client, int args)
 	{
 		GetCmdArg(1,edtmap,sizeof(edtmap));
 		Format(cachepath,sizeof(cachepath),"maps/ent_cache/%s.ent",edtmap);
+		if (!FileExists(cachepath,true,NULL_STRING))
+		{
+			char contentdata[32];
+			Handle cvar = FindConVar("content_metadata");
+			if (cvar != INVALID_HANDLE)
+			{
+				GetConVarString(cvar,contentdata,sizeof(contentdata));
+				char fixuptmp[4][16];
+				ExplodeString(contentdata," ",fixuptmp,4,16,true);
+				Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+				Format(cachepath,sizeof(cachepath),"maps/ent_cache/%s_%s.ent",contentdata,edtmap);
+			}
+			CloseHandle(cvar);
+		}
 	}
 	else
 	{
