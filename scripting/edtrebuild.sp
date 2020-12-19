@@ -38,7 +38,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.63"
+#define PLUGIN_VERSION "0.64"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -2532,6 +2532,13 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 		ReplaceString(passchar,256,"	","");
 		int runthrough = ExplodeString(passchar," ",kvs,128,256);
 		int valdef = -1;
+		if (runthrough > 2)
+		{
+			if ((strlen(kvs[1]) < 1) && (strlen(kvs[2]) > 0))
+			{
+				Format(kvs[1],sizeof(kvs[]),"%s",kvs[2]);
+			}
+		}
 		for (int i = 0;i<runthrough;i++)
 		{
 			if (StrContains(kvs[i+1],"}",false) == 0)
