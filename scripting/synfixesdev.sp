@@ -400,7 +400,7 @@ public void OnPluginStart()
 	}
 	else
 	{
-		hMerchCVar = CreateConVar("npc_merchant_currency_type", "m_iFrags", ".", _, true, 0.0, true, 2.0);
+		hMerchCVar = CreateConVar("npc_merchant_currency_type", "m_iFrags", ".", _);
 		GetConVarString(hMerchCVar, szMerchPropType, sizeof(szMerchPropType));
 		HookConVarChange(hMerchCVar, merchcurrencypropch);
 	}
@@ -511,7 +511,7 @@ public Action bmcvars(Handle timer)
 	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_human_security_health","40","Human Security health.",_,true,1.0,false);
 	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_human_scientist_health");
-	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_human_scientist_health","20","Human Security health.",_,true,1.0,false);
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_human_scientist_health","20","Human Scientist health.",_,true,1.0,false);
 	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_human_commander_health");
 	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_human_commander_health","50","Human Commander health.",_,true,0.0,false);
@@ -532,19 +532,19 @@ public Action bmcvars(Handle timer)
 	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_alien_slave_health","38","Alien Slave health.",_,true,0.0,false);
 	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_bullsquid_health");
-	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_health","60",".",_,true,0.0,false);
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_health","60","BullSquid health.",_,true,0.0,false);
 	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_bullsquid_bite_dmg");
-	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_bite_dmg","25",".",_,true,0.0,false);
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_bite_dmg","25","BullSquid bite damage.",_,true,0.0,false);
 	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_bullsquid_whip_dmg");
-	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_whip_dmg","35",".",_,true,0.0,false);
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_whip_dmg","35","BullSquid whip damage.",_,true,0.0,false);
 	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_bullsquid_whip_force");
-	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_whip_force","300",".",_,true,0.0,false);
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_bullsquid_whip_force","300","BullSquid whip throw force.",_,true,0.0,false);
 	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_alien_grunt_health");
-	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_alien_grunt_health","90",".",_,true,0.0,false);
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_alien_grunt_health","90","Alien Grunt health.",_,true,0.0,false);
 	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_controller_health");
 	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_controller_health","100","Alien Controller health.",_,true,0.0,false);
@@ -574,7 +574,7 @@ public Action bmcvars(Handle timer)
 	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_npc_dmg_glock","5","Damage that NPCs will do with glocks.",_,true,0.0,false);
 	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_dmg_sentry");
-	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_dmg_sentry","4","Sentries damage.",_,true,0.0,false);
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_dmg_sentry","4","Sentries damage per shot.",_,true,0.0,false);
 	CloseHandle(cvarchk);
 	cvarchk = FindConVar("sk_dmg_bmsgargantua_melee");
 	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_dmg_bmsgargantua_melee","30","Black Mesa Gargantua melee damage.",_,true,0.0,false);
@@ -3441,7 +3441,7 @@ public Action resetclanim(Handle timer)
 						}
 						if (bFixSoundScapes)
 						{
-							if (HasEntProp(i,Prop_Data,"ent"))
+							if ((HasEntProp(i,Prop_Data,"ent")) && (!IsFakeClient(i)))
 							{
 								int sscape = GetEntPropEnt(i,Prop_Data,"ent");
 								if (IsValidEntity(sscape))
