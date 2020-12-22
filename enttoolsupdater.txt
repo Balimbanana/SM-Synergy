@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.30"
-			"Previous"	"1.29"
+			"Latest"  	"1.31"
+			"Previous"	"1.30"
 		}
 		
-		"Notes"	"Added Disabled information to listents full. Added ccmenu."
+		"Notes"	"More info in listents full for certain ent types."
 	}
 	
 	"Files"

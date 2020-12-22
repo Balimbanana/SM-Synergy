@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.30"
+#define PLUGIN_VERSION "1.31"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -97,7 +97,6 @@ public Action CreateStuff(int client, int args)
 	if (client == 0)
 	{
 		if ((IsValidEntity(1)) && (!IsDedicatedServer())) client = 1;
-		else return Plugin_Handled;
 	}
 	if (client == 0)
 	{
@@ -110,23 +109,64 @@ public Action CreateStuff(int client, int args)
 		}
 		char fullstr[512];
 		Format(fullstr,sizeof(fullstr),"%s",ent);
+		char tmp[128];
+		char tmp2[128];
+		char originch[4][16];
+		float vectmp[3];
 		for (int v = 0; v<args+1; v++)
 		{
 			if (v > 1)
 			{
-				char tmp[128];
-				char tmp2[128];
 				GetCmdArg(v,tmp,sizeof(tmp));
 				int v1 = v+1;
 				GetCmdArg(v1,tmp2,sizeof(tmp2));
 				DispatchKeyValue(stuff,tmp,tmp2);
 				if (StrEqual(tmp,"origin",false))
 				{
-					char originch[4][16];
 					ExplodeString(tmp2," ",originch,4,16);
 					Original[0] = StringToFloat(originch[0]);
 					Original[1] = StringToFloat(originch[1]);
 					Original[2] = StringToFloat(originch[2]);
+				}
+				if (StrEqual(tmp,"m_property",false))
+				{
+					if (v+2 < args+1)
+					{
+						v+=2;
+						GetCmdArg(v,tmp,sizeof(tmp));
+						if (HasEntProp(stuff,Prop_Data,tmp2))
+						{
+							PropFieldType type;
+							FindDataMapInfo(stuff,tmp2,type);
+							if (type != PropField_Unsupported)
+							{
+								if (type == PropField_String)
+								{
+									SetEntPropString(stuff,Prop_Data,tmp2,tmp);
+								}
+								else if (type == PropField_Entity)
+								{
+									SetEntPropEnt(stuff,Prop_Data,tmp2,StringToInt(tmp));
+								}
+								else if (type == PropField_Integer)
+								{
+									SetEntProp(stuff,Prop_Data,tmp2,StringToInt(tmp));
+								}
+								else if (type == PropField_Float)
+								{
+									SetEntPropFloat(stuff,Prop_Data,tmp2,StringToFloat(tmp));
+								}
+								else if (type == PropField_Vector)
+								{
+									ExplodeString(tmp," ",originch,4,16);
+									vectmp[0] = StringToFloat(originch[0]);
+									vectmp[1] = StringToFloat(originch[1]);
+									vectmp[2] = StringToFloat(originch[2]);
+									SetEntPropVector(stuff,Prop_Data,tmp2,vectmp);
+								}
+							}
+						}
+					}
 				}
 				Format(fullstr,sizeof(fullstr),"%s %s %s",fullstr,tmp,tmp2);
 				v++;
@@ -237,14 +277,17 @@ public Action CreateStuff(int client, int args)
 		}
 		int ownerset = -1;
 		Handle passedarr = CreateArray(64);
+		Handle passedarrprops = CreateArray(64);
 		char fullstr[512];
 		Format(fullstr,sizeof(fullstr),"%s",ent);
+		char tmpexpl[4][32];
+		char tmp[64];
+		char tmp2[512];
+		float vectmp[3];
 		for (int v = 0; v<args+1; v++)
 		{
 			if (v > 1)
 			{
-				char tmp[64];
-				char tmp2[64];
 				GetCmdArg(v,tmp,sizeof(tmp));
 				int v1 = v+1;
 				int v1size = GetCmdArg(v1,tmp2,sizeof(tmp2));
@@ -300,7 +343,6 @@ public Action CreateStuff(int client, int args)
 						}
 						else
 						{
-							char tmpexpl[4][32];
 							ExplodeString(tmp2," ",tmpexpl,4,32);
 							Angles[0] = StringToFloat(tmpexpl[0]);
 							Angles[1] = StringToFloat(tmpexpl[1]);
@@ -319,6 +361,50 @@ public Action CreateStuff(int client, int args)
 					{
 						Format(setparent,sizeof(setparent),"%s",tmp2);
 					}
+					else if (StrEqual(tmp,"m_property",false))
+					{
+						if (v+2 < args+1)
+						{
+							v++;
+							v1++;
+							GetCmdArg(v,tmp,sizeof(tmp));
+							GetCmdArg(v1,tmp2,sizeof(tmp2));
+							TrimString(tmp);
+							TrimString(tmp2);
+							PushArrayString(passedarrprops,tmp);
+							PushArrayString(passedarrprops,tmp2);
+							ReplaceString(tmp2,sizeof(tmp2),"\\n","\n",false);
+							if (HasEntProp(stuff,Prop_Data,tmp))
+							{
+								PropFieldType type;
+								FindDataMapInfo(stuff,tmp,type);
+								if ((type == PropField_String) || (type == PropField_String_T))
+								{
+									SetEntPropString(stuff,Prop_Data,tmp,tmp2);
+								}
+								else if (type == PropField_Entity)
+								{
+									SetEntPropEnt(stuff,Prop_Data,tmp,StringToInt(tmp2));
+								}
+								else if (type == PropField_Integer)
+								{
+									SetEntProp(stuff,Prop_Data,tmp,StringToInt(tmp2));
+								}
+								else if (type == PropField_Float)
+								{
+									SetEntPropFloat(stuff,Prop_Data,tmp,StringToFloat(tmp2));
+								}
+								else if (type == PropField_Vector)
+								{
+									ExplodeString(tmp2," ",tmpexpl,4,16);
+									vectmp[0] = StringToFloat(tmpexpl[0]);
+									vectmp[1] = StringToFloat(tmpexpl[1]);
+									vectmp[2] = StringToFloat(tmpexpl[2]);
+									SetEntPropVector(stuff,Prop_Data,tmp,vectmp);
+								}
+							}
+						}
+					}
 					if (StrEqual(tmp,"targetname",false))
 						if (targnamedefined)
 							Format(tmp2,sizeof(tmp2),"%s%s",ent,tmp2);
@@ -334,7 +420,7 @@ public Action CreateStuff(int client, int args)
 						PlayerOrigin[2] = StringToFloat(originch[2]);
 					}
 				}
-				Format(fullstr,sizeof(fullstr),"%s %s %s",fullstr,tmp,tmp2);
+				Format(fullstr,sizeof(fullstr),"%s \"%s\" \"%s\"",fullstr,tmp,tmp2);
 				v++;
 			}
 		}
@@ -387,6 +473,14 @@ public Action CreateStuff(int client, int args)
 		PrintToConsole(client,"%s",fullstr);
 		DispatchSpawn(stuff);
 		ActivateEntity(stuff);
+		if (GetArraySize(passedarrprops) > 0)
+		{
+			Handle dp = CreateDataPack();
+			WritePackCell(dp,stuff);
+			WritePackCell(dp,passedarrprops);
+			CreateTimer(0.1,PostSpawnSetProp,dp,TIMER_FLAG_NO_MAPCHANGE);
+		}
+		else CloseHandle(passedarrprops);
 		if ((ownerset != -1) && (ownerset != 0))
 		{
 			Handle dp = CreateDataPack();
@@ -409,6 +503,62 @@ public Action CreateStuff(int client, int args)
 		}
 	}
 	return Plugin_Handled;
+}
+
+public Action PostSpawnSetProp(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int stuff = ReadPackCell(dp);
+		Handle passedarrprops = ReadPackCell(dp);
+		CloseHandle(dp);
+		if (IsValidEntity(stuff))
+		{
+			char tmp[64];
+			char tmp2[512];
+			float vectmp[3];
+			char tmpexpl[4][16];
+			for (int i = 0;i<GetArraySize(passedarrprops);i++)
+			{
+				GetArrayString(passedarrprops,i,tmp,sizeof(tmp));
+				i++;
+				if (i >= GetArraySize(passedarrprops)) break;
+				GetArrayString(passedarrprops,i,tmp2,sizeof(tmp2));
+				ReplaceString(tmp2,sizeof(tmp2),"\\n","\n",false);
+				if (HasEntProp(stuff,Prop_Data,tmp))
+				{
+					PropFieldType type;
+					FindDataMapInfo(stuff,tmp,type);
+					if ((type == PropField_String) || (type == PropField_String_T))
+					{
+						SetEntPropString(stuff,Prop_Data,tmp,tmp2);
+					}
+					else if (type == PropField_Entity)
+					{
+						SetEntPropEnt(stuff,Prop_Data,tmp,StringToInt(tmp2));
+					}
+					else if (type == PropField_Integer)
+					{
+						SetEntProp(stuff,Prop_Data,tmp,StringToInt(tmp2));
+					}
+					else if (type == PropField_Float)
+					{
+						SetEntPropFloat(stuff,Prop_Data,tmp,StringToFloat(tmp2));
+					}
+					else if (type == PropField_Vector)
+					{
+						ExplodeString(tmp2," ",tmpexpl,4,16);
+						vectmp[0] = StringToFloat(tmpexpl[0]);
+						vectmp[1] = StringToFloat(tmpexpl[1]);
+						vectmp[2] = StringToFloat(tmpexpl[2]);
+						SetEntPropVector(stuff,Prop_Data,tmp,vectmp);
+					}
+				}
+			}
+		}
+		CloseHandle(passedarrprops);
+	}
 }
 
 public Action ApplyOwner(Handle timer, Handle dp)
@@ -1318,15 +1468,24 @@ public Action listents(int client, int args)
 		}
 		else
 		{
+			if (client == 0) PrintToServer("There are %i entities that matched %s.",GetArraySize(arr),search);
+			else PrintToConsole(client,"There are %i entities that matched %s.",GetArraySize(arr),search);
+			char stateinf[1024];
+			char scriptinf[512];
+			int scrtmpi;
+			float scrtmpf;
 			for (int i = 0;i<GetArraySize(arr);i++)
 			{
 				if (StrEqual(fullinf,"full",false))
 				{
+					stateinf = "";
+					scriptinf = "";
 					int targ = GetArrayCell(arr,i);
 					char ent[128];
 					char targname[128];
 					char globname[128];
 					float vec[3];
+					float offsetvec[3];
 					float angs[3];
 					int parent = 0;
 					int ammotype = -1;
@@ -1334,8 +1493,6 @@ public Action listents(int client, int args)
 					angs[0] = -1.1;
 					char exprsc[24];
 					char exprtargname[64];
-					char stateinf[256];
-					char scriptinf[256];
 					char scrtmp[64];
 					int doorstate, sleepstate, exprsci;
 					GetEntityClassname(targ, ent, sizeof(ent));
@@ -1343,7 +1500,7 @@ public Action listents(int client, int args)
 					if (HasEntProp(targ,Prop_Data,"m_iGlobalname"))
 						GetEntPropString(targ,Prop_Data,"m_iGlobalname",globname,sizeof(globname));
 					if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",vec);
-					else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",vec);
+					if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",offsetvec);
 					if (HasEntProp(targ,Prop_Send,"m_angRotation"))
 						GetEntPropVector(targ,Prop_Send,"m_angRotation",angs);
 					if (HasEntProp(targ,Prop_Data,"m_hParent"))
@@ -1508,38 +1665,38 @@ public Action listents(int client, int args)
 					}
 					if (HasEntProp(targ,Prop_Data,"m_fMoveTo"))
 					{
-						int scrtmpi = GetEntProp(targ,Prop_Data,"m_fMoveTo");
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_fMoveTo");
 						Format(scriptinf,sizeof(scriptinf),"%sm_fMoveTo %i ",scriptinf,scrtmpi);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_flRadius"))
 					{
-						float scrtmpi = GetEntPropFloat(targ,Prop_Data,"m_flRadius");
-						if (scrtmpi > 0.0)
-							Format(scriptinf,sizeof(scriptinf),"%sm_flRadius %1.f ",scriptinf,scrtmpi);
+						scrtmpf = GetEntPropFloat(targ,Prop_Data,"m_flRadius");
+						if (scrtmpf > 0.0)
+							Format(scriptinf,sizeof(scriptinf),"%sm_flRadius %1.f ",scriptinf,scrtmpf);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_flRepeat"))
 					{
-						float scrtmpi = GetEntPropFloat(targ,Prop_Data,"m_flRepeat");
-						Format(scriptinf,sizeof(scriptinf),"%sm_flRepeat %1.f ",scriptinf,scrtmpi);
+						scrtmpf = GetEntPropFloat(targ,Prop_Data,"m_flRepeat");
+						Format(scriptinf,sizeof(scriptinf),"%sm_flRepeat %1.f ",scriptinf,scrtmpf);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_bLoopActionSequence"))
 					{
-						int scrtmpi = GetEntProp(targ,Prop_Data,"m_bLoopActionSequence");
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_bLoopActionSequence");
 						Format(scriptinf,sizeof(scriptinf),"%sm_bLoopActionSequence %i ",scriptinf,scrtmpi);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_bIgnoreGravity"))
 					{
-						int scrtmpi = GetEntProp(targ,Prop_Data,"m_bIgnoreGravity");
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_bIgnoreGravity");
 						Format(scriptinf,sizeof(scriptinf),"%sm_bIgnoreGravity %i ",scriptinf,scrtmpi);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_bSynchPostIdles"))
 					{
-						int scrtmpi = GetEntProp(targ,Prop_Data,"m_bSynchPostIdles");
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_bSynchPostIdles");
 						Format(scriptinf,sizeof(scriptinf),"%sm_bSynchPostIdles %i ",scriptinf,scrtmpi);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_bDisableNPCCollisions"))
 					{
-						int scrtmpi = GetEntProp(targ,Prop_Data,"m_bDisableNPCCollisions");
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_bDisableNPCCollisions");
 						Format(scriptinf,sizeof(scriptinf),"%sm_bDisableNPCCollisions %i ",scriptinf,scrtmpi);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_iszTemplateEntityNames[0]"))
@@ -1581,6 +1738,11 @@ public Action listents(int client, int args)
 					{
 						GetEntPropString(targ,Prop_Data,"m_iszDamageFilterName",scrtmp,sizeof(scrtmp));
 						if (strlen(scrtmp) > 0) Format(stateinf,sizeof(stateinf),"%sDamageFilter: %s ",stateinf,scrtmp);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_iszTemplateName"))
+					{
+						GetEntPropString(targ,Prop_Data,"m_iszTemplateName",scrtmp,sizeof(scrtmp));
+						if (strlen(scrtmp) > 0) Format(stateinf,sizeof(stateinf),"%sTemplateName: %s ",stateinf,scrtmp);
 					}
 					if (HasEntProp(targ,Prop_Data,"m_iFilterClass"))
 					{
@@ -1681,6 +1843,67 @@ public Action listents(int client, int args)
 						int rel = GetEntProp(targ,Prop_Send,"m_iItemDefinitionIndex");
 						Format(stateinf,sizeof(stateinf),"%sm_iItemDefinitionIndex: %i ",stateinf,rel);
 					}
+					if (HasEntProp(targ,Prop_Data,"m_nDissolveType"))
+					{
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_nDissolveType");
+						Format(stateinf,sizeof(stateinf),"%sm_nDissolveType: %i ",stateinf,scrtmpi);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_nBeamType"))
+					{
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_nBeamType");
+						Format(stateinf,sizeof(stateinf),"%sm_nBeamType: %i ",stateinf,scrtmpi);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_nBeamFlags"))
+					{
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_nBeamFlags");
+						Format(stateinf,sizeof(stateinf),"%sm_nBeamFlags: %i ",stateinf,scrtmpi);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_nNumBeamEnts"))
+					{
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_nNumBeamEnts");
+						Format(stateinf,sizeof(stateinf),"%sm_nNumBeamEnts: %i ",stateinf,scrtmpi);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_fAmplitude"))
+					{
+						scrtmpf = GetEntPropFloat(targ,Prop_Data,"m_fAmplitude");
+						Format(stateinf,sizeof(stateinf),"%sm_fAmplitude: %1.1f ",stateinf,scrtmpf);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_fWidth"))
+					{
+						scrtmpf = GetEntPropFloat(targ,Prop_Data,"m_fWidth");
+						Format(stateinf,sizeof(stateinf),"%sm_fWidth: %1.1f ",stateinf,scrtmpf);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_fEndWidth"))
+					{
+						scrtmpf = GetEntPropFloat(targ,Prop_Data,"m_fEndWidth");
+						Format(stateinf,sizeof(stateinf),"%sm_fEndWidth: %1.1f ",stateinf,scrtmpf);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_nHaloIndex"))
+					{
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_nHaloIndex");
+						Format(stateinf,sizeof(stateinf),"%sm_nHaloIndex: %i ",stateinf,scrtmpi);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_fHaloScale"))
+					{
+						scrtmpf = GetEntPropFloat(targ,Prop_Data,"m_fHaloScale");
+						Format(stateinf,sizeof(stateinf),"%sm_fHaloScale: %1.1f ",stateinf,scrtmpf);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_nRenderMode"))
+					{
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_nRenderMode");
+						Format(stateinf,sizeof(stateinf),"%s\nm_nRenderMode: %i ",stateinf,scrtmpi);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_nRenderFX"))
+					{
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_nRenderFX");
+						Format(stateinf,sizeof(stateinf),"%sm_nRenderFX: %i ",stateinf,scrtmpi);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_vecEndPos"))
+					{
+						float vecTmp[3];
+						GetEntPropVector(targ,Prop_Data,"m_vecEndPos",vecTmp);
+						Format(stateinf,sizeof(stateinf),"%sm_vecEndPos: %1.1f %1.1f %1.1f ",stateinf,vecTmp[0],vecTmp[1],vecTmp[2]);
+					}
 					if ((HasEntProp(targ,Prop_Data,"m_iHealth")) && (HasEntProp(targ,Prop_Data,"m_iMaxHealth")))
 					{
 						int targh = GetEntProp(targ,Prop_Data,"m_iHealth");
@@ -1697,6 +1920,12 @@ public Action listents(int client, int args)
 							Format(stateinf,sizeof(stateinf),"%sHealth: %i Max Health: %i",stateinf,targh,targmh);
 						}
 					}
+					if (HasEntProp(targ,Prop_Data,"m_iszTemplateData"))
+					{
+						char scrtmplarger[512];
+						GetEntPropString(targ,Prop_Data,"m_iszTemplateData",scrtmplarger,sizeof(scrtmplarger));
+						if (strlen(scrtmplarger) > 0) Format(stateinf,sizeof(stateinf),"%s\nTemplateData: %s ",stateinf,scrtmplarger);
+					}
 					TrimString(stateinf);
 					TrimString(scriptinf);
 					if (strlen(targname) > 0)
@@ -1709,6 +1938,8 @@ public Action listents(int client, int args)
 						Format(inf,sizeof(inf),"%sEntSpawnflags: %i",inf,spawnflagsi);
 					if (vec[0] != -1.1)
 						Format(inf,sizeof(inf),"%s\nOrigin %f %f %f",inf,vec[0],vec[1],vec[2]);
+					if (offsetvec[0] != -1.1)
+						Format(inf,sizeof(inf),"%s\nOffset parent origin %f %f %f",inf,offsetvec[0],offsetvec[1],offsetvec[2]);
 					if (angs[0] != -1.1)
 						Format(inf,sizeof(inf),"%s Ang: %i %i %i",inf,RoundFloat(angs[0]),RoundFloat(angs[1]),RoundFloat(angs[2]));
 					if (strlen(exprsc) > 0)
@@ -2123,6 +2354,8 @@ public Action setprops(int client, int args)
 		else PrintToConsole(client,"No entities found with either classname or targetname of %s",first);
 		return Plugin_Handled;
 	}
+	char propinf[512];
+	char cls[64];
 	for (int i = 0;i<GetArraySize(arr);i++)
 	{
 		int targ = GetArrayCell(arr,i);
@@ -2133,7 +2366,6 @@ public Action setprops(int client, int args)
 			{
 				GetCmdArg(2, propname, sizeof(propname));
 				bool datatypeunsupported = false;
-				char cls[64];
 				GetEntityClassname(targ,cls,sizeof(cls));
 				PropFieldType datamaptype;
 				int datamapoffs = FindDataMapInfo(targ,propname,datamaptype);
@@ -2155,7 +2387,6 @@ public Action setprops(int client, int args)
 						{
 							for (int j = 0;j<arrsize;j++)
 							{
-								char propinf[64];
 								GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf),j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
 								else PrintToConsole(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
@@ -2163,7 +2394,6 @@ public Action setprops(int client, int args)
 						}
 						else
 						{
-							char propinf[64];
 							GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf));
 							if (client == 0) PrintToServer("%i %s %s is %s",targ,cls,propname,propinf);
 							else PrintToConsole(client,"%i %s %s is %s",targ,cls,propname,propinf);
@@ -2260,7 +2490,6 @@ public Action setprops(int client, int args)
 						{
 							for (int j = 0;j<arrsize;j++)
 							{
-								char propinf[64];
 								GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf),j);
 								if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
 								else PrintToConsole(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
@@ -2268,7 +2497,6 @@ public Action setprops(int client, int args)
 						}
 						else
 						{
-							char propinf[64];
 							GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf));
 							if (client == 0) PrintToServer("%i %s is %s",targ,propname,propinf);
 							else PrintToConsole(client,"%i %s is %s",targ,propname,propinf);
@@ -2361,7 +2589,6 @@ public Action setprops(int client, int args)
 				{
 					if ((datamaptype == PropField_String) || (datamaptype == PropField_String_T))
 					{
-						char propinf[64];
 						GetEntDataString(targ,datamapoffs,propinf,sizeof(propinf));
 						if (client == 0) PrintToServer("%i %s %s is %s",targ,cls,propname,propinf);
 						else PrintToConsole(client,"%i %s %s is %s",targ,cls,propname,propinf);
@@ -2902,7 +3129,6 @@ public Action setprops(int client, int args)
 				{
 					PropFieldType type;
 					FindDataMapInfo(targ,propname,type);
-					char cls[64];
 					GetEntityClassname(targ,cls,sizeof(cls));
 					if ((!pdata) && (HasEntProp(targ,Prop_Send,propname)))
 					{
@@ -2913,7 +3139,6 @@ public Action setprops(int client, int args)
 							{
 								for (int j = 0;j<arrsize;j++)
 								{
-									char propinf[64];
 									GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf),j);
 									if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
 									else PrintToConsole(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
@@ -2967,7 +3192,6 @@ public Action setprops(int client, int args)
 							{
 								for (int j = 0;j<arrsize;j++)
 								{
-									char propinf[64];
 									GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf),j);
 									if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
 									else PrintToConsole(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
@@ -3573,4 +3797,12 @@ public void dbgambsch(Handle convar, const char[] oldValue, const char[] newValu
 {
 	if (StringToInt(newValue) == 1) showallambsounds = true;
 	else showallambsounds = false;
+}
+
+public bool TraceEntityFilterPly(int entity, int mask, any data){
+	if ((entity != -1) && (IsValidEntity(entity)))
+	{
+		if ((entity < MaxClients+1) && (entity > 0)) return false;
+	}
+	return true;
 }

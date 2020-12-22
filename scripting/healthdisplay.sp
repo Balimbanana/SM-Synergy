@@ -13,7 +13,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.991"
+#define PLUGIN_VERSION "1.992"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin myinfo = 
@@ -453,6 +453,8 @@ public Action cleararr(Handle timer)
 	addht("npc_apache");
 	addht("npc_ichthyosaur");
 	addht("npc_clawscanner");
+	addht("npc_doramn_window");
+	addht("npc_doramn_power_cell");
 	addht("monster_alien_slave");
 	addht("monster_bullchicken");
 	addht("monster_headcrab");
@@ -662,6 +664,7 @@ public Action ShowTimer(Handle timer)
 						}
 						if ((targ != -1) && (IsValidEntity(targ)) && ((targ > MaxClients) || (ShowPlayers)))
 						{
+							char targn[64];
 							if (StrEqual(clsname,"player",false))
 							{
 								Format(clsname,sizeof(clsname),"%N",targ);
@@ -682,9 +685,8 @@ public Action ShowTimer(Handle timer)
 								}
 								continue;
 							}
-							if (StrEqual(clsname,"generic_actor",false))
+							else if (StrEqual(clsname,"generic_actor",false))
 							{
-								char targn[64];
 								if (HasEntProp(targ,Prop_Data,"m_iName"))
 								{
 									GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
@@ -701,7 +703,21 @@ public Action ShowTimer(Handle timer)
 									}
 								}
 							}
-							char targn[64];
+							else if (StrEqual(clsname,"npc_bullseye",false))
+							{
+								if (HasEntProp(targ,Prop_Data,"m_iName"))
+								{
+									GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+									if (StrEqual(targn,"dra_bull_eye",false))
+									{
+										Format(clsname,sizeof(clsname),"npc_doramn_window");
+									}
+									else if (StrEqual(targn,"dra_bull",false))
+									{
+										Format(clsname,sizeof(clsname),"npc_doramn_power_cell");
+									}
+								}
+							}
 							if (SynNPCInfRunning)
 							{
 								Handle npcnameentsl = GetNPCEnts();
@@ -871,6 +887,12 @@ public Action ShowTimer(Handle timer)
 											curh = 1;
 											maxh = 1;
 										}
+										else if (StrEqual(clsname,"alyx",false))
+										{
+											char targn[64];
+											if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+											if (StrEqual(targn,"clockface_npc",false)) Format(clsname,sizeof(clsname),"Clock Face");
+										}
 										antispamchk[client] = Time + 0.07;
 										PrintTheMsg(client,curh,maxh,clsname,friendly);
 									}
@@ -1003,6 +1025,12 @@ public Action ShowTimer(Handle timer)
 									{
 										curh = 1;
 										maxh = 1;
+									}
+									else if (StrEqual(clsname,"alyx",false))
+									{
+										char targn[64];
+										if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+										if (StrEqual(targn,"clockface_npc",false)) Format(clsname,sizeof(clsname),"Clock Face");
 									}
 									antispamchk[client] = Time + 0.07;
 									PrintTheMsg(client,curh,maxh,clsname,friendly);
@@ -1214,7 +1242,11 @@ public void PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int t
 		else if (StrEqual(clsname,"npc_mossman",false)) Format(clsname,sizeof(clsname),"Friend: Judith Mossman");
 		else if (StrEqual(clsname,"npc_magnusson",false)) Format(clsname,sizeof(clsname),"Friend: Arne Magnusson");
 		else if (StrEqual(clsname,"npc_breen",false)) Format(clsname,sizeof(clsname),"Friend: Dr Breen");
-		else if (StrEqual(clsname,"npc_alyx",false)) Format(clsname,sizeof(clsname),"Friend: Alyx Vance");
+		else if (StrEqual(clsname,"npc_alyx",false))
+		{
+			if (StrEqual(targn,"clockface_npc",false)) Format(clsname,sizeof(clsname),"Friend: Clock Face");
+			else Format(clsname,sizeof(clsname),"Friend: Alyx Vance");
+		}
 		else if (StrEqual(clsname,"npc_eli",false)) Format(clsname,sizeof(clsname),"Friend: Eli Vance");
 		else if (StrEqual(clsname,"npc_antlionworker",false)) Format(clsname,sizeof(clsname),"Friend: Antlion Worker");
 		else if (StrEqual(clsname,"npc_antlion",false))
@@ -1554,6 +1586,8 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_apache");
 		addht("npc_ichthyosaur");
 		addht("npc_clawscanner");
+		addht("npc_doramn_window");
+		addht("npc_doramn_power_cell");
 		addht("monster_alien_slave");
 		addht("monster_bullchicken");
 		addht("monster_headcrab");

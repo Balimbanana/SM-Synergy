@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.991"
-			"Previous"	"1.99"
+			"Latest"  	"1.992"
+			"Previous"	"1.991"
 		}
 		
-		"Notes"	"Fixed display players info while in vehicles unless display scenario."
+		"Notes"	"Added a couple names."
 	}
 	
 	"Files"
