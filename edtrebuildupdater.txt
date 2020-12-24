@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.64"
-			"Previous"	"0.63"
+			"Latest"  	"0.65"
+			"Previous"	"0.64"
 		}
 		
-		"Notes"	"Fixed issue in both tabs and spaces between key and value not parsing correctly."
+		"Notes"	"Fixed inserted trigger_changelevel with no model message for transition fixup."
 	}
 	
 	"Files"

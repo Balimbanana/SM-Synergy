@@ -38,7 +38,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.64"
+#define PLUGIN_VERSION "0.65"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -1960,23 +1960,23 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				ReplaceStringEx(szMapNameadj,sizeof(szMapNameadj),".ent",".ent2");
 			}
 		}
-		Handle writefile = OpenFile(szMapNameadj,"wb",true,NULL_STRING);
-		if (writefile != INVALID_HANDLE)
-		{
-			WriteFileString(writefile,szMapEntities,false);
-		}
-		CloseHandle(writefile);
 		if (strlen(lastmap) > 1)
 		{
 			char lastmapchk[72];
 			Format(lastmapchk,sizeof(lastmapchk),"\"map\" \"%s\"",lastmap);
 			if (StrContains(szMapEntities,lastmapchk,false) == -1)
 			{
-				char tmplastmap[512];
-				Format(tmplastmap,sizeof(tmplastmap),"\n{\n\"classname\" \"trigger_changelevel\"\n\"map\" \"%s\"\n\"spawnflags\" \"6\"\n}",lastmap);
+				char tmplastmap[2048];
+				Format(tmplastmap,sizeof(tmplastmap),"\n{\n\"classname\" \"trigger_changelevel\"\n\"map\" \"%s\"\n\"spawnflags\" \"6\"\n\"landmark\" \"syntransitionfixer\"\n\"edt_mins\" \"-1 -1 -1\"\n\"edt_maxs\" \"1 1 1\"\n}",lastmap);
 				StrCat(szMapEntities,sizeof(szMapEntities),tmplastmap);
 			}
 		}
+		Handle writefile = OpenFile(szMapNameadj,"wb",true,NULL_STRING);
+		if (writefile != INVALID_HANDLE)
+		{
+			WriteFileString(writefile,szMapEntities,false);
+		}
+		CloseHandle(writefile);
 		if (dbglvl > 0) PrintToServer("Finished EntCache Rebuild");
 		Format(lastmap,sizeof(lastmap),"%s",szMapName);
 		return Plugin_Changed;
