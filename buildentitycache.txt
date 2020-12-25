@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.49"
-			"Previous"	"0.48"
+			"Latest"  	"0.50"
+			"Previous"	"0.49"
 		}
 		
-		"Notes"	"Added contentdata check to buildedt without parameters."
+		"Notes"	"Added contentdata check to buildedt with only 1 parameter."
 	}
 	
 	"Files"
