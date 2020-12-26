@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.993"
-			"Previous"	"0.992"
+			"Latest"  	"0.994"
+			"Previous"	"0.993"
 		}
 		
 		"Notes"	"Added weapon_molotov and weapon_bhg. Adjustments to gauss and gluon."

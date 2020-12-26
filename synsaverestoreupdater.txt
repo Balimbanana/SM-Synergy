@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.161"
-			"Previous"	"2.160"
+			"Latest"  	"2.162"
+			"Previous"	"2.161"
 		}
 		
-		"Notes"	"Additional checks in custom ent list."
+		"Notes"	"Fixes to spawning with equipment you should not have yet."
 	}
 	
 	"Files"

@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.993"
+#define PLUGIN_VERSION "0.994"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -6562,6 +6562,7 @@ public Action OnWeaponUse(int client, int weapon)
 			}
 			else if (StrEqual(weapname,"weapon_molotov",false))
 			{
+				WeapAttackSpeed[client] = GetTickedTime()+0.2;
 				SetVariantString("anim_attachment_RH");
 				AcceptEntityInput(weapon,"SetParentAttachment");
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
