@@ -5314,7 +5314,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 			else if (StrEqual(curweap,"weapon_molotov",false))
 			{
-				if (weap != -1)
+				if ((weap != -1) && (WeapAttackSpeed[client] < GetTickedTime()))
 				{
 					int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
 					if (viewmdl != -1)
