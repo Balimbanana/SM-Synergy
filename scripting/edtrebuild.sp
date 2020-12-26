@@ -1970,7 +1970,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			if (StrContains(szMapEntities,lastmapchk,false) == -1)
 			{
 				char tmplastmap[2048];
-				Format(tmplastmap,sizeof(tmplastmap),"\n{\n\"classname\" \"trigger_changelevel\"\n\"map\" \"%s\"\n\"spawnflags\" \"6\"\n\"landmark\" \"syntransitionfixer\"\n\"edt_mins\" \"-1 -1 -1\"\n\"edt_maxs\" \"1 1 1\"\n}",lastmap);
+				Format(tmplastmap,sizeof(tmplastmap),"\n{\n\"classname\" \"trigger_changelevel\"\n\"map\" \"%s\"\n\"spawnflags\" \"6\"\n\"landmark\" \"syntransitionfixer\"\n\"edt_mins\" \"-1 -1 -1\"\n\"edt_maxs\" \"1 1 1\"\n}\n{\n\"classname\" \"info_landmark\"\n\"targetname\" \"syntransitionfixer\"\n}",lastmap);
 				StrCat(szMapEntities,sizeof(szMapEntities),tmplastmap);
 			}
 		}
