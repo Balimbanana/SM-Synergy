@@ -891,6 +891,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Half-Life 1");
 	}
+	else if ((StrContains(map, "hls", false) == 0) && (StrContains(map, "mrl", false) != -1))
+	{
+		Format(modname, sizeof(modname), "Half-Life 1 Merged");
+	}
 	else if (StrContains(map, "ep1", false) == 0)
 	{
 		Format(modname, sizeof(modname), "HL2: Episode 1");
@@ -931,7 +935,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Precursor");
 	}
-	else if ((StrContains(map, "leonhl2", false) == 0) || (StrContains(map, "final_credits", false) == 0) || (StrContains(map, "ctoa leonHL2", false) == 0) || (StrContains(map, "ctoa final", false) == 0))
+	else if ((StrContains(map, "leonhl2-2", false) == 0) || (StrContains(map, "final_credits", false) == 0) || (StrContains(map, "ctoa leonHL2", false) == 0) || (StrContains(map, "ctoa final", false) == 0))
 	{
 		Format(modname, sizeof(modname), "Coastline To Atmosphere");
 	}
@@ -1038,6 +1042,10 @@ public Action GetMapTag(const char[] map)
 	else if (StrContains(map, "sttr_ch", false) == 0)
 	{
 		Format(modname, sizeof(modname), "Steam Tracks Trouble and Riddles");
+	}
+	else if (StrContains(map, "testchmb_a_", false) == 0)
+	{
+		Format(modname, sizeof(modname), "Portal");
 	}
 	else if ((StrContains(map, "llp ", false) == 0) || (StrContains(map, "lifelostprison_0", false) == 0) || (StrContains(map, "bonus_earlyprison_0", false) == 0))
 	{
@@ -1148,6 +1156,7 @@ public Action GetMapTag(const char[] map)
 		else
 		{
 			gamedesc[0] &= ~(1 << 5);
+			ReplaceString(gamedesc,sizeof(gamedesc),"_"," ",false);
 			Format(maptag,sizeof(maptag),"%s",gamedesc);
 			Format(modname,sizeof(modname),"%s",gamedesc);
 		}

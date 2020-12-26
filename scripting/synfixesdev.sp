@@ -110,7 +110,7 @@ bool BlockTripMineDamage = true;
 bool FixWeapSnd = true;
 bool bFixSoundScapes = true;
 
-#define PLUGIN_VERSION "2.0023"
+#define PLUGIN_VERSION "2.0024"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1019,6 +1019,11 @@ public void OnMapStart()
 		}
 		else if (debuglvl > 1) PrintToServer("Found ent cache %s",mapbuf);
 		
+		if (StrContains(mapbuf,"ptsd2_ptsd_2",false) != -1)
+		{
+			autorebuild = 2;
+		}
+		
 		collisiongroup = FindSendPropInfo("CBaseEntity", "m_CollisionGroup");
 		for (int i = 1;i<MaxClients+1;i++)
 		{
@@ -1181,6 +1186,8 @@ public void OnMapStart()
 		PushArrayString(customentlist,"weapon_vc32sniperrifle");
 		PushArrayString(customentlist,"weapon_camera");
 		PushArrayString(customentlist,"weapon_goop");
+		PushArrayString(customentlist,"weapon_bhg");
+		PushArrayString(customentlist,"weapon_molotov");
 		PushArrayString(customentlist,"item_weapon_gluon");
 		PushArrayString(customentlist,"item_ammo_energy");
 		PushArrayString(customentlist,"item_weapon_gauss");
@@ -2218,9 +2225,9 @@ public Action everyspawnpost(Handle timer, int client)
 											else if (StrEqual(basecls,"weapon_isa_knife",false)) Format(basecls,sizeof(basecls),"weapon_crowbar");
 											else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 											else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false)) || (StrEqual(basecls,"weapon_p911",false)) || (StrEqual(basecls,"weapon_pistol2",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-											else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+											else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false)) || (StrEqual(basecls,"weapon_molotov",false))) Format(basecls,sizeof(basecls),"weapon_slam");
 											else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_camera",false)) || (StrEqual(basecls,"weapon_smg3",false)) || (StrEqual(basecls,"weapon_smg4",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-											else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false)) || (StrEqual(basecls,"weapon_vc32sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+											else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false)) || (StrEqual(basecls,"weapon_vc32sniperrifle",false)) || (StrEqual(basecls,"weapon_bhg",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 											else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 											else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 											else if (StrContains(basecls,"customweapons",false) != -1)
@@ -2404,9 +2411,9 @@ public Action clspawnpost(Handle timer, int client)
 											if ((StrEqual(basecls,"weapon_gluon",false)) || (StrEqual(basecls,"weapon_goop",false))) Format(basecls,sizeof(basecls),"weapon_shotgun");
 											else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 											else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-											else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+											else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false)) || (StrEqual(basecls,"weapon_molotov",false))) Format(basecls,sizeof(basecls),"weapon_slam");
 											else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_m4",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_g36c",false)) || (StrEqual(basecls,"weapon_oicw",false)) || (StrEqual(basecls,"weapon_camera",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-											else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+											else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false)) || (StrEqual(basecls,"weapon_bhg",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 											else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 											else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 											int ent = CreateEntityByName(basecls);
@@ -3332,6 +3339,23 @@ public Action seatadjtimer(Handle timer, Handle dp)
 				seatadj[1] = -30.5;
 				seatadj[2] = 60.0;
 				SetEntPropVector(client,Prop_Data,"m_vecOrigin",seatadj);
+			}
+			else if ((StrContains(mapbuf,"ptsd_2_p4",false) != -1) || (StrContains(mapbuf,"ptsd_2_finale",false) != -1))
+			{
+				char szTargn[32];
+				GetEntPropString(vehicle,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+				if (StrContains(szTargn,"boat_test2",false) == 0)
+				{
+					int driver = GetEntProp(client,Prop_Data,"m_iHideHUD");
+					if (driver == 3328)
+					{
+						float seatadj[3];
+						seatadj[0] = -4.4;
+						seatadj[1] = -50.46;
+						seatadj[2] = 20.75;
+						SetEntPropVector(client,Prop_Data,"m_vecOrigin",seatadj);
+					}
+				}
 			}
 		}
 	}
@@ -6175,7 +6199,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					{
 						Format(cls,sizeof(cls),"weapon_pistol");
 					}
-					else if ((StrEqual(cls,"weapon_medkit",false)) || (StrEqual(cls,"weapon_healer",false)) || (StrEqual(cls,"weapon_camera",false)))
+					else if ((StrEqual(cls,"weapon_medkit",false)) || (StrEqual(cls,"weapon_healer",false)) || (StrEqual(cls,"weapon_camera",false)) || (StrEqual(cls,"weapon_molotov",false)))
 					{
 						Format(cls,sizeof(cls),"weapon_slam");
 					}
@@ -6229,7 +6253,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							WritePackString(dp,"models/w_gaussammo.mdl");
 						}
 					}
-					else if ((StrEqual(cls,"weapon_gauss",false)) || (StrEqual(cls,"weapon_tau",false)) || (StrEqual(cls,"weapon_sniperrifle",false)))
+					else if ((StrEqual(cls,"weapon_gauss",false)) || (StrEqual(cls,"weapon_tau",false)) || (StrEqual(cls,"weapon_sniperrifle",false)) || (StrEqual(cls,"weapon_bhg",false)))
 					{
 						Format(cls,sizeof(cls),"weapon_ar2");
 					}
@@ -13304,9 +13328,9 @@ public void EquipCustom(int equip, int client)
 							else if (StrEqual(basecls,"weapon_isa_knife",false)) Format(basecls,sizeof(basecls),"weapon_crowbar");
 							else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
 							else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false)) || (StrEqual(basecls,"weapon_p911",false)) || (StrEqual(basecls,"weapon_pistol2",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-							else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+							else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_molotov",false))) Format(basecls,sizeof(basecls),"weapon_slam");
 							else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false)) || (StrEqual(basecls,"weapon_camera",false)) || (StrEqual(basecls,"weapon_smg3",false)) || (StrEqual(basecls,"weapon_smg4",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-							else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false)) || (StrEqual(basecls,"weapon_vc32sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+							else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false)) || (StrEqual(basecls,"weapon_vc32sniperrifle",false)) || (StrEqual(basecls,"weapon_bhg",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
 							else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
 							else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
 							else if (StrContains(basecls,"customweapons",false) != -1)
@@ -14208,6 +14232,21 @@ public Action OnTakeDamage(int victim, int& attacker, int& inflictor, float& dam
 					damage = 0.0;
 					if (debuglvl == 3) PrintToServer("Moved ply %i because of damage from standing ent %i %s",victim,attacker,cls);
 					return Plugin_Changed;
+				}
+			}
+		}
+		else if (StrEqual(cls,"trigger_hurt",false))
+		{
+			if ((HasEntProp(victim,Prop_Data,"m_hVehicle")) && (HasEntProp(attacker,Prop_Data,"m_bitsDamageInflict")) && (HasEntProp(attacker,Prop_Data,"m_spawnflags")))
+			{
+				if (GetEntProp(attacker,Prop_Data,"m_spawnflags") & (1<<9))
+				{
+					if (GetEntPropEnt(victim,Prop_Data,"m_hVehicle") != -1)
+					{
+						damage = 0.0;
+						damagetype = 0;
+						return Plugin_Changed;
+					}
 				}
 			}
 		}
@@ -16970,11 +17009,11 @@ void restoreent(Handle dp)
 			Format(clsname,sizeof(clsname),"weapon_frag");
 		else if ((StrEqual(clsname,"weapon_glock",false)) || (StrEqual(clsname,"weapon_pistol_worker",false)) || (StrEqual(clsname,"weapon_flaregun",false)) || (StrEqual(clsname,"weapon_manhack",false)) || (StrEqual(clsname,"weapon_manhackgun",false)) || (StrEqual(clsname,"weapon_manhacktoss",false)))
 			Format(clsname,sizeof(clsname),"weapon_pistol");
-		else if ((StrEqual(clsname,"weapon_medkit",false)) || (StrEqual(clsname,"weapon_healer",false)) || (StrEqual(clsname,"weapon_snark",false)) || (StrEqual(clsname,"weapon_hivehand",false)) || (StrEqual(clsname,"weapon_satchel",false)) || (StrEqual(clsname,"weapon_tripmine",false)))
+		else if ((StrEqual(clsname,"weapon_medkit",false)) || (StrEqual(clsname,"weapon_healer",false)) || (StrEqual(clsname,"weapon_snark",false)) || (StrEqual(clsname,"weapon_hivehand",false)) || (StrEqual(clsname,"weapon_satchel",false)) || (StrEqual(clsname,"weapon_tripmine",false)) || (StrEqual(clsname,"weapon_molotov",false)))
 			Format(clsname,sizeof(clsname),"weapon_slam");
 		else if ((StrEqual(clsname,"weapon_mp5",false)) || (StrEqual(clsname,"weapon_sl8",false)) || (StrEqual(clsname,"weapon_uzi",false)) || (StrEqual(clsname,"weapon_oicw",false)) || (StrEqual(clsname,"weapon_camera",false)))
 			Format(clsname,sizeof(clsname),"weapon_smg1");
-		else if ((StrEqual(clsname,"weapon_gauss",false)) || (StrEqual(clsname,"weapon_tau",false)) || (StrEqual(clsname,"weapon_sniperrifle",false)))
+		else if ((StrEqual(clsname,"weapon_gauss",false)) || (StrEqual(clsname,"weapon_tau",false)) || (StrEqual(clsname,"weapon_sniperrifle",false)) || (StrEqual(clsname,"weapon_bhg",false)))
 			Format(clsname,sizeof(clsname),"weapon_ar2");
 		int ent = CreateEntityByName(clsname);
 		if ((TR_PointOutsideWorld(porigin)) && (ent != -1))
@@ -17406,7 +17445,7 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 				Format(clsname,sizeof(clsname),"weapon_physcannon");
 			else if ((StrEqual(clsname,"item_weapon_glock",false)) || (StrEqual(clsname,"weapon_glock",false)) || (StrEqual(clsname,"weapon_pistol_worker",false)) || (StrEqual(clsname,"weapon_flaregun",false)))
 				Format(clsname,sizeof(clsname),"weapon_pistol");
-			else if ((StrEqual(clsname,"weapon_medkit",false)) || (StrEqual(clsname,"weapon_camera",false)))
+			else if ((StrEqual(clsname,"weapon_medkit",false)) || (StrEqual(clsname,"weapon_camera",false)) || (StrEqual(clsname,"weapon_molotov",false)))
 				Format(clsname,sizeof(clsname),"weapon_slam");
 			else if ((StrEqual(clsname,"weapon_mp5",false)) || (StrEqual(clsname,"weapon_sl8",false)) || (StrEqual(clsname,"weapon_uzi",false)) || (StrEqual(clsname,"weapon_oicw",false)) || (StrEqual(clsname,"weapon_camera",false)))
 				Format(clsname,sizeof(clsname),"weapon_smg1");

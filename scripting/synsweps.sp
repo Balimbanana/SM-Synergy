@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.992"
+#define PLUGIN_VERSION "0.993"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -50,6 +50,7 @@ int TripMineAmm[128];
 int Ammo3Reset[128];
 int Ammo12Reset[128];
 int Ammo24Reset[128];
+int AmmArr[128][32];
 int CLManhack[128];
 int clsummontarg[128];
 int EndTarg[128];
@@ -79,6 +80,9 @@ Handle swepsinfo = INVALID_HANDLE; //Contains info read from scriptedweap.
 Handle weapanimcls = INVALID_HANDLE; //Holds position for info array.
 Handle weapaniminf = INVALID_HANDLE; //Contains info read from other weap.
 Handle precachedarr = INVALID_HANDLE;
+
+ConVar hMolotovRadius;
+ConVar hMaxMolotov;
 
 public Plugin myinfo =
 {
@@ -189,6 +193,10 @@ public void OnPluginStart()
 	tauknockback = GetConVarBool(cvar);
 	HookConVarChange(cvar, tauknockch);
 	CloseHandle(cvar);
+	hMolotovRadius = FindConVar("sk_molotov_radius");
+	if (hMolotovRadius == INVALID_HANDLE) hMolotovRadius = CreateConVar("sk_molotov_radius", "140.0", "Molotov explode radius.", _, true, 1.0, false);
+	hMaxMolotov = FindConVar("sk_max_molotov");
+	if (hMaxMolotov == INVALID_HANDLE) hMaxMolotov = CreateConVar("sk_max_molotov", "10", "Maximum amount of molotovs held.", _, true, 1.0, false);
 	cvar = FindConVar("sk_npc_head");
 	if (cvar != INVALID_HANDLE)
 	{
@@ -272,6 +280,8 @@ public void OnMapStart()
 	PushArrayString(sweps,"weapon_uzi");
 	PushArrayString(sweps,"weapon_healer");
 	PushArrayString(sweps,"weapon_goop");
+	PushArrayString(sweps,"weapon_molotov");
+	PushArrayString(sweps,"weapon_bhg");
 	/*
 	PushArrayString(sweps,"weapon_pistol1");
 	PushArrayString(sweps,"weapon_pistol2");
@@ -331,6 +341,7 @@ public void OnMapStart()
 		Ammo3Reset[i] = 0;
 		Ammo12Reset[i] = 0;
 		Ammo24Reset[i] = 0;
+		AmmArr[i][0] = 3;
 		if (IsClientConnected(i) && !IsFakeClient(i))
 		{
 			CreateTimer(1.0,clspawnpost,i);
@@ -541,7 +552,7 @@ void findentlist(int ent, char[] clsname)
 	{
 		char classname[32];
 		GetEntityClassname(thisent,classname,sizeof(classname));
-		if ((StrEqual(classname,"item_ammo_flare_box",false)) || (StrEqual(classname,"item_box_flare_rounds",false)) || (StrEqual(classname,"item_ammo_manhack",false)) || (StrEqual(classname,"item_ammo_energy",false)))
+		if ((StrEqual(classname,"item_ammo_flare_box",false)) || (StrEqual(classname,"item_box_flare_rounds",false)) || (StrEqual(classname,"item_ammo_manhack",false)) || (StrEqual(classname,"item_ammo_energy",false)) || (StrEqual(classname,"item_ammo_bhg",false)))
 		{
 			SDKHookEx(thisent, SDKHook_StartTouch, StartTouchAmmoPickup);
 		}
@@ -1141,13 +1152,13 @@ public Action weaponticks(Handle timer)
 							SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",GetGameTime()+100.0);
 							ChangeEdictState(weap);
 						}
-						else if ((StrContains(curweap,"weapon_manhack",false) == 0) || (StrEqual(curweap,"weapon_cguard",false)) || (StrEqual(curweap,"weapon_gauss",false)) || (StrEqual(curweap,"weapon_goop",false)))
+						else if ((StrContains(curweap,"weapon_manhack",false) == 0) || (StrEqual(curweap,"weapon_cguard",false)) || (StrEqual(curweap,"weapon_gauss",false)))
 						{
 							SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",GetGameTime()+100.0);
 							SetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack",GetGameTime()+100.0);
 							ChangeEdictState(weap);
 						}
-						else if (StrEqual(curweap,"weapon_gluon",false))
+						else if ((StrEqual(curweap,"weapon_gluon",false)) || (StrEqual(curweap,"weapon_goop",false)))
 						{
 							SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",GetGameTime()+100.0);
 							SetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack",GetGameTime()+100.0);
@@ -1549,6 +1560,38 @@ public Action weaponticks(Handle timer)
 								}
 							}
 						}
+						else if (StrEqual(curweap,"weapon_molotov",false))
+						{
+							SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",GetGameTime()+100.0);
+							SetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack",GetGameTime()+100.0);
+							ChangeEdictState(weap);
+						}
+						else if (StrEqual(curweap,"weapon_bhg",false))
+						{
+							SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",GetGameTime()+100.0);
+							SetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack",GetGameTime()+100.0);
+							ChangeEdictState(weap);
+							if (AmmArr[client][0] != GetEntProp(weap,Prop_Data,"m_iClip1")) AmmArr[client][0] = GetEntProp(weap,Prop_Data,"m_iClip1");
+							if (AmmArr[client][1] != GetEntProp(client,Prop_Send,"m_iAmmo",_,12)) SetEntProp(client,Prop_Data,"m_iAmmo",AmmArr[client][1],_,12);
+							if (viewmdl != -1)
+							{
+								if (WeapAttackSpeed[client] > Time+0.8)
+								{
+									SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
+								}
+								else if (WeapAttackSpeed[client] < Time)
+								{
+									int inreload = GetEntProp(weap,Prop_Data,"m_bInReload");
+									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+									int seqreload = GetWepAnim(curweap,seq,"ACT_VM_RELOAD");
+									if ((inreload) || (seq == seqreload))
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
+										SetEntProp(weap,Prop_Data,"m_bInReload",0);
+									}
+								}
+							}
+						}
 						else if (strlen(scrwep) > 0)
 						{
 							if (FindStringInArray(sweps,curweap) != -1)
@@ -1573,7 +1616,7 @@ public Action waititem(Handle timer, int entity)
 		{
 			char cls[128];
 			GetEntityClassname(entity,cls,sizeof(cls));
-			if ((StrEqual(cls,"item_ammo_flare_box",false)) || (StrEqual(cls,"item_box_flare_rounds",false)) || (StrEqual(cls,"item_ammo_manhack",false)) || (StrEqual(cls,"item_ammo_energy",false)))
+			if ((StrEqual(cls,"item_ammo_flare_box",false)) || (StrEqual(cls,"item_box_flare_rounds",false)) || (StrEqual(cls,"item_ammo_manhack",false)) || (StrEqual(cls,"item_ammo_energy",false)) || (StrEqual(cls,"item_ammo_goop",false)) || (StrEqual(cls,"item_ammo_bhg",false)))
 			{
 				SDKHook(entity, SDKHook_StartTouch, StartTouchAmmoPickup);
 			}
@@ -2051,7 +2094,7 @@ public Action waititem(Handle timer, int entity)
 				}
 			}
 			*/
-			if ((StrEqual(cls,"weapon_satchel",false)) || (StrEqual(cls,"weapon_tripmine",false)))
+			if ((StrEqual(cls,"weapon_satchel",false)) || (StrEqual(cls,"weapon_tripmine",false)) || (StrEqual(cls,"weapon_molotov",false)))
 			{
 				SDKHook(entity, SDKHook_StartTouch, StartTouchAmmoPickup);
 			}
@@ -2311,6 +2354,13 @@ public Action SweapCacheInteraction(const char[] output, int caller, int activat
 					ActivateEntity(respawnweap);
 				}
 			}
+			if (StrEqual(cls,"weapon_bhg",false))
+			{
+				if (HasEntProp(caller,Prop_Data,"m_iClip1"))
+				{
+					AmmArr[activator][1] = GetEntProp(caller,Prop_Data,"m_iClip1");
+				}
+			}
 		}
 	}
 	return Plugin_Continue;
@@ -2368,7 +2418,7 @@ public Action StartTouchAmmoPickup(int entity, int other)
 					AcceptEntityInput(entity,"kill");
 				}
 			}
-			else if (StrEqual(cls,"item_ammo_energy",false))
+			else if ((StrEqual(cls,"item_ammo_energy",false)) || (StrEqual(cls,"item_ammo_goop",false)))
 			{
 				Handle cvar = FindConVar("sk_max_energy");
 				int maxamm = GetConVarInt(cvar);
@@ -2453,6 +2503,30 @@ public Action StartTouchAmmoPickup(int entity, int other)
 						}
 						AcceptEntityInput(entity,"kill");
 					}
+				}
+			}
+			else if (StrEqual(cls,"weapon_molotov",false))
+			{
+				int weap = HasWeapon(other,cls);
+				if (weap)
+				{
+					if (HasEntProp(weap,Prop_Data,"m_iClip1"))
+					{
+						int iCurAmm = GetEntProp(weap,Prop_Data,"m_iClip1");
+						if (iCurAmm < hMaxMolotov.IntValue)
+						{
+							SetEntProp(weap,Prop_Data,"m_iClip1",iCurAmm+1);
+							AcceptEntityInput(entity,"kill");
+						}
+					}
+				}
+			}
+			else if (StrEqual(cls,"item_ammo_bhg",false))
+			{
+				if (AmmArr[other][1] < 10)
+				{
+					AmmArr[other][1]+=3;
+					AcceptEntityInput(entity,"kill");
 				}
 			}
 		}
@@ -2573,6 +2647,11 @@ public void OnClientDisconnect_Post(int client)
 	WeapSnd[client] = 0.0;
 	WeapAttackSpeed[client] = 0.0;
 	SteamID[client] = "";
+	for (int i = 0;i<32;i++)
+	{
+		if (i == 0) AmmArr[client][i] = 3;
+		else AmmArr[client][i] = 0;
+	}
 }
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
@@ -3203,16 +3282,16 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 													SetEntPropEnt(beam2,Prop_Data,"m_hAttachEntity",EndTarg[client],1);
 													SetEntPropEnt(beam2,Prop_Data,"m_hEndEntity",EndTarg[client]);
 													//SetEntPropVector(beam2,Prop_Data,"m_vecEndPos",endpos);
-													SetEntPropFloat(beam2,Prop_Data,"m_fAmplitude",4.0);
-													SetEntPropFloat(beam2,Prop_Data,"m_fWidth",8.0);
-													SetEntPropFloat(beam2,Prop_Data,"m_fEndWidth",4.0);
+													SetEntPropFloat(beam2,Prop_Data,"m_fAmplitude",2.25);
+													SetEntPropFloat(beam2,Prop_Data,"m_fWidth",3.5);
+													SetEntPropFloat(beam2,Prop_Data,"m_fEndWidth",3.5);
 													SetEntPropFloat(beam2,Prop_Data,"m_fSpeed",1.0);
 													SetEntPropFloat(beam2,Prop_Data,"m_flFrameRate",1.0);
 													SetEntPropFloat(beam2,Prop_Data,"m_flHDRColorScale",1.0);
 													SetEntProp(beam2,Prop_Data,"m_nDissolveType",-1);
 													SetEntProp(beam2,Prop_Data,"m_nRenderMode",2);
 													SetEntProp(beam2,Prop_Data,"m_nHaloIndex",0);
-													SetEntPropFloat(beam2,Prop_Data,"m_fHaloScale",10.0);
+													SetEntPropFloat(beam2,Prop_Data,"m_fHaloScale",5.0);
 													SetEntPropEnt(beam,Prop_Data,"m_hEffectEntity",beam2);
 												}
 											}
@@ -3520,6 +3599,13 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									vecDir[0] = vecFwd[0] + x * 0.00873 * vecRight[0] + y * 0.00873 * vecUp[0];
 									vecDir[1] = vecFwd[1] + x * 0.00873 * vecRight[1] + y * 0.00873 * vecUp[1];
 									vecDir[2] = vecFwd[2] + x * 0.00873 * vecRight[2] + y * 0.00873 * vecUp[2];
+									TE_Start("GaussExplosion");
+									TE_WriteFloat("m_vecOrigin[0]",endpos[0]);
+									TE_WriteFloat("m_vecOrigin[1]",endpos[1]);
+									TE_WriteFloat("m_vecOrigin[2]",endpos[2]);
+									TE_WriteNum("m_nType",0);
+									TE_WriteVector("m_vecDirection",traceNormal);
+									TE_SendToAll();
 									float hitAngle = -GetVectorDotProduct(traceNormal, vecDir);
 									if ( hitAngle < 0.5 )
 									{
@@ -3605,16 +3691,6 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 											AcceptEntityInput(decal,"Activate");
 										}
 									}
-									else
-									{
-										TE_Start("GaussExplosion");
-										TE_WriteFloat("m_vecOrigin[0]",endpos[0]);
-										TE_WriteFloat("m_vecOrigin[1]",endpos[1]);
-										TE_WriteFloat("m_vecOrigin[2]",endpos[2]);
-										TE_WriteNum("m_nType",0);
-										TE_WriteVector("m_vecDirection",traceNormal);
-										TE_SendToAll();
-									}
 									if (FileExists("materials/sprites/glow01.spr",true,NULL_STRING))
 									{
 										int effect = CreateEntityByName("env_sprite");
@@ -3632,6 +3708,91 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 											SetVariantString("OnUser4 !self:kill::0.1:-1");
 											AcceptEntityInput(effect,"addoutput");
 											AcceptEntityInput(effect,"FireUser4");
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				else if (StrEqual(curweap,"weapon_bhg",false))
+				{
+					if (weap != -1)
+					{
+						int bInReload = 0;
+						if (HasEntProp(weap,Prop_Data,"m_bInReload")) bInReload = GetEntProp(weap,Prop_Data,"m_bInReload");
+						if (!bInReload)
+						{
+							float Time = GetTickedTime();
+							if (WeapAttackSpeed[client] < Time)
+							{
+								int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+								if (viewmdl != -1)
+								{
+									int hasammo = 0;
+									if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
+									AmmArr[client][0] = hasammo;
+									if (hasammo)
+									{
+										int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+										int mdlseq = GetWepAnim(curweap,seq,"ACT_VM_PRIMARYATTACK");
+										if (seq == mdlseq)
+										{
+											SetEntProp(weap,Prop_Data,"m_nViewModelIndex",0);
+											SetEntProp(viewmdl,Prop_Send,"m_nSequence",GetWepAnim(curweap,seq,"ACT_VM_IDLE"));
+											seq = 0;
+										}
+										if (seq != mdlseq)
+										{
+											WeapAttackSpeed[client] = Time+1.0;
+											AmmArr[client][0]--;
+											if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",hasammo-1);
+											SetEntProp(weap,Prop_Data,"m_nViewModelIndex",1);
+											SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+											float vecFirePos[3];
+											float vecAngs[3];
+											float vecEndPos[3];
+											float shootvel[3];
+											GetClientEyePosition(client,vecFirePos);
+											GetClientEyeAngles(client,vecAngs);
+											TR_TraceRayFilter(vecFirePos, vecAngs, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+											TR_GetEndPosition(vecEndPos);
+											MakeVectorFromPoints(vecFirePos,vecEndPos,shootvel);
+											ScaleVector(shootvel,2.5);
+											float maxscaler = 500.0;
+											EmitSoundToAll("weapons/smg1/switch_single.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+											if (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+											{
+												while (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+												{
+													ScaleVector(shootvel,0.95);
+												}
+											}
+											int iBall = CreateEntityByName("prop_combine_ball");//npc_concussiongrenade
+											if (iBall != -1)
+											{
+												vecFirePos[0] = (vecFirePos[0] + (50 * Cosine(DegToRad(vecAngs[1]))));
+												vecFirePos[1] = (vecFirePos[1] + (50 * Sine(DegToRad(vecAngs[1]))));
+												if (vecAngs[0] > -45.0) vecFirePos[2] = (vecFirePos[2] - (50 * Sine(DegToRad(vecAngs[0]))));
+												else vecFirePos[2] = (vecFirePos[2] - (75 * Sine(DegToRad(vecAngs[0]))));
+												DispatchKeyValue(iBall,"model","models/effects/combineball.mdl");
+												TeleportEntity(iBall,vecFirePos,vecAngs,NULL_VECTOR);
+												DispatchSpawn(iBall);
+												ActivateEntity(iBall);
+												SetEntProp(iBall,Prop_Data,"m_nRenderFX",15);
+												//SetEntProp(iBall,Prop_Data,"m_MoveType",4);
+												TeleportEntity(iBall,NULL_VECTOR,NULL_VECTOR,shootvel);
+												//SetEntPropEnt(iBall,Prop_Data,"m_hThrower",client);
+												//SetEntProp(iBall,Prop_Data,"m_bIsLive",1);
+												SetEntProp(iBall,Prop_Data,"m_nState",2);
+												SetEntProp(iBall,Prop_Data,"m_bBounceDie",1);
+												SetEntProp(iBall,Prop_Data,"m_nMaxBounces",0);
+												SetEntProp(iBall,Prop_Data,"m_bForward",1);
+												SetEntPropFloat(iBall,Prop_Data,"m_flRadius",10.0);
+												//SetEntPropEnt(iBall,Prop_Data,"m_hSpawner",client);
+												SetEntPropEnt(iBall,Prop_Data,"m_hOwnerEntity",client);
+												SDKHook(iBall, SDKHook_VPhysicsUpdate, BHGTouch);
+											}
 										}
 									}
 								}
@@ -4147,6 +4308,31 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							SetEntPropFloat(weap,Prop_Data,"m_flTimeWeaponIdle",0.0);
 						}
 						setbuttons = false;
+					}
+				}
+				else if (StrEqual(curweap,"weapon_molotov",false))
+				{
+					if (weap != -1)
+					{
+						float Time = GetTickedTime();
+						if (WeapAttackSpeed[client] < Time)
+						{
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
+							{
+								int hasammo = 0;
+								if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
+								if (hasammo)
+								{
+									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+									int mdlseq = GetWepAnim(curweap,seq,"ACT_VM_HAULBACK");//ACT_VM_THROW
+									if (seq != mdlseq)
+									{
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+									}
+								}
+							}
+						}
 					}
 				}
 				else if ((StrEqual(curweap,"weapon_handgrenade",false)) || (StrEqual(curweap,"weapon_satchel",false)))
@@ -5126,6 +5312,74 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					}
 				}
 			}
+			else if (StrEqual(curweap,"weapon_molotov",false))
+			{
+				if (weap != -1)
+				{
+					int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+					if (viewmdl != -1)
+					{
+						int hasammo = 0;
+						if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
+						if (hasammo)
+						{
+							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+							int mdlseq = GetWepAnim(curweap,seq,"ACT_VM_HAULBACK");
+							if (seq == mdlseq)
+							{
+								SetEntProp(weap,Prop_Data,"m_iClip1",hasammo-1);
+								mdlseq = GetWepAnim(curweap,seq,"ACT_VM_THROW");
+								WeapAttackSpeed[client] = GetTickedTime()+1.0;
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+								CreateTimer(0.75,resetviewmdl,viewmdl);
+								float targpos[3];
+								float shootvel[3];
+								float plyfirepos[3];
+								float plyang[3];
+								float maxscaler = 600.0;
+								float sideadj = -10.0;
+								char grenademdl[64];
+								GetClientEyeAngles(client,plyang);
+								Format(grenademdl,sizeof(grenademdl),"models/weapons/w_molotov.mdl");
+								plyang[1]+=sideadj;
+								GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",plyfirepos);
+								plyfirepos[0] = (plyfirepos[0] + (40 * Cosine(DegToRad(plyang[1]))));
+								plyfirepos[1] = (plyfirepos[1] + (40 * Sine(DegToRad(plyang[1]))));
+								if (GetEntProp(client,Prop_Data,"m_bDucked")) plyfirepos[2]+=28.0;
+								else plyfirepos[2]+=60.0;
+								plyang[1]-=sideadj;
+								TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+								TR_GetEndPosition(targpos);
+								MakeVectorFromPoints(plyfirepos,targpos,shootvel);
+								ScaleVector(shootvel,2.5);
+								if (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+								{
+									while (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+									{
+										ScaleVector(shootvel,0.95);
+									}
+								}
+								int iMolotov = CreateEntityByName("npc_concussiongrenade");
+								if (iMolotov != -1)
+								{
+									DispatchKeyValue(iMolotov,"classname","grenade_molotov");
+									DispatchKeyValue(iMolotov,"model",grenademdl);
+									if (!IsModelPrecached(grenademdl)) PrecacheModel(grenademdl,true);
+									TeleportEntity(iMolotov,plyfirepos,plyang,NULL_VECTOR);
+									DispatchSpawn(iMolotov);
+									ActivateEntity(iMolotov);
+									SetEntPropEnt(iMolotov,Prop_Data,"m_hThrower",client);
+									SetEntProp(iMolotov,Prop_Data,"m_bIsLive",1);
+									SetEntPropFloat(iMolotov,Prop_Data,"m_DmgRadius",hMolotovRadius.FloatValue);
+									SetEntityModel(iMolotov,grenademdl);
+									TeleportEntity(iMolotov,NULL_VECTOR,NULL_VECTOR,shootvel);
+									SDKHook(iMolotov, SDKHook_StartTouch, MolotovTouch);
+								}
+							}
+						}
+					}
+				}
+			}
 			else if (StrEqual(curweap,"weapon_handgrenade",false))
 			{
 				if (weap != -1)
@@ -5753,6 +6007,29 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						}
 					}
 				}
+				else if (StrEqual(curweap,"weapon_bhg",false))
+				{
+					int bInReload = 0;
+					if (HasEntProp(weap,Prop_Data,"m_bInReload")) bInReload = GetEntProp(weap,Prop_Data,"m_bInReload");
+					if (AmmArr[client][1] != GetEntProp(client,Prop_Send,"m_iAmmo",_,12)) AmmArr[client][1] = GetEntProp(client,Prop_Send,"m_iAmmo",_,12);
+					if ((AmmArr[client][1] > 0) && (AmmArr[client][0] < 3) && (!bInReload))
+					{
+						if (weap != -1)
+						{
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
+							{
+								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+								int seqmdl = GetWepAnim(curweap,seq,"ACT_VM_RELOAD");
+								SetEntProp(viewmdl,Prop_Send,"m_nSequence",seqmdl);
+								SetEntProp(weap,Prop_Data,"m_bInReload",1);
+								CreateTimer(0.5,resetinreload,weap,TIMER_FLAG_NO_MAPCHANGE);
+								WeapAttackSpeed[client] = GetTickedTime()+0.6;
+								EmitGameSoundToAll("Weapon_Pistol.Reload",client);
+							}
+						}
+					}
+				}
 			}
 		}
 		if (buttons & IN_USE)
@@ -5984,7 +6261,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			{
 				if (seq != 5) SetEntProp(viewmdl,Prop_Send,"m_nSequence",5);
 			}
-			else if (StrEqual(curweap,"weapon_gluon",false))
+			else if ((StrEqual(curweap,"weapon_gluon",false)) || (StrEqual(curweap,"weapon_goop",false)))
 			{
 				if (seq != 3) SetEntProp(viewmdl,Prop_Send,"m_nSequence",3);
 			}
@@ -6016,6 +6293,26 @@ public Action resetinreload(Handle timer, int weap)
 			int owner = GetEntPropEnt(weap,Prop_Data,"m_hOwner");
 			if ((owner > 0) && (owner < MaxClients+1) && (IsValidEntity(owner)))
 			{
+				int viewmdl = GetEntPropEnt(owner,Prop_Data,"m_hViewModel");
+				if (viewmdl != -1)
+				{
+					SetEntProp(viewmdl,Prop_Send,"m_nSequence",0);
+				}
+			}
+		}
+		else if (StrEqual(curweap,"weapon_bhg",false))
+		{
+			int owner = GetEntPropEnt(weap,Prop_Data,"m_hOwner");
+			if ((owner > 0) && (owner < MaxClients+1) && (IsValidEntity(owner)))
+			{
+				if (AmmArr[owner][1] != GetEntProp(owner,Prop_Send,"m_iAmmo",_,12)) AmmArr[owner][1] = GetEntProp(owner,Prop_Send,"m_iAmmo",_,12);
+				if (AmmArr[owner][1]-1 > -1)
+				{
+					AmmArr[owner][0] = GetEntProp(weap,Prop_Data,"m_iClip1")+1;
+					AmmArr[owner][1]--;
+					SetEntProp(weap,Prop_Data,"m_iClip1",AmmArr[owner][0]);
+					SetEntProp(owner,Prop_Data,"m_iAmmo",AmmArr[owner][1],_,12);
+				}
 				int viewmdl = GetEntPropEnt(owner,Prop_Data,"m_hViewModel");
 				if (viewmdl != -1)
 				{
@@ -6071,6 +6368,7 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 		Ammo3Reset[client] = 0;
 		Ammo12Reset[client] = 0;
 		Ammo24Reset[client] = 0;
+		AmmArr[client][1] = 3;
 		if (IsValidEntity(client)) CreateTimer(1.0,spawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	return Plugin_Continue;
@@ -6262,6 +6560,24 @@ public Action OnWeaponUse(int client, int weapon)
 					SetEntProp(client,Prop_Data,"m_iAmmo",0,_,12);
 				}
 			}
+			else if (StrEqual(weapname,"weapon_molotov",false))
+			{
+				SetVariantString("anim_attachment_RH");
+				AcceptEntityInput(weapon,"SetParentAttachment");
+				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
+				SetEntProp(weapon,Prop_Data,"m_iSecondaryAmmoType",24);
+				SetEntProp(weapon,Prop_Data,"m_bReloadsSingly",1);
+				SetEntProp(weapon,Prop_Data,"m_bFiresUnderwater",0);
+				float orgreset[3];
+				orgreset[2] = 2.5;
+				SetEntPropVector(weapon,Prop_Data,"m_vecOrigin",orgreset);
+				SetEntPropFloat(weapon,Prop_Data,"m_flNextPrimaryAttack",GetGameTime()+100.0);
+				CreateTimer(0.1,resetviewindex,weapon,TIMER_FLAG_NO_MAPCHANGE);
+				int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+				if (viewmdl != -1)
+					CreateTimer(0.2,resetviewmdl,viewmdl);
+				if (GetEntProp(client,Prop_Send,"m_iAmmo",_,24) < 1) SetEntProp(client,Prop_Data,"m_iAmmo",1,_,24);
+			}
 			else if (StrEqual(weapname,"weapon_goop",false))
 			{
 				SetVariantString("anim_attachment_RH");
@@ -6285,6 +6601,32 @@ public Action OnWeaponUse(int client, int weapon)
 				{
 					Ammo12Reset[client] = ammover;
 					SetEntProp(client,Prop_Data,"m_iAmmo",0,_,12);
+				}
+			}
+			else if (StrEqual(weapname,"weapon_bhg",false))
+			{
+				SetVariantString("anim_attachment_RH");
+				AcceptEntityInput(weapon,"SetParentAttachment");
+				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
+				SetEntPropFloat(weapon,Prop_Data,"m_flModelScale",0.7);
+				CreateTimer(0.1,resetviewindex,weapon,TIMER_FLAG_NO_MAPCHANGE);
+				int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+				if (viewmdl != -1)
+					CreateTimer(0.2,resetviewmdl,viewmdl);
+				if (HasEntProp(weapon,Prop_Data,"m_iClip1")) SetEntProp(weapon,Prop_Data,"m_iClip1",AmmArr[client][1]);
+				if (HasEntProp(weapon,Prop_Send,"m_iClip1")) SetEntProp(weapon,Prop_Send,"m_iClip1",AmmArr[client][1]);
+				if (HasEntProp(weapon,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(weapon,Prop_Data,"m_iPrimaryAmmoType",12);
+				int ammover = GetEntProp(client,Prop_Send,"m_iAmmo",_,12);
+				if (ammover > 0)
+				{
+					Ammo12Reset[client] = ammover;
+					SetEntProp(client,Prop_Data,"m_iAmmo",AmmArr[client][0],_,12);
+				}
+				if (FindStringInArray(precachedarr,"weapon_bhg") == -1)
+				{
+					PrecacheSound("weapons/smg1/switch_single.wav",true);
+					PrecacheSound("weapons/crossbow/hit1.wav",true);
+					PushArrayString(precachedarr,"weapon_bhg");
 				}
 			}
 			else if ((StrEqual(weapname,"weapon_tau",false)) || (StrEqual(weapname,"weapon_gauss",false)))
@@ -8132,6 +8474,84 @@ public Action GrenadeExpl(Handle timer, int entity)
 	}
 }
 
+public void BHGTouch(int entity)
+{
+	if ((HasEntProp(entity,Prop_Data,"m_nBounceCount")) && (HasEntProp(entity,Prop_Data,"m_bStruckEntity")))
+	{
+		if ((GetEntProp(entity,Prop_Data,"m_nBounceCount") > 0) || (GetEntProp(entity,Prop_Data,"m_bStruckEntity")))
+		{
+			SDKUnhook(entity, SDKHook_VPhysicsUpdate, BHGTouch);
+			if (HasEntProp(entity,Prop_Data,"m_hOwnerEntity"))
+			{
+				int hThrower = GetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity");
+				float vecOrigin[3];
+				if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",vecOrigin);
+				EmitSoundToAll("weapons/crossbow/hit1.wav", entity, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+				AcceptEntityInput(entity,"Explode");
+				int endpoint = CreateEntityByName("env_explosion");
+				if (endpoint != -1)
+				{
+					DispatchKeyValue(endpoint,"imagnitude","300");
+					DispatchKeyValue(endpoint,"iRadiusOverride","150");
+					DispatchKeyValue(endpoint,"rendermode","0");
+					DispatchKeyValue(endpoint,"spawnflags","9084");
+					TeleportEntity(endpoint,vecOrigin,NULL_VECTOR,NULL_VECTOR);
+					DispatchSpawn(endpoint);
+					ActivateEntity(endpoint);
+					SetEntPropEnt(endpoint,Prop_Data,"m_hOwnerEntity",hThrower);
+					SetEntPropEnt(endpoint,Prop_Data,"m_hEffectEntity",hThrower);
+					AcceptEntityInput(endpoint,"Explode");
+				}
+			}
+		}
+	}
+	else SDKUnhook(entity, SDKHook_VPhysicsUpdate, BHGTouch);
+}
+
+public Action MolotovTouch(int entity, int other)
+{
+	if (HasEntProp(entity,Prop_Data,"m_hThrower"))
+	{
+		int hThrower = GetEntPropEnt(entity,Prop_Data,"m_hThrower");
+		float vecOffspos[3];
+		float vecLocation[3];
+		if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",vecLocation);
+		float startang = 0.0;
+		float randang = 0.0;
+		int runmax = RoundFloat(hMolotovRadius.FloatValue)/15;
+		for (int i = 0;i<runmax;i++)
+		{
+			randang = startang+GetRandomFloat(5.0,12.0);
+			startang = randang;
+			vecOffspos[2] = vecLocation[2];
+			if (startang > 360.0) startang = -360.0;
+			vecOffspos[0] = (vecLocation[0] + ((5.0 + GetRandomFloat(1.0,hMolotovRadius.FloatValue)) * Cosine(DegToRad(randang))));
+			vecOffspos[1] = (vecLocation[1] + ((5.0 + GetRandomFloat(1.0,hMolotovRadius.FloatValue)) * Sine(DegToRad(randang))));
+			if (TR_PointOutsideWorld(vecOffspos))
+			{
+				vecOffspos[2]+=15.0;
+				TR_TraceRayFilter(vecOffspos, view_as<float>({90.0,0.0,0.0}), MASK_SHOT, RayType_Infinite, TraceEntityFilter, entity);
+				TR_GetEndPosition(vecOffspos);
+			}
+			int iEnvFire = CreateEntityByName("env_fire");
+			if (iEnvFire != -1)
+			{
+				DispatchKeyValue(iEnvFire,"health","10");
+				DispatchKeyValue(iEnvFire,"firesize","40");
+				DispatchKeyValue(iEnvFire,"fireattack","1");
+				DispatchKeyValue(iEnvFire,"firetype","0");
+				DispatchKeyValue(iEnvFire,"spawnflags","136");
+				DispatchKeyValue(iEnvFire,"damagescale","30.0");
+				TeleportEntity(iEnvFire,vecOffspos,NULL_VECTOR,NULL_VECTOR);
+				DispatchSpawn(iEnvFire);
+				ActivateEntity(iEnvFire);
+				SetEntPropEnt(iEnvFire,Prop_Data,"m_hOwner",hThrower);
+				AcceptEntityInput(iEnvFire,"StartFire");
+			}
+		}
+	}
+}
+
 void ShootBullet(int client, int weap, int atktype, char[] curweap, float orgs[3], float angs[3], int sideoffs, float maxspread)
 {
 	if (IsValidEntity(client))
@@ -9407,7 +9827,7 @@ void FindAllByClassname(Handle arr, int ent, char[] classname)
 	}
 }
 
-bool HasWeapon(int client, char[] cls)
+int HasWeapon(int client, char[] cls)
 {
 	if ((IsValidEntity(client)) && (client != 0) && (strlen(cls) > 0))
 	{
@@ -9421,12 +9841,12 @@ bool HasWeapon(int client, char[] cls)
 				{
 					char szWeapCls[64];
 					GetEntityClassname(tmpi,szWeapCls,sizeof(szWeapCls));
-					if (StrEqual(szWeapCls,cls,false)) return true;
+					if (StrEqual(szWeapCls,cls,false)) return tmpi;
 				}
 			}
 		}
 	}
-	return false;
+	return 0;
 }
 
 public Action resetcoll(Handle timer, Handle dp)
@@ -9451,7 +9871,7 @@ public bool TraceEntityFilter(int entity, int mask, any data)
 	{
 		char cls[32];
 		GetEntityClassname(entity,cls,sizeof(cls));
-		if (StrEqual(cls,"npc_hornet",false)) return false;
+		if ((StrEqual(cls,"npc_hornet",false)) || (StrEqual(cls,"func_vehicleclip",false))) return false;
 	}
 	return true;
 }

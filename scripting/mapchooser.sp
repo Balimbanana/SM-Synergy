@@ -1006,17 +1006,22 @@ public Action Timer_ChangeMap(Handle hTimer, Handle dp)
 	
 	new String:mapch[128];
 	ServerCommand("changelevel %s", map);
-	Format(mapch,sizeof(mapch),"Custom %s",map);
-	ServerCommand("changelevel %s", mapch);
-	Format(mapch,sizeof(mapch),"syn %s",map);
-	ServerCommand("changelevel %s", mapch);
-	LogMessage("Mapchange to %s", mapch);
-	Format(mapch,sizeof(mapch),"ep1 %s",map);
-	ServerCommand("changelevel %s", mapch);
-	Format(mapch,sizeof(mapch),"ep2 %s",map);
-	ServerCommand("changelevel %s", mapch);
-	Format(mapch,sizeof(mapch),"custom %s",map);
-	ServerCommand("changelevel %s", mapch);
+	char gamename[64];
+	GetGameFolderName(gamename,sizeof(gamename));
+	if (StrEqual(gamename,"synergy",false))
+	{
+		Format(mapch,sizeof(mapch),"Custom %s",map);
+		ServerCommand("changelevel %s", mapch);
+		Format(mapch,sizeof(mapch),"syn %s",map);
+		ServerCommand("changelevel %s", mapch);
+		LogMessage("Mapchange to %s", mapch);
+		Format(mapch,sizeof(mapch),"ep1 %s",map);
+		ServerCommand("changelevel %s", mapch);
+		Format(mapch,sizeof(mapch),"ep2 %s",map);
+		ServerCommand("changelevel %s", mapch);
+		Format(mapch,sizeof(mapch),"custom %s",map);
+		ServerCommand("changelevel %s", mapch);
+	}
 	mapchangeinprogress = false;
 	return Plugin_Stop;
 }
@@ -1355,6 +1360,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Half-Life 1");
 	}
+	else if ((StrContains(map, "hls", false) == 0) && (StrContains(map, "mrl", false) != -1))
+	{
+		Format(maptag, sizeof(maptag), "Half-Life 1 Merged");
+	}
 	else if (StrContains(map, "ep1", false) == 0)
 	{
 		Format(maptag, sizeof(maptag), "HL2: Episode 1");
@@ -1395,7 +1404,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Precursor");
 	}
-	else if ((StrContains(map, "leonhl2", false) == 0) || (StrContains(map, "final_credits", false) == 0) || (StrContains(map, "ctoa leonHL2", false) == 0) || (StrContains(map, "ctoa final", false) == 0))
+	else if ((StrContains(map, "leonhl2-2", false) == 0) || (StrContains(map, "final_credits", false) == 0) || (StrContains(map, "ctoa leonHL2", false) == 0) || (StrContains(map, "ctoa final", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Coastline To Atmosphere");
 	}
@@ -1503,6 +1512,10 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Steam Tracks Trouble and Riddles");
 	}
+	else if (StrContains(map, "testchmb_a_", false) == 0)
+	{
+		Format(maptag, sizeof(maptag), "Portal");
+	}
 	else if ((StrContains(map, "llp ", false) == 0) || (StrContains(map, "lifelostprison_0", false) == 0) || (StrContains(map, "bonus_earlyprison_0", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "Liberation");
@@ -1604,6 +1617,7 @@ public Action GetMapTag(const char[] map)
 		else
 		{
 			gamename[0] &= ~(1 << 5);
+			ReplaceString(gamename,sizeof(gamename),"_"," ",false);
 			Format(maptag,sizeof(maptag),"%s",gamename);
 		}
 	}
