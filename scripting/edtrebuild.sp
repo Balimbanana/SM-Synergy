@@ -38,7 +38,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.65"
+#define PLUGIN_VERSION "0.66"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -577,6 +577,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				int finderorground2dec = -1;
 				int findend = -1;
 				char clsorground[32];
+				char clsorgroundfloor[32];
 				char clsorground2dec[32];
 				char orgexpl[4096][32];
 				int arrsize = ExplodeString(szMapEntities,"\n\"origin\" \"",orgexpl,4096,32);
@@ -613,9 +614,11 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 							org[2] = StringToFloat(tmpexpl[2]);
 							Format(tmpbuf,sizeof(tmpbuf),"%1.2f %1.2f %1.2f",org[0],org[1],org[2]);
 							Format(orgrounded,sizeof(orgrounded),"%i %i %i",RoundFloat(org[0]),RoundFloat(org[1]),RoundFloat(org[2]));
+							Format(clsorgroundfloor,sizeof(clsorgroundfloor),"%i %i %i",RoundToZero(org[0]),RoundToZero(org[1]),RoundToZero(org[2]));
 							ReplaceString(tmpbuf,sizeof(tmpbuf),".00","");
 							finderorground2dec = StrContains(tmpbuf,clsorground2dec,false);
 							finderorground = StrContains(orgrounded,clsorground,false);
+							if (finderorground == -1) finderorground = StrContains(clsorgroundfloor,clsorground,false);
 							if ((finderorground2dec != -1) || (finderorground != -1))
 							{
 								Format(orgoriginal,sizeof(orgoriginal),"\"origin\" \"%s\"",orgoriginal);

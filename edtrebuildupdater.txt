@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.65"
-			"Previous"	"0.64"
+			"Latest"  	"0.66"
+			"Previous"	"0.65"
 		}
 		
-		"Notes"	"Fixed inserted trigger_changelevel with no model message for transition fixup."
+		"Notes"	"Fixed being able to use origins that are rounded to floor in EDT but higher than .5 in actual."
 	}
 	
 	"Files"
