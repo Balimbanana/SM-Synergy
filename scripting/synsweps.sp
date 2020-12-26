@@ -5316,64 +5316,70 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			{
 				if ((weap != -1) && (WeapAttackSpeed[client] < GetTickedTime()))
 				{
-					int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
-					if (viewmdl != -1)
+					if (HasEntProp(weap,Prop_Data,"m_nViewModelIndex"))
 					{
-						int hasammo = 0;
-						if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
-						if (hasammo)
+						if (GetEntProp(weap,Prop_Data,"m_nViewModelIndex") == 1)
 						{
-							int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
-							int mdlseq = GetWepAnim(curweap,seq,"ACT_VM_HAULBACK");
-							if (seq == mdlseq)
+							int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
+							if (viewmdl != -1)
 							{
-								SetEntProp(weap,Prop_Data,"m_iClip1",hasammo-1);
-								mdlseq = GetWepAnim(curweap,seq,"ACT_VM_THROW");
-								WeapAttackSpeed[client] = GetTickedTime()+1.0;
-								SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
-								CreateTimer(0.75,resetviewmdl,viewmdl);
-								float targpos[3];
-								float shootvel[3];
-								float plyfirepos[3];
-								float plyang[3];
-								float maxscaler = 600.0;
-								float sideadj = -10.0;
-								char grenademdl[64];
-								GetClientEyeAngles(client,plyang);
-								Format(grenademdl,sizeof(grenademdl),"models/weapons/w_molotov.mdl");
-								plyang[1]+=sideadj;
-								GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",plyfirepos);
-								plyfirepos[0] = (plyfirepos[0] + (40 * Cosine(DegToRad(plyang[1]))));
-								plyfirepos[1] = (plyfirepos[1] + (40 * Sine(DegToRad(plyang[1]))));
-								if (GetEntProp(client,Prop_Data,"m_bDucked")) plyfirepos[2]+=28.0;
-								else plyfirepos[2]+=60.0;
-								plyang[1]-=sideadj;
-								TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
-								TR_GetEndPosition(targpos);
-								MakeVectorFromPoints(plyfirepos,targpos,shootvel);
-								ScaleVector(shootvel,2.5);
-								if (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+								int hasammo = 0;
+								if (HasEntProp(weap,Prop_Send,"m_iClip1")) hasammo = GetEntProp(weap,Prop_Send,"m_iClip1");
+								if (hasammo)
 								{
-									while (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
+									int mdlseq = GetWepAnim(curweap,seq,"ACT_VM_HAULBACK");
+									if (seq == mdlseq)
 									{
-										ScaleVector(shootvel,0.95);
+										SetEntProp(weap,Prop_Data,"m_iClip1",hasammo-1);
+										mdlseq = GetWepAnim(curweap,seq,"ACT_VM_THROW");
+										WeapAttackSpeed[client] = GetTickedTime()+1.0;
+										SetEntProp(viewmdl,Prop_Send,"m_nSequence",mdlseq);
+										CreateTimer(0.75,resetviewmdl,viewmdl);
+										float targpos[3];
+										float shootvel[3];
+										float plyfirepos[3];
+										float plyang[3];
+										float maxscaler = 600.0;
+										float sideadj = -10.0;
+										char grenademdl[64];
+										GetClientEyeAngles(client,plyang);
+										Format(grenademdl,sizeof(grenademdl),"models/weapons/w_molotov.mdl");
+										plyang[1]+=sideadj;
+										GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",plyfirepos);
+										plyfirepos[0] = (plyfirepos[0] + (40 * Cosine(DegToRad(plyang[1]))));
+										plyfirepos[1] = (plyfirepos[1] + (40 * Sine(DegToRad(plyang[1]))));
+										if (GetEntProp(client,Prop_Data,"m_bDucked")) plyfirepos[2]+=28.0;
+										else plyfirepos[2]+=60.0;
+										plyang[1]-=sideadj;
+										TR_TraceRayFilter(plyfirepos, plyang, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+										TR_GetEndPosition(targpos);
+										MakeVectorFromPoints(plyfirepos,targpos,shootvel);
+										ScaleVector(shootvel,2.5);
+										if (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+										{
+											while (((shootvel[0] > maxscaler) || (shootvel[1] > maxscaler) || (shootvel[2] > maxscaler)) || (shootvel[0] < -maxscaler) || (shootvel[1] < -maxscaler) || (shootvel[2] < -maxscaler))
+											{
+												ScaleVector(shootvel,0.95);
+											}
+										}
+										int iMolotov = CreateEntityByName("npc_concussiongrenade");
+										if (iMolotov != -1)
+										{
+											DispatchKeyValue(iMolotov,"classname","grenade_molotov");
+											DispatchKeyValue(iMolotov,"model",grenademdl);
+											if (!IsModelPrecached(grenademdl)) PrecacheModel(grenademdl,true);
+											TeleportEntity(iMolotov,plyfirepos,plyang,NULL_VECTOR);
+											DispatchSpawn(iMolotov);
+											ActivateEntity(iMolotov);
+											SetEntPropEnt(iMolotov,Prop_Data,"m_hThrower",client);
+											SetEntProp(iMolotov,Prop_Data,"m_bIsLive",1);
+											SetEntPropFloat(iMolotov,Prop_Data,"m_DmgRadius",hMolotovRadius.FloatValue);
+											SetEntityModel(iMolotov,grenademdl);
+											TeleportEntity(iMolotov,NULL_VECTOR,NULL_VECTOR,shootvel);
+											SDKHook(iMolotov, SDKHook_StartTouch, MolotovTouch);
+										}
 									}
-								}
-								int iMolotov = CreateEntityByName("npc_concussiongrenade");
-								if (iMolotov != -1)
-								{
-									DispatchKeyValue(iMolotov,"classname","grenade_molotov");
-									DispatchKeyValue(iMolotov,"model",grenademdl);
-									if (!IsModelPrecached(grenademdl)) PrecacheModel(grenademdl,true);
-									TeleportEntity(iMolotov,plyfirepos,plyang,NULL_VECTOR);
-									DispatchSpawn(iMolotov);
-									ActivateEntity(iMolotov);
-									SetEntPropEnt(iMolotov,Prop_Data,"m_hThrower",client);
-									SetEntProp(iMolotov,Prop_Data,"m_bIsLive",1);
-									SetEntPropFloat(iMolotov,Prop_Data,"m_DmgRadius",hMolotovRadius.FloatValue);
-									SetEntityModel(iMolotov,grenademdl);
-									TeleportEntity(iMolotov,NULL_VECTOR,NULL_VECTOR,shootvel);
-									SDKHook(iMolotov, SDKHook_StartTouch, MolotovTouch);
 								}
 							}
 						}
