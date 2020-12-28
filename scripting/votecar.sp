@@ -56,7 +56,7 @@ enum voteType
 
 voteType g_voteType = question;
 
-#define PLUGIN_VERSION "1.15"
+#define PLUGIN_VERSION "1.16"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/votecarupdater.txt"
 
 public Plugin myinfo = 
@@ -809,9 +809,15 @@ void CreateVehicle(int client)
 
 public Action playeron(const char[] output, int caller, int activator, float delay)
 {
-	plyhasenteredvehicle = true;
-	if ((GetEntProp(caller,Prop_Send,"m_iPassengerCount") > 1) && (HasEntProp(caller,Prop_Data,"m_iOnlyUser")))
-		SetEntProp(caller,Prop_Data,"m_iOnlyUser",-1);
+	if (IsValidEntity(caller))
+	{
+		if (HasEntProp(caller,Prop_Data,"m_iPassengerCount"))
+		{
+			plyhasenteredvehicle = true;
+			if ((GetEntProp(caller,Prop_Send,"m_iPassengerCount") > 1) && (HasEntProp(caller,Prop_Data,"m_iOnlyUser")))
+				SetEntProp(caller,Prop_Data,"m_iOnlyUser",-1);
+		}
+	}
 	return Plugin_Continue;
 }
 
