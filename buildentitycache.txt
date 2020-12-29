@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.50"
-			"Previous"	"0.49"
+			"Latest"  	"0.51"
+			"Previous"	"0.50"
 		}
 		
-		"Notes"	"Added contentdata check to buildedt with only 1 parameter."
+		"Notes"	"Added command input check hook. Fixed item_suit equipment detection."
 	}
 	
 	"Files"

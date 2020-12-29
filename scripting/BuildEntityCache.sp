@@ -11,7 +11,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "0.50"
+#define PLUGIN_VERSION "0.51"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -767,6 +767,7 @@ void ReadCache(char[] cache, char[] mapedt)
 		WriteFileLine(edtfile,"		edit {classname \"env_message\" values {edt_addedspawnflags \"2\"} }");
 		WriteFileLine(edtfile,"		edit {classname \"func_areaportal\" values {targetname \"disabledPortal\" StartOpen \"1\"} }");
 		WriteFileLine(edtfile,"		edit {classname \"point_viewcontrol\" values {edt_addedspawnflags \"128\"} }");
+		WriteFileLine(edtfile,"		edit {classname \"player_speedmod\" values {edt_removespawnflags \"2\"} }");
 		WriteFileLine(edtfile,"		create {classname \"info_spawn_manager\" values {targetname \"syn_spawn_manager\"} }");
 	}
 	Handle filehandle = OpenFile(cache,"r",true,NULL_STRING);
@@ -782,6 +783,7 @@ void ReadCache(char[] cache, char[] mapedt)
 		float orgpos[3];
 		bool ismain = false;
 		bool WriteEnt = false;
+		bool bAddGameEnd = false;
 		Handle logicautos = CreateArray(64);
 		Handle hudtimer = CreateArray(64);
 		Handle mainspawn = CreateArray(64);
@@ -816,10 +818,10 @@ void ReadCache(char[] cache, char[] mapedt)
 				ReplaceString(kvs[0],sizeof(kvs[]),"\"","",false);
 				ReplaceString(kvs[1],sizeof(kvs[]),"\"","",false);
 				Format(lineedt,sizeof(lineedt),"%s \"%s\"",kvs[1],kvs[3]);
-				if (((StrContains(kvs[3],",Lock,,",false) != -1) || (StrContains(kvs[3],",Reload,,",false) != -1) || (StrContains(kvs[3],",Strip,,",false) != -1) || (StrContains(kvs[3],",StripWeaponsAndSuit,,",false) != -1)) && (!StrEqual(cls,"logic_auto",false)) && (!StrEqual(cls,"hud_timer",false)) && (!WriteEnt))
+				if (((StrContains(kvs[3],",Lock,,",false) != -1) || (StrContains(kvs[3],",Reload,,",false) != -1) || (StrContains(kvs[3],",Strip,,",false) != -1) || (StrContains(kvs[3],",StripWeaponsAndSuit,,",false) != -1) || (StrContains(kvs[3],",Command,start",false) != -1) || (StrContains(kvs[3],",Command,give ",false) != -1) || (StrContains(kvs[3],",Command,sv_cheats ",false) != -1)) && (!StrEqual(cls,"logic_auto",false)) && (!StrEqual(cls,"hud_timer",false)) && (!WriteEnt))
 				{
 					WriteEnt = true;
-					char deletion[128];
+					char deletion[256];
 					if (StrContains(kvs[3],",Reload,,",false) != -1)
 					{
 						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains Reload Input",cls,origin);
@@ -834,14 +836,48 @@ void ReadCache(char[] cache, char[] mapedt)
 					else if ((StrContains(kvs[3],",Strip,,",false) != -1) || (StrContains(kvs[3],",StripWeaponsAndSuit,,",false) != -1))
 					{
 						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains WeaponRemoval Input",cls,origin);
-						char output[128];
+						char output[256];
 						Format(output,sizeof(output),"%s",kvs[1]);
 						ExplodeString(kvs[3], ",", kvs, 128, 128, true);
 						Format(output,sizeof(output),"\n				%s \"info_player_equip,Disable,,%s,%s\"",output,kvs[3],kvs[4]);
 						StrCat(lineedt,sizeof(lineedt),output);
 					}
+					else if (StrContains(kvs[3],",Command,start",false) != -1)
+					{
+						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains ending command",cls,origin);
+						Format(lineedt,sizeof(lineedt),"//%s",lineedt);
+						char output[256];
+						Format(output,sizeof(output),"%s",kvs[1]);
+						ExplodeString(kvs[3], ",", kvs, 128, 128, true);
+						Format(output,sizeof(output),"\n				%s \"endgame,EndGame,,%s,%s\"",output,kvs[3],kvs[4]);
+						StrCat(lineedt,sizeof(lineedt),output);
+						bAddGameEnd = true;
+					}
+					else if (StrContains(kvs[3],",Command,give ",false) != -1)
+					{
+						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains ending command",cls,origin);
+						Format(lineedt,sizeof(lineedt),"//%s",lineedt);
+						char output[2048];
+						Format(output,sizeof(output),"%s",kvs[1]);
+						char tmpkv[16][72];
+						ExplodeString(kvs[3], ",", kvs, 128, 128, true);
+						ExplodeString(kvs[2], " ", tmpkv, 16, 72, true);
+						char tmptrunc[4];
+						int truncatedat = StrContains(tmpkv[1],"_",false);
+						if (truncatedat == -1) truncatedat = 0;
+						else truncatedat++;
+						Format(tmptrunc,sizeof(tmptrunc),"%s",tmpkv[1][truncatedat]);
+						if (StrEqual(tmpkv[1],"weapon_crossbow",false)) Format(tmptrunc,sizeof(tmptrunc),"xbow");
+						Format(output,sizeof(output),"\n				%s \"%s,Enable,,%s,%s\"",output,tmptrunc,kvs[3],kvs[4]);
+						Format(output,sizeof(output),"%s\n				%s \"%s,EquipAllPlayers,,%1.1f,%s\"",output,tmptrunc,StringToFloat(kvs[3])+0.1,kvs[4]);
+						StrCat(lineedt,sizeof(lineedt),output);
+					}
+					else if (StrContains(kvs[3],",Command,sv_cheats ",false) != -1)
+					{
+						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains cheat command",cls,origin);
+						Format(lineedt,sizeof(lineedt),"//%s//Do not set sv_cheats find a way around it.",lineedt);
+					}
 					WriteFileLine(edtfile,"%s",deletion);
-					
 				}
 				if ((strlen(kvs[1]) > 0) && (!StrEqual(kvs[1],"classname",false)))
 				{
@@ -1209,6 +1245,7 @@ void ReadCache(char[] cache, char[] mapedt)
 							else if (StrEqual(ammtype,"ammo_crossbow",false)) Format(ammtype,sizeof(ammtype),"ammo_xbowbolt");
 							else if ((StrEqual(ammtype,"ammo_crowbar",false)) || (StrEqual(ammtype,"ammo_physcannon",false)) || (StrEqual(ammtype,"ammo_portalgun",false)) || (StrEqual(ammtype,"ammo_suit",false))) ammtype = "";
 							else if (StrEqual(ammtype,"ammo_ar2_altfire",false)) ammamount = 1;
+							else if (StrEqual(ammtype,"item_suit",false)) ammtype = "";
 							WriteFileLine(edtfile,"				%s",tmparr);
 							if (strlen(ammtype) > 1) WriteFileLine(edtfile,"					%s \"%i\"",ammtype,ammamount);
 						}
@@ -1257,7 +1294,7 @@ void ReadCache(char[] cache, char[] mapedt)
 						}
 						WriteFileLine(edtfile,"				%s",tmparr);
 					}
-					else if (StrContains(tmparr,"item_",false) == -1)
+					else if ((StrContains(tmparr,"item_",false) == -1) || (StrEqual(tmparr,"item_suit",false)))
 					{
 						char push[128];
 						char tmptrunc[4];
@@ -1265,10 +1302,13 @@ void ReadCache(char[] cache, char[] mapedt)
 						if (truncatedat == -1) truncatedat = 0;
 						else truncatedat++;
 						Format(tmptrunc,sizeof(tmptrunc),"%s",tmparr[truncatedat]);
+						char outputhook[32];
+						Format(outputhook,sizeof(outputhook),"OnPlayerPickup");
+						if (StrEqual(tmparr,"item_suit",false)) Format(outputhook,sizeof(outputhook),"OnPlayerTouch");
 						if (StrEqual(tmparr,"weapon_crossbow",false)) Format(tmptrunc,sizeof(tmptrunc),"xbow");
-						Format(push,sizeof(push),"OnMapSpawn \"%s,AddOutput,OnPlayerPickup %spickup:Enable::0:-1,0,-1\"",tmparr,tmptrunc);
+						Format(push,sizeof(push),"OnMapSpawn \"%s,AddOutput,%s %spickup:Enable::0:-1,0,-1\"",tmparr,outputhook,tmptrunc);
 						if (FindStringInArray(logicautos,push) == -1) PushArrayString(logicautos,push);
-						Format(push,sizeof(push),"OnMapSpawn \"%s,AddOutput,OnPlayerPickup %spickup:EquipAllPlayers::0.1:-1,0,-1\"",tmparr,tmptrunc);
+						Format(push,sizeof(push),"OnMapSpawn \"%s,AddOutput,%s %spickup:EquipAllPlayers::0.1:-1,0,-1\"",tmparr,outputhook,tmptrunc);
 						if (FindStringInArray(logicautos,push) == -1) PushArrayString(logicautos,push);
 						Format(push,sizeof(push),"%s %spickup",tmparr,tmptrunc);
 						if (FindStringInArray(equipsarrays,push) == -1) PushArrayString(equipsarrays,push);
@@ -1278,6 +1318,10 @@ void ReadCache(char[] cache, char[] mapedt)
 			CloseHandle(duplicates);
 			WriteFileLine(edtfile,"			}");
 			WriteFileLine(edtfile,"		}");
+		}
+		if (bAddGameEnd)
+		{
+			WriteFileLine(edtfile,"		create {classname \"game_end\" values {targetname \"endgame\"} }");
 		}
 		if (GetArraySize(mapremovals) > 0)
 		{
@@ -1327,6 +1371,7 @@ void ReadCache(char[] cache, char[] mapedt)
 				else if (StrEqual(ammtype,"ammo_shotgun",false)) Format(ammtype,sizeof(ammtype),"ammo_buckshot");
 				else if (StrEqual(ammtype,"ammo_crossbow",false)) Format(ammtype,sizeof(ammtype),"ammo_xbowbolt");
 				else if ((StrEqual(ammtype,"ammo_crowbar",false)) || (StrEqual(ammtype,"ammo_physcannon",false)) || (StrEqual(ammtype,"ammo_portalgun",false)) || (StrEqual(ammtype,"ammo_suit",false))) ammtype = "";
+				if (StrEqual(ammtype,kvs[0],false)) ammtype = "";
 				if (strlen(ammtype) > 1) Format(largerline,sizeof(largerline),"		create {classname \"info_player_equip\" values {targetname \"%s\" startdisabled \"1\" %s \"1\" %s \"%i\"} }",kvs[1],kvs[0],ammtype,ammamount);
 				else Format(largerline,sizeof(largerline),"		create {classname \"info_player_equip\" values {targetname \"%s\" startdisabled \"1\" %s \"1\"} }",kvs[1],kvs[0]);
 				WriteFileLine(edtfile,largerline);
