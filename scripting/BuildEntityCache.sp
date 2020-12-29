@@ -1200,7 +1200,7 @@ void ReadCache(char[] cache, char[] mapedt)
 						GetArrayString(carriedoverweapons,i,tmparr,sizeof(tmparr));
 						if (FindStringInArray(duplicates,tmparr) == -1)
 						{
-							PushArrayString(duplicates,tmparr);
+							if (StrContains(tmparr,"weapon_",false) != -1) PushArrayString(duplicates,tmparr);
 							if (StrEqual(tmparr,"item_box_buckshot",false)) Format(tmparr,sizeof(tmparr),"ammo_buckshot \"6\"");
 							else if (StrEqual(tmparr,"item_rpg_round",false)) Format(tmparr,sizeof(tmparr),"ammo_rpg_round \"2\"");
 							else if (StrEqual(tmparr,"item_battery",false)) Format(tmparr,sizeof(tmparr),"item_armor \"15\"");
@@ -1372,7 +1372,7 @@ void ReadCache(char[] cache, char[] mapedt)
 				else if (StrEqual(ammtype,"ammo_shotgun",false)) Format(ammtype,sizeof(ammtype),"ammo_buckshot");
 				else if (StrEqual(ammtype,"ammo_crossbow",false)) Format(ammtype,sizeof(ammtype),"ammo_xbowbolt");
 				else if ((StrEqual(ammtype,"ammo_crowbar",false)) || (StrEqual(ammtype,"ammo_physcannon",false)) || (StrEqual(ammtype,"ammo_portalgun",false)) || (StrEqual(ammtype,"ammo_suit",false))) ammtype = "";
-				if (StrEqual(ammtype,kvs[0],false)) ammtype = "";
+				if (StrEqual(ammtype,"item_suit",false)) ammtype = "";
 				if (strlen(ammtype) > 1) Format(largerline,sizeof(largerline),"		create {classname \"info_player_equip\" values {targetname \"%s\" startdisabled \"1\" %s \"1\" %s \"%i\"} }",kvs[1],kvs[0],ammtype,ammamount);
 				else Format(largerline,sizeof(largerline),"		create {classname \"info_player_equip\" values {targetname \"%s\" startdisabled \"1\" %s \"1\"} }",kvs[1],kvs[0]);
 				WriteFileLine(edtfile,largerline);
