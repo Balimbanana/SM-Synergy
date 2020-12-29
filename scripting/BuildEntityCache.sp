@@ -1357,6 +1357,7 @@ void ReadCache(char[] cache, char[] mapedt)
 				ExplodeString(largerline, " ", kvs, 128, 128, true);
 				char ammtype[32];
 				Format(ammtype,sizeof(ammtype),"%s",kvs[0]);
+				if (carriedoverweapons == INVALID_HANDLE) carriedoverweapons = CreateArray(64);
 				if (FindStringInArray(carriedoverweapons,ammtype) == -1) PushArrayString(carriedoverweapons,ammtype);
 				ReplaceStringEx(ammtype,sizeof(ammtype),"weapon_","sk_max_");
 				ReplaceString(ammtype,sizeof(ammtype),"\"","");
