@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.66"
-			"Previous"	"0.65"
+			"Latest"  	"0.67"
+			"Previous"	"0.66"
 		}
 		
-		"Notes"	"Fixed being able to use origins that are rounded to floor in EDT but higher than .5 in actual."
+		"Notes"	"Fixed issue of certain cvars being overriden by skill_mod and server.cfg after console section of EDT."
 	}
 	
 	"Files"

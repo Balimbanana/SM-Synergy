@@ -38,7 +38,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.66"
+#define PLUGIN_VERSION "0.67"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -53,7 +53,7 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	cvaroriginals = CreateArray(64);
-	cvarmods = CreateArray(64);
+	//cvarmods = CreateArray(64);
 	BuildPath(Path_SM,szEDTLog,sizeof(szEDTLog),"logs");
 	Format(szEDTLog,sizeof(szEDTLog),"%s/EDT.log",szEDTLog);
 	Handle cvar = FindConVar("edtdbg");
@@ -2037,28 +2037,31 @@ public int Updater_OnPluginUpdated()
 
 public void OnMapStart()
 {
-	if (GetArraySize(cvarmods) > 0)
+	if (cvarmods != INVALID_HANDLE)
 	{
-		for (int i = 0;i<GetArraySize(cvarmods);i++)
+		if (GetArraySize(cvarmods) > 0)
 		{
-			char tmparr[64];
-			GetArrayString(cvarmods,i,tmparr,sizeof(tmparr));
-			char kvs[4][64];
-			ExplodeString(tmparr," ",kvs,4,64);
-			Handle cvarchk = FindConVar(kvs[0]);
-			if (cvarchk != INVALID_HANDLE)
+			for (int i = 0;i<GetArraySize(cvarmods);i++)
 			{
-				if (strlen(kvs[1]) > 0)
+				char tmparr[64];
+				GetArrayString(cvarmods,i,tmparr,sizeof(tmparr));
+				char kvs[4][64];
+				ExplodeString(tmparr," ",kvs,4,64);
+				Handle cvarchk = FindConVar(kvs[0]);
+				if (cvarchk != INVALID_HANDLE)
 				{
-					ReplaceString(kvs[1],sizeof(kvs[]),"\"","");
-					SetConVarString(cvarchk,kvs[1],true,true);
+					if (strlen(kvs[1]) > 0)
+					{
+						ReplaceString(kvs[1],sizeof(kvs[]),"\"","");
+						SetConVarString(cvarchk,kvs[1],true,true);
+					}
 				}
+				CloseHandle(cvarchk);
+				ServerCommand("%s",tmparr);
 			}
-			CloseHandle(cvarchk);
-			ServerCommand("%s",tmparr);
+			CloseHandle(cvarmods);
+			cvarmods = INVALID_HANDLE;
 		}
-		CloseHandle(cvarmods);
-		cvarmods = CreateArray(64);
 	}
 }
 
@@ -2170,6 +2173,7 @@ void ReadEDT(char[] edtfile)
 								}
 								CloseHandle(cvarchk);
 								ServerCommand("%s",tmparr);
+								if (cvarmods == INVALID_HANDLE) cvarmods = CreateArray(64);
 								if (FindStringInArray(cvarmods,tmparr) == -1) PushArrayString(cvarmods,tmparr);
 							}
 						}
@@ -2492,30 +2496,6 @@ void ReadEDT(char[] edtfile)
 		CloseHandle(passedarr);
 		//if (!bCorruptHandle) CloseHandle(filehandle);
 		CloseHandle(filehandle);
-		//Re-apply after for late setup
-		if (GetArraySize(cvarmods) > 0)
-		{
-			for (int i = 0;i<GetArraySize(cvarmods);i++)
-			{
-				char tmparr[64];
-				GetArrayString(cvarmods,i,tmparr,sizeof(tmparr));
-				char kvs[4][64];
-				ExplodeString(tmparr," ",kvs,4,64);
-				Handle cvarchk = FindConVar(kvs[0]);
-				if (cvarchk != INVALID_HANDLE)
-				{
-					if (strlen(kvs[1]) > 0)
-					{
-						ReplaceString(kvs[1],sizeof(kvs[]),"\"","");
-						SetConVarString(cvarchk,kvs[1],true,true);
-					}
-				}
-				CloseHandle(cvarchk);
-				ServerCommand("%s",tmparr);
-			}
-			CloseHandle(cvarmods);
-			cvarmods = CreateArray(64);
-		}
 	}
 	return;
 }
