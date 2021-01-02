@@ -32,7 +32,8 @@
  * Version: $Id$
  */
  
-#pragma semicolon 1
+#pragma semicolon 1;
+#pragma dynamic 65536;
 #include <sourcemod>
 #include <mapchooser>
 #include <sdktools>
@@ -69,33 +70,34 @@ ConVar g_Cvar_EndOfMapVote;
 ConVar g_Cvar_VoteDuration;
 ConVar g_Cvar_RunOff;
 ConVar g_Cvar_RunOffPercent;
+ConVar g_Cvar_CycleFile;
 
-new Handle:g_VoteTimer = INVALID_HANDLE;
-new Handle:g_RetryTimer = INVALID_HANDLE;
+Handle g_VoteTimer = INVALID_HANDLE;
+Handle g_RetryTimer = INVALID_HANDLE;
 
 /* Data Handles */
-new Handle:g_MapList = null;
-new Handle:g_NominateList = null;
-new Handle:g_NominateOwners = null;
-new Handle:g_OldMapList = null;
-new Handle:g_NextMapList = null;
+Handle g_MapList = null;
+Handle g_NominateList = null;
+Handle g_NominateOwners = null;
+Handle g_OldMapList = null;
+Handle g_NextMapList = null;
 Menu g_VoteMenu;
 
 new g_Extends;
 new g_TotalRounds;
-new bool:g_HasVoteStarted;
-new bool:g_WaitingForVote;
-new bool:g_MapVoteCompleted;
-new bool:g_ChangeMapAtRoundEnd;
-new bool:g_ChangeMapInProgress;
+bool g_HasVoteStarted;
+bool g_WaitingForVote;
+bool g_MapVoteCompleted;
+bool g_ChangeMapAtRoundEnd;
+bool g_ChangeMapInProgress;
 //new g_mapFileSerial = -1;
 bool mapchangeinprogress = false;
-new String:maptag[64];
+char maptag[64];
 
 new MapChange:g_ChangeTime;
 
-new Handle:g_NominationsResetForward = null;
-new Handle:g_MapVoteStartedForward = null;
+Handle g_NominationsResetForward = null;
+Handle g_MapVoteStartedForward = null;
 
 /* Upper bound of how many team there could be */
 #define MAXTEAMS 10
@@ -132,9 +134,12 @@ public OnPluginStart()
 	g_Cvar_VoteDuration = CreateConVar("sm_mapvote_voteduration", "20", "Specifies how long the mapvote should be available for.", _, true, 5.0);
 	g_Cvar_RunOff = CreateConVar("sm_mapvote_runoff", "0", "Hold run of votes if winning choice is less than a certain margin", _, true, 0.0, true, 1.0);
 	g_Cvar_RunOffPercent = CreateConVar("sm_mapvote_runoffpercent", "50", "If winning choice has less than this percent of votes, hold a runoff", _, true, 0.0, true, 100.0);
+	g_Cvar_CycleFile = FindConVar("sm_nominate_mapcyclefile");
+	if (g_Cvar_CycleFile == INVALID_HANDLE) g_Cvar_CycleFile = CreateConVar("sm_nominate_mapcyclefile", "mapcyclecfg", "Specifies the mapcycle file to use for nominations list", 0);
 	
 	RegAdminCmd("sm_mapvote", Command_Mapvote, ADMFLAG_CHANGEMAP, "sm_mapvote - Forces MapChooser to attempt to run a map vote now.");
 	RegAdminCmd("sm_setnextmap", Command_SetNextmap, ADMFLAG_CHANGEMAP, "sm_setnextmap <map>");
+	RegServerCmd("sm_generatemaplist", Command_GenerateMapList);
 
 	g_Cvar_Winlimit = FindConVar("mp_winlimit");
 	g_Cvar_Maxrounds = FindConVar("mp_maxrounds");
@@ -216,7 +221,14 @@ public OnConfigsExecuted()
 	*/
 	ClearArray(g_MapList);
 	char pathtomapcycle[128];
-	Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/mapcyclecfg.txt");
+	GetConVarString(g_Cvar_CycleFile,pathtomapcycle,sizeof(pathtomapcycle));
+	Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/%s.txt",pathtomapcycle);
+	if (!FileExists(pathtomapcycle,false))
+	{
+		GetConVarString(g_Cvar_CycleFile,pathtomapcycle,sizeof(pathtomapcycle));
+		PrintToServer("Mapcycle config: cfg/%s does not exist.",pathtomapcycle);
+		Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/mapcyclecfg.txt");
+	}
 	Handle thishandle = INVALID_HANDLE;
 	if (FileExists(pathtomapcycle))
 	{
@@ -283,12 +295,12 @@ public OnMapEnd()
 	mapchangeinprogress = false;
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
 	mapchangeinprogress = false;
 }
 
-public OnClientDisconnect(client)
+public OnClientDisconnect(int client)
 {
 	new index = FindValueInArray(g_NominateOwners, client);
 	
@@ -297,7 +309,7 @@ public OnClientDisconnect(client)
 		return;
 	}
 	
-	new String:oldmap[PLATFORM_MAX_PATH];
+	char oldmap[PLATFORM_MAX_PATH];
 	GetArrayString(g_NominateList, index, oldmap, sizeof(oldmap));
 	Call_StartForward(g_NominationsResetForward);
 	Call_PushString(oldmap);
@@ -308,7 +320,7 @@ public OnClientDisconnect(client)
 	RemoveFromArray(g_NominateList, index);
 }
 
-public Action:Command_SetNextmap(client, args)
+public Action Command_SetNextmap(int client, int args)
 {
 	if (args < 1)
 	{
@@ -332,6 +344,164 @@ public Action:Command_SetNextmap(client, args)
 	g_MapVoteCompleted = true;
 
 	return Plugin_Handled;
+}
+
+public Action Command_GenerateMapList(int args)
+{
+	char iszFullPath[512];
+	char iszContentPath[128];
+	char iszWriteString[65536];
+	int iMapsFound = 0;
+	if (DirExists("maps",true,NULL_STRING))
+	{
+		Handle hSubDirs = OpenDirectory("maps",false,NULL_STRING);
+		if (hSubDirs != INVALID_HANDLE)
+		{
+			while (ReadDirEntry(hSubDirs, iszFullPath, sizeof(iszFullPath)))
+			{
+				if ((hSubDirs != INVALID_HANDLE) && (!StrEqual(iszFullPath,".")) && (!StrEqual(iszFullPath,"..")))
+				{
+					TrimString(iszFullPath);
+					if ((StrContains(iszFullPath,".bsp",false) != -1) && (StrContains(iszFullPath,".bsp.",false) == -1))
+					{
+						ReplaceString(iszFullPath,sizeof(iszFullPath),".bsp","",false);
+						PrintToServer("Found map %s from mount point custom",iszFullPath);
+						Format(iszFullPath,sizeof(iszFullPath),"custom %s\n",iszFullPath);
+						StrCat(iszWriteString,sizeof(iszWriteString),iszFullPath);
+						iMapsFound++;
+					}
+				}
+			}
+		}
+		CloseHandle(hSubDirs);
+	}
+	if (DirExists("content",true,NULL_STRING))
+	{
+		Handle hSubDirs = OpenDirectory("content",true,NULL_STRING);
+		if (hSubDirs != INVALID_HANDLE)
+		{
+			char iszDats[120];
+			char iszLine[128];
+			while (ReadDirEntry(hSubDirs, iszDats, sizeof(iszDats)))
+			{
+				if ((hSubDirs != INVALID_HANDLE) && (!StrEqual(iszDats,".")) && (!StrEqual(iszDats,"..")))
+				{
+					if ((StrContains(iszDats,".dat",false) != -1) && (!StrEqual(iszDats,"synergy.dat",false)))
+					{
+						char iszModName[128];
+						bool bIsFirstLine = true;
+						char szRootPath[64];
+						char szContentTag[32];
+						char szContentPath[512];
+						Format(iszContentPath,sizeof(iszContentPath),"content/%s",iszDats);
+						Handle hDatF = OpenFile(iszContentPath,"r",true,NULL_STRING);
+						if (hDatF != INVALID_HANDLE)
+						{
+							bool bReadingMaps = false;
+							while(!IsEndOfFile(hDatF)&&ReadFileLine(hDatF,iszLine,sizeof(iszLine)))
+							{
+								TrimString(iszLine);
+								if (StrContains(iszLine,"//",false) != -1)
+								{
+									int iCommentPos = StrContains(iszLine,"//",false);
+									if (iCommentPos == 0) iszLine = "";
+									else
+									{
+										Format(iszLine,iCommentPos+1,"%s",iszLine);
+									}
+								}
+								if (strlen(iszLine) > 0)
+								{
+									if (bIsFirstLine)
+									{
+										bIsFirstLine = false;
+										Format(iszModName,sizeof(iszModName),"%s",iszLine);
+										ReplaceString(iszModName,sizeof(iszModName),"\"","",false);
+									}
+									if (((StrEqual(iszLine,"\"maps\"",false)) || (StrEqual(iszLine,"maps",false))) && (!bReadingMaps))
+									{
+										bReadingMaps = true;
+									}
+									else if (StrContains(iszLine,"\"tag\"",false) == 0)
+									{
+										Format(szContentTag,sizeof(szContentTag),"%s",iszLine);
+										ReplaceString(szContentTag,sizeof(szContentTag),"\"tag\"","",false);
+										ReplaceString(szContentTag,sizeof(szContentTag),"\"","",false);
+										TrimString(szContentTag);
+									}
+									else if (StrContains(iszLine,"\"path\"",false) == 0)
+									{
+										Format(szContentPath,sizeof(szContentPath),"%s",iszLine);
+										ReplaceString(szContentPath,sizeof(szContentPath),"\"path\"","",false);
+										ReplaceString(szContentPath,sizeof(szContentPath),"\"","",false);
+										TrimString(szContentPath);
+									}
+									else if (StrContains(iszLine,"\"root\"",false) == 0)
+									{
+										Format(szRootPath,sizeof(szRootPath),"%s",iszLine);
+										ReplaceString(szRootPath,sizeof(szRootPath),"\"root\"","",false);
+										ReplaceString(szRootPath,sizeof(szRootPath),"\"","",false);
+										TrimString(szRootPath);
+									}
+									else if (bReadingMaps)
+									{
+										if (StrContains(iszLine,"}",false) != -1)
+										{
+											bReadingMaps = false;
+											break;
+										}
+										else if (StrContains(iszLine,"{",false) == -1)
+										{
+											char iszMapName[64];
+											int iSpace = StrContains(iszLine," ",false);
+											int iTab = StrContains(iszLine,"	",false);
+											if (((iSpace < iTab) || (iTab == -1)) && (iSpace != -1))
+												Format(iszMapName,iSpace+1,"%s",iszLine);
+											else if (((iTab < iSpace) || (iSpace != -1)) && (iTab != -1))
+												Format(iszMapName,iTab+1,"%s",iszLine);
+											else if (iTab != -1)
+												Format(iszMapName,iTab+1,"%s",iszLine);
+											ReplaceString(iszMapName,sizeof(iszMapName),"\"","",false);
+											if (strlen(szRootPath) > 0)
+											{
+												Format(iszFullPath,sizeof(iszFullPath),"../../../%s/%s/maps/%s.bsp",szRootPath,szContentPath,iszMapName);
+												if (!FileExists(iszFullPath,true,NULL_STRING)) Format(iszFullPath,sizeof(iszFullPath),"../../%s/%s/maps/%s.bsp",szRootPath,szContentPath,iszMapName);
+											}
+											else
+											{
+												Format(iszFullPath,sizeof(iszFullPath),"../../../sourcemods/%s/maps/%s.bsp",szContentPath,iszMapName);
+												if (!FileExists(iszFullPath,true,NULL_STRING)) Format(iszFullPath,sizeof(iszFullPath),"../../sourcemods/%s/maps/%s.bsp",szContentPath,iszMapName);
+											}
+											if (FileExists(iszFullPath,true,NULL_STRING))
+											{
+												PrintToServer("Found map %s from mount point %s",iszMapName,iszDats);
+												Format(iszMapName,sizeof(iszMapName),"%s %s\n",szContentTag,iszMapName);
+												StrCat(iszWriteString,sizeof(iszWriteString),iszMapName);
+												iMapsFound++;
+											}
+										}
+									}
+								}
+							}
+						}
+						CloseHandle(hDatF);
+					}
+				}
+			}
+		}
+		CloseHandle(hSubDirs);
+	}
+	if (strlen(iszWriteString) > 0)
+	{
+		PrintToServer("Found %i valid maps. Placed template in cfg/mapcycletemplate.txt",iMapsFound);
+		TrimString(iszWriteString);
+		Handle hWriteFile = OpenFile("cfg/mapcycletemplate.txt","wb",false,NULL_STRING);
+		if (hWriteFile != INVALID_HANDLE)
+		{
+			WriteFileString(hWriteFile,iszWriteString,false);
+		}
+		CloseHandle(hWriteFile);
+	}
 }
 
 public OnMapTimeLeftChanged()
@@ -361,7 +531,7 @@ SetupTimeleftTimer()
 			}	
 			
 			//g_VoteTimer = CreateTimer(float(time - startTime), Timer_StartMapVote, _, TIMER_FLAG_NO_MAPCHANGE);
-			new Handle:data;
+			Handle data;
 			g_VoteTimer = CreateDataTimer(float(time - startTime), Timer_StartMapVote, data, TIMER_FLAG_NO_MAPCHANGE);
 			WritePackCell(data, _:MapChange_MapEnd);
 			WritePackCell(data, _:INVALID_HANDLE);
@@ -388,7 +558,7 @@ public Action:Timer_StartMapVote(Handle:timer, Handle:data)
 	}
 	
 	new MapChange:mapChange = MapChange:ReadPackCell(data);
-	new Handle:hndl = Handle:ReadPackCell(data);
+	Handle hndl = Handle:ReadPackCell(data);
 
 	InitiateVote(mapChange, hndl);
 
@@ -569,7 +739,7 @@ InitiateVote(MapChange:when, Handle:inputlist=null)
 		// Can't start a vote, try again in 5 seconds.
 		//g_RetryTimer = CreateTimer(5.0, Timer_StartMapVote, _, TIMER_FLAG_NO_MAPCHANGE);
 		
-		new Handle:data;
+		Handle data;
 		g_RetryTimer = CreateDataTimer(5.0, Timer_StartMapVote, data, TIMER_FLAG_NO_MAPCHANGE);
 		WritePackCell(data, _:when);
 		WritePackCell(data, _:inputlist);
@@ -782,8 +952,8 @@ public Handler_VoteFinishedGeneric(Menu menu,
 	{
 		PrintToChatAll("[SM] %t", "Current Map Stays", RoundToFloor(float(item_info[0][VOTEINFO_ITEM_VOTES])/float(num_votes)*100), num_votes);
 		LogAction(-1, -1, "Voting for next map has finished. 'No Change' was the winner");
-		new String:clsnam[32] = "trigger_changelevel";
-		new String:clsnami[16] = "info_landmark";
+		char clsnam[32] = "trigger_changelevel";
+		char clsnami[16] = "info_landmark";
 		for (new i = 0;i<10240;i++)
 		{
 			if (IsValidEntity(i))
@@ -812,7 +982,7 @@ public Handler_VoteFinishedGeneric(Menu menu,
 		}
 		else if (g_ChangeTime == MapChange_Instant)
 		{
-			new Handle:data;
+			Handle data;
 			CreateDataTimer(2.0, Timer_ChangeMap, data);
 			WritePackString(data, map);
 			g_ChangeMapInProgress = false;
@@ -826,8 +996,8 @@ public Handler_VoteFinishedGeneric(Menu menu,
 		g_HasVoteStarted = false;
 		g_MapVoteCompleted = true;
 		/*
-		new String:clsnam[32] = "trigger_changelevel";
-		new String:clsnami[16] = "info_landmark";
+		char clsnam[32] = "trigger_changelevel";
+		char clsnami[16] = "info_landmark";
 		for (new i = 0;i<10240;i++)
 		{
 			if (IsValidEntity(i))
@@ -1004,7 +1174,7 @@ public Action Timer_ChangeMap(Handle hTimer, Handle dp)
 		return Plugin_Handled;
 	}
 	
-	new String:mapch[128];
+	char mapch[128];
 	ServerCommand("changelevel %s", map);
 	char gamename[64];
 	GetGameFolderName(gamename,sizeof(gamename));
@@ -1138,7 +1308,7 @@ NominateResult:InternalNominateMap(String:map[], bool:force, owner)
 	/* Look to replace an existing nomination by this client - Nominations made with owner = 0 aren't replaced */
 	if (owner && ((index = FindValueInArray(g_NominateOwners, owner)) != -1))
 	{
-		new String:oldmap[PLATFORM_MAX_PATH];
+		char oldmap[PLATFORM_MAX_PATH];
 		GetArrayString(g_NominateList, index, oldmap, sizeof(oldmap));
 		Call_StartForward(g_NominationsResetForward);
 		Call_PushString(oldmap);
@@ -1177,9 +1347,9 @@ NominateResult:InternalNominateMap(String:map[], bool:force, owner)
 /* Add natives to allow nominate and initiate vote to be call */
 
 /* native  bool:NominateMap(const String:map[], bool:force, &NominateError:error); */
-public Native_NominateMap(Handle:plugin, numParams)
+public Native_NominateMap(Handle plugin, int numParams)
 {
-	new len;
+	int len;
 	GetNativeStringLength(1, len);
 	
 	if (len <= 0)
@@ -1187,17 +1357,17 @@ public Native_NominateMap(Handle:plugin, numParams)
 	  return false;
 	}
 	
-	new String:map[len+1];
+	char map[PLATFORM_MAX_PATH];
 	GetNativeString(1, map, len+1);
 	
 	return _:InternalNominateMap(map, GetNativeCell(2), GetNativeCell(3));
 }
 
-bool:InternalRemoveNominationByMap(String:map[])
+bool InternalRemoveNominationByMap(String:map[])
 {	
 	for (new i = 0; i < GetArraySize(g_NominateList); i++)
 	{
-		new String:oldmap[PLATFORM_MAX_PATH];
+		char oldmap[PLATFORM_MAX_PATH];
 		GetArrayString(g_NominateList, i, oldmap, sizeof(oldmap));
 
 		if(strcmp(map, oldmap, false) == 0)
@@ -1228,7 +1398,7 @@ public Native_RemoveNominationByMap(Handle:plugin, numParams)
 	  return false;
 	}
 	
-	new String:map[len+1];
+	char map[PLATFORM_MAX_PATH];//len+1
 	GetNativeString(1, map, len+1);
 	
 	return _:InternalRemoveNominationByMap(map);
@@ -1240,7 +1410,7 @@ bool:InternalRemoveNominationByOwner(owner)
 
 	if (owner && ((index = FindValueInArray(g_NominateOwners, owner)) != -1))
 	{
-		new String:oldmap[PLATFORM_MAX_PATH];
+		char oldmap[PLATFORM_MAX_PATH];
 		GetArrayString(g_NominateList, index, oldmap, sizeof(oldmap));
 
 		Call_StartForward(g_NominationsResetForward);
@@ -1267,7 +1437,7 @@ public Native_RemoveNominationByOwner(Handle:plugin, numParams)
 public Native_InitiateVote(Handle:plugin, numParams)
 {
 	new MapChange:when = MapChange:GetNativeCell(1);
-	new Handle:inputarray = Handle:GetNativeCell(2);
+	Handle inputarray = Handle:GetNativeCell(2);
 	
 	LogAction(-1, -1, "Starting map vote because outside request");
 	InitiateVote(when, inputarray);
@@ -1290,7 +1460,7 @@ public Native_EndOfMapVoteEnabled(Handle:plugin, numParams)
 
 public Native_GetExcludeMapList(Handle:plugin, numParams)
 {
-	new Handle:array = Handle:GetNativeCell(1);
+	Handle array = Handle:GetNativeCell(1);
 	
 	if (array == null)
 	{
@@ -1310,8 +1480,8 @@ public Native_GetExcludeMapList(Handle:plugin, numParams)
 
 public Native_GetNominatedMapList(Handle:plugin, numParams)
 {
-	new Handle:maparray = Handle:GetNativeCell(1);
-	new Handle:ownerarray = Handle:GetNativeCell(2);
+	Handle maparray = Handle:GetNativeCell(1);
+	Handle ownerarray = Handle:GetNativeCell(2);
 	
 	if (maparray == null)
 		return;

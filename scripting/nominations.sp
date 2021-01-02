@@ -48,6 +48,7 @@ public Plugin myinfo =
 
 ConVar g_Cvar_ExcludeOld;
 ConVar g_Cvar_ExcludeCurrent;
+ConVar g_Cvar_CycleFile;
 
 Menu g_MapMenu = null;
 Handle g_MapList = null;
@@ -77,6 +78,8 @@ public void OnPluginStart()
 	
 	g_Cvar_ExcludeOld = CreateConVar("sm_nominate_excludeold", "1", "Specifies if the current map should be excluded from the Nominations list", 0, true, 0.00, true, 1.0);
 	g_Cvar_ExcludeCurrent = CreateConVar("sm_nominate_excludecurrent", "1", "Specifies if the MapChooser excluded maps should also be excluded from Nominations", 0, true, 0.00, true, 1.0);
+	g_Cvar_CycleFile = FindConVar("sm_nominate_mapcyclefile");
+	if (g_Cvar_CycleFile == INVALID_HANDLE) g_Cvar_CycleFile = CreateConVar("sm_nominate_mapcyclefile", "mapcyclecfg", "Specifies the mapcycle file to use for nominations list", 0);
 	
 	RegConsoleCmd("sm_nominate", Command_Nominate);
 	
@@ -103,7 +106,14 @@ public void OnConfigsExecuted()
 	*/
 	ClearArray(g_MapList);
 	char pathtomapcycle[128];
-	Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/mapcyclecfg.txt");
+	GetConVarString(g_Cvar_CycleFile,pathtomapcycle,sizeof(pathtomapcycle));
+	Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/%s.txt",pathtomapcycle);
+	if (!FileExists(pathtomapcycle,false))
+	{
+		GetConVarString(g_Cvar_CycleFile,pathtomapcycle,sizeof(pathtomapcycle));
+		PrintToServer("Mapcycle config: cfg/%s does not exist.",pathtomapcycle);
+		Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/mapcyclecfg.txt");
+	}
 	Handle hostnamh = FindConVar("hostname");
 	char hostnam[32];
 	GetConVarString(hostnamh,hostnam,sizeof(hostnam));
