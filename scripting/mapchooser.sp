@@ -1778,6 +1778,14 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Avenue Odessa");
 	}
+	else if ((StrContains(map,"prospekt ",false) == 0) || (StrContains(map,"pxg_level_",false) == 0))
+	{
+		Format(maptag, sizeof(maptag), "Prospekt");
+	}
+	else if ((StrContains(map,"amalgam ",false) == 0) || (StrEqual(map,"intro_1",false)) || (StrEqual(map,"sewers_1",false)) || (StrEqual(map,"coast_1",false)) || (StrEqual(map,"tunnel_1",false)) || (StrEqual(map,"beacon_1",false)))
+	{
+		Format(maptag, sizeof(maptag), "Amalgam");
+	}
 	else
 	{
 		char gamename[64];
