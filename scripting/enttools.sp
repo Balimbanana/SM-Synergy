@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.31"
+#define PLUGIN_VERSION "1.32"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -2006,26 +2006,72 @@ public Action listents(int client, int args)
 
 public Action moveentity(int client, int args)
 {
+	bool bOverridePos = false;
 	if (args < 1)
 	{
-		if (client == 0) PrintToServer("Must specify targetname or classname");
-		else PrintToConsole(client,"Must specify targetname or classname");
+		PrintToConsole(client,"Must specify targetname or classname");
 		return Plugin_Handled;
 	}
 	else if (args < 4)
 	{
-		if (client == 0) PrintToServer("Must specify origin");
-		else PrintToConsole(client,"Must specify origin");
-		return Plugin_Handled;
+		char szChk[32];
+		GetCmdArg(2,szChk,sizeof(szChk));
+		if ((StrEqual(szChk,"!picker",false)) || (StrEqual(szChk,"!self",false)))
+		{
+			bOverridePos = true;
+		}
+		else
+		{
+			PrintToConsole(client,"Must specify origin");
+			return Plugin_Handled;
+		}
 	}
 	else if ((args > 4) && (args < 7))
 	{
-		if (client == 0) PrintToServer("Must specify all angles to set or just origin");
-		else PrintToConsole(client,"Must specify all angles to set or just origin");
+		PrintToConsole(client,"Must specify all angles to set or just origin");
 		return Plugin_Handled;
 	}
 	char search[64];
 	GetCmdArg(1,search,sizeof(search));
+	char xch[16];
+	char ych[16];
+	char zch[16];
+	if (bOverridePos)
+	{
+		GetCmdArg(2,xch,sizeof(xch));
+		float vecOrgs[3];
+		if (StrEqual(xch,"!self",false))
+		{
+			if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",vecOrgs);
+			else if (HasEntProp(client,Prop_Data,"m_vecOrigin")) GetEntPropVector(client,Prop_Data,"m_vecOrigin",vecOrgs);
+			Format(xch,sizeof(xch),"%1.1f",vecOrgs[0]);
+			Format(ych,sizeof(ych),"%1.1f",vecOrgs[1]);
+			Format(zch,sizeof(zch),"%1.1f",vecOrgs[2]);
+		}
+		else if (StrEqual(xch,"!picker",false))
+		{
+			if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",vecOrgs);
+			else if (HasEntProp(client,Prop_Data,"m_vecOrigin")) GetEntPropVector(client,Prop_Data,"m_vecOrigin",vecOrgs);
+			float vecAngs[3];
+			if (client > 0) GetClientEyeAngles(client,vecAngs);
+			vecOrgs[2]+=62.0;
+			vecOrgs[0] = (vecOrgs[0] + (10 * Cosine(DegToRad(vecAngs[1]))));
+			vecOrgs[1] = (vecOrgs[1] + (10 * Sine(DegToRad(vecAngs[1]))));
+			vecOrgs[2] = (vecOrgs[2] + 10);
+			TR_TraceRay(vecOrgs,vecAngs,MASK_SHOT,RayType_Infinite);
+			TR_GetEndPosition(vecOrgs,INVALID_HANDLE);
+			vecOrgs[2]+=2.0;
+			Format(xch,sizeof(xch),"%1.1f",vecOrgs[0]);
+			Format(ych,sizeof(ych),"%1.1f",vecOrgs[1]);
+			Format(zch,sizeof(zch),"%1.1f",vecOrgs[2]);
+		}
+	}
+	else
+	{
+		GetCmdArg(2,xch,sizeof(xch));
+		GetCmdArg(3,ych,sizeof(ych));
+		GetCmdArg(4,zch,sizeof(zch));
+	}
 	if (strlen(search) > 0)
 	{
 		Handle arr = CreateArray(64);
@@ -2057,12 +2103,6 @@ public Action moveentity(int client, int args)
 			for (int i = 0;i<GetArraySize(arr);i++)
 			{
 				int targ = GetArrayCell(arr,i);
-				char xch[16];
-				GetCmdArg(2,xch,sizeof(xch));
-				char ych[16];
-				GetCmdArg(3,ych,sizeof(ych));
-				char zch[16];
-				GetCmdArg(4,zch,sizeof(zch));
 				char pich[16];
 				char yawch[16];
 				char rolch[16];
