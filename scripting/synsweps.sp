@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.994"
+#define PLUGIN_VERSION "0.995"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -2991,16 +2991,16 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								{
 									Format(snd,sizeof(snd),"physics/goop/goop_loop.wav");
 									StopSound(weap,SNDCHAN_WEAPON,snd);
-									if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
-									EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+									if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+									EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 								}
 								else
 								{
 									Format(snd,sizeof(snd),"weapons\\gluon\\special1.wav");
 									StopSound(weap,SNDCHAN_WEAPON,snd);
-									if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+									if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
 									Format(snd,sizeof(snd),"weapons\\gluon\\special2.wav");
-									EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+									EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 								}
 								CreateTimer(0.2,resetviewmdl,viewmdl);
 								WeapSnd[client] = 0.0;
@@ -3096,17 +3096,17 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 											float orgs[3];
 											if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
 											else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
-											EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
-											EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+											EmitAmbientSound(snd, orgs, weap, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+											EmitAmbientSound(snd, orgs, weap, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
 										}
 										else
 										{
 											float orgs[3];
 											if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
 											else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
-											EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
-											EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
-											//EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_TRAIN);
+											EmitAmbientSound(snd, orgs, weap, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+											EmitAmbientSound(snd, orgs, weap, SNDLEVEL_NORMAL, SND_NOFLAGS, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+											//EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_NORMAL);
 										}
 										WeapSnd[client] = Time+9.0;
 									}
@@ -3330,7 +3330,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 											char snd[64];
 											if (StrEqual(curweap,"weapon_goop",false)) Format(snd,sizeof(snd),"physics/goop/goop_loop.wav");
 											else Format(snd,sizeof(snd),"weapons\\gluon\\hit%i.wav",GetRandomInt(1,4));
-											EmitSoundToAll(snd, targ, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+											EmitSoundToAll(snd, targ, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 											char clsname[32];
 											GetEntityClassname(targ,clsname,sizeof(clsname));
 											float damage = 1.0;
@@ -3439,7 +3439,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								}
 								if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",EnergyAmm[client]);
 								if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",EnergyAmm[client]);
-								EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 								CreateTimer(0.2,resetviewmdl,viewmdl);
 								WeapAttackSpeed[client] = Time+0.3;
 								SetEntPropFloat(weap,Prop_Data,"m_flTimeWeaponIdle",0.0);
@@ -3846,7 +3846,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									{
 										SetEntProp(viewmdl,Prop_Send,"m_nSequence",3);
 									}
-									EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+									EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 									WeapSnd[client] = Time+0.05;
 								}
 							}
@@ -3977,7 +3977,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 										SetEntProp(viewmdl,Prop_Send,"m_nSequence",3);
 									}
 								}
-								EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 								WeapAttackSpeed[client] = Time+0.1;
 							}
 						}
@@ -4040,7 +4040,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							float Time = GetTickedTime();
 							if ((viewmdl != -1) && (WeapAttackSpeed[client] < Time))
 							{
-								EmitSoundToAll("weapons\\sniper\\sniper_fire.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								EmitSoundToAll("weapons\\sniper\\sniper_fire.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
 								int rand = GetRandomInt(1,2);
 								if (seq == rand)
@@ -4074,8 +4074,9 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 										SetEntPropVector(HandAttach[client],Prop_Data,"m_vecOrigin",orgoffs);
 									}
 								}
-								if (HasEntProp(HandAttach[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(HandAttach[client],Prop_Data,"m_vecAbsOrigin",orgs);
-								else if (HasEntProp(HandAttach[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(HandAttach[client],Prop_Send,"m_vecOrigin",orgs);
+								//if (HasEntProp(HandAttach[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(HandAttach[client],Prop_Data,"m_vecAbsOrigin",orgs);
+								//else if (HasEntProp(HandAttach[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(HandAttach[client],Prop_Send,"m_vecOrigin",orgs);
+								GetClientEyePosition(client,orgs);
 								if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",amm-1);
 								float maxspread = 0.25;
 								int sideoffs = 5;
@@ -4097,8 +4098,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							float Time = GetTickedTime();
 							if ((viewmdl != -1) && (WeapAttackSpeed[client] < Time))
 							{
-								if (StrEqual(curweap,"weapon_uzi",false)) EmitSoundToAll("weapons\\uzi\\uzi_fire1.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
-								else EmitSoundToAll("weapons\\SL8\\SL8-1.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								if (StrEqual(curweap,"weapon_uzi",false)) EmitSoundToAll("weapons\\uzi\\uzi_fire1.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+								else EmitSoundToAll("weapons\\SL8\\SL8-1.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
 								int mdlseq = 1;
 								int defanim = 0;
@@ -4121,7 +4122,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								}
 								if (!StrEqual(curweap,"weapon_uzi",false))
 								{
-									WeapAttackSpeed[client] = Time+0.2;
+									WeapAttackSpeed[client] = Time+0.125;
 									int shotsfired = GetEntProp(weap,Prop_Data,"m_nShotsFired");
 									SetEntProp(weap,Prop_Data,"m_nShotsFired",shotsfired+1);
 									float orgs[3];
@@ -4148,12 +4149,13 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 											SetEntPropVector(HandAttach[client],Prop_Data,"m_vecOrigin",orgoffs);
 										}
 									}
-									if (HasEntProp(HandAttach[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(HandAttach[client],Prop_Data,"m_vecAbsOrigin",orgs);
-									else if (HasEntProp(HandAttach[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(HandAttach[client],Prop_Send,"m_vecOrigin",orgs);
+									//if (HasEntProp(HandAttach[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(HandAttach[client],Prop_Data,"m_vecAbsOrigin",orgs);
+									//else if (HasEntProp(HandAttach[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(HandAttach[client],Prop_Send,"m_vecOrigin",orgs);
+									GetClientEyePosition(client,orgs);
 									if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",amm-1);
 									float maxspread = 0.5+(shotsfired/2);
 									if (maxspread > 2.0) maxspread = 2.0;
-									int sideoffs = 5;
+									int sideoffs = 2;
 									ShootBullet(client,weap,0,curweap,orgs,angs,sideoffs,maxspread);
 								}
 							}
@@ -4214,7 +4216,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								{
 									char snd[64];
 									Format(snd,sizeof(snd),"weapons\\oicw\\oicw_fire%i.wav",GetRandomInt(1,3));
-									EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+									EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 								}
 								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
 								int rand = GetRandomInt(1,3);
@@ -4249,8 +4251,9 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 										SetEntPropVector(HandAttach[client],Prop_Data,"m_vecOrigin",orgoffs);
 									}
 								}
-								if (HasEntProp(HandAttach[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(HandAttach[client],Prop_Data,"m_vecAbsOrigin",orgs);
-								else if (HasEntProp(HandAttach[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(HandAttach[client],Prop_Send,"m_vecOrigin",orgs);
+								//if (HasEntProp(HandAttach[client],Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(HandAttach[client],Prop_Data,"m_vecAbsOrigin",orgs);
+								//else if (HasEntProp(HandAttach[client],Prop_Send,"m_vecOrigin")) GetEntPropVector(HandAttach[client],Prop_Send,"m_vecOrigin",orgs);
+								GetClientEyePosition(client,orgs);
 								if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",amm-1);
 								int shotsfired = GetEntProp(weap,Prop_Data,"m_nShotsFired");
 								SetEntProp(weap,Prop_Data,"m_nShotsFired",shotsfired+1);
@@ -4292,7 +4295,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							{
 								char snd[64];
 								Format(snd,sizeof(snd),"weapons\\hivehand\\single.wav");
-								EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
 								int rand = GetRandomInt(7,12);
 								if (seq == rand)
@@ -4779,7 +4782,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							{
 								int medkitammo = GetEntProp(client,Prop_Data,"m_iHealthPack");
 								SetEntProp(client,Prop_Data,"m_iHealthPack",medkitammo-80);
-								EmitSoundToAll("weapons/gauss/fire1.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN, _, _, 150);
+								EmitSoundToAll("weapons/gauss/fire1.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL, _, _, 150);
 								if (IsValidEntity(ragdoll))
 								{
 									float ragang[3];
@@ -4828,7 +4831,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 													if (chkdist < 100.0)
 													{
 														Reviving[client] = i;
-														EmitSoundToAll("items/suitchargeok1.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+														EmitSoundToAll("items/suitchargeok1.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 														setbuttons = false;
 														break;
 													}
@@ -4840,7 +4843,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							}//asfasf
 							if ((!IsValidEntity(Reviving[client])) || (Reviving[client] == 0))
 							{
-								EmitSoundToAll("items/suitchargeno1.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								EmitSoundToAll("items/suitchargeno1.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 							}
 						}
 					}
@@ -4865,7 +4868,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									else if (StrEqual(mdl,"models/weapons/v_m4m203.mdl",false))
 									{
 										mdlseq = 6;
-										EmitSoundToAll("weapons\\m4\\m4_altfire.wav", client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+										EmitSoundToAll("weapons\\m4\\m4_altfire.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 									}
 									int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
 									if (seq != mdlseq)
@@ -4897,7 +4900,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								CreateHornet(client,weap);
 								char snd[64];
 								Format(snd,sizeof(snd),"weapons\\hivehand\\single.wav");
-								EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 								int seq = GetEntProp(viewmdl,Prop_Send,"m_nSequence");
 								int rand = GetRandomInt(7,12);
 								if (seq == rand)
@@ -5069,7 +5072,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								char sndpathchk[128];
 								Format(sndpathchk,sizeof(sndpathchk),"sound\\%s",snd);
 								if (!FileExists(sndpathchk,true,NULL_STRING)) Format(snd,sizeof(snd),"weapons\\gauss\\chargeloop.wav");
-								EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_TRAIN, flags, _, pitch);
+								EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_NORMAL, flags, _, pitch);
 								WeapAttackSpeed[client] = Time+0.2;
 							}
 						}
@@ -5174,7 +5177,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 												damageForce[1] = 5.0;
 												damageForce[2] = 5.0;
 												SDKHooks_TakeDamage(targ,client,client,15.0,DMG_CLUB,-1,damageForce,curorgs);
-												EmitSoundToAll("npc/zombie/zombie_hit.wav", weap, SNDCHAN_WEAPON, SNDLEVEL_TRAIN);
+												EmitSoundToAll("npc/zombie/zombie_hit.wav", weap, SNDCHAN_WEAPON, SNDLEVEL_NORMAL);
 											}
 										}
 									}
@@ -5219,16 +5222,16 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							{
 								Format(snd,sizeof(snd),"physics/goop/goop_loop.wav");
 								StopSound(weap,SNDCHAN_WEAPON,snd);
-								//if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
-								//EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								//if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+								//EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 							}
 							else
 							{
 								Format(snd,sizeof(snd),"weapons\\gluon\\special1.wav");
 								StopSound(weap,SNDCHAN_WEAPON,snd);
-								if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_TRAIN, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+								if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
 								Format(snd,sizeof(snd),"weapons\\gluon\\special2.wav");
-								EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+								EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 							}
 							CreateTimer(0.2,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
 							WeapSnd[client] = 0.0;
@@ -7309,7 +7312,7 @@ public Action resetviewmdl(Handle timer, int viewmdl)
 						if ((seq == 2) && (WeapSnd[client] < Time))
 						{
 							EmitSoundToAll("weapons\\sl8\\sl8_magin.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
-							CreateTimer(0.7,resetviewmdl,viewmdl);
+							CreateTimer(0.95,resetviewmdl,viewmdl);
 							WeapSnd[client] = Time+1.0;
 						}
 						else
@@ -8342,12 +8345,12 @@ void CreateTripMine(int client)
 					ActivateEntity(mine);
 					if (FileExists("sound/weapons/tripmine/warmup.wav",true,NULL_STRING))
 					{
-						EmitSoundToAll("weapons\\tripmine\\warmup.wav", mine, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+						EmitSoundToAll("weapons\\tripmine\\warmup.wav", mine, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 						CreateTimer(1.5,SetupMine,mine,TIMER_FLAG_NO_MAPCHANGE);
 					}
 					else if (FileExists("sound/weapons/mine_deploy.wav",true,NULL_STRING))
 					{
-						EmitSoundToAll("weapons\\mine_deploy.wav", mine, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+						EmitSoundToAll("weapons\\mine_deploy.wav", mine, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 						CreateTimer(0.2,ChargeUpSnd,mine,TIMER_FLAG_NO_MAPCHANGE);
 						CreateTimer(2.25,SetupMine,mine,TIMER_FLAG_NO_MAPCHANGE);
 					}
@@ -8361,7 +8364,7 @@ public Action ChargeUpSnd(Handle timer, int mine)
 {
 	if (IsValidEntity(mine))
 	{
-		if (FileExists("sound/weapons/mine_charge.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\mine_charge.wav", mine, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+		if (FileExists("sound/weapons/mine_charge.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\mine_charge.wav", mine, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 	}
 }
 
@@ -8431,8 +8434,8 @@ public Action SetupMine(Handle timer, int mine)
 			}
 		}
 		SDKHookEx(mine,SDKHook_OnTakeDamage,TripMineTKdmg);
-		if (FileExists("sound/weapons/tripmine/activate.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\tripmine\\activate.wav", mine, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
-		else if (FileExists("sound/weapons/mine_activate.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\mine_activate.wav", mine, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+		if (FileExists("sound/weapons/tripmine/activate.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\tripmine\\activate.wav", mine, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+		else if (FileExists("sound/weapons/mine_activate.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\mine_activate.wav", mine, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 	}
 }
 
@@ -8493,7 +8496,7 @@ public void BHGTouch(int entity)
 				int hThrower = GetEntPropEnt(entity,Prop_Data,"m_hOwnerEntity");
 				float vecOrigin[3];
 				if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",vecOrigin);
-				EmitSoundToAll("weapons/crossbow/hit1.wav", entity, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+				EmitSoundToAll("weapons/crossbow/hit1.wav", entity, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 				AcceptEntityInput(entity,"Explode");
 				int endpoint = CreateEntityByName("env_explosion");
 				if (endpoint != -1)
@@ -8570,7 +8573,7 @@ void ShootBullet(int client, int weap, int atktype, char[] curweap, float orgs[3
 		originalorgs[1] = orgs[1];
 		originalorgs[2] = orgs[2];
 		//orgs[2]+=13.0;
-		if (GetEntProp(client,Prop_Data,"m_bDucked")) orgs[2]-=28.0;
+		//if (GetEntProp(client,Prop_Data,"m_bDucked")) orgs[2]-=28.0;
 		TE_Start("Shotgun Shot");
 		angs[1]+=90.0;
 		orgs[0] = (orgs[0] + (sideoffs * Cosine(DegToRad(angs[1]))));
@@ -8588,6 +8591,7 @@ void ShootBullet(int client, int weap, int atktype, char[] curweap, float orgs[3
 		int hitgroup = TR_GetHitGroup();
 		int targ = TR_GetEntityIndex();
 		MakeVectorFromPoints(originalorgs,endpos,shootvel);
+		ScaleVector(shootvel,8.0);
 		TE_WriteVector("m_vecDir", shootvel);
 		TE_WriteNum("m_iAmmoID", 1);
 		TE_WriteNum("m_iSeed", 0);
