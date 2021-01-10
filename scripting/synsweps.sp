@@ -413,10 +413,10 @@ public void OnMapStart()
 	if (FileExists("materials/models/weapons/W_SL8/wbase.vtf",true,NULL_STRING)) AddFileToDownloadsTable("materials/models/weapons/W_SL8/wbase.vtf");
 	if (FileExists("materials/models/weapons/W_SL8/wbase-n.vtf",true,NULL_STRING)) AddFileToDownloadsTable("materials/models/weapons/W_SL8/wbase-n.vtf");
 	if (FileExists("sound/weapons/SL8/sl8_boltback.wav",true,NULL_STRING)) AddFileToDownloadsTable("sound/weapons/SL8/sl8_boltback.wav");
-	if (FileExists("sound/weapons/SL8/sl8_boltforward.wav.wav",true,NULL_STRING)) AddFileToDownloadsTable("sound/weapons/SL8/sl8_boltforward.wav.wav");
-	if (FileExists("sound/weapons/SL8/sl8_magin.wav.wav",true,NULL_STRING)) AddFileToDownloadsTable("sound/weapons/SL8/sl8_magin.wav.wav");
-	if (FileExists("sound/weapons/SL8/sl8_magout.wav.wav",true,NULL_STRING)) AddFileToDownloadsTable("sound/weapons/SL8/sl8_magout.wav.wav");
-	if (FileExists("sound/weapons/SL8/SL8-1.wav.wav",true,NULL_STRING)) AddFileToDownloadsTable("sound/weapons/SL8/SL8-1.wav.wav");
+	if (FileExists("sound/weapons/SL8/sl8_boltforward.wav",true,NULL_STRING)) AddFileToDownloadsTable("sound/weapons/SL8/sl8_boltforward.wav");
+	if (FileExists("sound/weapons/SL8/sl8_magin.wav",true,NULL_STRING)) AddFileToDownloadsTable("sound/weapons/SL8/sl8_magin.wav");
+	if (FileExists("sound/weapons/SL8/sl8_magout.wav",true,NULL_STRING)) AddFileToDownloadsTable("sound/weapons/SL8/sl8_magout.wav");
+	if (FileExists("sound/weapons/SL8/SL8-1.wav",true,NULL_STRING)) AddFileToDownloadsTable("sound/weapons/SL8/SL8-1.wav");
 	if (FileExists("materials/sprites/scope01.vtf",true,NULL_STRING)) AddFileToDownloadsTable("materials/sprites/scope01.vtf");
 	if (FileExists("materials/sprites/scope01.vmt",true,NULL_STRING)) AddFileToDownloadsTable("materials/sprites/scope01.vmt");
 	if (FileExists("materials/models/weapons/v_oicw/v_oicw_sheet.vmt",true,NULL_STRING)) AddFileToDownloadsTable("materials/models/weapons/v_oicw/v_oicw_sheet.vmt");
