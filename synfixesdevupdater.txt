@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0024"
-			"Previous"	"2.0023"
+			"Latest"  	"2.0025"
+			"Previous"	"2.0024"
 		}
 		
-		"Notes"	"Added weapon_bhg and weapon_molotov to spawn table."
+		"Notes"	"Rebuilt npc_template_maker for custom entities. Various optimizations/adjustments."
 	}
 	
 	"Files"

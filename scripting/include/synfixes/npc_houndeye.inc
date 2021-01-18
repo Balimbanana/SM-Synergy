@@ -324,7 +324,7 @@ void houndthink(int entity)
 								char snd[64];
 								if (StrEqual(cls,"npc_houndeye",false)) Format(snd,sizeof(snd),"npc\\houndeye\\charge%i.wav",rand);
 								else Format(snd,sizeof(snd),"houndeye\\he_attack%i.wav",rand);
-								EmitSoundToAll(snd, entity, SNDCHAN_WEAPON, SNDLEVEL_TRAIN);
+								EmitSoundToAll(snd, entity, SNDCHAN_WEAPON, SNDLEVEL_NORMAL);
 								CreateTimer(1.6,resetatk,entity,TIMER_FLAG_NO_MAPCHANGE);
 								if ((IsValidEntity(matmod)) && (matmod != 0) && (matmod != -1))
 								{
@@ -510,7 +510,7 @@ void houndthink(int entity)
 	}
 }
 
-public Action houndtkdmg(victim, &attacker, &inflictor, &Float:damage, &damagetype)
+public Action houndtkdmg(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
 {
 	if (IsValidEntity(victim))
 	{
@@ -584,7 +584,7 @@ public Action houndtkdmg(victim, &attacker, &inflictor, &Float:damage, &damagety
 	return Plugin_Continue;
 }
 
-public Action houndbboxtkdmg(victim, &attacker, &inflictor, &Float:damage, &damagetype)
+public Action houndbboxtkdmg(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
 {
 	if (IsValidEntity(victim))
 	{

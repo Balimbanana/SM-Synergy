@@ -585,3 +585,62 @@ public Action ResetSoundEnd(Handle timer, Handle dp)
 		}
 	}
 }
+
+bool GetBaseClassFor(char[] szCls, char[] szSetBuff, int iszBuffSize)
+{
+	if ((StrEqual(szCls,"npc_human_grunt",false)) || (StrEqual(szCls,"npc_human_commander",false)) || (StrEqual(szCls,"npc_human_grenadier",false)) || (StrEqual(szCls,"npc_human_medic",false)) || (StrEqual(szCls,"npc_assassin",false)) || (StrEqual(szCls,"npc_human_assassin",false)) || (StrEqual(szCls,"monster_human_assassin",false))) Format(szSetBuff,iszBuffSize,"npc_combine_s");
+	else if ((StrEqual(szCls,"npc_alien_grunt",false)) || (StrEqual(szCls,"monster_alien_grunt",false)) || (StrEqual(szCls,"npc_alien_grunt_unarmored",false))) Format(szSetBuff,iszBuffSize,"npc_combine_s");
+	else if (StrEqual(szCls,"monster_gargantua",false)) Format(szSetBuff,iszBuffSize,"npc_gargantua");
+	else if ((StrEqual(szCls,"monster_scientist",false)) || (StrEqual(szCls,"monster_scientist_dead",false))) Format(szSetBuff,iszBuffSize,"generic_actor");
+	else if (StrEqual(szCls,"monster_sitting_scientist",false)) Format(szSetBuff,iszBuffSize,"prop_dynamic");
+	else if ((StrEqual(szCls,"monster_barney",false)) || (StrEqual(szCls,"monster_barney_dead",false))) Format(szSetBuff,iszBuffSize,"generic_actor");
+	else if (StrEqual(szCls,"monster_ichthyosaur",false)) Format(szSetBuff,iszBuffSize,"npc_ichthyosaur");
+	else if (StrEqual(szCls,"monster_gman",false)) Format(szSetBuff,iszBuffSize,"generic_actor");
+	else if (StrEqual(szCls,"monster_barnacle",false)) Format(szSetBuff,iszBuffSize,"npc_barnacle");
+	else if (StrEqual(szCls,"monster_zombie",false)) Format(szSetBuff,iszBuffSize,"npc_zombie");
+	else if ((StrEqual(szCls,"monster_human_grunt",false)) || (StrEqual(szCls,"monster_hgrunt_dead",false))) Format(szSetBuff,iszBuffSize,"npc_combine_s");
+	else if (StrEqual(szCls,"monster_cockroach",false)) Format(szSetBuff,iszBuffSize,"generic_actor");
+	else if ((StrEqual(szCls,"monster_bullchicken",false)) || (StrEqual(szCls,"monster_houndeye",false)) || (StrEqual(szCls,"npc_bullsquid",false)) || (StrEqual(szCls,"npc_houndeye",false))) Format(szSetBuff,iszBuffSize,"npc_antlion");
+	else if (StrEqual(szCls,"npc_human_security",false)) Format(szSetBuff,iszBuffSize,"npc_citizen");
+	else if (StrEqual(szCls,"npc_human_scientist",false)) Format(szSetBuff,iszBuffSize,"generic_actor");
+	else if (StrEqual(szCls,"npc_human_scientist_female",false)) Format(szSetBuff,iszBuffSize,"generic_actor");
+	else if (StrEqual(szCls,"npc_alien_slave",false)) Format(szSetBuff,iszBuffSize,"npc_vortigaunt");
+	else if (StrEqual(szCls,"npc_human_scientist_kleiner",false)) Format(szSetBuff,iszBuffSize,"npc_kleiner");
+	else if (StrEqual(szCls,"npc_human_scientist_eli",false)) Format(szSetBuff,iszBuffSize,"npc_eli");
+	else if ((StrEqual(szCls,"npc_zombie_security",false)) || (StrEqual(szCls,"npc_zombie_worker",false)) || (StrEqual(szCls,"npc_gonarch",false))) Format(szSetBuff,iszBuffSize,"npc_zombine");
+	else if (StrEqual(szCls,"npc_babycrab",false)) Format(szSetBuff,iszBuffSize,"npc_headcrab");
+	else if ((StrEqual(szCls,"npc_snark",false)) || (StrEqual(szCls,"monster_snark",false))) Format(szSetBuff,iszBuffSize,"npc_headcrab_fast");
+	else if (StrEqual(szCls,"npc_zombie_security_torso",false)) Format(szSetBuff,iszBuffSize,"npc_zombie");
+	else if (StrEqual(szCls,"npc_zombie_scientist",false)) Format(szSetBuff,iszBuffSize,"npc_zombie");
+	else if (StrEqual(szCls,"npc_zombie_scientist_torso",false)) Format(szSetBuff,iszBuffSize,"npc_zombie_torso");
+	else if ((StrEqual(szCls,"npc_human_grunt",false)) || (StrEqual(szCls,"npc_human_commander",false)) || (StrEqual(szCls,"npc_human_grenadier",false)) || (StrEqual(szCls,"npc_human_medic",false))) Format(szSetBuff,iszBuffSize,"npc_combine_s");
+	else if (StrEqual(szCls,"npc_odell",false)) Format(szSetBuff,iszBuffSize,"npc_citizen");
+	else if ((StrEqual(szCls,"npc_osprey",false)) || (StrEqual(szCls,"npc_tentacle",false)) || (StrEqual(szCls,"npc_abrams",false)) || (StrEqual(szCls,"npc_bmsgargantua",false)) || (StrEqual(szCls,"npc_merchant",false))) Format(szSetBuff,iszBuffSize,"generic_actor");
+	else if (StrEqual(szCls,"npc_sentry_ceiling",false)) Format(szSetBuff,iszBuffSize,"npc_turret_ceiling");
+	else if (StrEqual(szCls,"npc_synth_scanner",false)) Format(szSetBuff,iszBuffSize,"npc_cscanner");
+	else if (StrEqual(szCls,"env_xen_portal",false)) Format(szSetBuff,iszBuffSize,"npc_maker");
+	else if (StrEqual(szCls,"trigger_auto",false)) Format(szSetBuff,iszBuffSize,"logic_relay");
+	else if (StrEqual(szCls,"env_xen_portal_template",false)) Format(szSetBuff,iszBuffSize,"npc_template_maker");
+	else if (StrEqual(szCls,"env_mortar_launcher",false)) Format(szSetBuff,iszBuffSize,"info_target");
+	else if (StrEqual(szCls,"env_mortar_controller",false)) Format(szSetBuff,iszBuffSize,"prop_physics_override");
+	else if (StrEqual(szCls,"multi_manager",false)) Format(szSetBuff,iszBuffSize,"logic_relay");
+	else if (StrEqual(szCls,"prop_train_awesome",false)) Format(szSetBuff,iszBuffSize,"prop_dynamic");
+	else if (StrEqual(szCls,"prop_train_apprehension",false)) Format(szSetBuff,iszBuffSize,"prop_dynamic_override");
+	else if (StrEqual(szCls," item_ammo_smg1_grenade",false)) Format(szSetBuff,iszBuffSize,"item_ammo_smg1_grenade");
+	else if (StrEqual(szCls,"npc_sentry_ground",false)) Format(szSetBuff,iszBuffSize,"npc_turret_floor");
+	else if ((StrEqual(szCls,"info_player_rebel",false)) || (StrEqual(szCls,"info_player_combine",false)) || (StrEqual(szCls,"info_player_deathmatch",false))) Format(szSetBuff,iszBuffSize,"info_player_coop");
+	else if ((StrEqual(szCls,"weapon_gluon",false)) || (StrEqual(szCls,"weapon_goop",false))) Format(szSetBuff,iszBuffSize,"weapon_shotgun");
+	else if (StrEqual(szCls,"weapon_isa_knife",false)) Format(szSetBuff,iszBuffSize,"weapon_crowbar");
+	else if (StrEqual(szCls,"weapon_handgrenade",false)) Format(szSetBuff,iszBuffSize,"weapon_frag");
+	else if ((StrEqual(szCls,"weapon_glock",false)) || (StrEqual(szCls,"weapon_pistol_worker",false)) || (StrEqual(szCls,"weapon_flaregun",false)) || (StrEqual(szCls,"weapon_manhack",false)) || (StrEqual(szCls,"weapon_manhackgun",false)) || (StrEqual(szCls,"weapon_manhacktoss",false)) || (StrEqual(szCls,"weapon_p911",false)) || (StrEqual(szCls,"weapon_pistol2",false))) Format(szSetBuff,iszBuffSize,"weapon_pistol");
+	else if ((StrEqual(szCls,"weapon_medkit",false)) || (StrEqual(szCls,"weapon_healer",false)) || (StrEqual(szCls,"weapon_snark",false)) || (StrEqual(szCls,"weapon_hivehand",false)) || (StrEqual(szCls,"weapon_molotov",false))) Format(szSetBuff,iszBuffSize,"weapon_slam");
+	else if ((StrEqual(szCls,"weapon_mp5",false)) || (StrEqual(szCls,"weapon_sl8",false)) || (StrEqual(szCls,"weapon_uzi",false)) || (StrEqual(szCls,"weapon_camera",false)) || (StrEqual(szCls,"weapon_smg3",false)) || (StrEqual(szCls,"weapon_smg4",false))) Format(szSetBuff,iszBuffSize,"weapon_smg1");
+	else if ((StrEqual(szCls,"weapon_gauss",false)) || (StrEqual(szCls,"weapon_tau",false)) || (StrEqual(szCls,"weapon_sniperrifle",false)) || (StrEqual(szCls,"weapon_vc32sniperrifle",false)) || (StrEqual(szCls,"weapon_bhg",false))) Format(szSetBuff,iszBuffSize,"weapon_ar2");
+	else if (StrEqual(szCls,"weapon_cguard",false)) Format(szSetBuff,iszBuffSize,"weapon_stunstick");
+	else if (StrEqual(szCls,"weapon_axe",false)) Format(szSetBuff,iszBuffSize,"weapon_pipe");
+	else if (StrEqual(szCls,"npc_apache",false)) Format(szSetBuff,iszBuffSize,"npc_helicopter");
+	else if (StrEqual(szCls,"item_longjump",false)) Format(szSetBuff,iszBuffSize,"item_healthkit");
+	else if (StrEqual(szCls,"item_custom",false)) Format(szSetBuff,iszBuffSize,"item_ammo_smg1");
+	if (strlen(szSetBuff) < 1) return false;
+	return true;
+}

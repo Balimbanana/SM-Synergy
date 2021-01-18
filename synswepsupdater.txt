@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.995"
-			"Previous"	"0.994"
+			"Latest"  	"0.996"
+			"Previous"	"0.995"
 		}
 		
-		"Notes"	"Adjustments to fire positions for some custom weapons."
+		"Notes"	"Rescripted weapon_mp5. Fixes to weapon_tau. Minor fixes/adjustments to other weapons."
 	}
 	
 	"Files"

@@ -36,7 +36,9 @@
 #define REQUIRE_EXTENSIONS
 #pragma semicolon 1;
 #pragma newdecls required;
+#pragma dynamic 2097152;
 
+char szMapEntitiesBuff[2097152]; //Used as fallback entity cache if none generated
 char restorelang[128][32];
 char ChapterTitle[128];
 char PreviousTitle[128];
@@ -57,6 +59,7 @@ Handle dctimeoutarr = INVALID_HANDLE;
 //Handle nextweapreset = INVALID_HANDLE;
 Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
+Handle hTemplateData = INVALID_HANDLE;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float fadingtime[128];
@@ -109,8 +112,9 @@ bool norunagain = false;
 bool BlockTripMineDamage = true;
 bool FixWeapSnd = true;
 bool bFixSoundScapes = true;
+bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0024"
+#define PLUGIN_VERSION "2.0025"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -599,6 +603,9 @@ public Action bmcvars(Handle timer)
 	flSentryFireRate = GetConVarFloat(cvarchk);
 	HookConVarChange(cvarchk, sentryfireratech);
 	CloseHandle(cvarchk);
+	cvarchk = FindConVar("sk_plr_dmg_mp5");
+	if (cvarchk == INVALID_HANDLE) cvarchk = CreateConVar("sk_plr_dmg_mp5","5","MP5 damage.",_,true,0.0,false);
+	CloseHandle(cvarchk);
 	char savepath[256];
 	BuildPath(Path_SM,savepath,sizeof(savepath),"plugins");
 	Format(savepath,sizeof(savepath),"%s/synfixes.smx",savepath);
@@ -609,6 +616,12 @@ public Action bmcvars(Handle timer)
 		ServerCommand("sm plugins unload synfixes");
 	}
 	return Plugin_Handled;
+}
+
+public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
+{
+	Format(szMapEntitiesBuff,sizeof(szMapEntitiesBuff),"%s",szMapEntities);
+	return Plugin_Continue;
 }
 
 public void OnMapStart()
@@ -1018,7 +1031,40 @@ public void OnMapStart()
 			CloseHandle(mdirlisting);
 		}
 		else if (debuglvl > 1) PrintToServer("Found ent cache %s",mapbuf);
+		if (!FileExists(mapbuf,true,NULL_STRING))
+		{
+			GetCurrentMap(mapbuf,sizeof(mapbuf));
+			if (strlen(contentdata) < 1) Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s_%s.ent",mapbuf,contentdata);
+			else Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s.ent",mapbuf);
+			if (debuglvl > 1) PrintToServer("Ent cache was not found, writing a new one...");
+			if (!DirExists("maps/ent_cache",false)) CreateDirectory("maps/ent_cache",511,false);
+			Handle writefile = OpenFile(mapbuf,"wb",true,NULL_STRING);
+			if (writefile != INVALID_HANDLE)
+			{
+				WriteFileString(writefile,szMapEntitiesBuff,false);
+			}
+			CloseHandle(writefile);
+		}
 		
+		bPortalParticleAvailable = false;
+		int ParticleTable = FindStringTable("ParticleEffectNames");
+		if (ParticleTable != INVALID_STRING_TABLE)
+		{
+			int iStrCount = GetStringTableNumStrings(ParticleTable);
+			char szStrD[24];
+			for (int j = 0;j<iStrCount;j++)
+			{
+				ReadStringTable(ParticleTable,j,szStrD,sizeof(szStrD));
+				if (strlen(szStrD) > 0)
+				{
+					if (StrEqual(szStrD,"teleport_lambda_exit",false))
+					{
+						bPortalParticleAvailable = true;
+						break;
+					}
+				}
+			}
+		}
 		if (StrContains(mapbuf,"ptsd2_ptsd_2",false) != -1)
 		{
 			autorebuild = 2;
@@ -1060,6 +1106,7 @@ public void OnMapStart()
 		findstraymdl(-1,"env_xen_pushpad");
 		findstraymdl(-1,"env_mortar_controller");
 		findstraymdl(-1,"env_dispenser");
+		findstraymdl(-1,"trigger_once");
 		findentlist(MaxClients+1,"npc_*");
 		findentlist(MaxClients+1,"monster_*");
 		int jstat = FindEntityByClassname(MaxClients+1,"prop_vehicle_jeep");
@@ -3039,6 +3086,7 @@ public Action mapendchg(const char[] output, int caller, int activator, float de
 					CloseHandle(incfile);
 					if (strlen(includes) > 0)
 					{
+						TrimString(includes);
 						//ServerCommand("sv_content_optional \"%s\"",includes);
 						Handle srvcvar = FindConVar("sv_content_optional");
 						if (srvcvar != INVALID_HANDLE)
@@ -4132,25 +4180,69 @@ public Action onxenspawn(const char[] output, int caller, int activator, float d
 				}
 				iActiveSpawnEnt = activator;
 				iActiveSpawner = caller;
+				if (IsValidEntity(activator))
+				{
+					char szChildName[128];
+					if (HasEntProp(caller,Prop_Data,"m_ChildTargetName")) GetEntPropString(caller,Prop_Data,"m_ChildTargetName",szChildName,sizeof(szChildName));
+					if (strlen(szChildName) > 0)
+					{
+						if (HasEntProp(activator,Prop_Data,"m_iName")) SetEntPropString(activator,Prop_Data,"m_iName",szChildName);
+					}
+				}
 			}
 			else
 			{
-				int dispent = CreateEntityByName("env_sprite");
-				if (dispent != -1)
+				if (bPortalParticleAvailable)
 				{
-					float origin[3];
-					float angs[3];
-					if (HasEntProp(caller,Prop_Data,"m_angRotation")) GetEntPropVector(caller,Prop_Data,"m_angRotation",angs);
-					if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
-					else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
-					DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
-					DispatchKeyValue(dispent,"scale","0.4");
-					DispatchKeyValue(dispent,"rendermode","2");
-					origin[2]+=25.0;
-					TeleportEntity(dispent,origin,angs,NULL_VECTOR);
-					DispatchSpawn(dispent);
-					ActivateEntity(dispent);
-					CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+					int effect = CreateEntityByName("info_particle_system");
+					if (effect != -1)
+					{
+						DispatchKeyValue(effect,"effect_name","teleport_lambda_exit");
+						DispatchKeyValue(effect,"start_active","1");
+						float origin[3];
+						float angs[3];
+						if (HasEntProp(caller,Prop_Data,"m_angRotation")) GetEntPropVector(caller,Prop_Data,"m_angRotation",angs);
+						if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+						else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
+						origin[2]+=25.0;
+						TeleportEntity(effect,origin,angs,NULL_VECTOR);
+						DispatchSpawn(effect);
+						ActivateEntity(effect);
+						AcceptEntityInput(effect,"Start");
+						Handle dp2 = CreateDataPack();
+						WritePackCell(dp2,effect);
+						WritePackString(dp2,"info_particle_system");
+						CreateTimer(0.5,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+					}
+				}
+				else
+				{
+					int dispent = CreateEntityByName("env_sprite");
+					if (dispent != -1)
+					{
+						float origin[3];
+						float angs[3];
+						if (HasEntProp(caller,Prop_Data,"m_angRotation")) GetEntPropVector(caller,Prop_Data,"m_angRotation",angs);
+						if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+						else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
+						DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
+						DispatchKeyValue(dispent,"scale","0.4");
+						DispatchKeyValue(dispent,"rendermode","2");
+						origin[2]+=25.0;
+						TeleportEntity(dispent,origin,angs,NULL_VECTOR);
+						DispatchSpawn(dispent);
+						ActivateEntity(dispent);
+						CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+					}
+				}
+				if (IsValidEntity(activator))
+				{
+					char szChildName[128];
+					if (HasEntProp(caller,Prop_Data,"m_ChildTargetName")) GetEntPropString(caller,Prop_Data,"m_ChildTargetName",szChildName,sizeof(szChildName));
+					if (strlen(szChildName) > 0)
+					{
+						if (HasEntProp(activator,Prop_Data,"m_iName")) SetEntPropString(activator,Prop_Data,"m_iName",szChildName);
+					}
 				}
 				int rand = GetRandomInt(1,3);
 				char snd[64];
@@ -4504,22 +4596,48 @@ void findpts(char[] targn, float delay)
 					}
 					else
 					{
-						int dispent = CreateEntityByName("env_sprite");
-						if (dispent != -1)
+						if (bPortalParticleAvailable)
 						{
-							float origin[3];
-							float angs[3];
-							if (HasEntProp(templateent,Prop_Data,"m_angRotation")) GetEntPropVector(templateent,Prop_Data,"m_angRotation",angs);
-							if (HasEntProp(templateent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(templateent,Prop_Data,"m_vecAbsOrigin",origin);
-							else if (HasEntProp(templateent,Prop_Send,"m_vecOrigin")) GetEntPropVector(templateent,Prop_Send,"m_vecOrigin",origin);
-							DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
-							DispatchKeyValue(dispent,"scale","0.4");
-							DispatchKeyValue(dispent,"rendermode","2");
-							origin[2]+=25.0;
-							TeleportEntity(dispent,origin,angs,NULL_VECTOR);
-							DispatchSpawn(dispent);
-							ActivateEntity(dispent);
-							CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+							int effect = CreateEntityByName("info_particle_system");
+							if (effect != -1)
+							{
+								DispatchKeyValue(effect,"effect_name","teleport_lambda_exit");
+								DispatchKeyValue(effect,"start_active","1");
+								float origin[3];
+								float angs[3];
+								if (HasEntProp(templateent,Prop_Data,"m_angRotation")) GetEntPropVector(templateent,Prop_Data,"m_angRotation",angs);
+								if (HasEntProp(templateent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(templateent,Prop_Data,"m_vecAbsOrigin",origin);
+								else if (HasEntProp(templateent,Prop_Send,"m_vecOrigin")) GetEntPropVector(templateent,Prop_Send,"m_vecOrigin",origin);
+								origin[2]+=25.0;
+								TeleportEntity(effect,origin,angs,NULL_VECTOR);
+								DispatchSpawn(effect);
+								ActivateEntity(effect);
+								AcceptEntityInput(effect,"Start");
+								Handle dp2 = CreateDataPack();
+								WritePackCell(dp2,effect);
+								WritePackString(dp2,"info_particle_system");
+								CreateTimer(0.5,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+							}
+						}
+						else
+						{
+							int dispent = CreateEntityByName("env_sprite");
+							if (dispent != -1)
+							{
+								float origin[3];
+								float angs[3];
+								if (HasEntProp(templateent,Prop_Data,"m_angRotation")) GetEntPropVector(templateent,Prop_Data,"m_angRotation",angs);
+								if (HasEntProp(templateent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(templateent,Prop_Data,"m_vecAbsOrigin",origin);
+								else if (HasEntProp(templateent,Prop_Send,"m_vecOrigin")) GetEntPropVector(templateent,Prop_Send,"m_vecOrigin",origin);
+								DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
+								DispatchKeyValue(dispent,"scale","0.4");
+								DispatchKeyValue(dispent,"rendermode","2");
+								origin[2]+=25.0;
+								TeleportEntity(dispent,origin,angs,NULL_VECTOR);
+								DispatchSpawn(dispent);
+								ActivateEntity(dispent);
+								CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+							}
 						}
 						int rand = GetRandomInt(1,3);
 						char snd[64];
@@ -5439,6 +5557,20 @@ void readcache(int client, char[] cache, float offsetpos[3])
 			}
 			if ((StrEqual(line,"{",false)) || (StrEqual(line,"}",false) || (StrEqual(line,"}{",false))) && (ent == -1))
 			{
+				int iFindCls = FindStringInArray(passedarr,"classname");
+				if (iFindCls != -1)
+				{
+					char tmpchar[128];
+					iFindCls++;
+					GetArrayString(passedarr,iFindCls,tmpchar,sizeof(tmpchar));
+					if (StrEqual(tmpchar,"npc_template_maker",false))
+					{
+						Handle dupearr = CloneArray(passedarr);
+						if (hTemplateData == INVALID_HANDLE) hTemplateData = CreateArray(1024);
+						PushArrayCell(hTemplateData,dupearr);
+						storetemplate = false;
+					}
+				}
 				if (storetemplate)
 				{
 					int findtemplatename = FindStringInArray(passedarr,"TemplateName");
@@ -6253,8 +6385,21 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							WritePackString(dp,"models/w_gaussammo.mdl");
 						}
 					}
-					else if ((StrEqual(cls,"weapon_gauss",false)) || (StrEqual(cls,"weapon_tau",false)) || (StrEqual(cls,"weapon_sniperrifle",false)) || (StrEqual(cls,"weapon_bhg",false)))
+					else if ((StrEqual(cls,"weapon_gauss",false)) || (StrEqual(cls,"weapon_tau",false)) || (StrEqual(cls,"item_weapon_tau",false)) || (StrEqual(cls,"weapon_sniperrifle",false)) || (StrEqual(cls,"weapon_bhg",false)))
 					{
+						if (StrContains(cls,"item_weapon_",false) == 0)
+						{
+							int find = FindStringInArray(passedarr,"classname");
+							if (find != -1)
+							{
+								RemoveFromArray(passedarr,find);
+								find++;
+								RemoveFromArray(passedarr,find);
+							}
+							ReplaceStringEx(cls,sizeof(cls),"item_","");
+							PushArrayString(passedarr,"classname");
+							PushArrayString(passedarr,cls);
+						}
 						Format(cls,sizeof(cls),"weapon_ar2");
 					}
 					else if ((StrEqual(cls,"weapon_snark",false)) || (StrEqual(cls,"weapon_hivehand",false)) || (StrEqual(cls,"item_weapon_tripmine",false)) || (StrEqual(cls,"item_weapon_snark",false)) || (StrEqual(cls,"item_weapon_hivehand",false)))
@@ -6543,6 +6688,8 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							RemoveFromArray(passedarr,find);
 						}
 						Format(cls,sizeof(cls),"trigger_once");
+						PushArrayString(passedarr,"ResponseContext");
+						PushArrayString(passedarr,"func_minefield;");
 					}
 					else if ((StrEqual(cls,"func_50cal",false)) || (StrEqual(cls,"func_tow",false)))
 					{
@@ -8063,6 +8210,25 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							int sf = StringToInt(sfch);
 							if (sf & 1<<11)
 							{
+								//Create new npc_template_maker with new info
+								char szTemplateData[8192];
+								char szTmp[64];
+								char szTmp2[256];
+								for (int j = 0;j<GetArraySize(passedarr);j++)
+								{
+									GetArrayString(passedarr,j,szTmp,sizeof(szTmp));
+									Format(szTemplateData,sizeof(szTemplateData),"%s\"%s\"",szTemplateData,szTmp);
+									j++;
+									GetArrayString(passedarr,j,szTmp2,sizeof(szTmp2));
+									if ((StrContains(szTmp,"classname",false) != -1) || (StrContains(szTmp,"additionalequipment",false) != -1))
+									{
+										GetBaseClassFor(szTmp2,szTmp2,sizeof(szTmp2));
+									}
+									Format(szTemplateData,sizeof(szTemplateData),"%s %\"%s\"\n",szTemplateData,szTmp2);
+								}
+								Format(szTemplateData,sizeof(szTemplateData),"%s}",szTemplateData);
+								PushArrayString(passedarr,"szTemplateData");
+								PushArrayString(passedarr,szTemplateData);
 								if (debuglvl == 3) PrintToServer("Storing template maker ent %s",entname);
 								PushArrayString(templatetargs,entname);
 								Handle dupearr = CloneArray(passedarr);
@@ -8192,7 +8358,200 @@ void readcache(int client, char[] cache, float offsetpos[3])
 	}
 	CloseHandle(filehandle);
 	CreateTimer(1.0,reapplyrelations,_,TIMER_FLAG_NO_MAPCHANGE);
+	if (hTemplateData != INVALID_HANDLE)
+	{
+		if (GetArraySize(hTemplateData) > 0)
+		{
+			char szTargn[128];
+			char szTemplateTarg[128];
+			//char szTemplateData[8192];
+			int iFindTemplateTarg = -1;
+			for (int i = 0;i<GetArraySize(templateents);i++)
+			{
+				Handle hChkArr = GetArrayCell(templateents,i);
+				if (hChkArr != INVALID_HANDLE)
+				{
+					int iFindTN = FindStringInArray(hChkArr,"targetname");
+					int iFindEntD = FindStringInArray(hChkArr,"szTemplateData");
+					if ((iFindTN != -1) && (iFindEntD != -1))
+					{
+						iFindEntD++;
+						iFindTN++;
+						GetArrayString(hChkArr,iFindTN,szTargn,sizeof(szTargn));
+						//GetArrayString(hChkArr,iFindEntD,szTemplateData,sizeof(szTemplateData));
+						for (int j = 0;j<GetArraySize(hTemplateData);j++)
+						{
+							Handle hTemplateSet = GetArrayCell(hTemplateData,j);
+							char szTmp[64];
+							char szTmp2[128];
+							for (int k = 0;k<GetArraySize(hTemplateSet);k++)
+							{
+								GetArrayString(hTemplateSet,k,szTmp,sizeof(szTmp));
+								k++;
+								GetArrayString(hTemplateSet,k,szTmp2,sizeof(szTmp2));
+							}
+							iFindTemplateTarg = FindStringInArray(hTemplateSet,"TemplateName");
+							if (iFindTemplateTarg == -1) iFindTemplateTarg = FindStringInArray(hTemplateSet,"Templatename");
+							if (iFindTemplateTarg == -1) iFindTemplateTarg = FindStringInArray(hTemplateSet,"templatename");
+							if (iFindTemplateTarg != -1)
+							{
+								iFindTemplateTarg++;
+								GetArrayString(hTemplateSet,iFindTemplateTarg,szTemplateTarg,sizeof(szTemplateTarg));
+								if (StrEqual(szTargn,szTemplateTarg,false))
+								{
+									PushArrayString(hTemplateSet,"szTemplateData");
+									PushArrayString(hTemplateSet,szTargn);
+									//PrintToServer("Addtemplate %s",szTemplateData);
+								}
+							}
+						}
+					}
+				}
+			}
+			CreateTimer(0.1,ReCreateTemplateMakers,_,TIMER_FLAG_NO_MAPCHANGE);
+		}
+	}
 	if (!weapmanagersplaced) CreateTimer(0.1,rehooksaves);
+}
+
+public Action ReCreateTemplateMakers(Handle timer)
+{
+	//PrintToServer("Re-create npc template sets");
+	//hTemplateData is passedarr of all npc_template_maker
+	for (int i = 0;i<GetArraySize(hTemplateData);i++)
+	{
+		Handle hTemplateSet = GetArrayCell(hTemplateData,i);
+		if (FindStringInArray(hTemplateSet,"szTemplateData") != -1)
+		{
+			int iTemplateMaker = CreateEntityByName("npc_template_maker");
+			if (iTemplateMaker != -1)
+			{
+				char szTmp[128];
+				char szTmp2[256];
+				char szTemplateData[8192];
+				for (int j = 0;j<GetArraySize(hTemplateSet);j++)
+				{
+					GetArrayString(hTemplateSet,j,szTmp,sizeof(szTmp));
+					j++;
+					GetArrayString(hTemplateSet,j,szTmp2,sizeof(szTmp2));
+					if (StrEqual(szTmp,"szTemplateData",false))
+					{
+						int iFindArrIndx = FindStringInArray(templatetargs,szTmp2);
+						if (iFindArrIndx != -1)
+						{
+							Handle passedarr = GetArrayCell(templateents,iFindArrIndx);
+							for (int k = 0;k<GetArraySize(passedarr);k++)
+							{
+								GetArrayString(passedarr,k,szTmp,sizeof(szTmp));
+								k++;
+								if (!StrEqual(szTmp,"szTemplateData",false))
+								{
+									GetArrayString(passedarr,k,szTmp2,sizeof(szTmp2));
+									if (StrContains(szTmp,"classname",false) != -1)
+									{
+										Format(szTmp,sizeof(szTmp),"ResponseContext\" \"%s\"\n\"classname",szTmp2);
+										GetBaseClassFor(szTmp2,szTmp2,sizeof(szTmp2));
+									}
+									else if (StrContains(szTmp,"additionalequipment",false) != -1)
+									{
+										GetBaseClassFor(szTmp2,szTmp2,sizeof(szTmp2));
+									}
+									Format(szTemplateData,sizeof(szTemplateData),"%s\"%s\" \"%s\"\n",szTemplateData,szTmp,szTmp2);
+									//Format(szTemplateData,sizeof(szTemplateData),"%s \"%s\"\n",szTemplateData,szTmp2);
+								}
+							}
+							Format(szTemplateData,sizeof(szTemplateData),"%s}",szTemplateData);
+							//GetArrayString(hTemplateSet,j,szTemplateData,sizeof(szTemplateData));
+							SetEntPropString(iTemplateMaker,Prop_Data,"m_iszTemplateData",szTemplateData);
+							RemoveFromArray(templatetargs,iFindArrIndx);
+							RemoveFromArray(templateents,iFindArrIndx);
+						}
+					}
+					else DispatchKeyValue(iTemplateMaker,szTmp,szTmp2);
+				}
+				DispatchSpawn(iTemplateMaker);
+				HookSingleEntityOutput(iTemplateMaker,"OnSpawnNPC",OnNPCTemplateSpawn,false);
+			}
+		}
+		CloseHandle(hTemplateSet);
+	}
+	CloseHandle(hTemplateData);
+	hTemplateData = INVALID_HANDLE;
+}
+
+public Action OnNPCTemplateSpawn(const char[] output, int caller, int activator, float delay)
+{
+	char szActCls[64];
+	if (IsValidEntity(activator))
+	{
+		GetEntityClassname(activator,szActCls,sizeof(szActCls));
+		if (HasEntProp(activator,Prop_Data,"m_iszResponseContext"))
+		{
+			char szOldCls[64];
+			GetEntPropString(activator,Prop_Data,"m_iszResponseContext",szOldCls,sizeof(szOldCls));
+			if (IsValidEntity(caller))
+			{
+				if (HasEntProp(caller,Prop_Data,"m_iszTemplateData"))
+				{
+					char szTemplateData[8192];
+					GetEntPropString(caller,Prop_Data,"m_iszTemplateData",szTemplateData,sizeof(szTemplateData));
+					if (StrContains(szTemplateData,"\"waitingtorappel\" \"1\"",false) != -1)
+					{
+						AcceptEntityInput(activator,"BeginRappel");
+						CreateTimer(0.5,RefireRappel,activator,TIMER_FLAG_NO_MAPCHANGE);
+					}
+				}
+			}
+			if (FindStringInArray(customentlist,szOldCls) != -1)
+			{
+				SetEntPropString(activator,Prop_Data,"m_iClassname",szOldCls);
+				SetupLivingEnt(activator);
+				/*
+				if ((StrEqual(szOldCls,"npc_human_grunt",false)) || (StrEqual(szOldCls,"npc_human_commander",false)) || (StrEqual(szOldCls,"npc_human_medic",false)))
+				{
+					if (StrEqual(szOldCls,"npc_human_medic",false))
+					{
+						int rand = GetRandomInt(0,2);
+						if (rand == 0) rand = GetRandomInt(32,35);
+						else if (rand == 1) rand = GetRandomInt(40,43);
+						else if (rand == 2) rand = GetRandomInt(56,59);
+						SetVariantInt(rand);
+						AcceptEntityInput(activator,"SetBodyGroup");
+					}
+					else
+					{
+						int rand = GetRandomInt(0,70);
+						if ((rand >= 32) && (rand <= 35)) rand = GetRandomInt(0,31);
+						else if ((rand >= 40) && (rand <= 43)) rand = GetRandomInt(36,39);
+						else if ((rand >= 56) && (rand <= 59)) rand = GetRandomInt(60,70);
+						SetVariantInt(rand);
+						AcceptEntityInput(activator,"SetBodyGroup");
+					}
+					if (GetEntProp(activator,Prop_Data,"m_nSkin") == 0)
+					{
+						int rand = GetRandomInt(0,14);
+						SetVariantInt(rand);
+						AcceptEntityInput(activator,"skin");
+					}
+					if (StrEqual(szOldCls,"npc_human_grenadier",false))
+					{
+						SDKHookEx(activator,SDKHook_Think,grenthink);
+					}
+					else SDKHookEx(activator,SDKHook_Think,hgruntthink);
+					AcceptEntityInput(activator,"GagEnable");
+				}
+				else if ((StrEqual(szOldCls,"npc_houndeye",false)) || (StrEqual(szOldCls,"monster_houndeye",false)))
+				{
+					setuphound(activator);
+				}
+				else if ((StrEqual(szOldCls,"npc_bullsquid",false)) || (StrEqual(szOldCls,"monster_bullchicken",false)))
+				{
+					setupsquid(activator);
+				}
+				*/
+			}
+		}
+	}
 }
 
 void readcacheexperimental(int client)
@@ -8405,7 +8764,7 @@ void readcacheexperimental(int client)
 					}
 					else if ((StrEqual(cls,"monster_human_grunt",false)) || (StrEqual(cls,"monster_hgrunt_dead",false)))
 					{
-						Format(cls,sizeof(cls),"generic_actor");
+						Format(cls,sizeof(cls),"npc_combine_s");
 						PushArrayString(passedarr,"model");
 						PushArrayString(passedarr,"models/hgrunt.mdl");
 					}
@@ -10083,6 +10442,31 @@ public Action resetatk(Handle timer, int entity)
 					return Plugin_Handled;
 				}
 			}
+			//houndeye_sonic_attack info_particle_system too large range
+			/*
+			if (hHoundEyeSonicEffect.BoolValue)
+			{
+				int effect = CreateEntityByName("info_particle_system");
+				if (effect != -1)
+				{
+					DispatchKeyValue(effect,"effect_name","houndeye_sonic_attack");
+					DispatchKeyValue(effect,"start_active","1");
+					float angs[3];
+					if (HasEntProp(entity,Prop_Data,"m_angRotation")) GetEntPropVector(entity,Prop_Data,"m_angRotation",angs);
+					curorg[2]+=2.0;
+					TeleportEntity(effect,curorg,angs,NULL_VECTOR);
+					DispatchSpawn(effect);
+					ActivateEntity(effect);
+					AcceptEntityInput(effect,"Start");
+					Handle dp2 = CreateDataPack();
+					WritePackCell(dp2,effect);
+					WritePackString(dp2,"info_particle_system");
+					CreateTimer(0.5,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+				}
+			}
+			else
+			{
+			*/
 			TE_SetupBeamRingPoint(curorg,-1.0,200.0,mdlus,mdlus3,0,5,0.5,2.0,1.0,{255, 255, 255, 255},255,FBEAM_SOLID);
 			TE_SendToAll(0.0);
 			if (FileExists("sound/npc/houndeye/he_blast1.wav",true,NULL_STRING))
@@ -10750,6 +11134,9 @@ public Action resetmdl(Handle timer, Handle dp)
 			GetEntityClassname(ent,clsname,sizeof(clsname));
 			if (!StrEqual(clsname,clschk,false)) return Plugin_Handled;
 			if (!IsModelPrecached(mdl)) PrecacheModel(mdl,true);
+			char szChkMdl[128];
+			GetEntPropString(ent,Prop_Data,"m_ModelName",szChkMdl,sizeof(szChkMdl));
+			if (StrEqual(szChkMdl,mdl,false)) return Plugin_Handled;
 			SetEntPropString(ent,Prop_Data,"m_ModelName",mdl);
 			DispatchKeyValue(ent,"model",mdl);
 			if (StrEqual(mdl,"models/zombies/zombie_sci.mdl",false))
@@ -13614,22 +14001,48 @@ void findxenporttp(int ent, char[] cls, char[] targn, float delay)
 					GetEntPropString(thisent,Prop_Data,"m_iszNPCClassname",clschk,sizeof(clschk));
 					if (strlen(clschk) < 1)
 					{
-						int dispent = CreateEntityByName("env_sprite");
-						if (dispent != -1)
+						if (bPortalParticleAvailable)
 						{
-							float origin[3];
-							float angs[3];
-							if (HasEntProp(thisent,Prop_Data,"m_angRotation")) GetEntPropVector(thisent,Prop_Data,"m_angRotation",angs);
-							if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",origin);
-							else if (HasEntProp(thisent,Prop_Send,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Send,"m_vecOrigin",origin);
-							DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
-							DispatchKeyValue(dispent,"scale","0.4");
-							DispatchKeyValue(dispent,"rendermode","2");
-							origin[2]+=25.0;
-							TeleportEntity(dispent,origin,angs,NULL_VECTOR);
-							DispatchSpawn(dispent);
-							ActivateEntity(dispent);
-							CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+							int effect = CreateEntityByName("info_particle_system");
+							if (effect != -1)
+							{
+								DispatchKeyValue(effect,"effect_name","teleport_lambda_exit");
+								DispatchKeyValue(effect,"start_active","1");
+								float origin[3];
+								float angs[3];
+								if (HasEntProp(thisent,Prop_Data,"m_angRotation")) GetEntPropVector(thisent,Prop_Data,"m_angRotation",angs);
+								if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",origin);
+								else if (HasEntProp(thisent,Prop_Send,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Send,"m_vecOrigin",origin);
+								origin[2]+=25.0;
+								TeleportEntity(effect,origin,angs,NULL_VECTOR);
+								DispatchSpawn(effect);
+								ActivateEntity(effect);
+								AcceptEntityInput(effect,"Start");
+								Handle dp2 = CreateDataPack();
+								WritePackCell(dp2,effect);
+								WritePackString(dp2,"info_particle_system");
+								CreateTimer(0.5,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+							}
+						}
+						else
+						{
+							int dispent = CreateEntityByName("env_sprite");
+							if (dispent != -1)
+							{
+								float origin[3];
+								float angs[3];
+								if (HasEntProp(thisent,Prop_Data,"m_angRotation")) GetEntPropVector(thisent,Prop_Data,"m_angRotation",angs);
+								if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",origin);
+								else if (HasEntProp(thisent,Prop_Send,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Send,"m_vecOrigin",origin);
+								DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
+								DispatchKeyValue(dispent,"scale","0.4");
+								DispatchKeyValue(dispent,"rendermode","2");
+								origin[2]+=25.0;
+								TeleportEntity(dispent,origin,angs,NULL_VECTOR);
+								DispatchSpawn(dispent);
+								ActivateEntity(dispent);
+								CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+							}
 						}
 						int rand = GetRandomInt(1,3);
 						char snd[64];
@@ -13733,22 +14146,48 @@ public Action xenspawndelay(Handle timer, int entity)
 			GetEntPropString(entity,Prop_Data,"m_iszNPCClassname",clschk,sizeof(clschk));
 			if (strlen(clschk) < 1)
 			{
-				int dispent = CreateEntityByName("env_sprite");
-				if (dispent != -1)
+				if (bPortalParticleAvailable)
 				{
-					float origin[3];
-					float angs[3];
-					if (HasEntProp(entity,Prop_Data,"m_angRotation")) GetEntPropVector(entity,Prop_Data,"m_angRotation",angs);
-					if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",origin);
-					else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",origin);
-					DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
-					DispatchKeyValue(dispent,"scale","0.4");
-					DispatchKeyValue(dispent,"rendermode","2");
-					origin[2]+=25.0;
-					TeleportEntity(dispent,origin,angs,NULL_VECTOR);
-					DispatchSpawn(dispent);
-					ActivateEntity(dispent);
-					CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+					int effect = CreateEntityByName("info_particle_system");
+					if (effect != -1)
+					{
+						DispatchKeyValue(effect,"effect_name","teleport_lambda_exit");
+						DispatchKeyValue(effect,"start_active","1");
+						float origin[3];
+						float angs[3];
+						if (HasEntProp(entity,Prop_Data,"m_angRotation")) GetEntPropVector(entity,Prop_Data,"m_angRotation",angs);
+						if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",origin);
+						else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",origin);
+						origin[2]+=25.0;
+						TeleportEntity(effect,origin,angs,NULL_VECTOR);
+						DispatchSpawn(effect);
+						ActivateEntity(effect);
+						AcceptEntityInput(effect,"Start");
+						Handle dp2 = CreateDataPack();
+						WritePackCell(dp2,effect);
+						WritePackString(dp2,"info_particle_system");
+						CreateTimer(0.5,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+					}
+				}
+				else
+				{
+					int dispent = CreateEntityByName("env_sprite");
+					if (dispent != -1)
+					{
+						float origin[3];
+						float angs[3];
+						if (HasEntProp(entity,Prop_Data,"m_angRotation")) GetEntPropVector(entity,Prop_Data,"m_angRotation",angs);
+						if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",origin);
+						else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",origin);
+						DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
+						DispatchKeyValue(dispent,"scale","0.4");
+						DispatchKeyValue(dispent,"rendermode","2");
+						origin[2]+=25.0;
+						TeleportEntity(dispent,origin,angs,NULL_VECTOR);
+						DispatchSpawn(dispent);
+						ActivateEntity(dispent);
+						CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+					}
 				}
 				int rand = GetRandomInt(1,3);
 				char snd[64];
@@ -14859,7 +15298,8 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		if (HasEntProp(entity,Prop_Data,"m_iName"))
 		{
-			CreateTimer(0.1,custent,entity,TIMER_FLAG_NO_MAPCHANGE);
+			if (!SDKHookEx(entity,SDKHook_Spawn,custentspawn))
+				CreateTimer(0.1,custent,entity,TIMER_FLAG_NO_MAPCHANGE);
 		}
 	}
 	if ((IsValidEntity(entity)) && (customents) && (StrEqual(classname,"prop_ragdoll",false)))
@@ -15229,6 +15669,7 @@ public Action MineFieldTouch(const char[] output, int caller, int activator, flo
 	DispatchSpawn(endpoint);
 	ActivateEntity(endpoint);
 	AcceptEntityInput(endpoint,"Explode");
+	//env_mine_explode add info_particle_system?
 }
 
 public Action StartTouchPushPad(int entity, int other)
@@ -15303,7 +15744,19 @@ public Action sentryfindtarg(const char[] output, int caller, int activator, flo
 	PrintToServer("%i find %i %i",caller,activator,enemy);
 }
 
+public void custentspawn(int entity)
+{
+	SDKUnhook(entity,SDKHook_Spawn,custentspawn);
+	SetupLivingEnt(entity);
+}
+
 public Action custent(Handle timer, int entity)
+{
+	SetupLivingEnt(entity);
+	return Plugin_Handled;
+}
+
+public void SetupLivingEnt(int entity)
 {
 	if (IsValidEntity(entity))
 	{
@@ -15355,7 +15808,7 @@ public Action custent(Handle timer, int entity)
 					{
 						PrintToServer("Vehicle %s spawned with invalid model: %s",entcls,curmdl);
 						AcceptEntityInput(entity,"kill");
-						return Plugin_Handled;
+						return;
 					}
 				}
 				else
@@ -15376,7 +15829,7 @@ public Action custent(Handle timer, int entity)
 					else
 					{
 						AcceptEntityInput(entity,"kill");
-						return Plugin_Handled;
+						return;
 					}
 				}
 			}
@@ -15661,6 +16114,11 @@ public Action custent(Handle timer, int entity)
 			{
 				if (FileExists("models/humans/marine.mdl",true,NULL_STRING))
 				{
+					int sf = GetEntProp(entity,Prop_Data,"m_spawnflags");
+					if (!(sf & 262144))
+					{
+						SetEntProp(entity,Prop_Data,"m_spawnflags",sf+262144);
+					}
 					DispatchKeyValue(entity,"classname","npc_human_grunt");
 					ReplaceString(cls,sizeof(cls),"npc_human_grunt","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
@@ -15672,12 +16130,19 @@ public Action custent(Handle timer, int entity)
 					else if ((rand >= 56) && (rand <= 59)) rand = GetRandomInt(60,70);
 					SetVariantInt(rand);
 					AcceptEntityInput(entity,"SetBodyGroup");
+					SDKHookEx(entity,SDKHook_Think,hgruntthink);
+					AcceptEntityInput(entity,"GagEnable");
 				}
 			}
 			else if (StrContains(cls,"npc_human_commander",false) == 0)
 			{
 				if (FileExists("models/humans/marine.mdl",true,NULL_STRING))
 				{
+					int sf = GetEntProp(entity,Prop_Data,"m_spawnflags");
+					if (!(sf & 262144))
+					{
+						SetEntProp(entity,Prop_Data,"m_spawnflags",sf+262144);
+					}
 					DispatchKeyValue(entity,"classname","npc_human_commander");
 					ReplaceString(cls,sizeof(cls),"npc_human_commander","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
@@ -15689,6 +16154,8 @@ public Action custent(Handle timer, int entity)
 					else if ((rand >= 56) && (rand <= 59)) rand = GetRandomInt(60,70);
 					SetVariantInt(rand);
 					AcceptEntityInput(entity,"SetBodyGroup");
+					SDKHookEx(entity,SDKHook_Think,hgruntthink);
+					AcceptEntityInput(entity,"GagEnable");
 					//SetEntProp(entity,Prop_Data,"m_fIsElite",1);
 				}
 			}
@@ -15696,6 +16163,11 @@ public Action custent(Handle timer, int entity)
 			{
 				if (FileExists("models/humans/marine.mdl",true,NULL_STRING))
 				{
+					int sf = GetEntProp(entity,Prop_Data,"m_spawnflags");
+					if (!(sf & 262144))
+					{
+						SetEntProp(entity,Prop_Data,"m_spawnflags",sf+262144);
+					}
 					SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
 					DispatchKeyValue(entity,"classname","npc_human_grenadier");
 					ReplaceString(cls,sizeof(cls),"npc_human_grenadier","");
@@ -15708,12 +16180,18 @@ public Action custent(Handle timer, int entity)
 					else if ((rand >= 56) && (rand <= 59)) rand = GetRandomInt(60,70);
 					SetVariantInt(rand);
 					AcceptEntityInput(entity,"SetBodyGroup");
+					SDKHookEx(entity,SDKHook_Think,grenthink);
 				}
 			}
 			else if (StrContains(cls,"npc_human_medic",false) == 0)
 			{
 				if (FileExists("models/humans/marine.mdl",true,NULL_STRING))
 				{
+					int sf = GetEntProp(entity,Prop_Data,"m_spawnflags");
+					if (!(sf & 262144))
+					{
+						SetEntProp(entity,Prop_Data,"m_spawnflags",sf+262144);
+					}
 					DispatchKeyValue(entity,"classname","npc_human_medic");
 					ReplaceString(cls,sizeof(cls),"npc_human_medic","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
@@ -15856,7 +16334,14 @@ public Action custent(Handle timer, int entity)
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
 					DispatchKeyValue(entity,"model","models/props_vehicles/osprey.mdl");
 					WritePackString(dp,"models/props_vehicles/osprey.mdl");
+					SDKHookEx(entity,SDKHook_Think,ospreythink);
 				}
+			}
+			else if ((StrContains(cls,"npc_apache",false) == 0) || (StrEqual(entcls,"npc_apache",false)))
+			{
+				WritePackString(dp,"models/props_vehicles/apache.mdl");
+				SDKHookEx(entity,SDKHook_Think,apachethink);
+				SDKHookEx(entity,SDKHook_OnTakeDamage,apachetkdmg);
 			}
 			else if (StrContains(cls,"npc_houndeye",false) == 0)
 			{
@@ -15878,6 +16363,7 @@ public Action custent(Handle timer, int entity)
 				AcceptEntityInput(entity,"GagEnable");
 				origin[2]+=20.0;
 				TeleportEntity(entity,origin,NULL_VECTOR,NULL_VECTOR);
+				setuphound(entity);
 			}
 			else if (StrContains(cls,"monster_houndeye",false) == 0)
 			{
@@ -15894,6 +16380,7 @@ public Action custent(Handle timer, int entity)
 				AcceptEntityInput(entity,"GagEnable");
 				origin[2]+=20.0;
 				TeleportEntity(entity,origin,NULL_VECTOR,NULL_VECTOR);
+				setuphound(entity);
 			}
 			else if (StrContains(cls,"npc_bullsquid",false) == 0)
 			{
@@ -15908,6 +16395,7 @@ public Action custent(Handle timer, int entity)
 					AcceptEntityInput(entity,"GagEnable");
 					origin[2]+=20.0;
 					TeleportEntity(entity,origin,NULL_VECTOR,NULL_VECTOR);
+					setupsquid(entity);
 				}
 			}
 			else if ((StrContains(cls,"npc_alien_grunt",false) == 0) || (StrEqual(entcls,"npc_alien_grunt",false)))
@@ -16217,7 +16705,7 @@ public Action custent(Handle timer, int entity)
 			{
 				CloseHandle(dp);
 				dp = INVALID_HANDLE;
-				return Plugin_Handled;
+				return;
 			}
 			if (dp != INVALID_HANDLE)
 			{
@@ -16306,7 +16794,7 @@ public Action custent(Handle timer, int entity)
 			}
 		}
 	}
-	return Plugin_Handled;
+	return;
 }
 
 void setuprelations(char[] cls)
@@ -16661,6 +17149,7 @@ public Action onreload(const char[] output, int caller, int activator, float del
 			findstraymdl(-1,"game_weapon_manager");
 			findstraymdl(-1,"item_healthkit");
 			findstraymdl(-1,"item_battery");
+			findstraymdl(-1,"trigger_once");
 			resetchargers(-1,"item_healthcharger");
 			resetchargers(-1,"item_suitcharger");
 		}
@@ -18214,17 +18703,38 @@ public Action waitclearspawner(Handle timer, Handle dppass)
 				GetEntityClassname(spawnonent,clschk,sizeof(clschk));
 				if (StrContains(clschk,"env_xen_portal",false) == 0)
 				{
-					int dispent = CreateEntityByName("env_sprite");
-					if (dispent != -1)
+					if (bPortalParticleAvailable)
 					{
-						DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
-						DispatchKeyValue(dispent,"scale","0.4");
-						DispatchKeyValue(dispent,"rendermode","2");
-						spawnat[2]+=25.0;
-						TeleportEntity(dispent,spawnat,spawnang,NULL_VECTOR);
-						DispatchSpawn(dispent);
-						ActivateEntity(dispent);
-						CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+						int effect = CreateEntityByName("info_particle_system");
+						if (effect != -1)
+						{
+							DispatchKeyValue(effect,"effect_name","teleport_lambda_exit");
+							DispatchKeyValue(effect,"start_active","1");
+							spawnat[2]+=25.0;
+							TeleportEntity(effect,spawnat,spawnang,NULL_VECTOR);
+							DispatchSpawn(effect);
+							ActivateEntity(effect);
+							AcceptEntityInput(effect,"Start");
+							Handle dp2 = CreateDataPack();
+							WritePackCell(dp2,effect);
+							WritePackString(dp2,"info_particle_system");
+							CreateTimer(0.5,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+						}
+					}
+					else
+					{
+						int dispent = CreateEntityByName("env_sprite");
+						if (dispent != -1)
+						{
+							DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
+							DispatchKeyValue(dispent,"scale","0.4");
+							DispatchKeyValue(dispent,"rendermode","2");
+							spawnat[2]+=25.0;
+							TeleportEntity(dispent,spawnat,spawnang,NULL_VECTOR);
+							DispatchSpawn(dispent);
+							ActivateEntity(dispent);
+							CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+						}
 					}
 					int rand = GetRandomInt(1,3);
 					char snd[64];
@@ -18242,7 +18752,19 @@ void findstraymdl(int ent, char[] clsname)
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent != 0))
 	{
-		if ((StrEqual(clsname,"point_template",false)) || (StrEqual(clsname,"npc_template_maker",false)) || (StrEqual(clsname,"npc_maker",false)) || (StrEqual(clsname,"env_xen_portal",false)) || (StrEqual(clsname,"env_xen_portal_template",false)))
+		if (StrEqual(clsname,"trigger_once",false))
+		{
+			if (HasEntProp(thisent,Prop_Data,"m_iszResponseContext"))
+			{
+				char szResponse[32];
+				GetEntPropString(thisent,Prop_Data,"m_iszResponseContext",szResponse,sizeof(szResponse));
+				if (StrContains(szResponse,"func_minefield",false) == 0)
+				{
+					HookSingleEntityOutput(thisent,"OnStartTouch",MineFieldTouch);
+				}
+			}
+		}
+		else if ((StrEqual(clsname,"point_template",false)) || (StrEqual(clsname,"npc_template_maker",false)) || (StrEqual(clsname,"npc_maker",false)) || (StrEqual(clsname,"env_xen_portal",false)) || (StrEqual(clsname,"env_xen_portal_template",false)))
 		{
 			if (FindValueInArray(templateslist,thisent) == -1) PushArrayCell(templateslist,thisent);
 		}
@@ -20583,7 +21105,7 @@ public int Native_AddToInputHooks(Handle plugin, int numParams)
 
 public Action customsoundchecksnorm(int clients[64], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags)
 {
-	if (((StrContains(sample,"vo\\",false) == 0) || (StrContains(sample,"vo/",false) == 0) || (StrContains(sample,"*vo\\",false) == 0) || (StrContains(sample,"*vo/",false) == 0)) && ((StrContains(sample,"pain",false) == -1) && (StrContains(sample,"breath",false) == -1)))
+	if (((StrContains(sample,"vo\\",false) == 0) || (StrContains(sample,"vo/",false) == 0) || (StrContains(sample,"*vo\\",false) == 0) || (StrContains(sample,"*vo/",false) == 0)) && ((StrContains(sample,"pain",false) == -1) && (StrContains(sample,"HG_ALERT",false) == -1) && (StrContains(sample,"breath",false) == -1)))
 	{
 		bool addsnd = true;
 		if (GetArraySize(delayedspeech) > 0)
