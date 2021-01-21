@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.42"
+#define PLUGIN_VERSION "1.43"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -2980,7 +2980,7 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 		//ForcePlayerSuicide(client);
 		return Plugin_Handled;
 	}
-	CreateTimer(2.0, joincfg, client, TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(0.5, EverySpawnPost, client, TIMER_FLAG_NO_MAPCHANGE);
 	return Plugin_Continue;
 }
 
@@ -3519,6 +3519,27 @@ public Action joincfg(Handle timer, int client)
 {
 	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && !IsFakeClient(client))
 	{
+		if (survivalact)
+		{
+			int arrindx = FindStringInArray(respawnids,SteamID[client]);
+			if (arrindx != -1)
+			{
+				ForcePlayerSuicide(client);
+				PrintToChat(client,"You cannot respawn yet.");
+			}
+		}
+	}
+	else if (IsClientConnected(client))
+	{
+		CreateTimer(1.0,joincfg,client,TIMER_FLAG_NO_MAPCHANGE);
+	}
+	return Plugin_Handled;
+}
+
+public Action EverySpawnPost(Handle timer, int client)
+{
+	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && !IsFakeClient(client))
+	{
 		ClientCommand(client,"crosshair 1");
 		if (HasEntProp(client,Prop_Send,"m_bDisplayReticle"))
 			SetEntProp(client,Prop_Send,"m_bDisplayReticle",1);
@@ -3554,15 +3575,6 @@ public Action joincfg(Handle timer, int client)
 			ClientCommand(client,"bind tab +showscores");
 			//SetEntProp(client,Prop_Data,"m_iTeamNum",0);
 			teamnum[client] = 0;
-		}
-		if (survivalact)
-		{
-			int arrindx = FindStringInArray(respawnids,SteamID[client]);
-			if (arrindx != -1)
-			{
-				ForcePlayerSuicide(client);
-				PrintToChat(client,"You cannot respawn yet.");
-			}
 		}
 		findent(MaxClients+1,"info_player_equip");
 		for (int j; j<GetArraySize(equiparr); j++)
@@ -3612,7 +3624,7 @@ public Action joincfg(Handle timer, int client)
 	}
 	else if (IsClientConnected(client))
 	{
-		CreateTimer(1.0,joincfg,client);
+		CreateTimer(1.0,EverySpawnPost,client,TIMER_FLAG_NO_MAPCHANGE);
 	}
 	return Plugin_Handled;
 }

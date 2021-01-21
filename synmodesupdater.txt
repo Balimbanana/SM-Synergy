@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.42"
-			"Previous"	"1.41"
+			"Latest"  	"1.43"
+			"Previous"	"1.42"
 		}
 		
-		"Notes"	"Additional validation."
+		"Notes"	"Separated certain checks for on join and on spawn."
 	}
 	
 	"Files"
