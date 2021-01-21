@@ -11,7 +11,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "0.51"
+#define PLUGIN_VERSION "0.52"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/buildentitycache.txt"
 
 bool AutoBuild = false;
@@ -868,8 +868,7 @@ void ReadCache(char[] cache, char[] mapedt)
 						else truncatedat++;
 						Format(tmptrunc,sizeof(tmptrunc),"%s",tmpkv[1][truncatedat]);
 						if (StrEqual(tmpkv[1],"weapon_crossbow",false)) Format(tmptrunc,sizeof(tmptrunc),"xbow");
-						Format(output,sizeof(output),"\n				%s \"%s,Enable,,%s,%s\"",output,tmptrunc,kvs[3],kvs[4]);
-						Format(output,sizeof(output),"%s\n				%s \"%s,EquipAllPlayers,,%1.1f,%s\"",output,tmptrunc,StringToFloat(kvs[3])+0.1,kvs[4]);
+						Format(output,sizeof(output),"\n				%s \"%s,Enable,,%s,%s\"\n				%s \"%s,EquipAllPlayers,,%1.1f,%s\"",output,tmptrunc,kvs[3],kvs[4],output,tmptrunc,StringToFloat(kvs[3])+0.1,kvs[4]);
 						StrCat(lineedt,sizeof(lineedt),output);
 					}
 					else if (StrContains(kvs[3],",Command,sv_cheats ",false) != -1)
@@ -970,8 +969,8 @@ void ReadCache(char[] cache, char[] mapedt)
 									WriteFileLine(edtfile,"			values");
 									WriteFileLine(edtfile,"			{");
 									WriteFileLine(edtfile,"				spawnflags \"1\"");
-									WriteFileLine(edtfile,"				edt_maxs \"20 20 20\"");
-									WriteFileLine(edtfile,"				edt_mins \"-20 -20 -20\"");
+									WriteFileLine(edtfile,"				edt_maxs \"100 100 100\"");
+									WriteFileLine(edtfile,"				edt_mins \"-100 -100 -100\"");
 									WriteFileLine(edtfile,"				OnTrigger \"syn_hudtimer,Start,20,0,-1\"");
 									WriteFileLine(edtfile,"				OnTrigger \"syn_viewcontrol,Enable,,0,-1\"");
 									WriteFileLine(edtfile,"			}");
@@ -1105,8 +1104,8 @@ void ReadCache(char[] cache, char[] mapedt)
 				WriteFileLine(edtfile,"			values");
 				WriteFileLine(edtfile,"			{");
 				WriteFileLine(edtfile,"				spawnflags \"1\"");
-				WriteFileLine(edtfile,"				edt_maxs \"20 20 20\"");
-				WriteFileLine(edtfile,"				edt_mins \"-20 -20 -20\"");
+				WriteFileLine(edtfile,"				edt_maxs \"100 100 100\"");
+				WriteFileLine(edtfile,"				edt_mins \"-100 -100 -100\"");
 				WriteFileLine(edtfile,"				OnTrigger \"syn_hudtimer,Start,20,0,-1\"");
 				WriteFileLine(edtfile,"				OnTrigger \"syn_viewcontrol,Enable,,0,-1\"");
 				WriteFileLine(edtfile,"			}");
@@ -1138,13 +1137,19 @@ void ReadCache(char[] cache, char[] mapedt)
 			WriteFileLine(edtfile,"		create {classname \"info_player_coop\" %s",originalorgs);
 			WriteFileLine(edtfile,"			values");
 			WriteFileLine(edtfile,"			{");
+			bool bAddDisable = false;
 			for (int i = 0;i<GetArraySize(mainspawn);i++)
 			{
 				char tmparr[128];
 				GetArrayString(mainspawn,i,tmparr,sizeof(tmparr));
 				if (StrContains(tmparr,"OnMapSpawn",false) == 0) ReplaceStringEx(tmparr,sizeof(tmparr),"OnMapSpawn","OnTimer");
+				if (StrContains(tmparr,"startdisabled",false) != -1) bAddDisable = false;
 				if ((StrContains(tmparr,"classname",false) == -1) && (StrContains(tmparr,"}",false) == -1))
 					WriteFileLine(edtfile,"				%s",tmparr);
+			}
+			if (bAddDisable)
+			{
+				WriteFileLine(edtfile,"				startdisabled \"0\"");
 			}
 			WriteFileLine(edtfile,"			}");
 			WriteFileLine(edtfile,"		}");
@@ -1158,8 +1163,13 @@ void ReadCache(char[] cache, char[] mapedt)
 			WriteFileLine(edtfile,"				TimerText \"WAITING FOR PLAYERS\"");
 			WriteFileLine(edtfile,"				TimerType \"1\"");
 			WriteFileLine(edtfile,"				OnTimer \"syn_viewcontrol,Disable,,0,-1\"");
+			if (GetArraySize(hudtimer) > 48)
+			{
+				WriteFileLine(edtfile,"				OnTimer \"syn_nextrelay,Trigger,,0,-1\"");
+			}
 			for (int i = 0;i<GetArraySize(hudtimer);i++)
 			{
+				if (i >= 48) break;
 				char tmparr[128];
 				GetArrayString(hudtimer,i,tmparr,sizeof(tmparr));
 				if ((StrContains(tmparr,"OnMapTransition") == 0) || ((StrContains(tmparr,"OnMapSpawn",false) == 0) && (StrContains(tmparr,"AddOutput",false) != -1)))
@@ -1175,6 +1185,30 @@ void ReadCache(char[] cache, char[] mapedt)
 			}
 			WriteFileLine(edtfile,"			}");
 			WriteFileLine(edtfile,"		}");
+			if (GetArraySize(hudtimer) > 48)
+			{
+				WriteFileLine(edtfile,"		create {classname \"logic_relay\"");
+				WriteFileLine(edtfile,"			values");
+				WriteFileLine(edtfile,"			{");
+				WriteFileLine(edtfile,"				targetname \"syn_nextrelay\"");
+				for (int i = 48;i<GetArraySize(hudtimer);i++)
+				{
+					char tmparr[128];
+					GetArrayString(hudtimer,i,tmparr,sizeof(tmparr));
+					if ((StrContains(tmparr,"OnMapTransition") == 0) || ((StrContains(tmparr,"OnMapSpawn",false) == 0) && (StrContains(tmparr,"AddOutput",false) != -1)))
+					{
+						PushArrayString(logicautos,tmparr);
+						tmparr = "";
+					}
+					else if (StrContains(tmparr,"OnMapSpawn",false) == 0) ReplaceStringEx(tmparr,sizeof(tmparr),"OnMapSpawn","OnTrigger");
+					if (strlen(tmparr) > 1)
+					{
+						WriteFileLine(edtfile,"				%s",tmparr);
+					}
+				}
+				WriteFileLine(edtfile,"			}");
+				WriteFileLine(edtfile,"		}");
+			}
 		}
 		bool carriedover = false;
 		if (carriedoverweapons != INVALID_HANDLE)
