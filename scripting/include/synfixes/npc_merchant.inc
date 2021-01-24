@@ -131,10 +131,21 @@ void DisplayMerchMenu(int activator, int finddp)
 		{
 			GetArrayString(items,i,item,sizeof(item));
 			Format(itemdisplay,sizeof(itemdisplay),"%s",item);
-			iFindSpace = StrContains(itemdisplay," ",false);
-			if (iFindSpace != -1)
+			if (StrContains(itemdisplay,"srvcmd",false) != -1)
 			{
-				Format(itemdisplay,iFindSpace+1,"%s",itemdisplay);
+				iFindSpace = StrContains(itemdisplay,"srvcmd",false);
+				if (iFindSpace != -1)
+				{
+					Format(itemdisplay,iFindSpace+1,"%s",itemdisplay);
+				}
+			}
+			else
+			{
+				iFindSpace = StrContains(itemdisplay," ",false);
+				if (iFindSpace != -1)
+				{
+					Format(itemdisplay,iFindSpace+1,"%s",itemdisplay);
+				}
 			}
 			ReplaceStringEx(itemdisplay,sizeof(itemdisplay),"weapon_","",-1,-1,false);
 			int maxrun = ExplodeString(itemdisplay,"_",rebuildupper,16,32);
