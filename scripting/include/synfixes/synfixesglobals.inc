@@ -641,6 +641,6 @@ bool GetBaseClassFor(char[] szCls, char[] szSetBuff, int iszBuffSize)
 	else if (StrEqual(szCls,"npc_apache",false)) Format(szSetBuff,iszBuffSize,"npc_helicopter");
 	else if (StrEqual(szCls,"item_longjump",false)) Format(szSetBuff,iszBuffSize,"item_healthkit");
 	else if (StrEqual(szCls,"item_custom",false)) Format(szSetBuff,iszBuffSize,"item_ammo_smg1");
-	if (strlen(szSetBuff) < 1) return false;
+	else return false;
 	return true;
 }

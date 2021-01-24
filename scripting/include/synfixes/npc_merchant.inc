@@ -27,7 +27,7 @@ public Action MerchantUse(const char[] output, int caller, int activator, float 
 						Handle filehandlesub = OpenFile(scr,"r",true,NULL_STRING);
 						if (filehandlesub != INVALID_HANDLE)
 						{
-							char scrline[64];
+							char scrline[256];
 							while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
 							{
 								ReplaceString(scrline,sizeof(scrline),"\"","");
@@ -123,15 +123,21 @@ void DisplayMerchMenu(int activator, int finddp)
 				Format(title,sizeof(title),"%s Cost: Custom",title);
 		}
 		menu.SetTitle(title);
-		char item[64];
+		char item[256];
 		char itemdisplay[64];
-		char rebuildupper[32][32];
+		char rebuildupper[16][32];
+		int iFindSpace = -1;
 		for (int i = 0;i<GetArraySize(items);i++)
 		{
 			GetArrayString(items,i,item,sizeof(item));
 			Format(itemdisplay,sizeof(itemdisplay),"%s",item);
+			iFindSpace = StrContains(itemdisplay," ",false);
+			if (iFindSpace != -1)
+			{
+				Format(itemdisplay,iFindSpace+1,"%s",itemdisplay);
+			}
 			ReplaceStringEx(itemdisplay,sizeof(itemdisplay),"weapon_","",-1,-1,false);
-			int maxrun = ExplodeString(itemdisplay,"_",rebuildupper,32,32);
+			int maxrun = ExplodeString(itemdisplay,"_",rebuildupper,16,32);
 			itemdisplay = "";
 			for (int j = 0;j<maxrun;j++)
 			{
@@ -145,6 +151,8 @@ void DisplayMerchMenu(int activator, int finddp)
 				}
 				else break;
 			}
+			maxrun = ExplodeString(item," ",rebuildupper,16,32);
+			Format(itemdisplay,sizeof(itemdisplay),"%s ($%s)",itemdisplay,rebuildupper[maxrun-1]);
 			menu.AddItem(item,itemdisplay);
 		}
 		CloseHandle(items);
@@ -157,17 +165,19 @@ public int MenuHandlersub(Menu menu, MenuAction action, int param1, int param2)
 {
 	if ((action == MenuAction_Select) && (param1 > 0) && (param1 < MaxClients+1))
 	{
-		char info[128];
-		char data[4][64];
+		char info[256];
+		char data[16][64];
 		menu.GetItem(param2, info, sizeof(info));
-		ExplodeString(info," ",data,4,64);
+		int iCostpos = ExplodeString(info," ",data,16,64);
 		TrimString(data[0]);
-		TrimString(data[1]);
+		TrimString(data[iCostpos-1]);
+		/*
 		if (strlen(data[2]) > 0)
 		{
 			TrimString(data[2]);
 			Format(data[1],sizeof(data[]),"%s",data[2]);
 		}
+		*/
 		int points = 0;
 		switch(iMerchantCType)
 		{
@@ -183,7 +193,7 @@ public int MenuHandlersub(Menu menu, MenuAction action, int param1, int param2)
 				}
 			}
 		}
-		int cost = StringToInt(data[1]);
+		int cost = StringToInt(data[iCostpos-1]);
 		//PrintToServer("Activator %i has %i cost is %i",param1,points,cost);
 		if (points >= cost)
 		{
@@ -201,7 +211,15 @@ public int MenuHandlersub(Menu menu, MenuAction action, int param1, int param2)
 					}
 				}
 			}
-			CreateCustomItem(param1,data[0],cost);
+			if (iCostpos > 0)
+			{
+				Format(info,sizeof(info),"%s",data[0]);
+				for (int i = 1;i<iCostpos;i++)
+				{
+					Format(info,sizeof(info),"%s %s",info,data[i]);
+				}
+			}
+			CreateCustomItem(param1,info,cost);
 			MerchSpeakRef(custentactive[param1],param1,1);
 		}
 		else
@@ -221,88 +239,139 @@ void CreateCustomItem(int client, char[] info, int cost)
 {
 	if (IsValidEntity(client))
 	{
-		char basecls[64];
-		Format(basecls,sizeof(basecls),"%s",info);
-		if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
-		else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
-		else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-		else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-		else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-		else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
-		else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
-		else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
-		else if (StrContains(info,"custom_",false) != -1)
+		char basecls[128];
+		char infcls[64];
+		int iFindSpace = StrContains(info," ",false);
+		if (iFindSpace != -1)
 		{
-			char weapscr[72];
-			Format(weapscr,sizeof(weapscr),"scripts/%s.txt",info);
-			if (FileExists(weapscr,true,NULL_STRING))
-			{
-				Handle filehandlesub = OpenFile(weapscr,"r",true,NULL_STRING);
-				if (filehandlesub != INVALID_HANDLE)
-				{
-					char scrline[64];
-					while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
-					{
-						TrimString(scrline);
-						if (StrContains(scrline,"\"anim_prefix\"",false) != -1)
-						{
-							ReplaceStringEx(scrline,sizeof(scrline),"\"anim_prefix\"","",_,_,false);
-							ReplaceString(scrline,sizeof(scrline),"\"","");
-							TrimString(scrline);
-							if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
-							else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
-							else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
-							Format(scrline,sizeof(scrline),"weapon_%s",scrline);
-							Format(basecls,sizeof(basecls),"%s",scrline);
-							break;
-						}
-					}
-				}
-				CloseHandle(filehandlesub);
-			}
+			Format(basecls,iFindSpace+1,"%s",info);
 		}
-		int createitem = CreateEntityByName(basecls);
-		if (createitem != -1)
+		else Format(basecls,sizeof(basecls),"%s",info);
+		if (StrContains(info,"srvcmd",false) != -1)
 		{
-			if (!StrEqual(info,basecls,false)) DispatchKeyValue(createitem,"classname",info);
-			float orgs[3];
-			if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
-			else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
-			orgs[2]+=20.0;
-			TeleportEntity(createitem,orgs,NULL_VECTOR,NULL_VECTOR);
-			DispatchSpawn(createitem);
-			ActivateEntity(createitem);
+			iFindSpace = StrContains(info,"srvcmd",false);
+			if (iFindSpace != -1)
+			{
+				Format(infcls,iFindSpace+1,"%s",info);
+				Format(basecls,sizeof(basecls),"%s",info);
+				ReplaceStringEx(basecls,sizeof(basecls),infcls,"",_,_,false);
+				ReplaceStringEx(basecls,sizeof(basecls),"srvcmd ","",_,_,false);
+				char data[16][64];
+				TrimString(basecls);
+				if (StrContains(basecls,"'",false) != -1)
+				{
+					ReplaceStringEx(basecls,sizeof(basecls),"'","",_,_,false);
+					iFindSpace = ExplodeString(basecls,"'",data,16,64);
+					Format(basecls,sizeof(basecls),"%s",data[0]);
+				}
+				else iFindSpace = ExplodeString(basecls," ",data,16,64);
+				Format(basecls,sizeof(basecls),"%s",data[0]);
+				for (int i = 1;i<iFindSpace;i++)
+				{
+					Format(basecls,sizeof(basecls),"%s",basecls,data[i]);
+				}
+				char szCL[4];
+				Format(szCL,sizeof(szCL),"%i",client);
+				ReplaceString(basecls,sizeof(basecls),"$1",szCL,false);
+				ServerCommand("%s",basecls);
+			}
 		}
 		else
 		{
-			int points = 0;
-			switch(iMerchantCType)
+			Format(infcls,sizeof(infcls),"%s",basecls);
+			if (StrEqual(basecls,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
+			else if (StrEqual(basecls,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
+			else if ((StrEqual(basecls,"weapon_glock",false)) || (StrEqual(basecls,"weapon_pistol_worker",false)) || (StrEqual(basecls,"weapon_flaregun",false)) || (StrEqual(basecls,"weapon_manhack",false)) || (StrEqual(basecls,"weapon_manhackgun",false)) || (StrEqual(basecls,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+			else if ((StrEqual(basecls,"weapon_medkit",false)) || (StrEqual(basecls,"weapon_healer",false)) || (StrEqual(basecls,"weapon_snark",false)) || (StrEqual(basecls,"weapon_hivehand",false)) || (StrEqual(basecls,"weapon_satchel",false)) || (StrEqual(basecls,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+			else if ((StrEqual(basecls,"weapon_mp5",false)) || (StrEqual(basecls,"weapon_sl8",false)) || (StrEqual(basecls,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+			else if ((StrEqual(basecls,"weapon_gauss",false)) || (StrEqual(basecls,"weapon_tau",false)) || (StrEqual(basecls,"weapon_sniperrifle",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+			else if (StrEqual(basecls,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
+			else if (StrEqual(basecls,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
+			else if (StrContains(basecls,"custom_",false) != -1)
 			{
-				case 0:
-					points = GetEntProp(client,Prop_Data,"m_iFrags");
-				case 1:
-					points = GetEntProp(client,Prop_Data,"m_iPoints");
-				case 2:
+				char weapscr[72];
+				Format(weapscr,sizeof(weapscr),"scripts/%s.txt",basecls);
+				if (FileExists(weapscr,true,NULL_STRING))
 				{
-					if (HasEntProp(client,Prop_Data,szMerchPropType))
+					Handle filehandlesub = OpenFile(weapscr,"r",true,NULL_STRING);
+					if (filehandlesub != INVALID_HANDLE)
 					{
-						points = GetEntProp(client,Prop_Data,szMerchPropType);
+						char scrline[64];
+						while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
+						{
+							TrimString(scrline);
+							if (StrContains(scrline,"\"anim_prefix\"",false) != -1)
+							{
+								ReplaceStringEx(scrline,sizeof(scrline),"\"anim_prefix\"","",_,_,false);
+								ReplaceString(scrline,sizeof(scrline),"\"","");
+								TrimString(scrline);
+								if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
+								else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
+								else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
+								Format(scrline,sizeof(scrline),"weapon_%s",scrline);
+								Format(basecls,sizeof(basecls),"%s",scrline);
+								break;
+							}
+						}
 					}
+					CloseHandle(filehandlesub);
 				}
 			}
-			PrintToChat(client,"Failed to create \"%s\" ask for it to be added to ent list.",basecls);
-			PrintToChat(client,"You have been refunded %i",cost);
-			switch(iMerchantCType)
+			int createitem = CreateEntityByName(basecls);
+			if (createitem != -1)
 			{
-				case 0:
-					SetEntProp(client,Prop_Data,"m_iFrags",points+cost);
-				case 1:
-					SetEntProp(client,Prop_Data,"m_iPoints",points+cost);
-				case 2:
+				if (!StrEqual(infcls,basecls,false)) DispatchKeyValue(createitem,"classname",infcls);
+				float orgs[3];
+				if (HasEntProp(client,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(client,Prop_Data,"m_vecAbsOrigin",orgs);
+				else if (HasEntProp(client,Prop_Send,"m_vecOrigin")) GetEntPropVector(client,Prop_Send,"m_vecOrigin",orgs);
+				orgs[2]+=20.0;
+				TeleportEntity(createitem,orgs,NULL_VECTOR,NULL_VECTOR);
+				if (iFindSpace != -1)
 				{
-					if (HasEntProp(client,Prop_Data,szMerchPropType))
+					char data[16][64];
+					//PrintToServer("KeysSet %s",info);
+					int iMaxKeys = ExplodeString(info," ",data,16,64);
+					for (int i = 1;i<iMaxKeys;i++)
 					{
-						SetEntProp(client,Prop_Data,szMerchPropType,points+cost);
+						if (strlen(data[i+1]) > 0)
+							DispatchKeyValue(createitem,data[i],data[i+1]);
+						i++;
+					}
+				}
+				DispatchSpawn(createitem);
+				ActivateEntity(createitem);
+			}
+			else
+			{
+				int points = 0;
+				switch(iMerchantCType)
+				{
+					case 0:
+						points = GetEntProp(client,Prop_Data,"m_iFrags");
+					case 1:
+						points = GetEntProp(client,Prop_Data,"m_iPoints");
+					case 2:
+					{
+						if (HasEntProp(client,Prop_Data,szMerchPropType))
+						{
+							points = GetEntProp(client,Prop_Data,szMerchPropType);
+						}
+					}
+				}
+				PrintToChat(client,"Failed to create \"%s\" ask for it to be added to ent list.",basecls);
+				PrintToChat(client,"You have been refunded %i",cost);
+				switch(iMerchantCType)
+				{
+					case 0:
+						SetEntProp(client,Prop_Data,"m_iFrags",points+cost);
+					case 1:
+						SetEntProp(client,Prop_Data,"m_iPoints",points+cost);
+					case 2:
+					{
+						if (HasEntProp(client,Prop_Data,szMerchPropType))
+						{
+							SetEntProp(client,Prop_Data,szMerchPropType,points+cost);
+						}
 					}
 				}
 			}

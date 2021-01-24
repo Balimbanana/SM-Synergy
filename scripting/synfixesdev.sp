@@ -60,6 +60,7 @@ Handle dctimeoutarr = INVALID_HANDLE;
 Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
 Handle hTemplateData = INVALID_HANDLE;
+ConVar hWeaponRespawn;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float fadingtime[128];
@@ -114,7 +115,7 @@ bool FixWeapSnd = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0025"
+#define PLUGIN_VERSION "2.0026"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -408,6 +409,10 @@ public void OnPluginStart()
 		GetConVarString(hMerchCVar, szMerchPropType, sizeof(szMerchPropType));
 		HookConVarChange(hMerchCVar, merchcurrencypropch);
 	}
+	//sv_hl2mp_weapon_respawn_time default CVar for time to spawn
+	hWeaponRespawn = FindConVar("mp_respawnweapons");
+	if (hWeaponRespawn == INVALID_HANDLE) hWeaponRespawn = CreateConVar("mp_respawnweapons", "0", "Respawn weapons picked up off the ground.", _, true, 0.0, true, 1.0);
+	HookConVarChange(hWeaponRespawn, weaponrespawnch);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -3581,6 +3586,13 @@ public Action clticks(Handle timer)
 								GetEntityClassname(ViewEnt,cls,sizeof(cls));
 								if (StrEqual(cls,"point_viewcontrol",false))
 								{
+									if (HasEntProp(ViewEnt,Prop_Data,"m_spawnflags"))
+									{
+										if (GetEntProp(ViewEnt,Prop_Data,"m_spawnflags") & 1<<7)
+										{
+											if (HasEntProp(i,Prop_Data,"m_nRenderFX")) SetEntProp(i,Prop_Data,"m_nRenderFX",6);
+										}
+									}
 									if (hudset != 2072)
 									{
 										SetEntProp(i,Prop_Data,"m_iHideHUD",2072);
@@ -3589,6 +3601,7 @@ public Action clticks(Handle timer)
 								}
 								else if (hudset == 2072)
 								{
+									if (HasEntProp(i,Prop_Data,"m_nRenderFX")) SetEntProp(i,Prop_Data,"m_nRenderFX",0);
 									SetEntProp(i,Prop_Data,"m_iHideHUD",2048);
 									ChangeEdictState(i);
 								}
@@ -3597,6 +3610,7 @@ public Action clticks(Handle timer)
 							{
 								if (hudset == 2072)
 								{
+									if (HasEntProp(i,Prop_Data,"m_nRenderFX")) SetEntProp(i,Prop_Data,"m_nRenderFX",0);
 									SetEntProp(i,Prop_Data,"m_iHideHUD",2048);
 									ChangeEdictState(i);
 								}
@@ -19129,6 +19143,10 @@ public void resetweapmv(int entity)
 				WritePackFloat(dp,orgs[2]);
 				CreateTimer(0.1,resetweappos,dp,TIMER_FLAG_NO_MAPCHANGE);
 			}
+			if ((!IsValidEntity(parent)) && (hWeaponRespawn.BoolValue))
+			{
+				CreateTimer(0.1,ReCheckOwnerWeapon,entity,TIMER_FLAG_NO_MAPCHANGE);
+			}
 			if (StrEqual(clsrecheck,"weapon_glock",false))
 			{
 				if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",3);
@@ -19168,6 +19186,20 @@ public Action resetweappos(Handle timer, Handle dp)
 					SetEntProp(entity,Prop_Data,"m_MoveType",0);
 					TeleportEntity(entity,orgs,NULL_VECTOR,NULL_VECTOR);
 				}
+			}
+		}
+	}
+}
+
+public Action ReCheckOwnerWeapon(Handle timer, int entity)
+{
+	if (IsValidEntity(entity))
+	{
+		if (HasEntProp(entity,Prop_Data,"m_hParent"))
+		{
+			if (GetEntPropEnt(entity,Prop_Data,"m_hParent") == -1)
+			{
+				if (HasEntProp(entity,Prop_Data,"m_iRespawnCount")) SetEntProp(entity,Prop_Data,"m_iRespawnCount",-1);
 			}
 		}
 	}
@@ -19719,6 +19751,11 @@ void findentlist(int ent, char[] clsname)
 			SDKHookEx(thisent,SDKHook_Think,ichythink);
 			HookSingleEntityOutput(thisent,"OnFoundEnemy",OnIchyFoundPlayer);
 			HookSingleEntityOutput(thisent,"OnDeath",OnCDeath);
+		}
+		else if (StrEqual(clsofent,"npc_merchant",false))
+		{
+			customents = true;
+			HookSingleEntityOutput(thisent,"OnUser1",MerchantUse);
 		}
 		else if (StrEqual(clsofent,"npc_alien_slave",false))
 		{
@@ -21424,6 +21461,40 @@ public void merchcurrencych(Handle convar, const char[] oldValue, const char[] n
 public void merchcurrencypropch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	Format(szMerchPropType,sizeof(szMerchPropType),"%s",newValue);
+}
+
+public void weaponrespawnch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	int iSetProp = -1;
+	if (StringToInt(newValue) > 0)
+	{
+		iSetProp = 1;
+	}
+	else if (StringToInt(newValue) == 0)
+	{
+		iSetProp = 0;
+	}
+	if (iSetProp != -1)
+	{
+		int ent = -1;
+		while((ent = FindEntityByClassname(ent,"weapon_*")) != INVALID_ENT_REFERENCE)
+		{
+			if (IsValidEntity(ent))
+			{
+				if (HasEntProp(ent,Prop_Data,"m_hParent"))
+				{
+					if (GetEntPropEnt(ent,Prop_Data,"m_hParent") == -1)
+					{
+						if (HasEntProp(ent,Prop_Data,"m_iRespawnCount"))
+						{
+							if (iSetProp == 1) SetEntProp(ent,Prop_Data,"m_iRespawnCount",-1);
+							else SetEntProp(ent,Prop_Data,"m_iRespawnCount",0);
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 public void longjumpmodech(Handle convar, const char[] oldValue, const char[] newValue)
