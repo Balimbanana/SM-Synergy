@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0026"
-			"Previous"	"2.0025"
+			"Latest"  	"2.0027"
+			"Previous"	"2.0026"
 		}
 		
 		"Notes"	"Hide players in viewcontrols for all. Fixes and additions to npc_merchant."

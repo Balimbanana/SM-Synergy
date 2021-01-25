@@ -23,6 +23,8 @@ public Action MerchantUse(const char[] output, int caller, int activator, float 
 					if (finddp == -1)
 					{
 						//char rebuildupper[32][32];
+						int iReadLines = 0;
+						char szNull[64][2];
 						Handle dp = CreateDataPack();
 						Handle filehandlesub = OpenFile(scr,"r",true,NULL_STRING);
 						if (filehandlesub != INVALID_HANDLE)
@@ -30,11 +32,18 @@ public Action MerchantUse(const char[] output, int caller, int activator, float 
 							char scrline[256];
 							while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
 							{
+								iReadLines++;
+								int iCategory = ExplodeString(scrline,"\"",szNull,64,2);
 								ReplaceString(scrline,sizeof(scrline),"\"","");
 								ReplaceString(scrline,sizeof(scrline),"	"," ");
 								TrimString(scrline);
 								if (StrContains(scrline,"\"Name\"",false) != -1)
 								{
+									WritePackString(dp,scrline);
+								}
+								else if ((iCategory == 3) && (iReadLines > 1))
+								{
+									Format(scrline,sizeof(scrline),"szCategory\"%s",scrline);
 									WritePackString(dp,scrline);
 								}
 								else if (StrContains(scrline," ",false) > 1)
@@ -88,6 +97,7 @@ void DisplayMerchMenu(int activator, int finddp)
 		ResetPack(dp);
 		char data[128];
 		char title[64];
+		bool bCategorized = false;
 		Handle items = CreateArray(64);
 		ReadPackString(dp,data,sizeof(data));
 		while (!StrEqual(data,"endofpack",false))
@@ -106,22 +116,46 @@ void DisplayMerchMenu(int activator, int finddp)
 				else if (strlen(tmp[1]) > 0) Format(title,sizeof(title),"%s",tmp[1]);
 				*/
 			}
-			else if (StrContains(data," ",false) != 0)
+			else if (StrContains(data,"szCategory\"",false) == 0)
+			{
+				ReplaceStringEx(data,sizeof(data),"szCategory\"","",_,_,false);
+				if (!bCategorized)
+				{
+					bCategorized = true;
+					ClearArray(items);
+				}
+				PushArrayString(items,data);
+			}
+			else if ((StrContains(data," ",false) != 0) && (!bCategorized))
 			{
 				PushArrayString(items,data);
 			}
 			ReadPackString(dp,data,sizeof(data));
 		}
-		Menu menu = new Menu(MenuHandlersub);
-		switch(iMerchantCType)
+		MenuCreateSetup(activator,items,title,bCategorized,finddp);
+	}
+}
+
+void MenuCreateSetup(int client, Handle items, char[] title, bool bCategorized, int finddp)
+{
+	if ((IsValidEntity(client)) && (items != INVALID_HANDLE))
+	{
+		Menu menu;
+		if (!bCategorized)
 		{
-			case 0:
-				Format(title,sizeof(title),"%s Cost: Kills",title);
-			case 1:
-				Format(title,sizeof(title),"%s Cost: Score",title);
-			case 2:
-				Format(title,sizeof(title),"%s Cost: Custom",title);
+			menu = new Menu(MenuHandlersub);
+			menu.ExitBackButton = true;
+			switch(iMerchantCType)
+			{
+				case 0:
+					Format(title,64,"%s Cost: Kills",title);
+				case 1:
+					Format(title,64,"%s Cost: Score",title);
+				case 2:
+					Format(title,64,"%s Cost: Custom",title);
+			}
 		}
+		else menu = new Menu(MenuHandlercategory);
 		menu.SetTitle(title);
 		char item[256];
 		char itemdisplay[64];
@@ -141,10 +175,13 @@ void DisplayMerchMenu(int activator, int finddp)
 			}
 			else
 			{
-				iFindSpace = StrContains(itemdisplay," ",false);
-				if (iFindSpace != -1)
+				if (!bCategorized)
 				{
-					Format(itemdisplay,iFindSpace+1,"%s",itemdisplay);
+					iFindSpace = StrContains(itemdisplay," ",false);
+					if (iFindSpace != -1)
+					{
+						Format(itemdisplay,iFindSpace+1,"%s",itemdisplay);
+					}
 				}
 			}
 			ReplaceStringEx(itemdisplay,sizeof(itemdisplay),"weapon_","",-1,-1,false);
@@ -163,12 +200,13 @@ void DisplayMerchMenu(int activator, int finddp)
 				else break;
 			}
 			maxrun = ExplodeString(item," ",rebuildupper,16,32);
-			Format(itemdisplay,sizeof(itemdisplay),"%s ($%s)",itemdisplay,rebuildupper[maxrun-1]);
+			if (!bCategorized) Format(itemdisplay,sizeof(itemdisplay),"%s ($%s)",itemdisplay,rebuildupper[maxrun-1]);
+			else Format(item,sizeof(item),"%i_%s",finddp,item);
 			menu.AddItem(item,itemdisplay);
 		}
 		CloseHandle(items);
 		menu.ExitButton = true;
-		menu.Display(activator, 15);
+		menu.Display(client, 15);
 	}
 }
 
@@ -237,6 +275,75 @@ public int MenuHandlersub(Menu menu, MenuAction action, int param1, int param2)
 		{
 			PrintToChat(param1,"Not enough money. You have %i, you need %i",points,cost);
 			MerchSpeakRef(custentactive[param1],param1,2);
+		}
+	}
+	else if (action == MenuAction_Cancel)
+	{
+		if (param2 == -6)
+		{
+			MerchantUse("OnUser1",custentactive[param1],param1,0.0);
+		}
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+	return 0;
+}
+
+public int MenuHandlercategory(Menu menu, MenuAction action, int param1, int param2)
+{
+	if ((action == MenuAction_Select) && (param1 > 0) && (param1 < MaxClients+1))
+	{
+		char info[256];
+		char szDP[3][8];
+		menu.GetItem(param2, info, sizeof(info));
+		int finddp = ExplodeString(info,"_",szDP,3,8);
+		finddp = StringToInt(szDP[0]);
+		ReplaceStringEx(info,sizeof(info),szDP[0],"",_,_,false);
+		ReplaceStringEx(info,sizeof(info),"_","",_,_,false);
+		if (finddp >= GetArraySize(merchantscrd)) return -1;
+		Handle dp = GetArrayCell(merchantscrd,finddp);
+		if (dp != INVALID_HANDLE)
+		{
+			ResetPack(dp);
+			char data[128];
+			char title[64];
+			Handle items = CreateArray(64);
+			bool bBeginItems = false;
+			ReadPackString(dp,data,sizeof(data));
+			while (!StrEqual(data,"endofpack",false))
+			{
+				if (StrContains(data,"Name",false) == 0)
+				{
+					Format(title,sizeof(title),"%s",data);
+					ReplaceStringEx(title,sizeof(title),"Name","",_,_,false);
+					TrimString(title);
+					/*
+					char tmp[3][64];
+					ExplodeString(data," ",tmp,3,64);
+					TrimString(tmp[1]);
+					TrimString(tmp[2]);
+					if (strlen(tmp[2]) > 0) Format(title,sizeof(title),"%s",tmp[2]);
+					else if (strlen(tmp[1]) > 0) Format(title,sizeof(title),"%s",tmp[1]);
+					*/
+				}
+				else if (StrContains(data,"szCategory\"",false) == 0)
+				{
+					ReplaceStringEx(data,sizeof(data),"szCategory\"","",_,_,false);
+					if (StrEqual(data,info,false))
+					{
+						bBeginItems = true;
+					}
+					else bBeginItems = false;
+				}
+				else if ((StrContains(data," ",false) != 0) && (bBeginItems))
+				{
+					PushArrayString(items,data);
+				}
+				ReadPackString(dp,data,sizeof(data));
+			}
+			MenuCreateSetup(param1,items,title,false,finddp);
 		}
 	}
 	else if (action == MenuAction_End)
