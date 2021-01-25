@@ -38,7 +38,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.67"
+#define PLUGIN_VERSION "0.68"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -52,8 +52,8 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	cvaroriginals = CreateArray(64);
-	//cvarmods = CreateArray(64);
+	cvaroriginals = CreateArray(128);
+	//cvarmods = CreateArray(128);
 	BuildPath(Path_SM,szEDTLog,sizeof(szEDTLog),"logs");
 	Format(szEDTLog,sizeof(szEDTLog),"%s/EDT.log",szEDTLog);
 	Handle cvar = FindConVar("edtdbg");
@@ -133,7 +133,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			ServerCommand(tmparr);
 		}
 		CloseHandle(cvaroriginals);
-		cvaroriginals = CreateArray(64);
+		cvaroriginals = CreateArray(128);
 	}
 	char contentdata[64];
 	Handle cvar = FindConVar("content_metadata");
@@ -2084,7 +2084,7 @@ void ReadEDT(char[] edtfile)
 		char targn[64];
 		char originch[128];
 		int linenum = 0;
-		Handle passedarr = CreateArray(64);
+		Handle passedarr = CreateArray(128);
 		int iCurHndl = view_as<int>(passedarr);
 		Handle filehandle = INVALID_HANDLE;
 		if (FileExists(edtfile,false)) filehandle = OpenFile(edtfile,"rt",false);
@@ -2173,7 +2173,7 @@ void ReadEDT(char[] edtfile)
 								}
 								CloseHandle(cvarchk);
 								ServerCommand("%s",tmparr);
-								if (cvarmods == INVALID_HANDLE) cvarmods = CreateArray(64);
+								if (cvarmods == INVALID_HANDLE) cvarmods = CreateArray(128);
 								if (FindStringInArray(cvarmods,tmparr) == -1) PushArrayString(cvarmods,tmparr);
 							}
 						}
@@ -2253,7 +2253,7 @@ void ReadEDT(char[] edtfile)
 					}
 					if (gettn)
 					{
-						Handle tmp = CreateArray(16);
+						Handle tmp = CreateArray(32);
 						FormatKVs(tmp,line,"targetname");
 						/*
 						Handle tmphndl = FormatKVs(tmp,line,"targetname");
@@ -2292,7 +2292,7 @@ void ReadEDT(char[] edtfile)
 					{
 						PrintToServer("EDTError on line %i %s",linenum,line);
 						CloseHandle(passedarr);
-						passedarr = CreateArray(64);
+						passedarr = CreateArray(128);
 						iCurHndl = view_as<int>(passedarr);
 					}
 					else FormatKVs(passedarr,line,cls);
@@ -2506,7 +2506,7 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 	{
 		/*
 		Handle passedarr = INVALID_HANDLE;
-		if (view_as<int>(arrpass) == 1634494062) passedarr = CreateArray(64);
+		if (view_as<int>(arrpass) == 1634494062) passedarr = CreateArray(128);
 		else passedarr = CloneArray(arrpass);
 		*/
 		char kvs[128][256];
@@ -2698,7 +2698,7 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 								/*
 								else
 								{
-									Handle tmphndl = CreateArray(64);
+									Handle tmphndl = CreateArray(128);
 									passedarr = CloneHandle(tmphndl);
 									PushArrayString(passedarr,fmt);
 								}

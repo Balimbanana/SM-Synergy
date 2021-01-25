@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.67"
-			"Previous"	"0.66"
+			"Latest"  	"0.68"
+			"Previous"	"0.67"
 		}
 		
-		"Notes"	"Fixed issue of certain cvars being overriden by skill_mod and server.cfg after console section of EDT."
+		"Notes"	"Increased size of certain arrays."
 	}
 	
 	"Files"
