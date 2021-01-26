@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.43"
+#define PLUGIN_VERSION "1.44"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -1065,10 +1065,32 @@ void setupdmfor(char[] gametype)
 			if (survivalact)
 			{
 				SetConVarInt(cvarset,2,false,false);
+				char gamedescoriginal[24];
+				GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
+				if (StrContains(gamedescoriginal,"Synergy 20.3",false) != -1)
+				{
+					Handle cvar = FindConVar("mp_deathtime");
+					if (cvar != INVALID_HANDLE)
+					{
+						SetConVarInt(cvar,999,false,false);
+					}
+					CloseHandle(cvar);
+				}
 			}
 			else if (GetConVarInt(cvarset) < 1)
 			{
 				SetConVarInt(cvarset,1,false,false);
+				char gamedescoriginal[24];
+				GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
+				if (StrContains(gamedescoriginal,"Synergy 20.3",false) != -1)
+				{
+					Handle cvar = FindConVar("mp_deathtime");
+					if (cvar != INVALID_HANDLE)
+					{
+						SetConVarInt(cvar,3,false,false);
+					}
+					CloseHandle(cvar);
+				}
 			}
 		}
 		CloseHandle(cvarset);
@@ -2890,6 +2912,27 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
 		return Plugin_Handled;
 	}
+	else if (StrContains(sArgs, "*cheese*", false) != -1)
+	{
+		float Time = GetTickedTime();
+		if (antispamchk[client] <= Time)
+		{
+			antispamchk[client] = Time + 2.0;
+			char plymdl[64];
+			char randcat[64];
+			GetClientModel(client, plymdl, sizeof(plymdl));
+			if (StrContains(plymdl,"female") != -1)
+			{
+				Format(randcat,sizeof(randcat),"vo\\npc\\female01\\question06.wav");
+			}
+			else
+			{
+				Format(randcat,sizeof(randcat),"vo\\npc\\male01\\question06.wav");
+			}
+			PrecacheSound(randcat,true);
+			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+		}
+	}
 	else if (dmact)
 	{
 		char nick[64];
@@ -2922,8 +2965,8 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 public Action saysoundslist(int client, int args)
 {
-	if (client == 0) PrintToServer("*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy*");
-	else PrintToChat(client,"*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy*");
+	if (client == 0) PrintToServer("*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese*");
+	else PrintToChat(client,"*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese*");
 	return Plugin_Handled;
 }
 
