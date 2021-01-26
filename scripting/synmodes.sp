@@ -2932,6 +2932,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			PrecacheSound(randcat,true);
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
+		return Plugin_Handled;
 	}
 	else if (dmact)
 	{
