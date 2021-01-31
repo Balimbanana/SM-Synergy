@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.32"
-			"Previous"	"1.31"
+			"Latest"  	"1.33"
+			"Previous"	"1.32"
 		}
 		
-		"Notes"	"Added ability to use moveent target !self and !picker."
+		"Notes"	"Additional info in listents full. Added listedicts for count of used edicts."
 	}
 	
 	"Files"

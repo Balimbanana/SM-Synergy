@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.32"
+#define PLUGIN_VERSION "1.33"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -47,6 +47,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_sep",setprops,ADMFLAG_ROOT,".");
 	RegAdminCmd("listents",listents,ADMFLAG_KICK,".");
 	RegAdminCmd("findents",listents,ADMFLAG_KICK,".");
+	RegAdminCmd("listedicts",listedicts,ADMFLAG_GENERIC,".");
 	RegAdminCmd("moveent",moveentity,ADMFLAG_KICK,".");
 	Handle dbgcreate = CreateConVar("sm_showall_created", "0", "Shows all entities created in server console. 2 shows more info.", _, true, 0.0, true, 2.0);
 	HookConVarChange(dbgcreate, dbghch);
@@ -1437,6 +1438,17 @@ public Handle findentsarrtarg(Handle arr, char[] namechk)
 	return INVALID_HANDLE;
 }
 
+public Action listedicts(int client, int args)
+{
+	int iCountEdicts = 0;
+	for (int i = 0;i<4096;i++)
+	{
+		if (IsValidEntity(i)) iCountEdicts++;
+	}
+	PrintToConsole(client,"Current Edicts: %i",iCountEdicts);
+	return Plugin_Handled;
+}
+
 public Action listents(int client, int args)
 {
 	if (args < 1)
@@ -1925,6 +1937,16 @@ public Action listents(int client, int args)
 						char scrtmplarger[512];
 						GetEntPropString(targ,Prop_Data,"m_iszTemplateData",scrtmplarger,sizeof(scrtmplarger));
 						if (strlen(scrtmplarger) > 0) Format(stateinf,sizeof(stateinf),"%s\nTemplateData: %s ",stateinf,scrtmplarger);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_iPlayerCountLower"))
+					{
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_iPlayerCountLower");
+						Format(stateinf,sizeof(stateinf),"%s LowerPlayer: %i",stateinf,scrtmpi);
+					}
+					if (HasEntProp(targ,Prop_Data,"m_iPlayerCountUpper"))
+					{
+						scrtmpi = GetEntProp(targ,Prop_Data,"m_iPlayerCountUpper");
+						Format(stateinf,sizeof(stateinf),"%s UpperPlayer: %i",stateinf,scrtmpi);
 					}
 					TrimString(stateinf);
 					TrimString(scriptinf);
