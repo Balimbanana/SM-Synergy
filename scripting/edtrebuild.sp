@@ -38,7 +38,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.69"
+#define PLUGIN_VERSION "0.70"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -698,6 +698,8 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				Handle passedarr = INVALID_HANDLE;
 				for (int i = 0;i<GetArraySize(g_EditClasses);i++)
 				{
+					char edtclass[64];
+					char edtclassorg[64];
 					bool lastent = false;
 					GetArrayString(g_EditClasses,i,cls,sizeof(cls));
 					Format(cls,sizeof(cls),"\"classname\" \"%s\"",cls);
@@ -871,6 +873,89 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 													Format(edtval,sizeof(edtval),"%i",checkneg);
 													Format(edtkey,sizeof(edtkey),"\"spawnflags\"");
 												}
+												if (StrEqual(edtkey,"\"edt_getbspmodelfor_classname\"",false))
+												{
+													Format(edtclass,sizeof(edtclass),"%s",edtval);
+												}
+												else if (StrEqual(edtkey,"\"edt_getbspmodelfor_origin\"",false))
+												{
+													Format(edtclassorg,sizeof(edtclassorg),"%s",edtval);
+												}
+												if ((strlen(edtclass) > 0) && (strlen(edtclassorg) > 0))
+												{
+													Format(edtkey,sizeof(edtkey),"\"model\"");
+													char findclass[128];
+													Format(findclass,sizeof(findclass),"\"classname\" \"%s\"",edtclass);
+													char sfindorg[128];
+													Format(sfindorg,sizeof(sfindorg),"\"origin\" \"%s\"",edtclassorg);
+													int findorg = StrContains(szMapEntities,sfindorg,false);
+													if (findorg != -1)
+													{
+														Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[findorg]);
+														while (StrContains(tmpbuf,"{",false) != 0)
+														{
+															Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[findorg--]);
+														}
+														findend = StrContains(tmpbuf,"}",false);
+														if (findend != -1) Format(tmpbuf,findend+1,"%s",tmpbuf);
+														if (StrContains(tmpbuf,edtclass,false) != -1)
+														{
+															int findmdl = StrContains(tmpbuf,"\"model\"",false);
+															if (findmdl != -1)
+															{
+																Format(tmpbuf,sizeof(tmpbuf),"%s",tmpbuf[findmdl]);
+																ExplodeString(tmpbuf,"\"",tmpexpl,4,64);
+																Format(edtval,sizeof(edtval),"%s",tmpexpl[3]);
+															}
+														}
+														else
+														{
+															bool FoundMdl = false;
+															int findorgnext = StrContains(szMapEntities[findorg+strlen(tmpbuf)],sfindorg,false);
+															while (findorgnext != -1)
+															{
+																if (findorgnext != -1)
+																{
+																	int posreset = findorgnext+findorg;
+																	Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[posreset]);
+																	while (StrContains(tmpbuf,"{",false) != 0)
+																	{
+																		Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[posreset--]);
+																	}
+																	findend = StrContains(tmpbuf,"}",false);
+																	if (findend != -1) Format(tmpbuf,findend+1,"%s",tmpbuf);
+																	if (StrContains(tmpbuf,edtclass,false) != -1)
+																	{
+																		int findmdl = StrContains(tmpbuf,"\"model\"",false);
+																		if (findmdl != -1)
+																		{
+																			Format(tmpbuf,sizeof(tmpbuf),"%s",tmpbuf[findmdl]);
+																			ExplodeString(tmpbuf,"\"",tmpexpl,4,64);
+																			Format(edtval,sizeof(edtval),"%s",tmpexpl[3]);
+																			FoundMdl = true;
+																			break;
+																		}
+																	}
+																	else
+																	{
+																		findorg = posreset+strlen(tmpbuf);
+																		findorgnext = StrContains(szMapEntities[findorg],sfindorg,false);
+																	}
+																}
+															}
+															if (!FoundMdl)
+															{
+																PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+																if (LogEDTErr) LogToFile(szEDTLog,"Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+															}
+														}
+													}
+													else
+													{
+														PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+														if (LogEDTErr) LogToFile(szEDTLog,"Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+													}
+												}
 												Format(edtkey,sizeof(edtkey),"%s \"%s\"",edtkey,edtval);
 												if (StrEqual(edtkey,replacedata,false)) continue;
 												if (dbglvl >= 3) PrintToServer("Replace %s with %s",replacedata,edtkey);
@@ -961,6 +1046,8 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				char targned[128];
 				for (int i = 0;i<GetArraySize(g_EditClassOrigin);i++)
 				{
+					char edtclass[64];
+					char edtclassorg[64];
 					int finderorground2dec = -1;
 					GetArrayString(g_EditClassOrigin,i,cls,sizeof(cls));
 					findend = StrContains(cls,",",false);
@@ -1105,6 +1192,97 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 											{
 												findedit = StrContains(szMapEntitiesbuff,"\"spawnflags\"",false);
 											}
+											if (StrEqual(edtkey,"\"edt_getbspmodelfor_classname\"",false))
+											{
+												Format(edtclass,sizeof(edtclass),"%s",edtval);
+											}
+											else if (StrEqual(edtkey,"\"edt_getbspmodelfor_origin\"",false))
+											{
+												Format(edtclassorg,sizeof(edtclassorg),"%s",edtval);
+											}
+											if ((strlen(edtclass) > 0) && (strlen(edtclassorg) > 0))
+											{
+												findedit = StrContains(szMapEntitiesbuff,"\"model\"",false);
+												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff);
+												ReplaceString(tmpbuf,sizeof(tmpbuf),"}","");
+												if (StrContains(tmpbuf,"\n\n",false) != -1) ReplaceString(tmpbuf,sizeof(tmpbuf),"\n\n","\n");
+												if (dbglvl >= 3) PrintToServer("Add KV to %s\n%s \"%s\"",cls,edtkey,edtval);
+												Format(tmpbuf,sizeof(tmpbuf),"%s%s \"%s\"\n}\n",tmpbuf,edtkey,edtval);
+												Format(edtkey,sizeof(edtkey),"\"model\"");
+												ReplaceStringEx(szMapEntities,sizeof(szMapEntities),szMapEntitiesbuff,tmpbuf);
+												Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",tmpbuf);
+												char findclass[128];
+												Format(findclass,sizeof(findclass),"\"classname\" \"%s\"",edtclass);
+												char sfindorg[128];
+												Format(sfindorg,sizeof(sfindorg),"\"origin\" \"%s\"",edtclassorg);
+												int findorg = StrContains(szMapEntities,sfindorg,false);
+												if (findorg != -1)
+												{
+													Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[findorg]);
+													while (StrContains(tmpbuf,"{",false) != 0)
+													{
+														Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[findorg--]);
+													}
+													findend = StrContains(tmpbuf,"}",false);
+													if (findend != -1) Format(tmpbuf,findend+1,"%s",tmpbuf);
+													if (StrContains(tmpbuf,edtclass,false) != -1)
+													{
+														int findmdl = StrContains(tmpbuf,"\"model\"",false);
+														if (findmdl != -1)
+														{
+															Format(tmpbuf,sizeof(tmpbuf),"%s",tmpbuf[findmdl]);
+															ExplodeString(tmpbuf,"\"",tmpexpl,4,64);
+															Format(edtval,sizeof(edtval),"%s",tmpexpl[3]);
+														}
+													}
+													else
+													{
+														bool FoundMdl = false;
+														int findorgnext = StrContains(szMapEntities[findorg+strlen(tmpbuf)],sfindorg,false);
+														while (findorgnext != -1)
+														{
+															if (findorgnext != -1)
+															{
+																int posreset = findorgnext+findorg;
+																Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[posreset]);
+																while (StrContains(tmpbuf,"{",false) != 0)
+																{
+																	Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[posreset--]);
+																}
+																findend = StrContains(tmpbuf,"}",false);
+																if (findend != -1) Format(tmpbuf,findend+1,"%s",tmpbuf);
+																if (StrContains(tmpbuf,edtclass,false) != -1)
+																{
+																	int findmdl = StrContains(tmpbuf,"\"model\"",false);
+																	if (findmdl != -1)
+																	{
+																		Format(tmpbuf,sizeof(tmpbuf),"%s",tmpbuf[findmdl]);
+																		ExplodeString(tmpbuf,"\"",tmpexpl,4,64);
+																		Format(edtval,sizeof(edtval),"%s",tmpexpl[3]);
+																		FoundMdl = true;
+																		break;
+																	}
+																}
+																else
+																{
+																	findorg = posreset+strlen(tmpbuf);
+																	findorgnext = StrContains(szMapEntities[findorg],sfindorg,false);
+																}
+															}
+														}
+														if (!FoundMdl)
+														{
+															PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+															if (LogEDTErr) LogToFile(szEDTLog,"Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+														}
+													}
+												}
+												else
+												{
+													PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+													if (LogEDTErr) LogToFile(szEDTLog,"Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+												}
+											}
 											//if ((findedit != -1) && (strlen(edt_landmark) > 0) && (strlen(edt_map) > 0))
 											if ((findedit != -1) && (StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0) && (strlen(edtkey) > 1))
 											{
@@ -1207,6 +1385,8 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				Handle passedarr = INVALID_HANDLE;
 				for (int i = 0;i<GetArraySize(g_EditTargets);i++)
 				{
+					char edtclass[64];
+					char edtclassorg[64];
 					bool lastent = false;
 					GetArrayString(g_EditTargets,i,cls,sizeof(cls));
 					Format(cls,sizeof(cls),"\"targetname\" \"%s\"",cls);
@@ -1295,6 +1475,97 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_removespawnflags\"",false)))
 										{
 											findedit = StrContains(szMapEntitiesbuff,"\"spawnflags\"",false);
+										}
+										if (StrEqual(edtkey,"\"edt_getbspmodelfor_classname\"",false))
+										{
+											Format(edtclass,sizeof(edtclass),"%s",edtval);
+										}
+										else if (StrEqual(edtkey,"\"edt_getbspmodelfor_origin\"",false))
+										{
+											Format(edtclassorg,sizeof(edtclassorg),"%s",edtval);
+										}
+										if ((strlen(edtclass) > 0) && (strlen(edtclassorg) > 0))
+										{
+											Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff);
+											ReplaceString(tmpbuf,sizeof(tmpbuf),"}","");
+											if (StrContains(tmpbuf,"\n\n",false) != -1) ReplaceString(tmpbuf,sizeof(tmpbuf),"\n\n","\n");
+											if (dbglvl >= 3) PrintToServer("Add KV to %s\n%s \"%s\"",cls,edtkey,edtval);
+											Format(tmpbuf,sizeof(tmpbuf),"%s%s \"%s\"\n}\n",tmpbuf,edtkey,edtval);
+											ReplaceStringEx(szMapEntities,sizeof(szMapEntities),szMapEntitiesbuff,tmpbuf);
+											Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",tmpbuf);
+											findedit = StrContains(szMapEntitiesbuff,"\"model\"",false);
+											Format(edtkey,sizeof(edtkey),"\"model\"");
+											char findclass[128];
+											Format(findclass,sizeof(findclass),"\"classname\" \"%s\"",edtclass);
+											char sfindorg[128];
+											Format(sfindorg,sizeof(sfindorg),"\"origin\" \"%s\"",edtclassorg);
+											int findorg = StrContains(szMapEntities,sfindorg,false);
+											if (findorg != -1)
+											{
+												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[findorg]);
+												while (StrContains(tmpbuf,"{",false) != 0)
+												{
+													Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[findorg--]);
+												}
+												findend = StrContains(tmpbuf,"}",false);
+												if (findend != -1) Format(tmpbuf,findend+1,"%s",tmpbuf);
+												if (StrContains(tmpbuf,edtclass,false) != -1)
+												{
+													int findmdl = StrContains(tmpbuf,"\"model\"",false);
+													if (findmdl != -1)
+													{
+														Format(tmpbuf,sizeof(tmpbuf),"%s",tmpbuf[findmdl]);
+														ExplodeString(tmpbuf,"\"",tmpexpl,4,64);
+														Format(edtval,sizeof(edtval),"%s",tmpexpl[3]);
+													}
+												}
+												else
+												{
+													bool FoundMdl = false;
+													int findorgnext = StrContains(szMapEntities[findorg+strlen(tmpbuf)],sfindorg,false);
+													while (findorgnext != -1)
+													{
+														if (findorgnext != -1)
+														{
+															int posreset = findorgnext+findorg;
+															Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[posreset]);
+															while (StrContains(tmpbuf,"{",false) != 0)
+															{
+																Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntities[posreset--]);
+															}
+															findend = StrContains(tmpbuf,"}",false);
+															if (findend != -1) Format(tmpbuf,findend+1,"%s",tmpbuf);
+															if (StrContains(tmpbuf,edtclass,false) != -1)
+															{
+																int findmdl = StrContains(tmpbuf,"\"model\"",false);
+																if (findmdl != -1)
+																{
+																	Format(tmpbuf,sizeof(tmpbuf),"%s",tmpbuf[findmdl]);
+																	ExplodeString(tmpbuf,"\"",tmpexpl,4,64);
+																	Format(edtval,sizeof(edtval),"%s",tmpexpl[3]);
+																	FoundMdl = true;
+																	break;
+																}
+															}
+															else
+															{
+																findorg = posreset+strlen(tmpbuf);
+																findorgnext = StrContains(szMapEntities[findorg],sfindorg,false);
+															}
+														}
+													}
+													if (!FoundMdl)
+													{
+														PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+														if (LogEDTErr) LogToFile(szEDTLog,"Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+													}
+												}
+											}
+											else
+											{
+												PrintToServer("Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+												if (LogEDTErr) LogToFile(szEDTLog,"Failed to get BSP Model from Classname %s at origin %s",edtclass,edtclassorg);
+											}
 										}
 										//if ((findedit != -1) && (strlen(edt_landmark) > 0) && (strlen(edt_map) > 0))
 										if ((findedit != -1) && (StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0) && (strlen(edtkey) > 1))
