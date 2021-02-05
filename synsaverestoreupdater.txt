@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.162"
-			"Previous"	"2.161"
+			"Latest"  	"2.163"
+			"Previous"	"2.162"
 		}
 		
-		"Notes"	"Fixes to spawning with equipment you should not have yet."
+		"Notes"	"Changed to run transitions on first startup map."
 	}
 	
 	"Files"

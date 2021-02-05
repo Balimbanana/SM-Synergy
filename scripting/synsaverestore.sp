@@ -54,6 +54,7 @@ Handle globalstransition = INVALID_HANDLE;
 Handle ignoreent = INVALID_HANDLE;
 Handle timouthndl = INVALID_HANDLE;
 Handle equiparr = INVALID_HANDLE;
+ConVar hDelTransitionPly;
 
 char landmarkname[64];
 char mapbuf[128];
@@ -61,7 +62,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.162"
+#define PLUGIN_VERSION "2.163"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -185,6 +186,8 @@ public void OnPluginStart()
 		saveresetm = GetConVarInt(saveresetmode);
 	}
 	CloseHandle(saveresetmode);
+	hDelTransitionPly = FindConVar("sm_transition_rmply");
+	if (hDelTransitionPly == INVALID_HANDLE) hDelTransitionPly = CreateConVar("sm_transition_rmply", "0", "Remove player entities over map change. May increase stability.", _, true, 0.0, true, 1.0);
 	RegServerCmd("changelevel",resettransition);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	AutoExecConfig(true, "synsaverestore");
@@ -1589,7 +1592,7 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 public void OnMapStart()
 {
 	mapstarttime = GetTickedTime()+2.0;
-	if (GetMapHistorySize() > 0)
+	if (GetMapHistorySize() > -1)
 	{
 		char gamedescoriginal[24];
 		GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
@@ -2801,6 +2804,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					WritePackString(dp,"endofpack");
 					PushArrayCell(transitiondp,dp);
 					if (dbg) LogMessage("Transition CL %N Transition info %i health %i armor %i ducking Offset %1.f %1.f %1.f",i,curh,cura,crouching,plyorigin[0],plyorigin[1],plyorigin[2]);
+					if (hDelTransitionPly.BoolValue) AcceptEntityInput(i,"kill");
 				}
 			}
 		}
