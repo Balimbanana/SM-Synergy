@@ -33,6 +33,7 @@ bool reloadaftersetup = false;
 bool BMActive = false;
 bool SynLaterAct = false;
 bool SkipVer = false;
+bool bTransitionMode = false;
 int WeapList = -1;
 int reloadtype = 0;
 int logsv = -1;
@@ -62,7 +63,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.163"
+#define PLUGIN_VERSION "2.164"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -172,6 +173,11 @@ public void OnPluginStart()
 	if (GetConVarBool(transitiondbgh) == true) SkipVer = true;
 	else SkipVer = false;
 	HookConVarChange(transitiondbgh, transitionskipverch);
+	CloseHandle(transitiondbgh);
+	transitiondbgh = FindConVar("sm_transition_mode");
+	if (transitiondbgh == INVALID_HANDLE) transitiondbgh = CreateConVar("sm_transition_mode", "0", "Changes mode of what entities to transition. 0 is base list, 1 is all stable entities.", _, true, 0.0, true, 1.0);
+	bTransitionMode = GetConVarBool(transitiondbgh);
+	HookConVarChange(transitiondbgh, transitionmodech);
 	CloseHandle(transitiondbgh);
 	Handle saveresetmode = FindConVar("sm_transitionreset_mode");
 	if (saveresetmode != INVALID_HANDLE)
@@ -299,6 +305,12 @@ public void transitionskipverch(Handle convar, const char[] oldValue, const char
 {
 	if (StringToInt(newValue) == 1) SkipVer = true;
 	else SkipVer = false;
+}
+
+public void transitionmodech(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) == 1) bTransitionMode = true;
+	else bTransitionMode = false;
 }
 
 public void transitionresetmch(Handle convar, const char[] oldValue, const char[] newValue)
@@ -2012,7 +2024,7 @@ public void OnMapStart()
 						ReadPackString(dp,defanim,sizeof(defanim));
 						char response[64];
 						ReadPackString(dp,response,sizeof(response));
-						char scriptinf[256];
+						char scriptinf[1024];
 						ReadPackString(dp,scriptinf,sizeof(scriptinf));
 						bool ragdoll = false;
 						if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"d2_prison_08",false)))
@@ -2249,14 +2261,25 @@ public void OnMapStart()
 											//PrintToServer("Dispatch %s %s",scriptexp[j],scriptexp[jadd]);
 											DispatchKeyValue(ent,scriptexp[j],scriptexp[jadd]);
 										}
+										else if (StrEqual(scriptexp[j],"m_iszSound",false))
+										{
+											DispatchKeyValue(ent,"message",scriptexp[jadd]);
+										}
+										else if (StrEqual(scriptexp[j],"m_iszSceneFile",false))
+										{
+											DispatchKeyValue(ent,"SceneFile",scriptexp[jadd]);
+										}
 										else
 										{
 											DispatchKeyValue(ent,scriptexp[j],scriptexp[jadd]);
+											applypropafter = true;
 										}
+										/*
 										if ((StrContains(scriptexp[j],"m_angRotation",false) == 0) || (StrContains(scriptexp[j],"m_vecOrigin",false) == 0))
 										{
 											applypropafter = true;
 										}
+										*/
 									}
 									if (skip2) j+=2;
 									j++;
@@ -2713,6 +2736,15 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			{
 				GetEntPropVector(caller,Prop_Send,"m_vecMins",mins);
 				GetEntPropVector(caller,Prop_Send,"m_vecMaxs",maxs);
+				float vecOrgs[3];
+				if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",vecOrgs);
+				else if (HasEntProp(caller,Prop_Data,"m_vecOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecOrigin",vecOrgs);
+				mins[0]+=vecOrgs[0];
+				mins[1]+=vecOrgs[1];
+				mins[2]+=vecOrgs[2];
+				maxs[0]+=vecOrgs[0];
+				maxs[1]+=vecOrgs[1];
+				maxs[2]+=vecOrgs[2];
 			}
 			findtouchingents(mins,maxs,false);
 			if (BMActive) transitionglobals(-1);
@@ -2835,6 +2867,16 @@ void findlandmark(int ent,char[] classname)
 				float maxs[3];
 				GetEntPropVector(thisent,Prop_Send,"m_vecMins",mins);
 				GetEntPropVector(thisent,Prop_Send,"m_vecMaxs",maxs);
+				if (dbg) LogMessage("Found trigger_transition %s",targn);
+				float vecOrgs[3];
+				if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",vecOrgs);
+				else if (HasEntProp(thisent,Prop_Data,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecOrigin",vecOrgs);
+				mins[0]+=vecOrgs[0];
+				mins[1]+=vecOrgs[1];
+				mins[2]+=vecOrgs[2];
+				maxs[0]+=vecOrgs[0];
+				maxs[1]+=vecOrgs[1];
+				maxs[2]+=vecOrgs[2];
 				findtouchingents(mins,maxs,false);
 			}
 		}
@@ -2855,6 +2897,16 @@ void findtransitionback(int ent)
 			float maxs[3];
 			GetEntPropVector(thisent,Prop_Send,"m_vecMins",mins);
 			GetEntPropVector(thisent,Prop_Send,"m_vecMaxs",maxs);
+			if (dbg) LogMessage("Found trigger_transition %s",targn);
+			float vecOrgs[3];
+			if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",vecOrgs);
+			else if (HasEntProp(thisent,Prop_Data,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecOrigin",vecOrgs);
+			mins[0]+=vecOrgs[0];
+			mins[1]+=vecOrgs[1];
+			mins[2]+=vecOrgs[2];
+			maxs[0]+=vecOrgs[0];
+			maxs[1]+=vecOrgs[1];
+			maxs[2]+=vecOrgs[2];
 			findtouchingents(mins,maxs,true);
 		}
 		findtransitionback(thisent++);
@@ -2876,7 +2928,7 @@ void findprevlvls(int ent)
 void resetareaportals(int ent)
 {
 	int thisent = FindEntityByClassname(ent,"func_areaportal");
-	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
+	if (IsValidEntity(thisent))
 	{
 		char targ[64];
 		GetEntPropString(thisent,Prop_Data,"m_target",targ,sizeof(targ));
@@ -2885,8 +2937,42 @@ void resetareaportals(int ent)
 		SetVariantString(addinp);
 		AcceptEntityInput(thisent,"AddOutput");
 		SetEntPropString(thisent,Prop_Data,"m_target",targ);
+		if (strlen(targ) > 0)
+		{
+			int iDoor = FindByTargetName(targ);
+			if ((IsValidEntity(iDoor)) && (iDoor != 0))
+			{
+				if (HasEntProp(iDoor,Prop_Data,"m_eDoorState"))
+				{
+					if (GetEntProp(iDoor,Prop_Data,"m_eDoorState") == 2)
+					{
+						AcceptEntityInput(thisent,"Open");
+					}
+				}
+			}
+		}
 		resetareaportals(thisent++);
 	}
+}
+
+public int FindByTargetName(char[] entname)
+{
+	for (int i = MaxClients+1;i<GetMaxEntities()+1;i++)
+	{
+		if (IsValidEntity(i) && IsEntNetworkable(i))
+		{
+			if (HasEntProp(i,Prop_Data,"m_iName"))
+			{
+				char chkname[64];
+				GetEntPropString(i,Prop_Data,"m_iName",chkname,sizeof(chkname));
+				if (StrEqual(chkname,entname,false))
+				{
+					return i;
+				}
+			}
+		}
+	}
+	return -1;
 }
 
 void findtouchingents(float mins[3], float maxs[3], bool remove)
@@ -2934,6 +3020,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 	maxs[1]+=5.0;
 	mins[2]-=5.0;
 	maxs[2]+=5.0;
+	if (dbg) LogMessage("Transition Mins %1.f %1.f %1.f Maxs %1.f %1.f %1.f",mins[0],mins[1],mins[2],maxs[0],maxs[1],maxs[2]);
 	char custentinffile[256];
 	char writemode[8];
 	char parentglobal[16];
@@ -2948,6 +3035,8 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 		custentlist = GetCustomEntList();
 		custentinf = OpenFile(custentinffile,writemode);
 	}
+	char szTmp[64];
+	float angax[3];
 	for (int i = 1;i<2048;i++)
 	{
 		if (IsValidEntity(i) && IsEntNetworkable(i) && (FindValueInArray(ignoreent,i) == -1))
@@ -3006,19 +3095,17 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 				}
 			}
 			int par = -1;
-			if ((StrEqual(clsname,"prop_dynamic",false)) || (StrEqual(clsname,"prop_physics",false)))
+			//if ((StrEqual(clsname,"prop_dynamic",false)) || (StrEqual(clsname,"prop_physics",false)))
+			if (HasEntProp(i,Prop_Data,"m_hParent"))
 			{
-				if (HasEntProp(i,Prop_Data,"m_hParent"))
+				par = GetEntPropEnt(i,Prop_Data,"m_hParent");
+				if (IsValidEntity(par))
 				{
-					par = GetEntPropEnt(i,Prop_Data,"m_hParent");
-					if (IsValidEntity(par))
+					if (HasEntProp(par,Prop_Data,"m_iGlobalname")) GetEntPropString(par,Prop_Data,"m_iGlobalname",parentglobal,sizeof(parentglobal));
+					if (strlen(parentglobal) > 1)
 					{
-						if (HasEntProp(par,Prop_Data,"m_iGlobalname")) GetEntPropString(par,Prop_Data,"m_iGlobalname",parentglobal,sizeof(parentglobal));
-						if (strlen(parentglobal) > 1)
-						{
-							//PrintToServer("Alwaystransition %i %s %s",i,clsname,parentglobal);
-							alwaystransition = 1;
-						}
+						//PrintToServer("Alwaystransition %i %s %s",i,clsname,parentglobal);
+						alwaystransition = 1;
 					}
 				}
 			}
@@ -3027,7 +3114,19 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 				if ((alwaystransition) || ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]) && (IsValidEntity(i))))
 				{
 					//Add func_tracktrain check if exists on next map OnTransition might not fire
-					if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_barnacle_tongue_tip",false)) && (!StrEqual(clsname,"light_dynamic",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"predicted_viewmodel",false)))
+					bool bPasschk = false;
+					if (!bTransitionMode)
+					{
+						if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1) || (StrContains(clsname,"item_",false) != -1) || (StrContains(clsname,"weapon_",false) != -1)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_barnacle_tongue_tip",false)) && (!StrEqual(clsname,"light_dynamic",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"predicted_viewmodel",false)))
+						{
+							bPasschk = true;
+						}
+					}
+					else if ((!StrEqual(clsname,"player_loadsaved",false)) && (!StrEqual(clsname,"path_track",false)) && (!StrEqual(clsname,"npc_template_maker",false)) && (StrContains(clsname,"rope",false) == -1) && (StrContains(clsname,"phys",false) != 0) && (!StrEqual(clsname,"beam",false)) && (!StrEqual(clsname,"npc_barnacle_tongue_tip",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"point_spotlight",false)) && (!StrEqual(clsname,"predicted_viewmodel",false)))
+					{
+						bPasschk = true;
+					}
+					if (bPasschk)
 					{
 						if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 						if (StrContains(mdl,"*",false) != -1)
@@ -3075,7 +3174,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 								char solidity[4];
 								char defanim[32];
 								char response[64];
-								char scriptinf[512];
+								char scriptinf[1024];
 								int doorstate, sleepstate, gunenable, tkdmg, mvtype, gameend;
 								if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 								if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
@@ -3096,27 +3195,44 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 									int hdw = GetEntProp(i,Prop_Data,"m_nHardwareType");
 									Format(hdwtype,sizeof(hdwtype),"%i",hdw);
 								}
+								if (StrContains(mdl,"weapons/v_",false) != -1)
+								{
+									if (dp != INVALID_HANDLE) CloseHandle(dp);
+									dp = INVALID_HANDLE;
+									transitionthis = false;
+									PushArrayCell(ignoreent,i);
+								}
 								if (par != -1)
 								{
-									GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
-									if (HasEntProp(par,Prop_Data,"m_iGlobalname")) GetEntPropString(par,Prop_Data,"m_iGlobalname",parentglobal,sizeof(parentglobal));
-									if ((!StrEqual(parentname,"train_model",false)) && (strlen(parentglobal) < 1))
+									if (StrContains(clsname,"weapon_",false) != -1)
 									{
-										char parentcls[32];
-										GetEntityClassname(par,parentcls,sizeof(parentcls));
-										if (((StrEqual(parentcls,"func_door",false)) || (StrEqual(parentcls,"func_tracktrain",false))) || (StrContains(clsname,"npc_",false) == -1))
-										{
-											if (dp != INVALID_HANDLE) CloseHandle(dp);
-											dp = INVALID_HANDLE;
-											transitionthis = false;
-											PushArrayCell(ignoreent,i);
-										}
+										if (dp != INVALID_HANDLE) CloseHandle(dp);
+										dp = INVALID_HANDLE;
+										transitionthis = false;
+										PushArrayCell(ignoreent,i);
 									}
-									if (HasEntProp(i,Prop_Data,"m_vecOrigin"))
+									else
 									{
-										float resetoffs[3];
-										GetEntPropVector(i,Prop_Data,"m_vecOrigin",resetoffs);
-										Format(scriptinf,sizeof(scriptinf),"%sm_vecOrigin \"%1.f %1.f %1.f\" ",scriptinf,resetoffs[0],resetoffs[1],resetoffs[2]);
+										GetEntPropString(par,Prop_Data,"m_iName",parentname,sizeof(parentname));
+										if (HasEntProp(par,Prop_Data,"m_iGlobalname")) GetEntPropString(par,Prop_Data,"m_iGlobalname",parentglobal,sizeof(parentglobal));
+										if ((!StrEqual(parentname,"train_model",false)) && (strlen(parentglobal) < 1))
+										{
+											char parentcls[32];
+											GetEntityClassname(par,parentcls,sizeof(parentcls));
+											if (((StrEqual(parentcls,"func_door",false)) || (StrEqual(parentcls,"func_tracktrain",false))) || (StrContains(clsname,"npc_",false) == -1))
+											{
+												if (dp != INVALID_HANDLE) CloseHandle(dp);
+												dp = INVALID_HANDLE;
+												transitionthis = false;
+												PushArrayCell(ignoreent,i);
+											}
+										}
+										if (HasEntProp(i,Prop_Data,"m_vecOrigin"))
+										{
+											float resetoffs[3];
+											GetEntPropVector(i,Prop_Data,"m_vecOrigin",resetoffs);
+											Format(scriptinf,sizeof(scriptinf),"%sm_vecOrigin \"%1.f %1.f %1.f\" ",scriptinf,resetoffs[0],resetoffs[1],resetoffs[2]);
+										}
 									}
 								}
 								if (StrEqual(mdl,"models/alyx_emptool_prop.mdl"))
@@ -3182,7 +3298,6 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 								if (HasEntProp(i,Prop_Data,"m_iszDefaultAnim")) GetEntPropString(i,Prop_Data,"m_iszDefaultAnim",defanim,sizeof(defanim));
 								if (HasEntProp(i,Prop_Data,"m_vecAxis"))
 								{
-									float angax[3];
 									GetEntPropVector(i,Prop_Data,"m_vecAxis",angax);
 									Format(scriptinf,sizeof(scriptinf),"%saxis \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
 								}
@@ -3198,25 +3313,21 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 								}
 								if (HasEntProp(i,Prop_Data,"m_angRotationClosed"))
 								{
-									float angax[3];
 									GetEntPropVector(i,Prop_Data,"m_angRotationClosed",angax);
 									Format(scriptinf,sizeof(scriptinf),"%sm_angRotationClosed \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
 								}
 								if (HasEntProp(i,Prop_Data,"m_angRotationOpenForward"))
 								{
-									float angax[3];
 									GetEntPropVector(i,Prop_Data,"m_angRotationOpenForward",angax);
 									Format(scriptinf,sizeof(scriptinf),"%sm_angRotationOpenForward \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
 								}
 								if (HasEntProp(i,Prop_Data,"m_angRotationOpenBack"))
 								{
-									float angax[3];
 									GetEntPropVector(i,Prop_Data,"m_angRotationOpenBack",angax);
 									Format(scriptinf,sizeof(scriptinf),"%sm_angRotationOpenBack \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
 								}
 								if (HasEntProp(i,Prop_Data,"m_angGoal"))
 								{
-									float angax[3];
 									GetEntPropVector(i,Prop_Data,"m_angGoal",angax);
 									Format(scriptinf,sizeof(scriptinf),"%sm_angGoal \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
 								}
@@ -3225,6 +3336,85 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 									char magname[64];
 									GetEntPropString(i,Prop_Data,"m_iszMagnetName",magname,sizeof(magname));
 									Format(scriptinf,sizeof(scriptinf),"%sm_iszMagnetName %s ",scriptinf,magname);
+								}
+								if (HasEntProp(i,Prop_Data,"m_vecPlayerMountPositionTop"))
+								{
+									GetEntPropVector(i,Prop_Data,"m_vecPlayerMountPositionTop",angax);
+									Format(scriptinf,sizeof(scriptinf),"%sm_vecPlayerMountPositionTop \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+									GetEntPropVector(i,Prop_Data,"m_vecPlayerMountPositionBottom",angax);
+									Format(scriptinf,sizeof(scriptinf),"%sm_vecPlayerMountPositionBottom \"%1.f %1.f %1.f\" ",scriptinf,angax[0],angax[1],angax[2]);
+								}
+								if (HasEntProp(i,Prop_Data,"m_iszSound"))
+								{
+									GetEntPropString(i,Prop_Data,"m_iszSound",szTmp,sizeof(szTmp));
+									Format(scriptinf,sizeof(scriptinf),"%sm_iszSound %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_sSourceEntName"))
+								{
+									GetEntPropString(i,Prop_Data,"m_sSourceEntName",szTmp,sizeof(szTmp));
+									Format(scriptinf,sizeof(scriptinf),"%sm_sSourceEntName %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_iszSceneFile"))
+								{
+									GetEntPropString(i,Prop_Data,"m_iszSceneFile",szTmp,sizeof(szTmp));
+									Format(scriptinf,sizeof(scriptinf),"%sm_iszSceneFile %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_iszResumeSceneFile"))
+								{
+									GetEntPropString(i,Prop_Data,"m_iszResumeSceneFile",szTmp,sizeof(szTmp));
+									Format(scriptinf,sizeof(scriptinf),"%sm_iszResumeSceneFile %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_iszTarget1"))
+								{
+									for (int j = 1;j<9;j++)
+									{
+										Format(szTmp,sizeof(szTmp),"m_iszTarget%i",j);
+										if (HasEntProp(i,Prop_Data,szTmp))
+										{
+											GetEntPropString(i,Prop_Data,szTmp,szTmp,sizeof(szTmp));
+											Format(scriptinf,sizeof(scriptinf),"%sm_iszTarget%i %s ",scriptinf,j,szTmp);
+										}
+									}
+								}
+								if (HasEntProp(i,Prop_Data,"m_iszEntry"))
+								{
+									GetEntPropString(i,Prop_Data,"m_iszEntry",szTmp,sizeof(szTmp));
+									if (strlen(szTmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszEntry %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_iszPreIdle"))
+								{
+									GetEntPropString(i,Prop_Data,"m_iszPreIdle",szTmp,sizeof(szTmp));
+									if (strlen(szTmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszPreIdle %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_iszPlay"))
+								{
+									GetEntPropString(i,Prop_Data,"m_iszPlay",szTmp,sizeof(szTmp));
+									if (strlen(szTmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszPlay %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_iszPostIdle"))
+								{
+									GetEntPropString(i,Prop_Data,"m_iszPostIdle",szTmp,sizeof(szTmp));
+									if (strlen(szTmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszPostIdle %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_iszCustomMove"))
+								{
+									GetEntPropString(i,Prop_Data,"m_iszCustomMove",szTmp,sizeof(szTmp));
+									if (strlen(szTmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszCustomMove %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_iszNextScript"))
+								{
+									GetEntPropString(i,Prop_Data,"m_iszNextScript",szTmp,sizeof(szTmp));
+									if (strlen(szTmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszNextScript %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_iszEntity"))
+								{
+									GetEntPropString(i,Prop_Data,"m_iszEntity",szTmp,sizeof(szTmp));
+									if (strlen(szTmp) > 0) Format(scriptinf,sizeof(scriptinf),"%sm_iszEntity %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_fMoveTo"))
+								{
+									int scrtmpi = GetEntProp(i,Prop_Data,"m_fMoveTo");
+									Format(scriptinf,sizeof(scriptinf),"%sm_fMoveTo %i ",scriptinf,scrtmpi);
 								}
 								if ((HasEntProp(i,Prop_Data,"m_iszEffectName")) && (strlen(mdl) < 1))
 								{
@@ -3507,7 +3697,7 @@ void transitionthisent(int i)
 	char npctype[4];
 	char solidity[4];
 	char response[64];
-	char scriptinf[512];
+	char scriptinf[1024];
 	char scrtmp[64];
 	char defanim[32];
 	int doorstate, sleepstate, gunenable, tkdmg, mvtype, gameend;
