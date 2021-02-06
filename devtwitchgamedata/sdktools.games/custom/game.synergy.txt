@@ -102,13 +102,13 @@
 			}
 			"Ignite"
 			{
-				"windows"	"209"
+				"windows"	"210" //209
 				"linux"		"210"
 				"mac"		"210"
 			}
 			"Extinguish"
-			{
-				"windows"	"213"
+			{//Techincally works? sets ignight for 0 and overrides current ignight
+				"windows"	"210" //213 down to 190 up to 260
 				"linux"		"214"
 				"mac"		"214"
 			}
