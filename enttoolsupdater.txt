@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.33"
-			"Previous"	"1.32"
+			"Latest"  	"1.34"
+			"Previous"	"1.33"
 		}
 		
-		"Notes"	"Additional info in listents full. Added listedicts for count of used edicts."
+		"Notes"	"Added CVar sm_replace_entcmd which will replace ent_create and ent_fire with EntTools versions if set."
 	}
 	
 	"Files"

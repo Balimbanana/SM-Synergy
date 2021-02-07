@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.33"
+#define PLUGIN_VERSION "1.34"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -30,6 +30,7 @@ bool showallambsounds = false;
 
 char CLClsSet[128][32];
 Handle modelsarr = INVALID_HANDLE;
+ConVar hCVReplaceCMD;
 
 public void OnPluginStart()
 {
@@ -49,6 +50,10 @@ public void OnPluginStart()
 	RegAdminCmd("findents",listents,ADMFLAG_KICK,".");
 	RegAdminCmd("listedicts",listedicts,ADMFLAG_GENERIC,".");
 	RegAdminCmd("moveent",moveentity,ADMFLAG_KICK,".");
+	RegConsoleCmd("ent_create",EntCreateReplace);
+	SetCommandFlags("ent_create",GetCommandFlags("ent_create")^FCVAR_CHEAT);
+	RegConsoleCmd("ent_fire",EntFireReplace);
+	SetCommandFlags("ent_fire",GetCommandFlags("ent_fire")^FCVAR_CHEAT);
 	Handle dbgcreate = CreateConVar("sm_showall_created", "0", "Shows all entities created in server console. 2 shows more info.", _, true, 0.0, true, 2.0);
 	HookConVarChange(dbgcreate, dbghch);
 	showallcreated = GetConVarInt(dbgcreate);
@@ -69,10 +74,18 @@ public void OnPluginStart()
 	HookConVarChange(dbgcreate, dbgambsch);
 	showallambsounds = GetConVarBool(dbgcreate);
 	CloseHandle(dbgcreate);
+	hCVReplaceCMD = FindConVar("sm_replace_entcmd");
+	if (hCVReplaceCMD == INVALID_HANDLE) hCVReplaceCMD = CreateConVar("sm_replace_entcmd", "0", "Replaces ent_fire and ent_create with EntTools versions.", _, true, 0.0, true, 1.0);
 	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
 	AddNormalSoundHook(listnormsounds);
 	AddAmbientSoundHook(listambientsounds);
 	modelsarr = CreateArray(1024);
+}
+
+public void OnPluginEnd()
+{
+	SetCommandFlags("ent_create",GetCommandFlags("ent_create")|FCVAR_CHEAT);
+	SetCommandFlags("ent_fire",GetCommandFlags("ent_fire")|FCVAR_CHEAT);
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -2222,6 +2235,588 @@ public Action moveentity(int client, int args)
 	return Plugin_Handled;
 }
 
+public Action EntCreateReplace(int client, int args)
+{
+	if (!IsValidEntity(client)) return Plugin_Handled;
+	if (hCVReplaceCMD.BoolValue)
+	{
+		bool bPassChk = false;
+		if (client == 0)
+		{
+			bPassChk = true;
+		}
+		else if (client > 0)
+		{
+			if (GetAdminFlag(GetUserAdmin(client),Admin_Root,Access_Effective))
+			{
+				bPassChk = true;
+			}
+		}
+		if (bPassChk)
+		{
+			if (client == 0)
+			{
+				if ((IsValidEntity(1)) && (!IsDedicatedServer())) client = 1;
+				else return Plugin_Handled;
+			}
+			char ent[64];
+			GetCmdArg(1,ent,sizeof(ent));
+			if (strlen(ent) < 1)
+			{
+				PrintToConsole(client,"Please specify ent");
+				return Plugin_Handled;
+			}
+			if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && !IsFakeClient(client))
+			{
+				float Location[3];
+				float fhitpos[3];
+				float clangles[3];
+				bool vehiclemodeldefined = false;
+				bool vehiclescriptdefined = false;
+				bool targnamedefined = false;
+				char setparent[128];
+				GetClientEyeAngles(client, clangles);
+				GetClientEyePosition(client, Location);
+				Location[0] = (Location[0] + (10 * Cosine(DegToRad(clangles[1]))));
+				Location[1] = (Location[1] + (10 * Sine(DegToRad(clangles[1]))));
+				Location[2] = (Location[2] + 10);
+				Handle hhitpos = INVALID_HANDLE;
+				TR_TraceRay(Location,clangles,MASK_SHOT,RayType_Infinite);
+				TR_GetEndPosition(fhitpos,hhitpos);
+				//To ensure they spawn above the ground
+				fhitpos[2]+=15.0;
+				if (StrEqual(ent,"npc_strider",false))
+					fhitpos[2] = (fhitpos[2] + 165);
+				else if ((StrEqual(ent,"npc_houndeye",false)) || (StrEqual(ent,"npc_bullsquid",false)))
+					fhitpos[2]+=20.0;
+				CloseHandle(hhitpos);
+				int stuff = CreateEntityByName(ent);
+				if (StrEqual(ent,"jalopy",false))
+				{
+					if ((!FileExists("models/vehicle.mdl",true,NULL_STRING)) && (!IsModelPrecached("models/vehicle.mdl")))
+					{
+						PrintToConsole(client,"Ep2 must be mounted to spawn a jalopy.");
+						return Plugin_Handled;
+					}
+					vehiclemodeldefined = true;
+					vehiclescriptdefined = true;
+					Format(ent,sizeof(ent),"prop_vehicle_jeep_episodic");
+					stuff = CreateEntityByName(ent);
+					DispatchKeyValue(stuff,"model","models/vehicle.mdl");
+					DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jalopy.txt");
+				}
+				else if ((StrEqual(ent,"jeep",false)) || (StrEqual(ent,"buggy",false)))
+				{
+					vehiclemodeldefined = true;
+					vehiclescriptdefined = true;
+					Format(ent,sizeof(ent),"prop_vehicle_jeep");
+					stuff = CreateEntityByName(ent);
+					DispatchKeyValue(stuff,"model","models/buggy.mdl");
+					DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
+				}
+				else if ((StrEqual(ent,"jeepmp",false)) || (StrEqual(ent,"buggymp",false)) || (StrEqual(ent,"jeep2seat",false)) || (StrEqual(ent,"buggy2seat",false)))
+				{
+					vehiclemodeldefined = true;
+					vehiclescriptdefined = true;
+					Format(ent,sizeof(ent),"prop_vehicle_jeep");
+					stuff = CreateEntityByName(ent);
+					DispatchKeyValue(stuff,"model","models/vehicles/buggy_p2.mdl");
+					DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
+				}
+				else if (StrEqual(ent,"airboat",false))
+				{
+					vehiclemodeldefined = true;
+					vehiclescriptdefined = true;
+					Format(ent,sizeof(ent),"prop_vehicle_airboat");
+					stuff = CreateEntityByName(ent);
+					DispatchKeyValue(stuff,"model","models/airboat.mdl");
+					DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/airboat.txt");
+				}
+				else if (StrEqual(ent,"npc_bullsquid",false))
+				{
+					Format(ent,sizeof(ent),"npc_antlion");
+					stuff = CreateEntityByName(ent);
+					Format(ent,sizeof(ent),"npc_bullsquid");
+					DispatchKeyValue(stuff,"classname","npc_bullsquid");
+					DispatchKeyValue(stuff,"model","models/xenians/bullsquid.mdl");
+					DispatchKeyValue(stuff,"RenderMode","10");
+				}
+				else if (StrEqual(ent,"npc_houndeye",false))
+				{
+					Format(ent,sizeof(ent),"npc_antlion");
+					stuff = CreateEntityByName(ent);
+					Format(ent,sizeof(ent),"npc_houndeye");
+					DispatchKeyValue(stuff,"classname","npc_houndeye");
+					DispatchKeyValue(stuff,"model","models/xenians/houndeye.mdl");
+					DispatchKeyValue(stuff,"RenderMode","10");
+				}
+				else if (StrEqual(ent,"npc_alien_controller",false))
+				{
+					Format(ent,sizeof(ent),"generic_actor");
+					stuff = CreateEntityByName(ent);
+					Format(ent,sizeof(ent),"npc_alien_controller");
+					DispatchKeyValue(stuff,"classname","npc_alien_controller");
+					DispatchKeyValue(stuff,"model","models/xenians/controller.mdl");
+				}
+				else if (StrEqual(ent,"npc_alien_grunt",false))
+				{
+					Format(ent,sizeof(ent),"npc_combine_s");
+					stuff = CreateEntityByName(ent);
+					Format(ent,sizeof(ent),"npc_alien_grunt");
+					DispatchKeyValue(stuff,"classname","npc_alien_grunt");
+					DispatchKeyValue(stuff,"model","models/xenians/agrunt.mdl");
+					DispatchKeyValue(stuff,"targetname","npc_alien_grunt");
+					targnamedefined = true;
+				}
+				if (stuff == 0) stuff = CreateEntityByName(ent);
+				if (stuff == -1)
+				{
+					PrintToConsole(client,"Unable to create entity %s",ent);
+					return Plugin_Handled;
+				}
+				int ownerset = -1;
+				char fullstr[512];
+				Format(fullstr,sizeof(fullstr),"%s",ent);
+				Handle passedarr = CreateArray(64);
+				for (int v = 0; v<args+1; v++)
+				{
+					if (v > 1)
+					{
+						char tmp[64];
+						char tmp2[64];
+						GetCmdArg(v,tmp,sizeof(tmp));
+						int v1 = v+1;
+						int v1size = GetCmdArg(v1,tmp2,sizeof(tmp2));
+						if (v1size > 0)
+						{
+							if (StrEqual(tmp,"model",false))
+							{
+								vehiclemodeldefined = true;
+								if (StrContains(tmp2,".vmt",false) != -1)
+								{
+									char matchk[128];
+									Format(matchk,sizeof(matchk),"materials/%s",tmp2);
+									if ((!FileExists(matchk,true,NULL_STRING)) && (!IsModelPrecached(matchk)))
+									{
+										PrintToConsole(client,"The material %s was not found.",matchk);
+										AcceptEntityInput(stuff,"kill");
+										return Plugin_Handled;
+									}
+									else if (!IsModelPrecached(matchk))
+									{
+										PrecacheModel(matchk,true);
+									}
+								}
+								else
+								{
+									if ((!FileExists(tmp2,true,NULL_STRING)) && (!IsModelPrecached(tmp2)))
+									{
+										PrintToConsole(client,"The model %s was not found.",tmp2);
+										AcceptEntityInput(stuff,"kill");
+										return Plugin_Handled;
+									}
+									else if (!IsModelPrecached(tmp2))
+									{
+										PrecacheModel(tmp2,true);
+									}
+								}
+							}
+							if (StrEqual(tmp,"vehiclescript",false))
+							{
+								vehiclescriptdefined = true;
+								if (!FileExists(tmp2,true,NULL_STRING))
+								{
+									PrintToConsole(client,"The vehiclescript %s was not found.",tmp2);
+									PrintToConsole(client,"Defaulting to \"scripts/vehicles/jeep_test.txt\"");
+									Format(tmp2,sizeof(tmp2),"scripts/vehicles/jeep_test.txt");
+								}
+							}
+							else if (StrEqual(tmp,"angles",false))
+							{
+								if ((StrEqual(tmp2,"myangles",false)) || (StrEqual(tmp2,"myangs",false)))
+								{
+									Format(tmp2,sizeof(tmp2),"%1.f %1.f %1.f",clangles[0],clangles[1],clangles[2]);
+								}
+								else
+								{
+									char tmpexpl[4][32];
+									ExplodeString(tmp2," ",tmpexpl,4,32);
+									clangles[0] = StringToFloat(tmpexpl[0]);
+									clangles[1] = StringToFloat(tmpexpl[1]);
+									clangles[2] = StringToFloat(tmpexpl[2]);
+								}
+							}
+							else if (StrEqual(tmp,"owner",false))
+							{
+								if (StrEqual(tmp2,"!self",false))
+								{
+									ownerset = client;
+								}
+								else ownerset = StringToInt(tmp2);
+							}
+							else if (StrEqual(tmp,"parentname",false))
+							{
+								Format(setparent,sizeof(setparent),"%s",tmp2);
+							}
+							if (StrEqual(tmp,"targetname",false))
+								if (targnamedefined)
+									Format(tmp2,sizeof(tmp2),"%s%s",ent,tmp2);
+							PushArrayString(passedarr,tmp);
+							PushArrayString(passedarr,tmp2);
+							DispatchKeyValue(stuff,tmp,tmp2);
+							if (StrEqual(tmp,"origin",false))
+							{
+								char originch[3][16];
+								ExplodeString(tmp2," ",originch,3,16);
+								Location[0] = StringToFloat(originch[0]);
+								Location[1] = StringToFloat(originch[1]);
+								Location[2] = StringToFloat(originch[2]);
+							}
+						}
+						Format(fullstr,sizeof(fullstr),"%s %s %s",fullstr,tmp,tmp2);
+						v++;
+					}
+				}
+				if (StrEqual(ent,"prop_vehicle_crane",false))
+				{
+					if (!vehiclescriptdefined) DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/crane.txt");
+					if (!vehiclemodeldefined) DispatchKeyValue(stuff,"model","models/Cranes/crane_docks.mdl");
+					if (FindStringInArray(passedarr,"magnetname") == -1)
+					{
+						fhitpos[2]+=10.0;
+						char newmag[32];
+						Format(newmag,sizeof(newmag),"cranemag%i",stuff);
+						int magcreate = CreateEntityByName("phys_magnet");
+						if (magcreate != -1)
+						{
+							DispatchKeyValue(magcreate,"targetname",newmag);
+							DispatchKeyValue(magcreate,"skin","0");
+							DispatchKeyValue(magcreate,"overridescript","damping,0.2,rotdamping,0.2,inertia,0.3");
+							DispatchKeyValue(magcreate,"model","models/props_wasteland/cranemagnet01a.mdl");
+							DispatchKeyValue(magcreate,"massScale","1000");
+							DispatchKeyValue(magcreate,"disableshadows","0");
+							float magorigin[3];
+							if (FindStringInArray(passedarr,"angles") == -1) clangles[1] = 90.0;
+							else clangles[1]+=90.0;
+							magorigin[0] = (fhitpos[0] + (834 * Cosine(DegToRad(clangles[1]))));
+							magorigin[1] = (fhitpos[1] + (834 * Sine(DegToRad(clangles[1]))));
+							magorigin[2] = (fhitpos[2] + 700);
+							clangles[1]-=90.0;
+							TeleportEntity(magcreate,magorigin,NULL_VECTOR,NULL_VECTOR);
+							DispatchSpawn(magcreate);
+							ActivateEntity(magcreate);
+						}
+						DispatchKeyValue(stuff,"magnetname",newmag);
+					}
+					vehiclescriptdefined = true;
+					vehiclemodeldefined = true;
+				}
+				if (((StrContains(ent,"prop_vehicle",false) != -1) || (StrEqual(ent,"generic_actor",false)) || (StrEqual(ent,"monster_generic",false))) && (!vehiclemodeldefined))
+				{
+					PrintToConsole(client,"Model must be defined for this type of entity.");
+					AcceptEntityInput(stuff,"kill");
+					return Plugin_Handled;
+				}
+				if ((StrContains(ent,"prop_vehicle",false) != -1) && (!vehiclescriptdefined))
+				{
+					PrintToConsole(client,"VehicleScript was not defined, defaulting to \"scripts/vehicles/jeep_test.txt\"");
+					DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
+				}
+				CloseHandle(passedarr);
+				PrintToConsole(client,"%s",fullstr);
+				TeleportEntity(stuff, fhitpos, NULL_VECTOR, NULL_VECTOR);
+				DispatchSpawn(stuff);
+				ActivateEntity(stuff);
+				if ((ownerset != -1) && (ownerset != 0))
+				{
+					Handle dp = CreateDataPack();
+					WritePackCell(dp,ownerset);
+					WritePackCell(dp,stuff);
+					CreateTimer(0.1,ApplyOwner,dp);
+				}
+				if (strlen(setparent) > 0)
+				{
+					if (StrEqual(setparent,"!self",false))
+					{
+						SetVariantString("!activator");
+						AcceptEntityInput(stuff,"SetParent",client);
+					}
+					else
+					{
+						SetVariantString(setparent);
+						AcceptEntityInput(stuff,"SetParent");
+					}
+				}
+			}
+		}
+	}
+	Handle cvar = FindConVar("sv_cheats");
+	if (cvar != INVALID_HANDLE)
+	{
+		if (GetConVarInt(cvar))
+		{
+			CloseHandle(cvar);
+			return Plugin_Continue;
+		}
+	}
+	CloseHandle(cvar);
+	return Plugin_Handled;
+}
+
+public Action EntFireReplace(int client, int args)
+{
+	if (!IsValidEntity(client)) return Plugin_Handled;
+	if (hCVReplaceCMD.BoolValue)
+	{
+		bool bPassChk = false;
+		if (client == 0)
+		{
+			bPassChk = true;
+		}
+		else if (client > 0)
+		{
+			if (GetAdminFlag(GetUserAdmin(client),Admin_Root,Access_Effective))
+			{
+				bPassChk = true;
+			}
+		}
+		if (bPassChk)
+		{
+			//cinp Can't pass char const *argv[]
+			char fullinp[128];
+			char firstarg[128];
+			GetCmdArgString(fullinp, sizeof(fullinp));
+			GetCmdArg(1,firstarg, sizeof(firstarg));
+			if ((StrEqual(firstarg,"!picker",false)) && (args > 1))
+			{
+				int targ = GetClientAimTarget(client, false);
+				if (targ == -1)
+				{
+					if (client == 0) PrintToServer("Invalid target.");
+					else PrintToConsole(client,"Invalid target.");
+					return Plugin_Handled;
+				}
+				char second[128];
+				GetCmdArg(2,second,sizeof(second));
+				char input[256];
+				for (int i = 3;i<args+1;i++)
+				{
+					char argch[128];
+					GetCmdArg(i,argch,sizeof(argch));
+					if (i == 3)
+						Format(input,sizeof(input),"%s",argch);
+					else
+						Format(input,sizeof(input),"%s %s",input,argch);
+				}
+				SetVariantString(input);
+				AcceptEntityInput(targ,second);
+				if (StrEqual(second,"SetMass",false))
+				{
+					char targn[128];
+					if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+					SetEntityMoveType(targ,MOVETYPE_NOCLIP);
+					int convert = CreateEntityByName("phys_convert");
+					if (convert != -1)
+					{
+						if (strlen(targn) < 1)
+						{
+							if (HasEntProp(targ,Prop_Data,"m_iName")) SetEntPropString(targ,Prop_Data,"m_iName","syntmpmasstarg");
+							Format(targn,sizeof(targn),"syntmpmasstarg");
+						}
+						DispatchKeyValue(convert,"target",targn);
+						DispatchKeyValue(convert,"swapmodel",targn);
+						DispatchKeyValue(convert,"massoverride",input);
+						DispatchSpawn(convert);
+						ActivateEntity(convert);
+						AcceptEntityInput(convert,"ConvertTarget");
+						AcceptEntityInput(convert,"kill");
+						if ((HasEntProp(targ,Prop_Data,"m_iName")) && (StrEqual(targn,"syntmpmasstarg",false)))
+						{
+							SetEntPropString(targ,Prop_Data,"m_iName","");
+							CreateTimer(0.2,ResetTargn,targ,TIMER_FLAG_NO_MAPCHANGE);
+						}
+					}
+				}
+				return Plugin_Handled;
+			}
+			PrintToConsole(client,"%s",fullinp);
+			Handle arr = CreateArray(64);
+			if (StrEqual(firstarg,"!self",false))
+				PushArrayCell(arr,client);
+			else if (StrEqual(firstarg,"!picker",false))
+				PushArrayCell(arr,GetClientAimTarget(client, false));
+			if (StrContains(fullinp,",",false) != -1)
+			{
+				int loginp = CreateEntityByName("logic_auto");
+				DispatchKeyValue(loginp, "spawnflags","1");
+				DispatchKeyValue(loginp, "OnMapSpawn",fullinp);
+				DispatchSpawn(loginp);
+				ActivateEntity(loginp);
+				CloseHandle(arr);
+				return Plugin_Handled;
+			}
+			else if ((strlen(firstarg) > 0) && (args > 1) && (StringToInt(firstarg) == 0))
+			{
+				if (StrContains(firstarg,"*",false) == 0)
+				{
+					char tmp[64];
+					Format(tmp,sizeof(tmp),"%s",firstarg);
+					ReplaceStringEx(tmp,sizeof(tmp),"*","");
+					if (StrContains(tmp,"*",false) > 0)
+					{
+						PrintToConsole(client,"Unable to select multiple * at the moment.");
+						CloseHandle(arr);
+						return Plugin_Handled;
+					}
+				}
+				findentsarrtarg(arr,firstarg);
+				//Checks must be separate
+				if (arr == INVALID_HANDLE)
+				{
+					if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",firstarg);
+					else PrintToConsole(client,"No entities found with either classname or targetname of %s",firstarg);
+					CloseHandle(arr);
+					return Plugin_Handled;
+				}
+				else if (GetArraySize(arr) < 1)
+				{
+					if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",firstarg);
+					else PrintToConsole(client,"No entities found with either classname or targetname of %s",firstarg);
+					CloseHandle(arr);
+					return Plugin_Handled;
+				}
+				else
+				{
+					char input[128];
+					GetCmdArg(2,input,sizeof(input));
+					ReplaceStringEx(fullinp,sizeof(fullinp),firstarg,"");
+					ReplaceStringEx(fullinp,sizeof(fullinp),input,"");
+					ReplaceStringEx(fullinp,sizeof(fullinp),"  ","");
+					for (int i = 0;i<GetArraySize(arr);i++)
+					{
+						int j = GetArrayCell(arr,i);
+						SetVariantString(fullinp);
+						AcceptEntityInput(j,input);
+					}
+					if (client == 0) PrintToServer("%s %s %s",firstarg,input,fullinp);
+					else PrintToConsole(client,"%s %s %s",firstarg,input,fullinp);
+					CloseHandle(arr);
+					return Plugin_Handled;
+				}
+			}
+			if (StrEqual(firstarg,"name",false))
+			{
+				int targ = -1;
+				char second[64];
+				char third[32];
+				char fourth[32];
+				GetCmdArg(2, second, sizeof(second));
+				GetCmdArg(3, third, sizeof(third));
+				GetCmdArg(4, fourth, sizeof(fourth));
+				for (int i = 0; i<MaxClients+1 ;i++)
+				{
+					if ((i != 0) && (IsClientConnected(i)) && (IsClientInGame(i)))
+					{
+						char nick[64];
+						GetClientName(i, nick, sizeof(nick));
+						if (StrContains( nick, second, true) != -1)
+						{
+							targ = i;
+							if (client == 0)
+								PrintToServer("Setting %s %s %s",nick,third,fourth);
+							else
+								PrintToConsole(client,"Setting %s %s %s",nick,third,fourth);
+							break;
+						}
+					}
+				}
+				if (targ != -1)
+				{
+					char thisvar[64];
+					char fifth[32];
+					GetCmdArg(5, fifth, sizeof(fifth));
+					if (strlen(fifth) > 0)
+						Format(thisvar,sizeof(thisvar),"%s %s",fourth,fifth);
+					else if (strlen(fourth) > 0)
+						Format(thisvar,sizeof(thisvar),"%s",fourth);
+					if (strlen(thisvar) > 0)
+						SetVariantString(thisvar);
+					AcceptEntityInput(targ,third);
+				}
+			}
+			else
+			{
+				int targ = GetClientAimTarget(client, false);
+				int addarg = 0;
+				char first[32];
+				GetCmdArg(1, first, sizeof(first));
+				if (StrEqual(first,"!self",false))
+				{
+					targ = client;
+					addarg = 1;
+				}
+				else if (StrEqual(first,"!picker",false))
+					addarg = 1;
+				if (targ != -1)
+				{
+					int varint = -1;
+					if (args == 2+addarg)
+					{
+						char secondintchk[16];
+						GetCmdArg(2+addarg, secondintchk, sizeof(secondintchk));
+						float secondfl = StringToFloat(secondintchk);
+						int secondint = StringToInt(secondintchk);
+						if (StrEqual(secondintchk,"0",false) && (secondint == 0))
+							varint = 0;
+						else if (secondint > 0)
+							varint = secondint;
+						else if (secondfl != 0.0)
+							SetVariantFloat(secondfl);
+						else
+							varint = -1;
+					}
+					else if (args == 3+addarg)
+					{
+						char secondintchk[16];
+						GetCmdArg(3+addarg, secondintchk, sizeof(secondintchk));
+						float secondfl = StringToFloat(secondintchk);
+						int secondint = StringToInt(secondintchk);
+						if (StrEqual(secondintchk,"0",false) && (secondint == 0))
+							varint = 0;
+						else if (secondint > 0)
+							varint = secondint;
+						else if (secondfl != 0.0)
+							SetVariantFloat(secondfl);
+						else
+							varint = -1;
+					}
+					char firstplus[32];
+					Format(firstplus,sizeof(firstplus),"%s ",first);
+					ReplaceString(fullinp,sizeof(fullinp),firstplus,"");
+					ReplaceString(fullinp,sizeof(fullinp),"\"","");
+					if (varint == -1)
+						SetVariantString(fullinp);
+					else
+						SetVariantInt(varint);
+					AcceptEntityInput(targ,first);
+				}
+			}
+			CloseHandle(arr);
+		}
+	}
+	Handle cvar = FindConVar("sv_cheats");
+	if (cvar != INVALID_HANDLE)
+	{
+		if (GetConVarInt(cvar))
+		{
+			CloseHandle(cvar);
+			return Plugin_Continue;
+		}
+	}
+	CloseHandle(cvar);
+	return Plugin_Handled;
+}
+
 public Action getinf(int client, int args)
 {
 	if (client == 0)
@@ -3431,8 +4026,11 @@ void PrintEntInfoFor(int targ)
 		angs[0] = -1.1;
 		char exprsc[24];
 		char exprtargname[64];
-		char stateinf[128];
-		char scriptinf[256];
+		char stateinf[1024];
+		char scriptinf[512];
+		int scrtmpi;
+		float scrtmpf;
+		float offsetvec[3];
 		char scrtmp[64];
 		int doorstate, sleepstate, exprsci;
 		GetEntityClassname(targ, ent, sizeof(ent));
@@ -3440,7 +4038,7 @@ void PrintEntInfoFor(int targ)
 		if (HasEntProp(targ,Prop_Data,"m_iGlobalname"))
 			GetEntPropString(targ,Prop_Data,"m_iGlobalname",globname,sizeof(globname));
 		if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",vec);
-		else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",vec);
+		if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",offsetvec);
 		if (HasEntProp(targ,Prop_Send,"m_angRotation"))
 			GetEntPropVector(targ,Prop_Send,"m_angRotation",angs);
 		if (HasEntProp(targ,Prop_Data,"m_hParent"))
@@ -3605,38 +4203,38 @@ void PrintEntInfoFor(int targ)
 		}
 		if (HasEntProp(targ,Prop_Data,"m_fMoveTo"))
 		{
-			int scrtmpi = GetEntProp(targ,Prop_Data,"m_fMoveTo");
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_fMoveTo");
 			Format(scriptinf,sizeof(scriptinf),"%sm_fMoveTo %i ",scriptinf,scrtmpi);
 		}
 		if (HasEntProp(targ,Prop_Data,"m_flRadius"))
 		{
-			float scrtmpi = GetEntPropFloat(targ,Prop_Data,"m_flRadius");
-			if (scrtmpi > 0.0)
-				Format(scriptinf,sizeof(scriptinf),"%sm_flRadius %1.f ",scriptinf,scrtmpi);
+			scrtmpf = GetEntPropFloat(targ,Prop_Data,"m_flRadius");
+			if (scrtmpf > 0.0)
+				Format(scriptinf,sizeof(scriptinf),"%sm_flRadius %1.f ",scriptinf,scrtmpf);
 		}
 		if (HasEntProp(targ,Prop_Data,"m_flRepeat"))
 		{
-			float scrtmpi = GetEntPropFloat(targ,Prop_Data,"m_flRepeat");
-			Format(scriptinf,sizeof(scriptinf),"%sm_flRepeat %1.f ",scriptinf,scrtmpi);
+			scrtmpf = GetEntPropFloat(targ,Prop_Data,"m_flRepeat");
+			Format(scriptinf,sizeof(scriptinf),"%sm_flRepeat %1.f ",scriptinf,scrtmpf);
 		}
 		if (HasEntProp(targ,Prop_Data,"m_bLoopActionSequence"))
 		{
-			int scrtmpi = GetEntProp(targ,Prop_Data,"m_bLoopActionSequence");
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_bLoopActionSequence");
 			Format(scriptinf,sizeof(scriptinf),"%sm_bLoopActionSequence %i ",scriptinf,scrtmpi);
 		}
 		if (HasEntProp(targ,Prop_Data,"m_bIgnoreGravity"))
 		{
-			int scrtmpi = GetEntProp(targ,Prop_Data,"m_bIgnoreGravity");
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_bIgnoreGravity");
 			Format(scriptinf,sizeof(scriptinf),"%sm_bIgnoreGravity %i ",scriptinf,scrtmpi);
 		}
 		if (HasEntProp(targ,Prop_Data,"m_bSynchPostIdles"))
 		{
-			int scrtmpi = GetEntProp(targ,Prop_Data,"m_bSynchPostIdles");
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_bSynchPostIdles");
 			Format(scriptinf,sizeof(scriptinf),"%sm_bSynchPostIdles %i ",scriptinf,scrtmpi);
 		}
 		if (HasEntProp(targ,Prop_Data,"m_bDisableNPCCollisions"))
 		{
-			int scrtmpi = GetEntProp(targ,Prop_Data,"m_bDisableNPCCollisions");
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_bDisableNPCCollisions");
 			Format(scriptinf,sizeof(scriptinf),"%sm_bDisableNPCCollisions %i ",scriptinf,scrtmpi);
 		}
 		if (HasEntProp(targ,Prop_Data,"m_iszTemplateEntityNames[0]"))
@@ -3679,6 +4277,11 @@ void PrintEntInfoFor(int targ)
 			GetEntPropString(targ,Prop_Data,"m_iszDamageFilterName",scrtmp,sizeof(scrtmp));
 			if (strlen(scrtmp) > 0) Format(stateinf,sizeof(stateinf),"%sDamageFilter: %s ",stateinf,scrtmp);
 		}
+		if (HasEntProp(targ,Prop_Data,"m_iszTemplateName"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_iszTemplateName",scrtmp,sizeof(scrtmp));
+			if (strlen(scrtmp) > 0) Format(stateinf,sizeof(stateinf),"%sTemplateName: %s ",stateinf,scrtmp);
+		}
 		if (HasEntProp(targ,Prop_Data,"m_iFilterClass"))
 		{
 			GetEntPropString(targ,Prop_Data,"m_iFilterClass",scrtmp,sizeof(scrtmp));
@@ -3699,6 +4302,10 @@ void PrintEntInfoFor(int targ)
 		if (HasEntProp(targ,Prop_Data,"m_iDisabled"))
 		{
 			Format(stateinf,sizeof(stateinf),"%sStartDisabled %i ",stateinf,GetEntProp(targ,Prop_Data,"m_iDisabled"));
+		}
+		if (HasEntProp(targ,Prop_Data,"m_bDisabled"))
+		{
+			Format(stateinf,sizeof(stateinf),"%sDisabled %i ",stateinf,GetEntProp(targ,Prop_Data,"m_bDisabled"));
 		}
 		if ((StrContains(ent,"func_",false) == 0) && (HasEntProp(targ,Prop_Data,"m_toggle_state")))
 		{
@@ -3739,6 +4346,102 @@ void PrintEntInfoFor(int targ)
 			int hEnt = GetEntProp(targ,Prop_Data,"m_bActivated");
 			Format(stateinf,sizeof(stateinf),"%sm_bActivated: %i ",stateinf,hEnt);
 		}
+		if (HasEntProp(targ,Prop_Data,"m_bInReload"))
+		{
+			int rel = GetEntProp(targ,Prop_Data,"m_bInReload");
+			Format(stateinf,sizeof(stateinf),"%s\nm_bInReload: %i ",stateinf,rel);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_bFireOnEmpty"))
+		{
+			int rel = GetEntProp(targ,Prop_Data,"m_bFireOnEmpty");
+			Format(stateinf,sizeof(stateinf),"%sm_bFireOnEmpty: %i ",stateinf,rel);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iPrimaryAmmoType"))
+		{
+			int rel = GetEntProp(targ,Prop_Data,"m_iPrimaryAmmoType");
+			Format(stateinf,sizeof(stateinf),"%sm_iPrimaryAmmoType: %i ",stateinf,rel);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iSecondaryAmmoType"))
+		{
+			int rel = GetEntProp(targ,Prop_Data,"m_iSecondaryAmmoType");
+			Format(stateinf,sizeof(stateinf),"%sm_iSecondaryAmmoType: %i ",stateinf,rel);
+		}
+		if (HasEntProp(targ,Prop_Send,"m_iEntityQuality"))
+		{
+			int rel = GetEntProp(targ,Prop_Send,"m_iEntityQuality");
+			Format(stateinf,sizeof(stateinf),"%sm_iEntityQuality: %i ",stateinf,rel);
+		}
+		if (HasEntProp(targ,Prop_Send,"m_iEntityLevel"))
+		{
+			int rel = GetEntProp(targ,Prop_Send,"m_iEntityLevel");
+			Format(stateinf,sizeof(stateinf),"%sm_iEntityLevel: %i ",stateinf,rel);
+		}
+		if (HasEntProp(targ,Prop_Send,"m_iItemDefinitionIndex"))
+		{
+			int rel = GetEntProp(targ,Prop_Send,"m_iItemDefinitionIndex");
+			Format(stateinf,sizeof(stateinf),"%sm_iItemDefinitionIndex: %i ",stateinf,rel);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_nDissolveType"))
+		{
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_nDissolveType");
+			Format(stateinf,sizeof(stateinf),"%sm_nDissolveType: %i ",stateinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_nBeamType"))
+		{
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_nBeamType");
+			Format(stateinf,sizeof(stateinf),"%sm_nBeamType: %i ",stateinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_nBeamFlags"))
+		{
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_nBeamFlags");
+			Format(stateinf,sizeof(stateinf),"%sm_nBeamFlags: %i ",stateinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_nNumBeamEnts"))
+		{
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_nNumBeamEnts");
+			Format(stateinf,sizeof(stateinf),"%sm_nNumBeamEnts: %i ",stateinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_fAmplitude"))
+		{
+			scrtmpf = GetEntPropFloat(targ,Prop_Data,"m_fAmplitude");
+			Format(stateinf,sizeof(stateinf),"%sm_fAmplitude: %1.1f ",stateinf,scrtmpf);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_fWidth"))
+		{
+			scrtmpf = GetEntPropFloat(targ,Prop_Data,"m_fWidth");
+			Format(stateinf,sizeof(stateinf),"%sm_fWidth: %1.1f ",stateinf,scrtmpf);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_fEndWidth"))
+		{
+			scrtmpf = GetEntPropFloat(targ,Prop_Data,"m_fEndWidth");
+			Format(stateinf,sizeof(stateinf),"%sm_fEndWidth: %1.1f ",stateinf,scrtmpf);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_nHaloIndex"))
+		{
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_nHaloIndex");
+			Format(stateinf,sizeof(stateinf),"%sm_nHaloIndex: %i ",stateinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_fHaloScale"))
+		{
+			scrtmpf = GetEntPropFloat(targ,Prop_Data,"m_fHaloScale");
+			Format(stateinf,sizeof(stateinf),"%sm_fHaloScale: %1.1f ",stateinf,scrtmpf);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_nRenderMode"))
+		{
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_nRenderMode");
+			Format(stateinf,sizeof(stateinf),"%s\nm_nRenderMode: %i ",stateinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_nRenderFX"))
+		{
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_nRenderFX");
+			Format(stateinf,sizeof(stateinf),"%sm_nRenderFX: %i ",stateinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_vecEndPos"))
+		{
+			float vecTmp[3];
+			GetEntPropVector(targ,Prop_Data,"m_vecEndPos",vecTmp);
+			Format(stateinf,sizeof(stateinf),"%sm_vecEndPos: %1.1f %1.1f %1.1f ",stateinf,vecTmp[0],vecTmp[1],vecTmp[2]);
+		}
 		if ((HasEntProp(targ,Prop_Data,"m_iHealth")) && (HasEntProp(targ,Prop_Data,"m_iMaxHealth")))
 		{
 			int targh = GetEntProp(targ,Prop_Data,"m_iHealth");
@@ -3755,6 +4458,41 @@ void PrintEntInfoFor(int targ)
 				Format(stateinf,sizeof(stateinf),"%sHealth: %i Max Health: %i",stateinf,targh,targmh);
 			}
 		}
+		if (HasEntProp(targ,Prop_Data,"m_iszSceneFile"))
+		{
+			GetEntPropString(targ,Prop_Data,"m_iszSceneFile",scrtmp,sizeof(scrtmp));
+			Format(stateinf,sizeof(stateinf),"%sm_iszSceneFile: %s ",stateinf,scrtmp);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_hTarget1"))
+		{
+			for (int i = 1;i<9;i++)
+			{
+				Format(scrtmp,sizeof(scrtmp),"m_hTarget%i",i);
+				if (HasEntProp(targ,Prop_Data,scrtmp))
+				{
+					if (GetEntPropEnt(targ,Prop_Data,scrtmp) != -1)
+					{
+						Format(stateinf,sizeof(stateinf),"%s%s %i ",stateinf,scrtmp,GetEntPropEnt(targ,Prop_Data,scrtmp));
+					}
+				}
+			}
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iszTemplateData"))
+		{
+			char scrtmplarger[512];
+			GetEntPropString(targ,Prop_Data,"m_iszTemplateData",scrtmplarger,sizeof(scrtmplarger));
+			if (strlen(scrtmplarger) > 0) Format(stateinf,sizeof(stateinf),"%s\nTemplateData: %s ",stateinf,scrtmplarger);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iPlayerCountLower"))
+		{
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_iPlayerCountLower");
+			Format(stateinf,sizeof(stateinf),"%s LowerPlayer: %i",stateinf,scrtmpi);
+		}
+		if (HasEntProp(targ,Prop_Data,"m_iPlayerCountUpper"))
+		{
+			scrtmpi = GetEntProp(targ,Prop_Data,"m_iPlayerCountUpper");
+			Format(stateinf,sizeof(stateinf),"%s UpperPlayer: %i",stateinf,scrtmpi);
+		}
 		TrimString(stateinf);
 		TrimString(scriptinf);
 		if (strlen(targname) > 0)
@@ -3767,10 +4505,18 @@ void PrintEntInfoFor(int targ)
 			Format(inf,sizeof(inf),"%sEntSpawnflags: %i",inf,spawnflagsi);
 		if (vec[0] != -1.1)
 			Format(inf,sizeof(inf),"%s\nOrigin %f %f %f",inf,vec[0],vec[1],vec[2]);
+		if ((offsetvec[0] != -1.1) && (parent != -1))
+			Format(inf,sizeof(inf),"%s\nOffset parent origin %f %f %f",inf,offsetvec[0],offsetvec[1],offsetvec[2]);
 		if (angs[0] != -1.1)
 			Format(inf,sizeof(inf),"%s Ang: %i %i %i",inf,RoundFloat(angs[0]),RoundFloat(angs[1]),RoundFloat(angs[2]));
 		if (strlen(exprsc) > 0)
 			Format(inf,sizeof(inf),"%s\nTarget: %s %i %s",inf,exprsc,exprsci,exprtargname);
+		if (HasEntProp(targ,Prop_Data,"m_vecMoveDir"))
+		{
+			float vecTmp[3];
+			GetEntPropVector(targ,Prop_Data,"m_vecMoveDir",vecTmp);
+			Format(stateinf,sizeof(stateinf),"%sm_vecMoveDir: %1.1f %1.1f %1.1f ",stateinf,vecTmp[0],vecTmp[1],vecTmp[2]);
+		}
 		if ((strlen(scriptinf) > 1) && (strlen(stateinf) < 1)) PrintToServer("%s\n%s",inf,scriptinf);
 		if ((strlen(stateinf) > 1) && (strlen(scriptinf) < 1)) PrintToServer("%s\n%s",inf,stateinf);
 		if ((strlen(stateinf) > 1) && (strlen(scriptinf) > 1)) PrintToServer("%s\n%s\n%s",inf,stateinf,scriptinf);
