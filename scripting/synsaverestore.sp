@@ -63,7 +63,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.164"
+#define PLUGIN_VERSION "2.165"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1613,6 +1613,7 @@ public void OnMapStart()
 		GetCurrentMap(mapbuf,sizeof(mapbuf));
 		if ((!StrEqual(mapbuf,"d3_citadel_03",false)) && (!StrEqual(mapbuf,"ep2_outland_02",false)))
 		{
+			logplyprox = -1;
 			logplyprox = CreateEntityByName("logic_playerproxy");
 			if (logplyprox != -1)
 			{
@@ -1622,9 +1623,10 @@ public void OnMapStart()
 				AcceptEntityInput(logplyprox,"CancelRestorePlayers");
 			}
 		}
+		logsv = -1;
 		if (saveresetm == 1) logsv = CreateEntityByName("logic_autosave");
 		else if (saveresetm == 2) logsv = CreateEntityByName("logic_playerproxy");
-		if ((logsv != -1) && (IsValidEntity(logsv)))
+		if (IsValidEntity(logsv))
 		{
 			DispatchKeyValue(logsv,"NewLevelUnit","1");
 			DispatchSpawn(logsv);
@@ -1651,79 +1653,103 @@ public void OnMapStart()
 		if ((StrEqual(mapbuf,"remount",false)) && (enterfromep1))
 		{
 			int loginp = CreateEntityByName("logic_auto");
-			DispatchKeyValue(loginp, "spawnflags","1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep1,kill,,0,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep2,Enable,,0,-1");
-			DispatchSpawn(loginp);
-			ActivateEntity(loginp);
+			if (loginp != -1)
+			{
+				DispatchKeyValue(loginp, "spawnflags","1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep1,kill,,0,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep2,Enable,,0,-1");
+				DispatchSpawn(loginp);
+				ActivateEntity(loginp);
+			}
 			enterfromep1 = false;
 		}
 		else if ((StrEqual(mapbuf,"remount",false)) && (enterfromep2))
 		{
 			int loginp = CreateEntityByName("logic_auto");
-			DispatchKeyValue(loginp, "spawnflags","1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep1,kill,,0,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep2,kill,,0,-1");
-			DispatchKeyValue(loginp, "OnMapSpawn","syn_hudtimer,AddOutput,OnTimer syn_reltohl2:Trigger::0:-1,0,-1");
-			DispatchSpawn(loginp);
-			ActivateEntity(loginp);
+			if (loginp != -1)
+			{
+				DispatchKeyValue(loginp, "spawnflags","1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep1,kill,,0,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_reltoep2,kill,,0,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","syn_hudtimer,AddOutput,OnTimer syn_reltohl2:Trigger::0:-1,0,-1");
+				DispatchSpawn(loginp);
+				ActivateEntity(loginp);
+			}
 			int syn_reltohl2 = CreateEntityByName("logic_relay");
-			DispatchKeyValue(syn_reltohl2, "targetname","syn_reltohl2");
-			DispatchKeyValue(syn_reltohl2, "OnTrigger","syn_ps,Command,changelevel hl2 d1_trainstation_01,0,1");
-			DispatchSpawn(syn_reltohl2);
-			ActivateEntity(syn_reltohl2);
+			if (syn_reltohl2 != -1)
+			{
+				DispatchKeyValue(syn_reltohl2, "targetname","syn_reltohl2");
+				DispatchKeyValue(syn_reltohl2, "OnTrigger","syn_ps,Command,changelevel hl2 d1_trainstation_01,0,1");
+				DispatchSpawn(syn_reltohl2);
+				ActivateEntity(syn_reltohl2);
+			}
 			enterfromep2 = false;
 		}
 		else if (StrEqual(mapbuf,"d3_c17_01",false))
 		{
 			int loginp = CreateEntityByName("logic_auto");
-			DispatchKeyValue(loginp, "spawnflags","1");
-			DispatchKeyValue(loginp, "OnMapSpawn","alyx,StartScripting,,1,-1");
-			DispatchSpawn(loginp);
-			ActivateEntity(loginp);
+			if (loginp != -1)
+			{
+				DispatchKeyValue(loginp, "spawnflags","1");
+				DispatchKeyValue(loginp, "OnMapSpawn","alyx,StartScripting,,1,-1");
+				DispatchSpawn(loginp);
+				ActivateEntity(loginp);
+			}
 		}
 		else if (StrEqual(mapbuf,"d3_breen_01",false))
 		{
 			int loginp = CreateEntityByName("logic_auto");
-			DispatchKeyValue(loginp, "spawnflags","1");
-			DispatchKeyValue(loginp, "OnMapSpawn","logic_ending_credits,AddOutput,OnTrigger PSCTest:Command:changelevel remount:29:1,0,-1");
-			DispatchSpawn(loginp);
-			ActivateEntity(loginp);
+			if (loginp != -1)
+			{
+				DispatchKeyValue(loginp, "spawnflags","1");
+				DispatchKeyValue(loginp, "OnMapSpawn","logic_ending_credits,AddOutput,OnTrigger PSCTest:Command:changelevel remount:29:1,0,-1");
+				DispatchSpawn(loginp);
+				ActivateEntity(loginp);
+			}
 		}
 		else if (StrEqual(mapbuf,"ep1_c17_06",false))
 		{
 			int loginp = CreateEntityByName("logic_auto");
-			DispatchKeyValue(loginp, "spawnflags","1");
-			DispatchKeyValue(loginp, "OnMapSpawn","citfx_glowtrack3,AddOutput,OnPass theEndCmd:Command:changelevel remount:7.3:1,0,-1");
-			DispatchSpawn(loginp);
-			ActivateEntity(loginp);
+			if (loginp != -1)
+			{
+				DispatchKeyValue(loginp, "spawnflags","1");
+				DispatchKeyValue(loginp, "OnMapSpawn","citfx_glowtrack3,AddOutput,OnPass theEndCmd:Command:changelevel remount:7.3:1,0,-1");
+				DispatchSpawn(loginp);
+				ActivateEntity(loginp);
+			}
 		}
 		if (reloadingmap)
 		{
 			if ((enterfrom04pb) && (StrEqual(mapbuf,"ep2_outland_02",false)))
 			{
 				int spawnpos = CreateEntityByName("info_player_coop");
-				DispatchKeyValue(spawnpos, "targetname","syn_spawn_player_3rebuild");
-				DispatchKeyValue(spawnpos, "StartDisabled","1");
-				DispatchKeyValue(spawnpos, "parentname","elevator");
-				float spawnposg[3];
-				spawnposg[0] = -3106.0;
-				spawnposg[1] = -9455.0;
-				spawnposg[2] = -3077.0;
-				TeleportEntity(spawnpos,spawnposg,NULL_VECTOR,NULL_VECTOR);
-				DispatchSpawn(spawnpos);
-				ActivateEntity(spawnpos);
+				if (spawnpos != -1)
+				{
+					DispatchKeyValue(spawnpos, "targetname","syn_spawn_player_3rebuild");
+					DispatchKeyValue(spawnpos, "StartDisabled","1");
+					DispatchKeyValue(spawnpos, "parentname","elevator");
+					float spawnposg[3];
+					spawnposg[0] = -3106.0;
+					spawnposg[1] = -9455.0;
+					spawnposg[2] = -3077.0;
+					TeleportEntity(spawnpos,spawnposg,NULL_VECTOR,NULL_VECTOR);
+					DispatchSpawn(spawnpos);
+					ActivateEntity(spawnpos);
+				}
 				int loginp = CreateEntityByName("logic_auto");
-				DispatchKeyValue(loginp, "spawnflags","1");
-				DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,Enable,,0,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,Trigger,,0.1,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,TouchTest,,0.1,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3rebuild,0,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","debug_choreo_start_in_elevator,Trigger,,0,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","pointTemplate_vortCalvary,ForceSpawn,,1,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","ss_heal_loop,BeginSequence,,1.2,-1");
-				DispatchSpawn(loginp);
-				ActivateEntity(loginp);
+				if (loginp != -1)
+				{
+					DispatchKeyValue(loginp, "spawnflags","1");
+					DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,Enable,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,Trigger,,0.1,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,TouchTest,,0.1,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3rebuild,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","debug_choreo_start_in_elevator,Trigger,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","pointTemplate_vortCalvary,ForceSpawn,,1,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","ss_heal_loop,BeginSequence,,1.2,-1");
+					DispatchSpawn(loginp);
+					ActivateEntity(loginp);
+				}
 			}
 			else if (enterfrom04pb)
 				enterfrom04pb = false;
@@ -1776,39 +1802,45 @@ public void OnMapStart()
 			{
 				findrmstarts(-1,"info_player_start");
 				int loginp = CreateEntityByName("logic_auto");
-				DispatchKeyValue(loginp, "spawnflags","1");
-				DispatchKeyValue(loginp, "OnMapSpawn","edt_alley_push,Enable,,0,1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_temp_ally,ForceSpawn,,1,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_removeme_temp_t02,ForceSpawn,,0,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3,0,1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_vint_trav_gman,Kill,,0,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_removeme_t03,Kill,,0,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_vint_stopplayerjump_1,Kill,,0,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
-				DispatchSpawn(loginp);
-				ActivateEntity(loginp);
+				if (loginp != -1)
+				{
+					DispatchKeyValue(loginp, "spawnflags","1");
+					DispatchKeyValue(loginp, "OnMapSpawn","edt_alley_push,Enable,,0,1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_temp_ally,ForceSpawn,,1,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_removeme_temp_t02,ForceSpawn,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3,0,1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_vint_trav_gman,Kill,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_wall_removeme_t03,Kill,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_vint_stopplayerjump_1,Kill,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
+					DispatchSpawn(loginp);
+					ActivateEntity(loginp);
+				}
 				int trigtpstart = CreateEntityByName("info_teleport_destination");
-				DispatchKeyValue(trigtpstart,"targetname","syn_transition_dest");
-				DispatchKeyValue(trigtpstart,"angles","0 70 0");
-				DispatchSpawn(trigtpstart);
-				ActivateEntity(trigtpstart);
-				float tporigin[3];
-				tporigin[0] = -3735.0;
-				tporigin[1] = -5.0;
-				tporigin[2] = -3440.0;
-				TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
-				trigtpstart = CreateEntityByName("trigger_teleport");
-				DispatchKeyValue(trigtpstart,"spawnflags","1");
-				DispatchKeyValue(trigtpstart,"targetname","syn_starttptransition");
-				DispatchKeyValue(trigtpstart,"model","*1");
-				DispatchKeyValue(trigtpstart,"target","syn_transition_dest");
-				DispatchSpawn(trigtpstart);
-				ActivateEntity(trigtpstart);
-				tporigin[0] = -736.0;
-				tporigin[1] = 864.0;
-				tporigin[2] = -3350.0;
-				TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
+				if (trigtpstart != -1)
+				{
+					DispatchKeyValue(trigtpstart,"targetname","syn_transition_dest");
+					DispatchKeyValue(trigtpstart,"angles","0 70 0");
+					DispatchSpawn(trigtpstart);
+					ActivateEntity(trigtpstart);
+					float tporigin[3];
+					tporigin[0] = -3735.0;
+					tporigin[1] = -5.0;
+					tporigin[2] = -3440.0;
+					TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
+					trigtpstart = CreateEntityByName("trigger_teleport");
+					DispatchKeyValue(trigtpstart,"spawnflags","1");
+					DispatchKeyValue(trigtpstart,"targetname","syn_starttptransition");
+					DispatchKeyValue(trigtpstart,"model","*1");
+					DispatchKeyValue(trigtpstart,"target","syn_transition_dest");
+					DispatchSpawn(trigtpstart);
+					ActivateEntity(trigtpstart);
+					tporigin[0] = -736.0;
+					tporigin[1] = 864.0;
+					tporigin[2] = -3350.0;
+					TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
+				}
 			}
 			else if (enterfrom03pb)
 				enterfrom03pb = false;
@@ -1817,64 +1849,76 @@ public void OnMapStart()
 				if ((rmsaves) && (GetArraySize(transitionents) > 0)) findtransitionback(-1);
 				findrmstarts(-1,"info_player_start");
 				int loginp = CreateEntityByName("logic_auto");
-				DispatchKeyValue(loginp, "spawnflags","1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_shiz,Trigger,,0,1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_4,0,1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
-				DispatchKeyValue(loginp, "OnMapSpawn","dropship,kill,,0,1");
-				DispatchKeyValue(loginp, "OnMapSpawn","windmill,kill,,0,1");
-				DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Unlock,,0,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Close,,0.1,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Lock,,0.5,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
-				DispatchSpawn(loginp);
-				ActivateEntity(loginp);
+				if (loginp != -1)
+				{
+					DispatchKeyValue(loginp, "spawnflags","1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_shiz,Trigger,,0,1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_4,0,1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_1,kill,,0,1");
+					DispatchKeyValue(loginp, "OnMapSpawn","dropship,kill,,0,1");
+					DispatchKeyValue(loginp, "OnMapSpawn","windmill,kill,,0,1");
+					DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Unlock,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Close,,0.1,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Lock,,0.5,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
+					DispatchSpawn(loginp);
+					ActivateEntity(loginp);
+				}
 				int trigtpstart = CreateEntityByName("info_teleport_destination");
-				DispatchKeyValue(trigtpstart,"targetname","syn_transition_dest");
-				DispatchKeyValue(trigtpstart,"angles","0 180 0");
-				DispatchSpawn(trigtpstart);
-				ActivateEntity(trigtpstart);
-				float tporigin[3];
-				tporigin[0] = 3200.0;
-				tporigin[1] = 5216.0;
-				tporigin[2] = 1544.0;
-				TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
-				trigtpstart = CreateEntityByName("trigger_teleport");
-				DispatchKeyValue(trigtpstart,"spawnflags","1");
-				DispatchKeyValue(trigtpstart,"targetname","syn_starttptransition");
-				DispatchKeyValue(trigtpstart,"model","*9");
-				DispatchKeyValue(trigtpstart,"target","syn_transition_dest");
-				DispatchSpawn(trigtpstart);
-				ActivateEntity(trigtpstart);
-				tporigin[0] = -7616.0;
-				tporigin[1] = 5856.0;
-				tporigin[2] = 1601.0;
-				TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
+				if (trigtpstart != -1)
+				{
+					DispatchKeyValue(trigtpstart,"targetname","syn_transition_dest");
+					DispatchKeyValue(trigtpstart,"angles","0 180 0");
+					DispatchSpawn(trigtpstart);
+					ActivateEntity(trigtpstart);
+					float tporigin[3];
+					tporigin[0] = 3200.0;
+					tporigin[1] = 5216.0;
+					tporigin[2] = 1544.0;
+					TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
+					trigtpstart = CreateEntityByName("trigger_teleport");
+					DispatchKeyValue(trigtpstart,"spawnflags","1");
+					DispatchKeyValue(trigtpstart,"targetname","syn_starttptransition");
+					DispatchKeyValue(trigtpstart,"model","*9");
+					DispatchKeyValue(trigtpstart,"target","syn_transition_dest");
+					DispatchSpawn(trigtpstart);
+					ActivateEntity(trigtpstart);
+					tporigin[0] = -7616.0;
+					tporigin[1] = 5856.0;
+					tporigin[2] = 1601.0;
+					TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
+				}
 			}
 			else if (enterfrom08pb)
 				enterfrom08pb = false;
 			if ((enterfrom4g) && (StrEqual(mapbuf,"bm_c2a4fedt",false)))
 			{
 				int loginp = CreateEntityByName("logic_auto");
-				DispatchKeyValue(loginp, "spawnflags","1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_stragglersfailsave,Enable,,0,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawnpoint2_00,0,-1");
-				DispatchSpawn(loginp);
-				ActivateEntity(loginp);
+				if (loginp != -1)
+				{
+					DispatchKeyValue(loginp, "spawnflags","1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_stragglersfailsave,Enable,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawnpoint2_00,0,-1");
+					DispatchSpawn(loginp);
+					ActivateEntity(loginp);
+				}
 			}
 			else if (enterfrom4g)
 				enterfrom4g = false;
 			/*
 			if (GetArraySize(globalsarr) > 0)
 			{
-				int loginp;
+				int loginp = -1;
 				for (int i = 0;i<GetArraySize(globalsarr);i++)
 				{
 					char itmp[32];
 					GetArrayString(globalsarr, i, itmp, sizeof(itmp));
 					int itmpval = GetArrayCell(globalsiarr,i);
-					loginp = CreateEntityByName("logic_auto");
-					DispatchKeyValue(loginp, "spawnflags","1");
+					if (!IsValidEntity(loginp))
+					{
+						loginp = CreateEntityByName("logic_auto");
+						DispatchKeyValue(loginp, "spawnflags","1");
+					}
 					char formt[64];
 					if (itmpval == 1)
 						Format(formt,sizeof(formt),"%s,TurnOn,,0,-1",itmp);
@@ -1883,7 +1927,7 @@ public void OnMapStart()
 					DispatchKeyValue(loginp, "OnMapSpawn", formt);
 					//PrintToServer("Setting %s to %i",itmp,itmpval);
 				}
-				if (loginp != 0)
+				if (IsValidEntity(loginp))
 				{
 					DispatchSpawn(loginp);
 					ActivateEntity(loginp);
