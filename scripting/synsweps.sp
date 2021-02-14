@@ -9152,7 +9152,7 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 									ExplodeString(weapdata," ",tmp,4,64);
 									if (InIronSights[client])
 									{
-										if (StrContains(tmp[1],"IRONSIGHT",false) != -1)
+										if ((StrContains(tmp[1],"IRONSIGHT",false) != -1) || (StrContains(tmp[1],"IRONSHOOT",false) != -1))
 										{
 											int prev;
 											for (int i = 0;i<10;i++)
@@ -9167,7 +9167,7 @@ void FireCustomWeap(int client, int weap, char[] curweap, int mode)
 									}
 									else if (!CLAttachment[client])
 									{
-										if ((!StrEqual(tmp[1],"ACT_VM_PRIMARYATTACK_SILENCED",false)) && (StrContains(tmp[1],"IRONSIGHT",false) == -1) && (!StrEqual(tmp[1],"ACT_VM_PRIMARYATTACK_EMPTY",false)) && (!StrEqual(tmp[1],"ACT_VM_PRIMARYATTACK_DEPLOYED",false)))
+										if ((!StrEqual(tmp[1],"ACT_VM_PRIMARYATTACK_SILENCED",false)) && (StrContains(tmp[1],"IRONSIGHT",false) == -1) && (StrContains(tmp[1],"IRONSHOOT",false) == -1) && (!StrEqual(tmp[1],"ACT_VM_PRIMARYATTACK_EMPTY",false)) && (!StrEqual(tmp[1],"ACT_VM_PRIMARYATTACK_DEPLOYED",false)))
 										{
 											int prev;
 											for (int i = 0;i<10;i++)

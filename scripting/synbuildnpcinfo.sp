@@ -55,6 +55,14 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	return APLRes_Success;
 }
 
+public void OnLibraryAdded(const char[] name)
+{
+	if (StrEqual(name,"updater",false))
+	{
+		Updater_AddPlugin(UPDATE_URL);
+	}
+}
+
 public int Native_GetNPCEntList(Handle plugin, int numParams)
 {
 	return view_as<int>(npcnameents);

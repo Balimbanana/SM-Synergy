@@ -778,6 +778,7 @@ void ReadCache(char[] cache, char[] mapedt)
 		char originalorgs[64];
 		char angs[64];
 		char cls[48];
+		char szTmp[64];
 		int spawns = 0;
 		int vehiclespawns = 0;
 		float orgpos[3];
@@ -855,13 +856,15 @@ void ReadCache(char[] cache, char[] mapedt)
 					}
 					else if (StrContains(kvs[3],",Command,give ",false) != -1)
 					{
-						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains ending command",cls,origin);
+						Format(deletion,sizeof(deletion),"		delete {classname \"%s\" %s}//Entity contains give command",cls,origin);
 						Format(lineedt,sizeof(lineedt),"//%s",lineedt);
 						char output[2048];
 						Format(output,sizeof(output),"%s",kvs[1]);
 						char tmpkv[16][72];
 						ExplodeString(kvs[3], ",", kvs, 128, 128, true);
 						ExplodeString(kvs[2], " ", tmpkv, 16, 72, true);
+						Format(szTmp,sizeof(szTmp),"%s,0 0 0",tmpkv[1]);
+						if (FindStringInArray(itemsarr,szTmp) == -1) PushArrayString(itemsarr,szTmp);
 						char tmptrunc[4];
 						int truncatedat = StrContains(tmpkv[1],"_",false);
 						if (truncatedat == -1) truncatedat = 0;

@@ -413,6 +413,8 @@ public void OnPluginStart()
 	hWeaponRespawn = FindConVar("mp_respawnweapons");
 	if (hWeaponRespawn == INVALID_HANDLE) hWeaponRespawn = CreateConVar("mp_respawnweapons", "0", "Respawn weapons picked up off the ground.", _, true, 0.0, true, 1.0);
 	HookConVarChange(hWeaponRespawn, weaponrespawnch);
+	//hRRReduceWeapons = FindConVar("rr_reduceweapons");
+	//if (hRRReduceWeapons == INVALID_HANDLE) hRRReduceWeapons = CreateConVar("rr_reduceweapons", "0", "Reduce spawn equipment to rr_weaponslist.", _, true, 0.0, true, 1.0);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -3285,7 +3287,7 @@ public Action changeleveldelay(Handle timer, Handle data)
 					{
 						if (StrContains(buff,".bsp",false) != -1)
 						{
-							if (StrContains(buff,maptochange,false) != -1)
+							if (StrContains(maptochange,buff,false) != -1)
 							{
 								//case-sensitive map changes
 								ReplaceString(buff,sizeof(buff),".bsp","",false);
@@ -15845,6 +15847,44 @@ public void SetupLivingEnt(int entity)
 						AcceptEntityInput(entity,"kill");
 						return;
 					}
+				}
+			}
+		}
+		if (HasEntProp(entity,Prop_Data,"m_vecMins"))
+		{
+			float vecMins[3];
+			float vecMaxs[3];
+			GetEntPropVector(entity,Prop_Data,"m_vecMins",vecMins);
+			GetEntPropVector(entity,Prop_Data,"m_vecMaxs",vecMaxs);
+			bool bSetMM = false;
+			if (vecMaxs[0] < vecMins[0])
+			{
+				float tmp = vecMaxs[0];
+				vecMaxs[0] = vecMins[0];
+				vecMins[0] = tmp;
+				bSetMM = true;
+			}
+			if (vecMaxs[1] < vecMins[1])
+			{
+				float tmp = vecMaxs[1];
+				vecMaxs[1] = vecMins[1];
+				vecMins[1] = tmp;
+				bSetMM = true;
+			}
+			if (vecMaxs[2] < vecMins[2])
+			{
+				float tmp = vecMaxs[2];
+				vecMaxs[2] = vecMins[2];
+				vecMins[2] = tmp;
+				bSetMM = true;
+			}
+			if (bSetMM)
+			{
+				SetEntPropVector(entity,Prop_Data,"m_vecMins",vecMins);
+				SetEntPropVector(entity,Prop_Data,"m_vecMaxs",vecMaxs);
+				if (debuglvl)
+				{
+					PrintToServer("Reset incorrect config for mins/maxs on %i %s",entity,entcls);
 				}
 			}
 		}

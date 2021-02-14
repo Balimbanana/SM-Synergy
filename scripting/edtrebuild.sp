@@ -100,7 +100,7 @@ public void OnLibraryAdded(const char[] name)
 {
     if (StrEqual(name,"updater",false))
     {
-        Updater_AddPlugin(PLUGIN_VERSION);
+        Updater_AddPlugin(UPDATE_URL);
     }
 }
 
