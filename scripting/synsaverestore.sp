@@ -63,7 +63,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.165"
+#define PLUGIN_VERSION "2.166"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2313,6 +2313,14 @@ public void OnMapStart()
 										{
 											DispatchKeyValue(ent,"SceneFile",scriptexp[jadd]);
 										}
+										else if (StrEqual(scriptexp[j],"m_nAmmoType",false))
+										{
+											DispatchKeyValue(ent,"AmmoType",scriptexp[jadd]);
+										}
+										else if (StrEqual(scriptexp[j],"m_strItemClass",false))
+										{
+											DispatchKeyValue(ent,"ItemClass",scriptexp[jadd]);
+										}
 										else
 										{
 											DispatchKeyValue(ent,scriptexp[j],scriptexp[jadd]);
@@ -3402,6 +3410,23 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 								{
 									GetEntPropString(i,Prop_Data,"m_iszSceneFile",szTmp,sizeof(szTmp));
 									Format(scriptinf,sizeof(scriptinf),"%sm_iszSceneFile %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_nAmmoType"))
+								{
+									Format(scriptinf,sizeof(scriptinf),"%sm_nAmmoType %i ",scriptinf,GetEntProp(i,Prop_Data,"m_nAmmoType"));
+								}
+								if (HasEntProp(i,Prop_Data,"m_CrateType"))
+								{
+									Format(scriptinf,sizeof(scriptinf),"%sm_CrateType %i ",scriptinf,GetEntProp(i,Prop_Data,"m_CrateType"));
+								}
+								if (HasEntProp(i,Prop_Data,"m_nItemCount"))
+								{
+									Format(scriptinf,sizeof(scriptinf),"%sm_nItemCount %i ",scriptinf,GetEntProp(i,Prop_Data,"m_nItemCount"));
+								}
+								if (HasEntProp(i,Prop_Data,"m_strItemClass"))
+								{
+									GetEntPropString(i,Prop_Data,"m_strItemClass",szTmp,sizeof(szTmp));
+									Format(scriptinf,sizeof(scriptinf),"%sm_strItemClass %s ",scriptinf,szTmp);
 								}
 								if (HasEntProp(i,Prop_Data,"m_iszResumeSceneFile"))
 								{

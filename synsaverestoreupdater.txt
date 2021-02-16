@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.165"
-			"Previous"	"2.164"
+			"Latest"  	"2.166"
+			"Previous"	"2.165"
 		}
 		
-		"Notes"	"Additional validations in setup of transitions."
+		"Notes"	"Additional info for certain entities transitioning."
 	}
 	
 	"Files"
