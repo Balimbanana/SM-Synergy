@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.70"
+#define PLUGIN_VERSION "1.71"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
 public Plugin myinfo = 
@@ -25,10 +25,10 @@ public Plugin myinfo =
 Handle modelarray = INVALID_HANDLE;
 Handle matarray = INVALID_HANDLE;
 Handle Handle_Database = INVALID_HANDLE;
-char SteamIDbuf[MAXPLAYERS+1][32];
-char curmodel[MAXPLAYERS+1][128];
-char desmodel[MAXPLAYERS+1][128];
-float antispamchk[MAXPLAYERS+1];
+char szSteamIDbuf[128][32];
+char curmodel[128][128];
+char desmodel[128][128];
+float antispamchk[128];
 
 bool dlactive = false;
 bool soundfix = true;
@@ -51,8 +51,8 @@ Handle precachedarr = INVALID_HANDLE;
 
 Handle bclcookieh = INVALID_HANDLE;
 Handle bclcookie2h = INVALID_HANDLE;
-int bclcookie[MAXPLAYERS];
-int bclcookie2[MAXPLAYERS];
+int bclcookie[128];
+int bclcookie2[128];
 
 public void OnPluginStart()
 {
@@ -154,7 +154,7 @@ public Action reloadmdlclients()
 			{
 				if ((client != -1) && (IsClientInGame(client)))
 				{
-					GetClientAuthId(client,AuthId_Steam2,SteamIDbuf[client],32-1);
+					GetClientAuthId(client,AuthId_Steam2,szSteamIDbuf[client],32-1);
 					GetClientModel(client, curmodel[client], sizeof(curmodel[]));
 					LoadClient(client);
 					CreateTimer(0.1, setmodeltimer, client);
@@ -172,7 +172,7 @@ void LoadClient(int client)
 		QueryClientConVar(client,"cl_playermodel",plymdlchk);
 		return;
 	}
-	Format(Query,sizeof(Query),"SELECT mdl FROM modelloader WHERE SteamID = '%s';",SteamIDbuf[client]);
+	Format(Query,sizeof(Query),"SELECT mdl FROM modelloader WHERE SteamID = '%s';",szSteamIDbuf[client]);
 	Handle hQuery = SQL_Query(Handle_Database,Query);
 	if (hQuery == INVALID_HANDLE)
 	{
@@ -192,7 +192,7 @@ public void plymdlchk(QueryCookie cookie, int client, ConVarQueryResult result, 
 		if (FileExists(cvarValue,true,NULL_STRING))
 		{
 			char chk1[500];
-			Format(chk1,sizeof(chk1),"INSERT INTO modelloader VALUES( '%s', '%s');",SteamIDbuf[client],cvarValue);
+			Format(chk1,sizeof(chk1),"INSERT INTO modelloader VALUES( '%s', '%s');",szSteamIDbuf[client],cvarValue);
 			SQL_Query(Handle_Database,chk1);
 			LoadClient(client);
 			CreateTimer(0.1, setmodeltimer, client);
@@ -200,7 +200,7 @@ public void plymdlchk(QueryCookie cookie, int client, ConVarQueryResult result, 
 		else
 		{
 			char chk1[500];
-			Format(chk1,sizeof(chk1),"INSERT INTO modelloader VALUES( '%s', 'male_01.mdl');",SteamIDbuf[client]);
+			Format(chk1,sizeof(chk1),"INSERT INTO modelloader VALUES( '%s', 'male_01.mdl');",szSteamIDbuf[client]);
 			SQL_Query(Handle_Database,chk1);
 			LoadClient(client);
 			CreateTimer(0.1, setmodeltimer, client);
@@ -210,7 +210,7 @@ public void plymdlchk(QueryCookie cookie, int client, ConVarQueryResult result, 
 
 public void OnClientAuthorized(int client, const char[] szAuth)
 {
-	GetClientAuthId(client,AuthId_Steam2,SteamIDbuf[client],sizeof(SteamIDbuf[]));
+	GetClientAuthId(client,AuthId_Steam2,szSteamIDbuf[client],sizeof(szSteamIDbuf[]));
 	LoadClient(client);
 	if (StrContains(desmodel[client],"models/player/normal") != -1)
 	{
@@ -407,7 +407,7 @@ public Action setmodel(int client, const char[] model)
 					SetEntityModel(client, "models/player/rebel/male_01.mdl");
 					Format(desmodel[client],sizeof(desmodel[]),"male_01.mdl");
 					char change[254];
-					Format(change,254,"UPDATE modelloader SET 'mdl' = 'male_01.mdl' WHERE SteamID = '%s';",SteamIDbuf[client]);
+					Format(change,254,"UPDATE modelloader SET 'mdl' = 'male_01.mdl' WHERE SteamID = '%s';",szSteamIDbuf[client]);
 					SQL_Query(Handle_Database,change);
 				}
 			}
@@ -447,7 +447,7 @@ public Action setmodel(int client, const char[] model)
 			SetEntityModel(client, "models/player/rebel/male_01.mdl");
 			Format(desmodel[client],sizeof(desmodel[]),"male_01.mdl");
 			char change[254];
-			Format(change,254,"UPDATE modelloader SET 'mdl' = 'male_01.mdl' WHERE SteamID = '%s';",SteamIDbuf[client]);
+			Format(change,254,"UPDATE modelloader SET 'mdl' = 'male_01.mdl' WHERE SteamID = '%s';",szSteamIDbuf[client]);
 			SQL_Query(Handle_Database,change);
 		}
 		SetVariantInt(bclcookie[client]);
@@ -460,7 +460,7 @@ public Action setmodel(int client, const char[] model)
 public bool Stored(int client)
 {
 	char Query[100];
-	Format(Query,100,"SELECT mdl FROM modelloader WHERE SteamID = '%s';",SteamIDbuf[client]);
+	Format(Query,100,"SELECT mdl FROM modelloader WHERE SteamID = '%s';",szSteamIDbuf[client]);
 	Handle hQuery = SQL_Query(Handle_Database,Query);
 	if (hQuery == INVALID_HANDLE)
 	{
@@ -486,7 +486,7 @@ public void OnClientDisconnect(int client)
 
 void init(int index)
 {
-	SteamIDbuf[index] = "";
+	szSteamIDbuf[index] = "";
 	curmodel[index] = "";
 	desmodel[index] = "";
 }
@@ -928,7 +928,7 @@ public Action modelmenu(int client, int args)
 			setmodel(client, sfound);
 			PrintToChat(client,"%T","SetModelTo",client,sfound);
 			char change[254];
-			Format(change,254,"UPDATE modelloader SET 'mdl' = '%s' WHERE SteamID = '%s';",sfound,SteamIDbuf[client]);
+			Format(change,254,"UPDATE modelloader SET 'mdl' = '%s' WHERE SteamID = '%s';",sfound,szSteamIDbuf[client]);
 			SQL_Query(Handle_Database,change);
 		}
 		else
@@ -974,7 +974,7 @@ public int MenuHandlerDef(Menu menu, MenuAction action, int param1, int param2)
 		{
 			setmodel(param1, info);
 			char change[254];
-			Format(change,254,"UPDATE modelloader SET 'mdl' = '%s' WHERE SteamID = '%s';",info,SteamIDbuf[param1]);
+			Format(change,254,"UPDATE modelloader SET 'mdl' = '%s' WHERE SteamID = '%s';",info,szSteamIDbuf[param1]);
 			SQL_Query(Handle_Database,change);
 			Format(desmodel[param1],sizeof(desmodel[]),"%s",info);
 		}
@@ -1013,7 +1013,7 @@ public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 		{
 			setmodel(param1, info);
 			char change[254];
-			Format(change,254,"UPDATE modelloader SET 'mdl' = '%s' WHERE SteamID = '%s';",info,SteamIDbuf[param1]);
+			Format(change,254,"UPDATE modelloader SET 'mdl' = '%s' WHERE SteamID = '%s';",info,szSteamIDbuf[param1]);
 			SQL_Query(Handle_Database,change);
 			Format(desmodel[param1],sizeof(desmodel[]),"%s",info);
 		}

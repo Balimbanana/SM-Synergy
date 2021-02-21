@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.70"
-			"Previous"	"1.69"
+			"Latest"  	"1.71"
+			"Previous"	"1.70"
 		}
 		
-		"Notes"	"New decls. Only create custom model arrays when called upon. Localize a few previously global handles."
+		"Notes"	"Increased arrays for max players increase."
 	}
 	
 	"Files"
