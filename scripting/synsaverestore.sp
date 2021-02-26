@@ -63,7 +63,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.166"
+#define PLUGIN_VERSION "2.167"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -412,21 +412,21 @@ public Action savecurgame(int client, int args)
 				AcceptEntityInput(jtmp,"Enable");
 		}
 	}
-	if ((logsv != 0) && (logsv != -1) && (IsValidEntity(logsv)))
+	if (IsValidEntity(logsv))
 	{
-		saveresetveh(false);
-	}
-	else
-	{
-		if (saveresetm == 1) logsv = CreateEntityByName("logic_autosave");
-		else if (saveresetm == 2) logsv = CreateEntityByName("logic_playerproxy");
-		if ((logsv != -1) && (IsValidEntity(logsv)))
+		char szCls[32];
+		GetEntityClassname(logsv,szCls,sizeof(szCls));
+		if (!StrEqual(szCls,"logic_autosave",false))
 		{
-			DispatchKeyValue(logsv,"NewLevelUnit","1");
-			DispatchSpawn(logsv);
-			ActivateEntity(logsv);
-			saveresetveh(false);
+			logsv = CreateEntityByName("logic_autosave");
+			if ((logsv != -1) && (IsValidEntity(logsv)))
+			{
+				DispatchSpawn(logsv);
+				ActivateEntity(logsv);
+				saveresetveh(false);
+			}
 		}
+		else saveresetveh(false);
 	}
 	char savepath[256];
 	BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves/%s",mapbuf);
@@ -1562,21 +1562,21 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 			}
 			else if (reloadtype == 4)
 			{
-				if ((logsv != 0) && (logsv != -1) && (IsValidEntity(logsv)))
+				if (IsValidEntity(logsv))
 				{
-					saveresetveh(false);
-				}
-				else
-				{
-					if (saveresetm == 1) logsv = CreateEntityByName("logic_autosave");
-					else if (saveresetm == 2) logsv = CreateEntityByName("logic_playerproxy");
-					if ((logsv != -1) && (IsValidEntity(logsv)))
+					char szCls[32];
+					GetEntityClassname(logsv,szCls,sizeof(szCls));
+					if (!StrEqual(szCls,"logic_autosave",false))
 					{
-						DispatchKeyValue(logsv,"NewLevelUnit","1");
-						DispatchSpawn(logsv);
-						ActivateEntity(logsv);
-						saveresetveh(false);
+						logsv = CreateEntityByName("logic_autosave");
+						if ((logsv != -1) && (IsValidEntity(logsv)))
+						{
+							DispatchSpawn(logsv);
+							ActivateEntity(logsv);
+							saveresetveh(false);
+						}
 					}
+					else saveresetveh(false);
 				}
 				char savepath[256];
 				BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves/%s",mapbuf);

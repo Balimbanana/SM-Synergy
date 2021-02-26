@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.166"
-			"Previous"	"2.165"
+			"Latest"  	"2.167"
+			"Previous"	"2.166"
 		}
 		
-		"Notes"	"Additional info for certain entities transitioning."
+		"Notes"	"Fix to certain situations for persistent saves not creating."
 	}
 	
 	"Files"
