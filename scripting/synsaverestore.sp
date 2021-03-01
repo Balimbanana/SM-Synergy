@@ -3089,7 +3089,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 	}
 	char szTmp[64];
 	float angax[3];
-	for (int i = 1;i<2048;i++)
+	for (int i = 1;i<GetMaxEntities()+1;i++)
 	{
 		if (IsValidEntity(i) && IsEntNetworkable(i) && (FindValueInArray(ignoreent,i) == -1))
 		{
@@ -3695,8 +3695,14 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 	}
 	for (int i = 0;i<GetArraySize(ignoreent);i++)
 	{
+		char clsname[32];
 		int j = GetArrayCell(ignoreent,i);
-		if (IsValidEntity(j)) AcceptEntityInput(j,"kill");
+		if (IsValidEntity(j))
+		{
+			GetEntityClassname(j,clsname,sizeof(clsname));
+			if ((StrContains(clsname,"npc_",false)==0)) AcceptEntityInput(j,"break");
+			else AcceptEntityInput(j,"kill");
+		}
 	}
 }
 
