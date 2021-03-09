@@ -56,6 +56,7 @@ Handle ignoreent = INVALID_HANDLE;
 Handle timouthndl = INVALID_HANDLE;
 Handle equiparr = INVALID_HANDLE;
 ConVar hDelTransitionPly;
+ConVar hDelTransitionEnts;
 
 char landmarkname[64];
 char mapbuf[128];
@@ -63,7 +64,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.167"
+#define PLUGIN_VERSION "2.168"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -194,6 +195,8 @@ public void OnPluginStart()
 	CloseHandle(saveresetmode);
 	hDelTransitionPly = FindConVar("sm_transition_rmply");
 	if (hDelTransitionPly == INVALID_HANDLE) hDelTransitionPly = CreateConVar("sm_transition_rmply", "0", "Remove player entities over map change. May increase stability.", _, true, 0.0, true, 1.0);
+	hDelTransitionEnts = FindConVar("sm_transition_rments");
+	if (hDelTransitionEnts == INVALID_HANDLE) hDelTransitionEnts = CreateConVar("sm_transition_rments", "1", "Remove transition ents after store.", _, true, 0.0, true, 1.0);
 	RegServerCmd("changelevel",resettransition);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	AutoExecConfig(true, "synsaverestore");
@@ -3693,15 +3696,12 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 			DeleteFile(custentinffile,false);
 		}
 	}
-	for (int i = 0;i<GetArraySize(ignoreent);i++)
+	if (hDelTransitionEnts.BoolValue)
 	{
-		char clsname[32];
-		int j = GetArrayCell(ignoreent,i);
-		if (IsValidEntity(j))
+		for (int i = 0;i<GetArraySize(ignoreent);i++)
 		{
-			GetEntityClassname(j,clsname,sizeof(clsname));
-			if ((StrContains(clsname,"npc_",false)==0)) AcceptEntityInput(j,"break");
-			else AcceptEntityInput(j,"kill");
+			int j = GetArrayCell(ignoreent,i);
+			if (IsValidEntity(j)) AcceptEntityInput(j,"kill");
 		}
 	}
 }

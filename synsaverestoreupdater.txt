@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.167"
-			"Previous"	"2.166"
+			"Latest"  	"2.168"
+			"Previous"	"2.167"
 		}
 		
-		"Notes"	"Fix to certain situations for persistent saves not creating."
+		"Notes"	"Added CVar sm_transition_rments default functionality is 1."
 	}
 	
 	"Files"
