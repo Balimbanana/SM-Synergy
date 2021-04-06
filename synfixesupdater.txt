@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99980"
-			"Previous"	"1.99979"
+			"Latest"  	"1.99981"
+			"Previous"	"1.99980"
 		}
 		
-		"Notes"	"Fixed issue in escape character in read for certain functions."
+		"Notes"	"Added static checks for if Alyx exists on d2_prison_08."
 	}
 	
 	"Files"

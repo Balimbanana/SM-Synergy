@@ -58,7 +58,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99980"
+#define PLUGIN_VERSION "1.99981"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -317,6 +317,81 @@ public void OnMapStart()
 		{
 			int skycam = FindEntityByClassname(-1,"sky_camera");
 			if (skycam != -1) AcceptEntityInput(skycam,"kill");
+		}
+		if (StrEqual(mapbuf,"d2_prison_08",false))
+		{
+			bool bSpawnedAlyx = false;
+			int iFindAlyx = FindEntityByClassname(-1,"npc_alyx");
+			if (IsValidEntity(iFindAlyx))
+			{
+				char szTargn[32];
+				if (HasEntProp(iFindAlyx,Prop_Data,"m_iName")) GetEntPropString(iFindAlyx,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+				if (!StrEqual(szTargn,"alyx",false))
+				{
+					while((iFindAlyx = FindEntityByClassname(iFindAlyx,"npc_template_maker")) != INVALID_ENT_REFERENCE)
+					{
+						if (IsValidEntity(iFindAlyx))
+						{
+							if (HasEntProp(iFindAlyx,Prop_Data,"m_iName"))
+							{
+								GetEntPropString(iFindAlyx,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+								if (StrEqual(szTargn,"spawn_alyx",false))
+								{
+									AcceptEntityInput(iFindAlyx,"ForceSpawn");
+									bSpawnedAlyx = true;
+									break;
+								}
+							}
+						}
+					}
+				}
+				else bSpawnedAlyx = true;
+			}
+			else
+			{
+				char szTargn[32];
+				while((iFindAlyx = FindEntityByClassname(iFindAlyx,"npc_template_maker")) != INVALID_ENT_REFERENCE)
+				{
+					if (IsValidEntity(iFindAlyx))
+					{
+						if (HasEntProp(iFindAlyx,Prop_Data,"m_iName"))
+						{
+							GetEntPropString(iFindAlyx,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+							if (StrEqual(szTargn,"spawn_alyx",false))
+							{
+								AcceptEntityInput(iFindAlyx,"ForceSpawn");
+								bSpawnedAlyx = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+			if (!bSpawnedAlyx)
+			{
+				PrintToServer("Failed to find or spawn Alyx using map entities. Falling back to static spawn.");
+				iFindAlyx = CreateEntityByName("npc_alyx");
+				if (IsValidEntity(iFindAlyx))
+				{
+					DispatchKeyValue(iFindAlyx,"targetname","alyx");
+					DispatchKeyValue(iFindAlyx,"additionalequipment","weapon_alyxgun");
+					DispatchKeyValue(iFindAlyx,"spawnflags","6148");
+					DispatchKeyValue(iFindAlyx,"model","models/alyx.mdl");
+					DispatchKeyValue(iFindAlyx,"hintlimiting","0");
+					DispatchKeyValue(iFindAlyx,"physdamagescale","0");
+					DispatchKeyValue(iFindAlyx,"OnDeath","text_alyx_died,ShowMessage,,0,-1");
+					DispatchKeyValue(iFindAlyx,"OnDeath","loadsaved_alyx_died,Reload,,0,-1");
+					float vecOrigin[3];
+					float vecAngles[3];
+					vecOrigin[0] = -2497.0;
+					vecOrigin[1] = 2997.0;
+					vecOrigin[2] = 961.881;
+					vecAngles[1] = 326.0;
+					TeleportEntity(iFindAlyx,vecOrigin,vecAngles,NULL_VECTOR);
+					DispatchSpawn(iFindAlyx);
+					ActivateEntity(iFindAlyx);
+				}
+			}
 		}
 		if ((StrContains(mapbuf,"d1_",false) == -1) && (StrContains(mapbuf,"d2_",false) == -1) && (!StrEqual(mapbuf,"d3_breen_01",false)) && (StrContains(mapbuf,"ep1_",false) == -1))
 		{
@@ -1263,9 +1338,9 @@ public Action resetrot(Handle timer)
 
 public Action elevatorstart(const char[] output, int caller, int activator, float delay)
 {
-	CreateTimer(0.1,elevatorstartpost,caller);
+	CreateTimer(0.1,elevatorstartpost,caller,TIMER_FLAG_NO_MAPCHANGE);
 	//Post check
-	CreateTimer(5.0,elevatorstartpost,caller);
+	CreateTimer(5.0,elevatorstartpost,caller,TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Action elevatorstartpost(Handle timer, int elev)
