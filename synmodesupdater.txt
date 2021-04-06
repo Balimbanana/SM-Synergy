@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.44"
-			"Previous"	"1.43"
+			"Latest"  	"1.45"
+			"Previous"	"1.44"
 		}
 		
-		"Notes"	"Added *cheese*."
+		"Notes"	"Added *givemedkit*."
 	}
 	
 	"Files"

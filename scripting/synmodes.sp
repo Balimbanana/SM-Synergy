@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.44"
+#define PLUGIN_VERSION "1.45"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -2928,6 +2928,32 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			else
 			{
 				Format(randcat,sizeof(randcat),"vo\\npc\\male01\\question06.wav");
+			}
+			PrecacheSound(randcat,true);
+			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+		}
+		return Plugin_Handled;
+	}
+	else if ((StrContains(sArgs, "*givemedical*", false) != -1) || (StrContains(sArgs, "*givemedkit*", false) != -1))
+	{
+		float Time = GetTickedTime();
+		if (antispamchk[client] <= Time)
+		{
+			antispamchk[client] = Time + 2.0;
+			char plymdl[64];
+			char randcat[64];
+			GetClientModel(client, plymdl, sizeof(plymdl));
+			if (StrContains(plymdl,"female") != -1)
+			{
+				Format(randcat,sizeof(randcat),"vo\\npc\\female01\\health0%i.wav",GetRandomInt(1,5));
+			}
+			else if (StrContains(plymdl,"combine",false) != -1)
+			{
+				Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\requestmedical.wav");
+			}
+			else
+			{
+				Format(randcat,sizeof(randcat),"vo\\npc\\male01\\health0%i.wav",GetRandomInt(1,5));
 			}
 			PrecacheSound(randcat,true);
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
