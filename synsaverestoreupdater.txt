@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.169"
-			"Previous"	"2.168"
+			"Latest"  	"2.170"
+			"Previous"	"2.169"
 		}
 		
-		"Notes"	"Added compatibility with entityhandle plugin."
+		"Notes"	"Removed a couple redundant outputs for transition from ep2_outland_04 to 02."
 	}
 	
 	"Files"
