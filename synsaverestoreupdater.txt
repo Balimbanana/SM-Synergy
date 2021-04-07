@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.168"
-			"Previous"	"2.167"
+			"Latest"  	"2.169"
+			"Previous"	"2.168"
 		}
 		
-		"Notes"	"Added CVar sm_transition_rments default functionality is 1."
+		"Notes"	"Added compatibility with entityhandle plugin."
 	}
 	
 	"Files"

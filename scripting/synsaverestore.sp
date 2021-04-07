@@ -64,7 +64,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.168"
+#define PLUGIN_VERSION "2.169"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -4018,9 +4018,20 @@ public Action restoreaim(Handle timer, Handle dp)
 	return Plugin_Handled;
 }
 */
+bool IsAsyncChangingMap()
+{
+    ConVar async_changingmap_cvar = FindConVar("async_changingmap");
+    if((async_changingmap_cvar != INVALID_HANDLE))
+    {
+        if (async_changingmap_cvar.BoolValue) return true;
+        CloseHandle(async_changingmap_cvar);
+    }
+    return false;
+}
+
 public void OnClientAuthorized(int client, const char[] szAuth)
 {
-	if ((rmsaves) && ((!SynLaterAct) || (SkipVer)))
+	if ((rmsaves) && (!IsAsyncChangingMap()) && ((!SynLaterAct) || (SkipVer)))
 	{
 		if ((!StrEqual(mapbuf,"d3_citadel_03",false)) && (!StrEqual(mapbuf,"ep2_outland_02",false)))
 		{
