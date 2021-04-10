@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.170"
-			"Previous"	"2.169"
+			"Latest"  	"2.171"
+			"Previous"	"2.170"
 		}
 		
-		"Notes"	"Removed a couple redundant outputs for transition from ep2_outland_04 to 02."
+		"Notes"	"Reset ep2_outland_04 - 02 transition setup to previous."
 	}
 	
 	"Files"
