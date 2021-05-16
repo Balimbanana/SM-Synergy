@@ -39,6 +39,7 @@ int reloadtype = 0;
 int logsv = -1;
 int logplyprox = -1;
 int saveresetm = 1;
+int iCreatedTable = 0;
 float votetime = 0.0;
 float perclimit = 0.80; //Set by cvar sm_voterestore
 float perclimitsave = 0.60; //Set by cvar sm_votecreatesave
@@ -64,7 +65,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.171"
+#define PLUGIN_VERSION "2.172"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -510,17 +511,60 @@ public Action savecurgamedp(Handle timer, any dp)
 	float plyorigin[3];
 	for (int i = 1;i<MaxClients+1;i++)
 	{
-		if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
+		if ((IsValidEntity(i)) && (IsClientInGame(i)))
 		{
 			GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
-			GetClientAbsAngles(i,plyangs);
-			GetClientAbsOrigin(i,plyorigin);
-			int vck = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
-			if (vck > 0) plyorigin[2]+=60.0;
+			if ((strlen(SteamID) < 1) || (StrEqual(SteamID,"STEAM_ID_STOP_IGNORING_RETVALS",false)))
+			{
+				if (HasEntProp(i,Prop_Data,"m_szNetworkIDString"))
+				{
+					char searchid[64];
+					GetEntPropString(i,Prop_Data,"m_szNetworkIDString",searchid,sizeof(searchid));
+					if (strlen(searchid) > 1)
+					{
+						char Err[100];
+						Handle Handle_IDSDB = SQLite_UseDatabase("sourcemod-local",Err,100-1);
+						if (!iCreatedTable)
+						{
+							if (!SQL_FastQuery(Handle_IDSDB,"CREATE TABLE IF NOT EXISTS synbackupids(SteamID VARCHAR(32) NOT NULL PRIMARY KEY,UUID VARCHAR(64) NOT NULL);"))
+							{
+								PrintToServer("Error in create IDSBackup %s",Err);
+								iCreatedTable = 2;
+							}
+							else iCreatedTable = 1;
+						}
+						if (iCreatedTable == 1)
+						{
+							char Querychk[100];
+							Format(Querychk,100,"SELECT SteamID FROM synbackupids WHERE UUID = '%s';",searchid);
+							Handle HQuery = SQL_Query(Handle_IDSDB,Querychk);
+							if (HQuery != INVALID_HANDLE)
+							{
+								if (SQL_FetchRow(HQuery))
+								{
+									SQL_FetchString(HQuery,0,SteamID,sizeof(SteamID));
+								}
+							}
+							CloseHandle(HQuery);
+						}
+						CloseHandle(Handle_IDSDB);
+					}
+				}
+			}
+			//GetClientAbsAngles(i,plyangs);
+			//GetClientAbsOrigin(i,plyorigin);
+			if (IsPlayerAlive(i))
+			{
+				if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",plyorigin);
+				else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",plyorigin);
+				if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",plyangs);
+				int vck = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+				if (vck > 0) plyorigin[2]+=60.0;
+			}
 			char curweap[64];
 			char weapname[64];
 			char ammbufchk[500];
-			GetClientWeapon(i,curweap,sizeof(curweap));
+			GetClientWeaponAccurate(i,curweap,sizeof(curweap));
 			if (strlen(curweap) < 1) Format(curweap,sizeof(curweap),"hands");
 			for (int j = 0;j<32;j++)
 			{
@@ -898,6 +942,24 @@ public Action savecurgamedp(Handle timer, any dp)
 		else PrintToChat(client,"Save created with name: %s",ctimestamp);
 	}
 	return Plugin_Handled;
+}
+
+void GetClientWeaponAccurate(int client, char[] szRetBuf, int iSizeBuf)
+{
+	if (IsValidEntity(client))
+	{
+		if (HasEntProp(client,Prop_Data,"m_hActiveWeapon"))
+		{
+			int iWeapon = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+			if (IsValidEntity(iWeapon))
+			{
+				if (HasEntProp(iWeapon,Prop_Data,"m_iClassname"))
+					GetEntPropString(iWeapon,Prop_Data,"m_iClassname",szRetBuf,iSizeBuf);
+				else
+					GetEntityClassname(iWeapon,szRetBuf,iSizeBuf);
+			}
+		}
+	}
 }
 
 void FindAllByClassname(Handle arr, int ent, char[] classname)
@@ -2814,13 +2876,53 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			char weapnamepamm[64];
 			for (int i = 1;i<MaxClients+1;i++)
 			{
-				if ((IsValidEntity(i)) && (IsClientInGame(i)) && (IsPlayerAlive(i)))
+				if ((IsValidEntity(i)) && (IsClientInGame(i)))
 				{
-					GetClientAbsAngles(i,plyangs);
+					//GetClientAbsAngles(i,plyangs);
 					GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
-					if (FindStringInArray(transitionplyorigin,SteamID) != -1)
+					if ((strlen(SteamID) < 1) || (StrEqual(SteamID,"STEAM_ID_STOP_IGNORING_RETVALS",false)))
 					{
-						GetClientAbsOrigin(i,plyorigin);
+						if (HasEntProp(i,Prop_Data,"m_szNetworkIDString"))
+						{
+							char searchid[64];
+							GetEntPropString(i,Prop_Data,"m_szNetworkIDString",searchid,sizeof(searchid));
+							if (strlen(searchid) > 1)
+							{
+								char Err[100];
+								Handle Handle_IDSDB = SQLite_UseDatabase("sourcemod-local",Err,100-1);
+								if (!iCreatedTable)
+								{
+									if (!SQL_FastQuery(Handle_IDSDB,"CREATE TABLE IF NOT EXISTS synbackupids(SteamID VARCHAR(32) NOT NULL PRIMARY KEY,UUID VARCHAR(64) NOT NULL);"))
+									{
+										PrintToServer("Error in create IDSBackup %s",Err);
+										iCreatedTable = 2;
+									}
+									else iCreatedTable = 1;
+								}
+								if (iCreatedTable == 1)
+								{
+									char Querychk[100];
+									Format(Querychk,100,"SELECT SteamID FROM synbackupids WHERE UUID = '%s';",searchid);
+									Handle HQuery = SQL_Query(Handle_IDSDB,Querychk);
+									if (HQuery != INVALID_HANDLE)
+									{
+										if (SQL_FetchRow(HQuery))
+										{
+											SQL_FetchString(HQuery,0,SteamID,sizeof(SteamID));
+										}
+									}
+									CloseHandle(HQuery);
+								}
+								CloseHandle(Handle_IDSDB);
+							}
+						}
+					}
+					if ((FindStringInArray(transitionplyorigin,SteamID) != -1) && (IsPlayerAlive(i)))
+					{
+						//GetClientAbsOrigin(i,plyorigin);
+						if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",plyorigin);
+						else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",plyorigin);
+						if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",plyangs);
 						plyorigin[0]-=landmarkorigin[0];
 						plyorigin[1]-=landmarkorigin[1];
 						plyorigin[2]-=landmarkorigin[2];
@@ -2856,7 +2958,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					WritePackFloat(dp,plyorigin[0]);
 					WritePackFloat(dp,plyorigin[1]);
 					WritePackFloat(dp,plyorigin[2]);
-					GetClientWeapon(i,curweap,sizeof(curweap));
+					GetClientWeaponAccurate(i,curweap,sizeof(curweap));
 					WritePackString(dp,curweap);
 					for (int j = 0;j<32;j++)
 					{
@@ -2890,7 +2992,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					*/
 					WritePackString(dp,"endofpack");
 					PushArrayCell(transitiondp,dp);
-					if (dbg) LogMessage("Transition CL %N Transition info %i health %i armor %i ducking Offset %1.f %1.f %1.f",i,curh,cura,crouching,plyorigin[0],plyorigin[1],plyorigin[2]);
+					if (dbg) LogMessage("Transition CL %N Transition info health: %i armor: %i ducking: %i Offset %1.f %1.f %1.f",i,curh,cura,crouching,plyorigin[0],plyorigin[1],plyorigin[2]);
 					if (hDelTransitionPly.BoolValue) AcceptEntityInput(i,"kill");
 				}
 			}
@@ -3681,6 +3783,43 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 					{
 						char SteamID[32];
 						GetClientAuthId(i,AuthId_Steam2,SteamID,sizeof(SteamID));
+						if ((strlen(SteamID) < 1) || (StrEqual(SteamID,"STEAM_ID_STOP_IGNORING_RETVALS",false)))
+						{
+							if (HasEntProp(i,Prop_Data,"m_szNetworkIDString"))
+							{
+								char searchid[64];
+								GetEntPropString(i,Prop_Data,"m_szNetworkIDString",searchid,sizeof(searchid));
+								if (strlen(searchid) > 1)
+								{
+									char Err[100];
+									Handle Handle_IDSDB = SQLite_UseDatabase("sourcemod-local",Err,100-1);
+									if (!iCreatedTable)
+									{
+										if (!SQL_FastQuery(Handle_IDSDB,"CREATE TABLE IF NOT EXISTS synbackupids(SteamID VARCHAR(32) NOT NULL PRIMARY KEY,UUID VARCHAR(64) NOT NULL);"))
+										{
+											PrintToServer("Error in create IDSBackup %s",Err);
+											iCreatedTable = 2;
+										}
+										else iCreatedTable = 1;
+									}
+									if (iCreatedTable == 1)
+									{
+										char Querychk[100];
+										Format(Querychk,100,"SELECT SteamID FROM synbackupids WHERE UUID = '%s';",searchid);
+										Handle HQuery = SQL_Query(Handle_IDSDB,Querychk);
+										if (HQuery != INVALID_HANDLE)
+										{
+											if (SQL_FetchRow(HQuery))
+											{
+												SQL_FetchString(HQuery,0,SteamID,sizeof(SteamID));
+											}
+										}
+										CloseHandle(HQuery);
+									}
+									CloseHandle(Handle_IDSDB);
+								}
+							}
+						}
 						PushArrayString(transitionplyorigin,SteamID);
 					}
 				}
@@ -4226,6 +4365,43 @@ public Action anotherdelay(Handle timer, int client)
 		if (HasEntProp(client,Prop_Data,"m_bPlayerUnderwater")) SetEntProp(client,Prop_Data,"m_bPlayerUnderwater",1);
 		char SteamID[32];
 		GetClientAuthId(client,AuthId_Steam2,SteamID,sizeof(SteamID));
+		if ((strlen(SteamID) < 1) || (StrEqual(SteamID,"STEAM_ID_STOP_IGNORING_RETVALS",false)))
+		{
+			if (HasEntProp(client,Prop_Data,"m_szNetworkIDString"))
+			{
+				char searchid[64];
+				GetEntPropString(client,Prop_Data,"m_szNetworkIDString",searchid,sizeof(searchid));
+				if (strlen(searchid) > 1)
+				{
+					char Err[100];
+					Handle Handle_IDSDB = SQLite_UseDatabase("sourcemod-local",Err,100-1);
+					if (!iCreatedTable)
+					{
+						if (!SQL_FastQuery(Handle_IDSDB,"CREATE TABLE IF NOT EXISTS synbackupids(SteamID VARCHAR(32) NOT NULL PRIMARY KEY,UUID VARCHAR(64) NOT NULL);"))
+						{
+							PrintToServer("Error in create IDSBackup %s",Err);
+							iCreatedTable = 2;
+						}
+						else iCreatedTable = 1;
+					}
+					if (iCreatedTable == 1)
+					{
+						char Querychk[100];
+						Format(Querychk,100,"SELECT SteamID FROM synbackupids WHERE UUID = '%s';",searchid);
+						Handle HQuery = SQL_Query(Handle_IDSDB,Querychk);
+						if (HQuery != INVALID_HANDLE)
+						{
+							if (SQL_FetchRow(HQuery))
+							{
+								SQL_FetchString(HQuery,0,SteamID,sizeof(SteamID));
+							}
+						}
+						CloseHandle(HQuery);
+					}
+					CloseHandle(Handle_IDSDB);
+				}
+			}
+		}
 		int arrindx = FindStringInArray(transitionid,SteamID);
 		if (arrindx != -1)
 		{
