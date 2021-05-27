@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.34"
+#define PLUGIN_VERSION "1.35"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -50,6 +50,7 @@ public void OnPluginStart()
 	RegAdminCmd("findents",listents,ADMFLAG_KICK,".");
 	RegAdminCmd("listedicts",listedicts,ADMFLAG_GENERIC,".");
 	RegAdminCmd("moveent",moveentity,ADMFLAG_KICK,".");
+	RegAdminCmd("uptime",SrvUptime,ADMFLAG_BAN,"Prints server uptime.");
 	RegConsoleCmd("ent_create",EntCreateReplace);
 	SetCommandFlags("ent_create",GetCommandFlags("ent_create")^FCVAR_CHEAT);
 	RegConsoleCmd("ent_fire",EntFireReplace);
@@ -94,6 +95,12 @@ public void OnLibraryAdded(const char[] name)
     {
         Updater_AddPlugin(UPDATE_URL);
     }
+}
+
+public Action SrvUptime(int client, int args)
+{
+	PrintToConsole(client,"Time: %1.1f Days %1.1f Hours %1.1f Mins %1.f Seconds",((GetTickedTime()/60)/60)/24,(GetTickedTime()/60)/60,GetTickedTime()/60,GetTickedTime());
+	return Plugin_Handled;
 }
 
 public Action CreateStuff(int client, int args)
@@ -1081,6 +1088,11 @@ public Action cinp(int client, int args)
 				}
 			}
 		}
+		else if (StrEqual(second,"DispatchSpawn",false))
+		{
+			DispatchSpawn(targ);
+			ActivateEntity(targ);
+		}
 		return Plugin_Handled;
 	}
 	PrintToConsole(client,"%s",fullinp);
@@ -1141,6 +1153,11 @@ public Action cinp(int client, int args)
 				int j = GetArrayCell(arr,i);
 				SetVariantString(fullinp);
 				AcceptEntityInput(j,input);
+				if (StrEqual(input,"DispatchSpawn",false))
+				{
+					DispatchSpawn(j);
+					ActivateEntity(j);
+				}
 			}
 			if (client == 0) PrintToServer("%s %s %s",firstarg,input,fullinp);
 			else PrintToConsole(client,"%s %s %s",firstarg,input,fullinp);
@@ -2827,7 +2844,7 @@ public Action getinf(int client, int args)
 	int targ = GetClientAimTarget(client, false);
 	if (targ != -1)
 	{
-		char ent[32];
+		char ent[128];
 		char targname[64];
 		char globname[64];
 		float vec[3];
@@ -2841,6 +2858,13 @@ public Action getinf(int client, int args)
 		int exprsci;
 		int collgroup = -1;
 		GetEntityClassname(targ, ent, sizeof(ent));
+		if ((targ > 0) && (targ < MaxClients+1))
+		{
+			if (IsClientConnected(targ))
+			{
+				Format(ent,sizeof(ent),"%s '%N'",ent,targ);
+			}
+		}
 		GetEntPropString(targ,Prop_Data,"m_iName",targname,sizeof(targname));
 		if (HasEntProp(targ,Prop_Data,"m_iGlobalname"))
 			GetEntPropString(targ,Prop_Data,"m_iGlobalname",globname,sizeof(globname));
@@ -3358,6 +3382,11 @@ public Action setprops(int client, int args)
 				{
 					pdata = true;
 					Format(propname,sizeof(propname),"m_ModelName");
+				}
+				else if (StrEqual(propname,"message",false))
+				{
+					pdata = true;
+					Format(propname,sizeof(propname),"m_iszSound");
 				}
 				GetCmdArg(3, secondintchk, sizeof(secondintchk));
 				float secondfl = StringToFloat(secondintchk);
