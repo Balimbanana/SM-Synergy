@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.35"
+#define PLUGIN_VERSION "1.36"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -3223,6 +3223,18 @@ public Action setprops(int client, int args)
 							int enti = GetEntProp(targ,Prop_Data,propname);
 							if (client == 0) PrintToServer("%i %s is %i",targ,propname,enti);
 							else PrintToConsole(client,"%i %s is %i",targ,propname,enti);
+							if ((enti < -10000) && (StrContains(propname,"m_n",false) != 0) && (StrContains(propname,"m_i",false) != 0) && (StrContains(propname,"m_fl",false) != 0))
+							{
+								int propoffs = GetEntSendPropOffs(targ,propname);
+								if (propoffs != -1)
+								{
+									for (int k = 0;k<4;k++)
+									{
+										if (client == 0) PrintToServer("CheckOffs [%i] %i",propoffs+k,GetEntData(targ,propoffs+k,1));
+										else PrintToConsole(client,"CheckOffs [%i] %i",propoffs+k,GetEntData(targ,propoffs+k,1));
+									}
+								}
+							}
 						}
 					}
 					else if (type == PropField_Float)
