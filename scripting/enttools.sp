@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.36"
+#define PLUGIN_VERSION "1.37"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -2023,7 +2023,11 @@ public Action listents(int client, int args)
 					if (HasEntProp(j,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(j,Prop_Data,"m_vecAbsOrigin",entorigin);
 					else if (HasEntProp(j,Prop_Send,"m_vecOrigin")) GetEntPropVector(j,Prop_Send,"m_vecOrigin",entorigin);
 					char displaymsg[256];
-					Format(displaymsg,sizeof(displaymsg),"ID: %i %s %s Origin %f %f %f",j,clsname,fname,entorigin[0],entorigin[1],entorigin[2]);
+					if ((j > 0) && (j < MaxClients+1))
+					{
+						Format(displaymsg,sizeof(displaymsg),"ID: %i %s %s Origin %f %f %f '%N'",j,clsname,fname,entorigin[0],entorigin[1],entorigin[2],j);
+					}
+					else Format(displaymsg,sizeof(displaymsg),"ID: %i %s %s Origin %f %f %f",j,clsname,fname,entorigin[0],entorigin[1],entorigin[2]);
 					if ((StrEqual(clsname,"func_brush",false)) && (HasEntProp(j,Prop_Data,"m_fEffects")))
 					{
 						int enablestate = GetEntProp(j,Prop_Data,"m_fEffects");
@@ -3076,8 +3080,8 @@ public Action setprops(int client, int args)
 						else
 						{
 							GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf));
-							if (client == 0) PrintToServer("%i %s %s is %s",targ,cls,propname,propinf);
-							else PrintToConsole(client,"%i %s %s is %s",targ,cls,propname,propinf);
+							if (client == 0) PrintToServer("%i Prop_Send %s %s is %s",targ,cls,propname,propinf);
+							else PrintToConsole(client,"%i Prop_Send %s %s is %s",targ,cls,propname,propinf);
 						}
 					}
 					else if (type == PropField_Entity)
@@ -3095,8 +3099,8 @@ public Action setprops(int client, int args)
 						else
 						{
 							int enth = GetEntPropEnt(targ,Prop_Send,propname);
-							if (client == 0) PrintToServer("%i %s %s is %i",targ,cls,propname,enth);
-							else PrintToConsole(client,"%i %s %s is %i",targ,cls,propname,enth);
+							if (client == 0) PrintToServer("%i Prop_Send %s %s is %i",targ,cls,propname,enth);
+							else PrintToConsole(client,"%i Prop_Send %s %s is %i",targ,cls,propname,enth);
 						}
 					}
 					else if (type == PropField_Integer)
@@ -3114,8 +3118,8 @@ public Action setprops(int client, int args)
 						else
 						{
 							int enti = GetEntProp(targ,Prop_Send,propname);
-							if (client == 0) PrintToServer("%i %s %s is %i",targ,cls,propname,enti);
-							else PrintToConsole(client,"%i %s %s is %i",targ,cls,propname,enti);
+							if (client == 0) PrintToServer("%i Prop_Send %s %s is %i",targ,cls,propname,enti);
+							else PrintToConsole(client,"%i Prop_Send %s %s is %i",targ,cls,propname,enti);
 						}
 					}
 					else if (type == PropField_Float)
@@ -3133,8 +3137,8 @@ public Action setprops(int client, int args)
 						else
 						{
 							float entf = GetEntPropFloat(targ,Prop_Send,propname);
-							if (client == 0) PrintToServer("%i %s %s is %f",targ,cls,propname,entf);
-							else PrintToConsole(client,"%i %s %s is %f",targ,cls,propname,entf);
+							if (client == 0) PrintToServer("%i Prop_Send %s %s is %f",targ,cls,propname,entf);
+							else PrintToConsole(client,"%i Prop_Send %s %s is %f",targ,cls,propname,entf);
 						}
 					}
 					else if (type == PropField_Vector)
@@ -3154,8 +3158,8 @@ public Action setprops(int client, int args)
 						{
 							float entvec[3];
 							GetEntPropVector(targ,Prop_Send,propname,entvec);
-							if (client == 0) PrintToServer("%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
-							else PrintToConsole(client,"%i %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
+							if (client == 0) PrintToServer("%i Prop_Send %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
+							else PrintToConsole(client,"%i Prop_Send %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
 						}
 					}
 				}
@@ -3179,8 +3183,8 @@ public Action setprops(int client, int args)
 						else
 						{
 							GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf));
-							if (client == 0) PrintToServer("%i %s is %s",targ,propname,propinf);
-							else PrintToConsole(client,"%i %s is %s",targ,propname,propinf);
+							if (client == 0) PrintToServer("%i Prop_Data %s is %s",targ,propname,propinf);
+							else PrintToConsole(client,"%i Prop_Data %s is %s",targ,propname,propinf);
 						}
 					}
 					else if (type == PropField_Entity)
@@ -3198,8 +3202,8 @@ public Action setprops(int client, int args)
 						else
 						{
 							int enth = GetEntPropEnt(targ,Prop_Data,propname);
-							if (client == 0) PrintToServer("%i %s is %i",targ,propname,enth);
-							else PrintToConsole(client,"%i %s is %i",targ,propname,enth);
+							if (client == 0) PrintToServer("%i Prop_Data %s is %i",targ,propname,enth);
+							else PrintToConsole(client,"%i Prop_Data %s is %i",targ,propname,enth);
 						}
 					}
 					else if (type == PropField_Integer)
@@ -3221,8 +3225,8 @@ public Action setprops(int client, int args)
 						else
 						{
 							int enti = GetEntProp(targ,Prop_Data,propname);
-							if (client == 0) PrintToServer("%i %s is %i",targ,propname,enti);
-							else PrintToConsole(client,"%i %s is %i",targ,propname,enti);
+							if (client == 0) PrintToServer("%i Prop_Data %s is %i",targ,propname,enti);
+							else PrintToConsole(client,"%i Prop_Data %s is %i",targ,propname,enti);
 							if ((enti < -10000) && (StrContains(propname,"m_n",false) != 0) && (StrContains(propname,"m_i",false) != 0) && (StrContains(propname,"m_fl",false) != 0))
 							{
 								int propoffs = GetEntSendPropOffs(targ,propname);
@@ -3252,8 +3256,8 @@ public Action setprops(int client, int args)
 						else
 						{
 							float entf = GetEntPropFloat(targ,Prop_Data,propname);
-							if (client == 0) PrintToServer("%i %s is %f",targ,propname,entf);
-							else PrintToConsole(client,"%i %s is %f",targ,propname,entf);
+							if (client == 0) PrintToServer("%i Prop_Data %s is %f",targ,propname,entf);
+							else PrintToConsole(client,"%i Prop_Data %s is %f",targ,propname,entf);
 						}
 					}
 					else if (type == PropField_Vector)
@@ -3273,8 +3277,8 @@ public Action setprops(int client, int args)
 						{
 							float entvec[3];
 							GetEntPropVector(targ,Prop_Data,propname,entvec);
-							if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
-							else PrintToConsole(client,"%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
+							if (client == 0) PrintToServer("%i Prop_Data %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
+							else PrintToConsole(client,"%i Prop_Data %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
 						}
 					}
 				}
