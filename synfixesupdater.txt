@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99981"
-			"Previous"	"1.99980"
+			"Latest"  	"1.99982"
+			"Previous"	"1.99981"
 		}
 		
-		"Notes"	"Added static checks for if Alyx exists on d2_prison_08."
+		"Notes"	"Block of alyx on ep2_outland_08 as most sequences will break if used."
 	}
 	
 	"Files"
