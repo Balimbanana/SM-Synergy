@@ -115,7 +115,7 @@ bool FixWeapSnd = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0029"
+#define PLUGIN_VERSION "2.0030"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1635,7 +1635,7 @@ public Action fixalyx(int client, int args)
 {
 	char tmpmap[24];
 	GetCurrentMap(tmpmap,sizeof(tmpmap));
-	if ((StrEqual(tmpmap,"ep2_outland_12",false)) || (StrEqual(tmpmap,"ep2_outland_11b",false)) || (StrEqual(tmpmap,"ep2_outland_08",false)) || (StrEqual(tmpmap,"ep2_outland_02",false)) || (StrEqual(tmpmap,"d3_breen_01",false)) || (StrEqual(tmpmap,"d1_town_05",false))) return Plugin_Handled;
+	if ((StrEqual(tmpmap,"ep2_outland_12",false)) || (StrEqual(tmpmap,"ep2_outland_11b",false)) || (StrEqual(tmpmap,"ep2_outland_08",false)) || (StrEqual(tmpmap,"ep2_outland_02",false)) || (StrEqual(tmpmap,"ep1_citadel_04",false)) || (StrEqual(tmpmap,"d3_breen_01",false)) || (StrEqual(tmpmap,"d1_town_05",false))) return Plugin_Handled;
 	if (!StrEqual(tmpmap,"ep2_outland_12a",false)) findgfollow(-1,"alyx");
 	if (!findtargn("alyx"))
 		readoutputs(client,"alyx");

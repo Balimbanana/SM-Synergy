@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99982"
-			"Previous"	"1.99981"
+			"Latest"  	"1.99983"
+			"Previous"	"1.99982"
 		}
 		
-		"Notes"	"Block of alyx on ep2_outland_08 as most sequences will break if used."
+		"Notes"	"Block of alyx on ep1_citadel_04."
 	}
 	
 	"Files"
