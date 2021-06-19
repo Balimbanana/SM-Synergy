@@ -65,7 +65,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.172"
+#define PLUGIN_VERSION "2.173"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2874,6 +2874,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			char curweap[64];
 			char weapname[64];
 			char weapnamepamm[64];
+			bool bFutureSuit = false;
 			for (int i = 1;i<MaxClients+1;i++)
 			{
 				if ((IsValidEntity(i)) && (IsClientInGame(i)))
@@ -2936,14 +2937,21 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					PushArrayString(transitionid,SteamID);
 					dp = CreateDataPack();
 					curh = GetEntProp(i,Prop_Data,"m_iHealth");
-					WritePackCell(dp,curh);
 					cura = GetEntProp(i,Prop_Data,"m_ArmorValue");
+					if (!IsPlayerAlive(i))
+					{
+						curh = 100;
+						cura = 0;
+					}
+					WritePackCell(dp,curh);
 					WritePackCell(dp,cura);
 					int score = 0;
 					if (HasEntProp(i,Prop_Data,"m_iPoints")) score = GetEntProp(i,Prop_Data,"m_iPoints");
 					int kills = GetEntProp(i,Prop_Data,"m_iFrags");
 					int deaths = GetEntProp(i,Prop_Data,"m_iDeaths");
 					int suitset = GetEntProp(i,Prop_Send,"m_bWearingSuit");
+					if (suitset) bFutureSuit = true;
+					if ((!IsPlayerAlive(i)) && (bFutureSuit)) suitset = 1;
 					int medkitamm = 0;
 					if (HasEntProp(i,Prop_Data,"m_iHealthPack")) medkitamm = GetEntProp(i,Prop_Send,"m_iHealthPack");
 					int crouching = GetEntProp(i,Prop_Send,"m_bDucked");

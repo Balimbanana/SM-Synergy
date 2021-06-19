@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.172"
-			"Previous"	"2.171"
+			"Latest"  	"2.173"
+			"Previous"	"2.172"
 		}
 		
-		"Notes"	"Added backup ID check for some situations."
+		"Notes"	"Fixed trainsitions for dead players."
 	}
 	
 	"Files"
