@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99983"
-			"Previous"	"1.99982"
+			"Latest"  	"1.99984"
+			"Previous"	"1.99983"
 		}
 		
-		"Notes"	"Block of alyx on ep1_citadel_04."
+		"Notes"	"Block of certain commands while in view control."
 	}
 	
 	"Files"

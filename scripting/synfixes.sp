@@ -58,7 +58,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99983"
+#define PLUGIN_VERSION "1.99984"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -558,6 +558,17 @@ public void OnPluginEnd()
 
 public Action fixalyx(int client, int args)
 {
+	if (IsValidEntity(client))
+	{
+		if (HasEntProp(client,Prop_Data,"m_hViewEntity"))
+		{
+			if (GetEntPropEnt(client,Prop_Data,"m_hViewEntity") != -1)
+			{
+				PrintToChat(client,"You cannot do that while in a view control.");
+				return Plugin_Handled;
+			}
+		}
+	}
 	char tmpmap[24];
 	GetCurrentMap(tmpmap,sizeof(tmpmap));
 	if ((StrEqual(tmpmap,"ep2_outland_12",false)) || (StrEqual(tmpmap,"ep2_outland_11b",false)) || (StrEqual(tmpmap,"ep2_outland_08",false)) || (StrEqual(tmpmap,"ep2_outland_02",false)) || (StrEqual(tmpmap,"ep1_citadel_04",false)) || (StrEqual(tmpmap,"d3_breen_01",false)) || (StrEqual(tmpmap,"d1_town_05",false))) return Plugin_Handled;
@@ -577,6 +588,17 @@ public Action fixalyx(int client, int args)
 
 public Action fixbarney(int client, int args)
 {
+	if (IsValidEntity(client))
+	{
+		if (HasEntProp(client,Prop_Data,"m_hViewEntity"))
+		{
+			if (GetEntPropEnt(client,Prop_Data,"m_hViewEntity") != -1)
+			{
+				PrintToChat(client,"You cannot do that while in a view control.");
+				return Plugin_Handled;
+			}
+		}
+	}
 	char tmpmap[24];
 	GetCurrentMap(tmpmap,sizeof(tmpmap));
 	if (StrEqual(tmpmap,"ep1_c17_06",false)) return Plugin_Handled;
