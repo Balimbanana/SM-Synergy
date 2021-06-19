@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.173"
-			"Previous"	"2.172"
+			"Latest"  	"2.174"
+			"Previous"	"2.173"
 		}
 		
 		"Notes"	"Fixed trainsitions for dead players."

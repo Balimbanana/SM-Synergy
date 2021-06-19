@@ -65,7 +65,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.173"
+#define PLUGIN_VERSION "2.174"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2938,11 +2938,6 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					dp = CreateDataPack();
 					curh = GetEntProp(i,Prop_Data,"m_iHealth");
 					cura = GetEntProp(i,Prop_Data,"m_ArmorValue");
-					if (!IsPlayerAlive(i))
-					{
-						curh = 100;
-						cura = 0;
-					}
 					WritePackCell(dp,curh);
 					WritePackCell(dp,cura);
 					int score = 0;
@@ -4488,8 +4483,17 @@ public Action anotherdelay(Handle timer, int client)
 				if (TR_PointOutsideWorld(plyorigin)) teleport = false;
 				if (dbg) LogMessage("Restore CL %N Transition info %i health %i armor Offset \"%1.f %1.f %1.f\" moveto %i",client,curh,cura,plyorigin[0],plyorigin[1],plyorigin[2],teleport);
 				ReadPackString(dp,curweap,sizeof(curweap));
-				SetEntProp(client,Prop_Data,"m_iHealth",curh);
-				SetEntProp(client,Prop_Data,"m_ArmorValue",cura);
+				if (curh < 1)
+				{
+					curh = 100;
+					cura = 0;
+					EquipPly(client);
+				}
+				else
+				{
+					SetEntProp(client,Prop_Data,"m_iHealth",curh);
+					SetEntProp(client,Prop_Data,"m_ArmorValue",cura);
+				}
 				if (HasEntProp(client,Prop_Data,"m_iPoints")) SetEntProp(client,Prop_Data,"m_iPoints",score);
 				SetEntProp(client,Prop_Data,"m_iFrags",kills);
 				SetEntProp(client,Prop_Data,"m_iDeaths",deaths);
@@ -4622,50 +4626,67 @@ public Action anotherdelay(Handle timer, int client)
 		}
 		else if (!BMActive)
 		{
-			findent(MaxClients+1,"info_player_equip");
-			bool recheck = false;
-			if (GetArraySize(equiparr) > 0)
+			EquipPly(client);
+		}
+	}
+}
+
+void EquipPly(int client)
+{
+	if (IsValidEntity(client))
+	{
+		if (IsClientConnected(client))
+		{
+			if (IsClientInGame(client))
 			{
-				for (int j; j<GetArraySize(equiparr); j++)
+				if (IsPlayerAlive(client))
 				{
-					int jtmp = GetArrayCell(equiparr, j);
-					if (IsValidEntity(jtmp))
+					findent(MaxClients+1,"info_player_equip");
+					bool recheck = false;
+					if (GetArraySize(equiparr) > 0)
 					{
-						if (IsEntNetworkable(jtmp))
+						for (int j; j<GetArraySize(equiparr); j++)
 						{
-							char clscheck[32];
-							GetEntityClassname(jtmp,clscheck,sizeof(clscheck));
-							if (StrEqual(clscheck,"info_player_equip",false))
+							int jtmp = GetArrayCell(equiparr, j);
+							if (IsValidEntity(jtmp))
+							{
+								if (IsEntNetworkable(jtmp))
+								{
+									char clscheck[32];
+									GetEntityClassname(jtmp,clscheck,sizeof(clscheck));
+									if (StrEqual(clscheck,"info_player_equip",false))
+									{
+										if (IsVehicleMap) AcceptEntityInput(jtmp,"Disable");
+										AcceptEntityInput(jtmp,"EquipPlayer",client);
+										EquipCustom(jtmp,client);
+									}
+									else
+									{
+										ClearArray(equiparr);
+										findent(MaxClients+1,"info_player_equip");
+										recheck = true;
+										break;
+									}
+								}
+							}
+						}
+					}
+					if ((recheck) && (GetArraySize(equiparr) > 0))
+					{
+						for (int j; j<GetArraySize(equiparr); j++)
+						{
+							int jtmp = GetArrayCell(equiparr, j);
+							if (IsValidEntity(jtmp))
 							{
 								if (IsVehicleMap) AcceptEntityInput(jtmp,"Disable");
 								AcceptEntityInput(jtmp,"EquipPlayer",client);
 								EquipCustom(jtmp,client);
 							}
-							else
-							{
-								ClearArray(equiparr);
-								findent(MaxClients+1,"info_player_equip");
-								recheck = true;
-								break;
-							}
 						}
 					}
+					if ((GetArraySize(equiparr) < 1) && (!StrEqual(mapbuf,"bm_c0a0c",false)) && (!StrEqual(mapbuf,"bm_c1a0a",false)) && (!StrEqual(mapbuf,"sp_intro",false)) && (!StrEqual(mapbuf,"d1_trainstation_05",false)) && (!StrEqual(mapbuf,"ce_01",false))) CreateTimer(0.1,delayequip,client);
 				}
 			}
-			if ((recheck) && (GetArraySize(equiparr) > 0))
-			{
-				for (int j; j<GetArraySize(equiparr); j++)
-				{
-					int jtmp = GetArrayCell(equiparr, j);
-					if (IsValidEntity(jtmp))
-					{
-						if (IsVehicleMap) AcceptEntityInput(jtmp,"Disable");
-						AcceptEntityInput(jtmp,"EquipPlayer",client);
-						EquipCustom(jtmp,client);
-					}
-				}
-			}
-			if ((GetArraySize(equiparr) < 1) && (!StrEqual(mapbuf,"bm_c0a0c",false)) && (!StrEqual(mapbuf,"bm_c1a0a",false)) && (!StrEqual(mapbuf,"sp_intro",false)) && (!StrEqual(mapbuf,"d1_trainstation_05",false)) && (!StrEqual(mapbuf,"ce_01",false))) CreateTimer(0.1,delayequip,client);
 		}
 	}
 }
