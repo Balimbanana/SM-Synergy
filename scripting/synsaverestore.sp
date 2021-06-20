@@ -65,7 +65,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.174"
+#define PLUGIN_VERSION "2.175"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2936,8 +2936,16 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					}
 					PushArrayString(transitionid,SteamID);
 					dp = CreateDataPack();
-					curh = GetEntProp(i,Prop_Data,"m_iHealth");
-					cura = GetEntProp(i,Prop_Data,"m_ArmorValue");
+					if (!IsPlayerAlive(i))
+					{
+						curh = 0;
+						cura = 0;
+					}
+					else
+					{
+						curh = GetEntProp(i,Prop_Data,"m_iHealth");
+						cura = GetEntProp(i,Prop_Data,"m_ArmorValue");
+					}
 					WritePackCell(dp,curh);
 					WritePackCell(dp,cura);
 					int score = 0;
