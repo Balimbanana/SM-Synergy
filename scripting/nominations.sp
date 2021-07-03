@@ -49,6 +49,7 @@ public Plugin myinfo =
 ConVar g_Cvar_ExcludeOld;
 ConVar g_Cvar_ExcludeCurrent;
 ConVar g_Cvar_CycleFile;
+ConVar g_Cvar_UseDialogs;
 
 Menu g_MapMenu = null;
 Handle g_MapList = null;
@@ -80,8 +81,12 @@ public void OnPluginStart()
 	g_Cvar_ExcludeCurrent = CreateConVar("sm_nominate_excludecurrent", "1", "Specifies if the MapChooser excluded maps should also be excluded from Nominations", 0, true, 0.00, true, 1.0);
 	g_Cvar_CycleFile = FindConVar("sm_nominate_mapcyclefile");
 	if (g_Cvar_CycleFile == INVALID_HANDLE) g_Cvar_CycleFile = CreateConVar("sm_nominate_mapcyclefile", "mapcyclecfg", "Specifies the mapcycle file to use for nominations list", 0);
+	g_Cvar_UseDialogs = FindConVar("sm_nominate_usedialogs");
+	if (g_Cvar_UseDialogs == INVALID_HANDLE) g_Cvar_UseDialogs = CreateConVar("sm_nominate_usedialogs", "0", "Uses dialogs for nomination menu.", 0, true, 0.0, true, 1.0);
 	
+	RegConsoleCmd("nom", Command_Nominate);
 	RegConsoleCmd("sm_nominate", Command_Nominate);
+	RegConsoleCmd("sm_nominate_dialog", AttemptNominate);
 	
 	RegAdminCmd("sm_nominate_addmap", Command_Addmap, ADMFLAG_CHANGEMAP, "sm_nominate_addmap <mapname> - Forces a map to be on the next mapvote.");
 	
@@ -266,6 +271,8 @@ public Action Command_Nominate(int client, int args)
 			int similarmaps = 0;
 			char mapsearch[64];
 			char lastmapsearch[64];
+			Menu menu = new Menu(MenuHandler);
+			menu.SetTitle("Partial match list");
 			for (int i = 0;i<GetArraySize(g_MapList);i++)
 			{
 				GetArrayString(g_MapList,i,mapsearch,sizeof(mapsearch));
@@ -274,24 +281,28 @@ public Action Command_Nominate(int client, int args)
 					similarmaps++;
 					PrintToConsole(client,"%s",mapsearch);
 					Format(lastmapsearch,sizeof(lastmapsearch),"%s",mapsearch);
+					menu.AddItem(mapsearch,mapsearch);
 				}
 			}
 			if ((similarmaps == 1) && (strlen(lastmapsearch) > 0))
 			{
 				Format(mapname,sizeof(mapname),"%s",lastmapsearch);
 				g_mapTrie.GetValue(mapname, status);
+				CloseHandle(menu);
 			}
 			else if (similarmaps > 0)
 			{
 				ReplyToCommand(client, "%t", "Map was not found", mapname);
 				ReplyToCommand(client, "But there were %i maps found with similar names. Check console", similarmaps);
-				return Plugin_Handled;
+				menu.ExitButton = true;
+				menu.Display(client, 120);
 			}
 			else
 			{
+				CloseHandle(menu);
 				ReplyToCommand(client, "%t", "Map was not found", mapname);
-				return Plugin_Handled;
 			}
+			return Plugin_Handled;
 		}
 		else return Plugin_Handled;
 	}
@@ -467,6 +478,95 @@ public Action AttemptNominate(int client, int args)
 		return Plugin_Handled;
 	char gamedesc[32];
 	GetGameFolderName(gamedesc,sizeof(gamedesc));
+	if (g_Cvar_UseDialogs.BoolValue)
+	{
+		char szDesc[256];
+		Format(szDesc,sizeof(szDesc),"%T","Nominate Title",client);
+		Handle gKV = CreateKeyValues("data");
+		KvSetString(gKV, "title", szDesc);
+		KvSetNum(gKV, "level", 2);
+		KvSetColor(gKV, "color", 255, 255, 0, 255);
+		KvSetNum(gKV, "time", 20);
+		bool bEndOfList = false;
+		if (args > 0)
+		{
+			char szArg[4];
+			GetCmdArg(1,szArg,sizeof(szArg));
+			if (strlen(szArg) > 0)
+			{
+				if (StringToInt(szArg) < 0) Format(szArg,sizeof(szArg),"0");
+				char szInt[4];
+				for (int i = StringToInt(szArg);i<(StringToInt(szArg)+6);i++)
+				{
+					if (i == GetArraySize(g_MapList))
+					{
+						bEndOfList = true;
+						break;
+					}
+					Format(szInt,sizeof(szInt),"%i",i+1);
+					GetArrayString(g_MapList,i,szDesc,sizeof(szDesc));
+					KvJumpToKey(gKV, szInt, true);
+					KvSetString(gKV, "msg", szDesc);
+					Format(szDesc,sizeof(szDesc),"sm_nominate \"%s\"",szDesc);
+					KvSetString(gKV, "command", szDesc);
+					KvRewind(gKV);
+				}
+				if (!bEndOfList)
+				{
+					Format(szInt,sizeof(szInt),"%i",StringToInt(szInt)+1);
+					KvJumpToKey(gKV, szInt, true);
+					KvSetString(gKV, "msg", "Next page");
+					Format(szDesc,sizeof(szDesc),"sm_nominate_dialog %i",StringToInt(szArg)+6);
+					KvSetString(gKV, "command", szDesc);
+					KvRewind(gKV);
+				}
+				if (StringToInt(szArg) > 0)
+				{
+					Format(szInt,sizeof(szInt),"%i",StringToInt(szInt)+1);
+					KvJumpToKey(gKV, szInt, true);
+					KvSetString(gKV, "msg", "Back");
+					Format(szDesc,sizeof(szDesc),"sm_nominate_dialog %i",StringToInt(szArg)-6);
+					KvSetString(gKV, "command", szDesc);
+					KvRewind(gKV);
+				}
+				
+				CreateDialog(client, gKV, DialogType_Menu);
+				CloseHandle(gKV);
+			}
+		}
+		else
+		{
+			char szInt[4];
+			for (int i = 0;i<6;i++)
+			{
+				if (i == GetArraySize(g_MapList))
+				{
+					bEndOfList = true;
+					break;
+				}
+				Format(szInt,sizeof(szInt),"%i",i+1);
+				GetArrayString(g_MapList,i,szDesc,sizeof(szDesc));
+				KvJumpToKey(gKV, szInt, true);
+				KvSetString(gKV, "msg", szDesc);
+				Format(szDesc,sizeof(szDesc),"sm_nominate \"%s\"",szDesc);
+				KvSetString(gKV, "command", szDesc);
+				KvRewind(gKV);
+			}
+			if (!bEndOfList)
+			{
+				Format(szInt,sizeof(szInt),"%i",StringToInt(szInt)+1);
+				KvJumpToKey(gKV, szInt, true);
+				KvSetString(gKV, "msg", "Next page");
+				KvSetString(gKV, "command", "sm_nominate_dialog 6");
+				KvRewind(gKV);
+			}
+			
+			CreateDialog(client, gKV, DialogType_Menu);
+			CloseHandle(gKV);
+		}
+		
+		return Plugin_Handled;
+	}
 	if ((StrEqual(gamedesc,"tf",false)) || (modsact == 1))
 	{
 		AttemptNominateAllMP(client);
