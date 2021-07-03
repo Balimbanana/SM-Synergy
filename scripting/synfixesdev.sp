@@ -113,9 +113,10 @@ bool norunagain = false;
 bool BlockTripMineDamage = true;
 bool FixWeapSnd = true;
 bool bFixSoundScapes = true;
+bool bFixNPCStuck = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0031"
+#define PLUGIN_VERSION "2.0032"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -382,6 +383,19 @@ public void OnPluginStart()
 		cvar = CreateConVar("synfixes_fixsoundscapes", "1", "Fixes soundscapes not applied correctly.", _, true, 0.0, true, 1.0);
 		bFixSoundScapes = GetConVarBool(cvar);
 		HookConVarChange(cvar, fixsndscapech);
+	}
+	CloseHandle(cvar);
+	cvar = FindConVar("synfixes_stuckinnpc");
+	if (cvar != INVALID_HANDLE)
+	{
+		bFixNPCStuck = GetConVarBool(cvar);
+		HookConVarChange(cvar, stuckinnpcch);
+	}
+	else
+	{
+		cvar = CreateConVar("synfixes_stuckinnpc", "1", "Removes collisions between players and NPCs when they are stuck inside each other.", _, true, 0.0, true, 1.0);
+		bFixNPCStuck = GetConVarBool(cvar);
+		HookConVarChange(cvar, stuckinnpcch);
 	}
 	CloseHandle(cvar);
 	cvar = FindConVar("npc_merchant_currency");
@@ -3584,6 +3598,98 @@ public Action resetclanim(Handle timer)
 							SetEntProp(i,Prop_Data,"m_bClientSideAnimation",0);
 							SetEntProp(i,Prop_Data,"m_bClientSideAnimation",1);
 						}
+						if (bFixSoundScapes)
+						{
+							if ((HasEntProp(i,Prop_Data,"ent")) && (!IsFakeClient(i)))
+							{
+								int sscape = GetEntPropEnt(i,Prop_Data,"ent");
+								if (IsValidEntity(sscape))
+								{
+									if (sscape != cllastsscape[i])
+									{
+										cllastsscape[i] = sscape;
+										if ((HasEntProp(sscape,Prop_Data,"m_bDisabled")) && (HasEntProp(sscape,Prop_Data,"m_soundscapeName")))
+										{
+											char sndscape[64];
+											GetEntPropString(sscape,Prop_Data,"m_soundscapeName",sndscape,sizeof(sndscape));
+											Handle cvar = FindConVar("sv_cheats");
+											if (cvar != INVALID_HANDLE)
+											{
+												if (GetConVarInt(cvar) < 1)
+												{
+													SendConVarValue(i,cvar,"1");
+												}
+											}
+											CloseHandle(cvar);
+											ClientCommand(i,"playsoundscape \"%s\"",sndscape);
+											ClientCommand(i,"blckreset");
+										}
+									}
+								}
+							}
+						}
+						if (bFixNPCStuck)
+						{
+							char targn[64];
+							char targn2[64];
+							if (HasEntProp(i,Prop_Data,"m_iName")) GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+							if (strlen(targn) < 1)
+							{
+								Format(targn,sizeof(targn),"synplayer%i",i);
+								SetEntPropString(i,Prop_Data,"m_iName",targn);
+							}
+							float vFeetPos[3], vNPCPos[3];
+							bool bDistWithin = false;
+							GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",vFeetPos);
+							int ent = -1;
+							while((ent = FindEntityByClassname(ent,"npc_*")) != INVALID_ENT_REFERENCE)
+							{
+								if (ent > MaxClients)
+								{
+									if (IsValidEntity(ent))
+									{
+										if (HasEntProp(ent,Prop_Data,"m_CollisionGroup"))
+										{
+											if (GetEntProp(ent,Prop_Data,"m_CollisionGroup") != 5)
+											{
+												GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",vNPCPos);
+												if (GetVectorDistance(vFeetPos,vNPCPos,false) < 10.0) bDistWithin = true;
+												else
+												{
+													// In case player is lifted off ground by collision
+													vNPCPos[2]+=20.0;
+													if (GetVectorDistance(vFeetPos,vNPCPos,false) < 10.0) bDistWithin = true;
+												}
+												if (bDistWithin)
+												{
+													if (HasEntProp(ent,Prop_Data,"m_iName")) GetEntPropString(ent,Prop_Data,"m_iName",targn2,sizeof(targn2));
+													if (strlen(targn2) < 1)
+													{
+														Format(targn2,sizeof(targn2),"synveh%i",ent);
+														SetEntPropString(ent,Prop_Data,"m_iName",targn2);
+													}
+													int logcoll = CreateEntityByName("logic_collision_pair");
+													if (logcoll != -1)
+													{
+														DispatchKeyValue(logcoll,"attach1",targn);
+														DispatchKeyValue(logcoll,"attach2",targn2);
+														DispatchKeyValue(logcoll,"StartDisabled","1");
+														DispatchSpawn(logcoll);
+														ActivateEntity(logcoll);
+														AcceptEntityInput(logcoll,"DisableCollisions");
+														Handle dp2 = CreateDataPack();
+														WritePackCell(dp2,logcoll);
+														WritePackString(dp2,"logic_collision_pair");
+														CreateTimer(0.4,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+													}
+													break;
+												}
+											}
+										}
+									}
+								}
+							}
+						}
 						if (GroundStuckFix)
 						{
 							if (HasEntProp(i,Prop_Data,"m_hVehicle"))
@@ -3612,36 +3718,6 @@ public Action resetclanim(Handle timer)
 									vTRPos[2]-=65.0;
 									vFeetPos[2] = vTRPos[2];
 									TeleportEntity(i,vFeetPos,NULL_VECTOR,NULL_VECTOR);
-								}
-							}
-						}
-						if (bFixSoundScapes)
-						{
-							if ((HasEntProp(i,Prop_Data,"ent")) && (!IsFakeClient(i)))
-							{
-								int sscape = GetEntPropEnt(i,Prop_Data,"ent");
-								if (IsValidEntity(sscape))
-								{
-									if (sscape != cllastsscape[i])
-									{
-										cllastsscape[i] = sscape;
-										if ((HasEntProp(sscape,Prop_Data,"m_bDisabled")) && (HasEntProp(sscape,Prop_Data,"m_soundscapeName")))
-										{
-											char sndscape[64];
-											GetEntPropString(sscape,Prop_Data,"m_soundscapeName",sndscape,sizeof(sndscape));
-											Handle cvar = FindConVar("sv_cheats");
-											if (cvar != INVALID_HANDLE)
-											{
-												if (GetConVarInt(cvar) < 1)
-												{
-													SendConVarValue(i,cvar,"1");
-												}
-											}
-											CloseHandle(cvar);
-											ClientCommand(i,"playsoundscape \"%s\"",sndscape);
-											ClientCommand(i,"blckreset");
-										}
-									}
 								}
 							}
 						}
@@ -21588,6 +21664,14 @@ public void fixsndscapech(Handle convar, const char[] oldValue, const char[] new
 		bFixSoundScapes = true;
 	else
 		bFixSoundScapes = false;
+}
+
+public void stuckinnpcch(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+		bFixNPCStuck = true;
+	else
+		bFixNPCStuck = false;
 }
 
 public void merchcurrencych(Handle convar, const char[] oldValue, const char[] newValue)

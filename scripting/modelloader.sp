@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.71"
+#define PLUGIN_VERSION "1.72"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
 public Plugin myinfo = 
@@ -626,7 +626,7 @@ public Action cmodelmenu(int client, int args)
 			menu.AddItem("n7l", "N7Legion");
 	if (kudarray != INVALID_HANDLE)
 		if (GetArraySize(kudarray) > 0)
-			menu.AddItem("kud", "Kud♪");
+			menu.AddItem("kud", "Kud?");
 	if (cssarray != INVALID_HANDLE)
 		if (GetArraySize(cssarray) > 0)
 			menu.AddItem("css", "CSS");
@@ -890,10 +890,14 @@ public Action modelmenu(int client, int args)
 		char multfound[1024];
 		char ktmp[64];
 		char sfound[64];
+		char fixuptmp[16][64];
 		int found = 0;
+		int tmp;
 		GetCmdArgString(atmptmdl, sizeof(atmptmdl));
 		ReplaceString(atmptmdl,sizeof(atmptmdl),"model ","", false);
 		ReplaceString(atmptmdl,sizeof(atmptmdl),"models ","", false);
+		Menu menu = new Menu(MenuHandler);
+		menu.SetTitle("Partial match models");
 		for (int k;k<GetArraySize(modelarray);k++)
 		{
 			GetArrayString(modelarray, k, ktmp, sizeof(ktmp));
@@ -902,16 +906,32 @@ public Action modelmenu(int client, int args)
 				found++;
 				Format(multfound,sizeof(multfound),"%s\n%s",multfound,ktmp);
 				Format(sfound,sizeof(sfound),"%s",ktmp);
+				tmp = ExplodeString(sfound,"/",fixuptmp,16,64,true);
+				if (tmp > 0)
+				{
+					Format(sfound,sizeof(sfound),"%s",fixuptmp[tmp-1]);
+				}
+				menu.AddItem(ktmp,sfound);
+				Format(sfound,sizeof(sfound),"%s",ktmp);
 			}
 			if (StrEqual(atmptmdl, ktmp))
 			{
 				found = 1;
+				Format(sfound,sizeof(sfound),"%s",ktmp);
+				tmp = ExplodeString(sfound,"/",fixuptmp,16,64,true);
+				if (tmp > 0)
+				{
+					Format(sfound,sizeof(sfound),"%s",fixuptmp[tmp-1]);
+				}
+				menu.AddItem(ktmp,sfound);
 				Format(sfound,sizeof(sfound),"%s",ktmp);
 				break;
 			}
 		}
 		if (found > 1)
 		{
+			PrintToChat(client,"%T","MultipleReturnedSearch",client,multfound);
+			/*
 			if (found < 5)
 			{
 				PrintToChat(client,"%T","MultipleReturnedSearch",client,multfound);
@@ -921,6 +941,10 @@ public Action modelmenu(int client, int args)
 				PrintToChat(client,"%T","TooManyToShowInChat",client);
 				PrintToConsole(client,"%T","MultipleReturnedSearchConsole",client,multfound);
 			}
+			*/
+			menu.ExitButton = true;
+			menu.Display(client, 30);
+			return Plugin_Handled;
 		}
 		else if (found == 1)
 		{
@@ -935,6 +959,7 @@ public Action modelmenu(int client, int args)
 		{
 			PrintToChat(client,"%T","CouldntFindModel",client,atmptmdl);
 		}
+		CloseHandle(menu);
 		return Plugin_Handled;
 	}
 	Handle panel = CreatePanel();

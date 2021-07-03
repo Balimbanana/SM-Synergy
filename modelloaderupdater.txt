@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.71"
-			"Previous"	"1.70"
+			"Latest"  	"1.72"
+			"Previous"	"1.71"
 		}
 		
-		"Notes"	"Increased arrays for max players increase."
+		"Notes"	"Partial match !model name searches now show in a menu."
 	}
 	
 	"Files"

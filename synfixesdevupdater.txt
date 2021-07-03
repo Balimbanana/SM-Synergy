@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0031"
-			"Previous"	"2.0030"
+			"Latest"  	"2.0032"
+			"Previous"	"2.0031"
 		}
 		
-		"Notes"	"Block of certain commands while in view control."
+		"Notes"	"Added CVar synfixes_stuckinnpc default 1, checks for players getting stuck inside NPCs, temp removes collisions between them."
 	}
 	
 	"Files"
