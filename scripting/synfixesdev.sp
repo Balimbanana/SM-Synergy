@@ -116,7 +116,7 @@ bool bFixSoundScapes = true;
 bool bFixNPCStuck = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0033"
+#define PLUGIN_VERSION "2.0034"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3705,6 +3705,8 @@ public Action resetclanim(Handle timer)
 														WritePackString(dp2,"logic_collision_pair");
 														CreateTimer(0.4,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
 													}
+													SetEntProp(ent,Prop_Data,"m_CollisionGroup",5);
+													CreateTimer(0.4,ResetColl,ent,TIMER_FLAG_NO_MAPCHANGE);
 													break;
 												}
 											}
@@ -19450,6 +19452,25 @@ public Action rechkcol(Handle timer, int logent)
 		if (StrEqual(entname,"vort",false))
 		{
 			SetEntData(logent, collisiongroup, 5, 4, true);
+		}
+	}
+}
+
+public Action ResetColl(Handle timer, int entity)
+{
+	if (IsValidEntity(entity))
+	{
+		char szCls[24];
+		GetEntityClassname(entity,szCls,sizeof(szCls));
+		if (StrContains(szCls,"npc_",false) == 0)
+		{
+			if (HasEntProp(entity,Prop_Data,"m_CollisionGroup"))
+			{
+				if (GetEntProp(entity,Prop_Data,"m_CollisionGroup") == 5)
+				{
+					SetEntProp(entity,Prop_Data,"m_CollisionGroup",10);
+				}
+			}
 		}
 	}
 }

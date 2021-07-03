@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0033"
-			"Previous"	"2.0032"
+			"Latest"  	"2.0034"
+			"Previous"	"2.0033"
 		}
 		
-		"Notes"	"Added fix to pickup suits to fire outputs even if player has a suit already."
+		"Notes"	"Additional checks in NPC collision checks."
 	}
 	
 	"Files"
