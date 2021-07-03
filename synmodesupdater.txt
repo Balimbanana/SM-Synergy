@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.45"
-			"Previous"	"1.44"
+			"Latest"  	"1.46"
+			"Previous"	"1.45"
 		}
 		
-		"Notes"	"Added *givemedkit*."
+		"Notes"	"Added configuration for equip on d1_trainstation_05."
 	}
 	
 	"Files"

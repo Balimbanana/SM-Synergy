@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.45"
+#define PLUGIN_VERSION "1.46"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -1651,7 +1651,7 @@ public Action tpclspawnnew(Handle timer, int i)
 	else if ((clused == 0) && (IsClientInGame(i)))
 	{
 		findent(MaxClients+1,"info_player_equip");
-		if (isvehiclemap)
+		if ((isvehiclemap) && (GetArraySize(equiparr) > 0))
 		{
 			for (int j; j<GetArraySize(equiparr); j++)
 			{
@@ -1678,7 +1678,7 @@ public Action tpclspawnnew(Handle timer, int i)
 				}
 			}
 		}
-		else
+		else if (StrContains(mapbuf,"d1_trainstation_05",false) == -1)
 		{
 			findentwdis(MaxClients+1,"info_player_equip");
 			if (GetArraySize(equiparr) > 0)
@@ -1699,7 +1699,7 @@ public Action tpclspawnnew(Handle timer, int i)
 				}
 			}
 		}
-		if (isvehiclemap)
+		if ((isvehiclemap) && (GetArraySize(equiparr) > 0))
 		{
 			for (int j; j<GetArraySize(equiparr); j++)
 			{
