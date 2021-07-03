@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0032"
-			"Previous"	"2.0031"
+			"Latest"  	"2.0033"
+			"Previous"	"2.0032"
 		}
 		
-		"Notes"	"Added CVar synfixes_stuckinnpc default 1, checks for players getting stuck inside NPCs, temp removes collisions between them."
+		"Notes"	"Added fix to pickup suits to fire outputs even if player has a suit already."
 	}
 	
 	"Files"

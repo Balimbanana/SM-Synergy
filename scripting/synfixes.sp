@@ -58,7 +58,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99984"
+#define PLUGIN_VERSION "1.99985"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -278,6 +278,18 @@ public void OnMapStart()
 		for (int i = 1;i<65;i++)
 		{
 			guiderocket[i] = true;
+		}
+		char szClsGet[16];
+		for (int i = MaxClients+1;i<2048;i++)
+		{
+			if (IsValidEntity(i))
+			{
+				GetEntityClassname(i,szClsGet,sizeof(szClsGet));
+				if (StrEqual(szClsGet,"item_suit",false))
+				{
+					SDKHook(i,SDKHook_StartTouch,FallBackSuitOutputs);
+				}
+			}
 		}
 		int rellogsv = CreateEntityByName("logic_auto");
 		if ((rellogsv != -1) && (IsValidEntity(rellogsv)))
@@ -1501,6 +1513,20 @@ public Action RemoveFromArr(Handle timer, int physbox)
 	{
 		RemoveFromArray(physboxarr,arrindx);
 		RemoveFromArray(physboxharr,arrindx);
+	}
+}
+
+public Action FallBackSuitOutputs(int entity, int other)
+{
+	if ((IsValidEntity(entity)) && (IsValidEntity(other)) && (other > 0) && (other < MaxClients+1))
+	{
+		if (HasEntProp(other,Prop_Data,"m_bWearingSuit"))
+		{
+			if (GetEntProp(other,Prop_Data,"m_bWearingSuit") > 0)
+			{
+				SetEntProp(other,Prop_Data,"m_bWearingSuit",0);
+			}
+		}
 	}
 }
 

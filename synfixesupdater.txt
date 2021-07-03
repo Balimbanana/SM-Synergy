@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99984"
-			"Previous"	"1.99983"
+			"Latest"  	"1.99985"
+			"Previous"	"1.99984"
 		}
 		
-		"Notes"	"Block of certain commands while in view control."
+		"Notes"	"Added fix to pickup suits to fire outputs even if player has a suit already."
 	}
 	
 	"Files"

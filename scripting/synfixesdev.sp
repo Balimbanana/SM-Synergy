@@ -116,7 +116,7 @@ bool bFixSoundScapes = true;
 bool bFixNPCStuck = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0032"
+#define PLUGIN_VERSION "2.0033"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -784,6 +784,7 @@ public void OnMapStart()
 			DisplayedChapterTitle[i] = false;
 			PushArrayCell(entlist,i);
 		}
+		char szClsGet[16];
 		for (int i = 1;i<2048;i++)
 		{
 			centnextatk[i] = 0.0;
@@ -791,6 +792,14 @@ public void OnMapStart()
 			isattacking[i] = 0;
 			centnextsndtime[i] = 0.0;
 			glotext[i] = "";
+			if (IsValidEntity(i))
+			{
+				GetEntityClassname(i,szClsGet,sizeof(szClsGet));
+				if (StrEqual(szClsGet,"item_suit",false))
+				{
+					SDKHook(i,SDKHook_StartTouch,FallBackSuitOutputs);
+				}
+			}
 		}
 		char gamedescoriginal[24];
 		GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
@@ -3471,6 +3480,20 @@ public Action RemoveFromArr(Handle timer, int physbox)
 	{
 		RemoveFromArray(physboxarr,arrindx);
 		RemoveFromArray(physboxharr,arrindx);
+	}
+}
+
+public Action FallBackSuitOutputs(int entity, int other)
+{
+	if ((IsValidEntity(entity)) && (IsValidEntity(other)) && (other > 0) && (other < MaxClients+1))
+	{
+		if (HasEntProp(other,Prop_Data,"m_bWearingSuit"))
+		{
+			if (GetEntProp(other,Prop_Data,"m_bWearingSuit") > 0)
+			{
+				SetEntProp(other,Prop_Data,"m_bWearingSuit",0);
+			}
+		}
 	}
 }
 
