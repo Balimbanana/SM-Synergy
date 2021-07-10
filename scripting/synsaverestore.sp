@@ -3212,6 +3212,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 		{
 			char clsname[32];
 			GetEntityClassname(i,clsname,sizeof(clsname));
+			if (StrContains(clsname,"game_",false) == 0) continue;
 			if ((SynLaterAct) && (!SkipVer))
 			{
 				if (custentlist != INVALID_HANDLE)
