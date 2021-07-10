@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.175"
-			"Previous"	"2.174"
+			"Latest"  	"2.176"
+			"Previous"	"2.175"
 		}
 		
-		"Notes"	"Fixed trainsitions for dead players."
+		"Notes"	"Fix one potential handle leak."
 	}
 	
 	"Files"

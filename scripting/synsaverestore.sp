@@ -65,7 +65,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.175"
+#define PLUGIN_VERSION "2.176"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -493,6 +493,7 @@ public Action savecurgamedp(Handle timer, any dp)
 		{
 			if (client == 0) PrintToServer("Save already exists with name: %s",ctimestamp);
 			else PrintToChat(client,"Save already exists with name: %s",ctimestamp);
+			CloseHandle(dp);
 			return Plugin_Handled;
 		}
 	}
