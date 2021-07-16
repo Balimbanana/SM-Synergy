@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99985"
-			"Previous"	"1.99984"
+			"Latest"  	"1.99986"
+			"Previous"	"1.99985"
 		}
 		
-		"Notes"	"Added fix to pickup suits to fire outputs even if player has a suit already."
+		"Notes"	"Fixed configuration when not sequencechecking."
 	}
 	
 	"Files"

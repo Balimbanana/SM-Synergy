@@ -116,7 +116,7 @@ bool bFixSoundScapes = true;
 bool bFixNPCStuck = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0034"
+#define PLUGIN_VERSION "2.0035"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -19865,7 +19865,7 @@ bool findtargn(char[] targn)
 		return true;
 	else if (found > 1)
 	{
-		AcceptEntityInput(lastfound,"kill");
+		if (seqenablecheck) AcceptEntityInput(lastfound,"kill");
 		return true;
 	}
 	return false;

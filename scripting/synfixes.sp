@@ -58,7 +58,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99985"
+#define PLUGIN_VERSION "1.99986"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -4105,7 +4105,7 @@ bool findtargn(char[] targn)
 		return true;
 	else if (found > 1)
 	{
-		AcceptEntityInput(lastfound,"kill");
+		if (seqenablecheck) AcceptEntityInput(lastfound,"kill");
 		return true;
 	}
 	return false;
