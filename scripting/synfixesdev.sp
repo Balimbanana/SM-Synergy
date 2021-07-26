@@ -61,6 +61,7 @@ Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
 Handle hTemplateData = INVALID_HANDLE;
 ConVar hWeaponRespawn;
+ConVar hBaseEquipmentSetup;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float fadingtime[128];
@@ -116,7 +117,7 @@ bool bFixSoundScapes = true;
 bool bFixNPCStuck = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0035"
+#define PLUGIN_VERSION "2.0036"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -427,6 +428,8 @@ public void OnPluginStart()
 	hWeaponRespawn = FindConVar("mp_respawnweapons");
 	if (hWeaponRespawn == INVALID_HANDLE) hWeaponRespawn = CreateConVar("mp_respawnweapons", "0", "Respawn weapons picked up off the ground.", _, true, 0.0, true, 1.0);
 	HookConVarChange(hWeaponRespawn, weaponrespawnch);
+	hBaseEquipmentSetup = FindConVar("synfixes_applybaseequipment");
+	if (hBaseEquipmentSetup == INVALID_HANDLE) hBaseEquipmentSetup = CreateConVar("synfixes_applybaseequipment", "0", "Automatically sets up base equipment for maps without info_player_equip", _, true, 0.0, true, 1.0);
 	//hRRReduceWeapons = FindConVar("rr_reduceweapons");
 	//if (hRRReduceWeapons == INVALID_HANDLE) hRRReduceWeapons = CreateConVar("rr_reduceweapons", "0", "Reduce spawn equipment to rr_weaponslist.", _, true, 0.0, true, 1.0);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
@@ -719,6 +722,63 @@ public void OnMapStart()
 			DispatchSpawn(rellogsv);
 			ActivateEntity(rellogsv);
 			HookEntityOutput("logic_auto","OnMapSpawn",onreload);
+		}
+		if (hBaseEquipmentSetup.BoolValue)
+		{
+			if (FindEntityByClassname(-1,"info_player_equip") == -1)
+			{
+				if ((StrContains(mapbuf,"d1_trainstation_0",false) != 0) && (StrContains(mapbuf,"ep1_citadel_0",false) != 0) && (StrContains(mapbuf,"ep2_outland_0",false) != 0))
+				{
+					CreatePlayerEquip("weapon_crowbar","1");
+					if (FindEntityByClassname(-1,"item_suit") == -1) CreatePlayerEquip("item_suit","0");
+					else CreatePlayerEquip("item_suit","1");
+					CreatePlayerEquip("weapon_pistol","1");
+					CreatePlayerEquip("weapon_357","1");
+					CreatePlayerEquip("weapon_smg1","1");
+					CreatePlayerEquip("weapon_ar2","1");
+					CreatePlayerEquip("weapon_mp5k","1");
+					CreatePlayerEquip("weapon_shotgun","1");
+					CreatePlayerEquip("weapon_crossbow","1");
+					CreatePlayerEquip("weapon_rpg","1");
+					CreatePlayerEquip("weapon_frag","1");
+					CreatePlayerEquip("weapon_physcannon","1");
+					CreatePlayerEquip("weapon_bugbait","1");
+					int iLogicEnt = CreateEntityByName("logic_auto");
+					if (IsValidEntity(iLogicEnt))
+					{
+						DispatchKeyValue(iLogicEnt,"targetname","synequipmentsetup");
+						DispatchKeyValue(iLogicEnt,"spawnflags","1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","item_suit,AddOutput,OnPlayerTouch item_suitpickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","item_suit,AddOutput,OnPlayerTouch item_suitpickup:EquipAllPlayers::0.1:1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_crowbar,AddOutput,OnPlayerPickup crowbarpickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_crowbar,AddOutput,OnPlayerPickup crowbarpickup:EquipAllPlayers::0.1:1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_pistol,AddOutput,OnPlayerPickup pistolpickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_pistol,AddOutput,OnPlayerPickup pistolpickup:EquipAllPlayers::0.1:1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_357,AddOutput,OnPlayerPickup 357pickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_357,AddOutput,OnPlayerPickup 357pickup:EquipAllPlayers::0.1:1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_smg1,AddOutput,OnPlayerPickup smg1pickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_smg1,AddOutput,OnPlayerPickup smg1pickup:EquipAllPlayers::0.1:1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_ar2,AddOutput,OnPlayerPickup ar2pickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_ar2,AddOutput,OnPlayerPickup ar2pickup:EquipAllPlayers::0.1:1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_mp5k,AddOutput,OnPlayerPickup mp5kpickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_mp5k,AddOutput,OnPlayerPickup mp5kpickup:EquipAllPlayers::0.1:1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_shotgun,AddOutput,OnPlayerPickup shotgunpickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_shotgun,AddOutput,OnPlayerPickup shotgunpickup:EquipAllPlayers::0.1:1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_crossbow,AddOutput,OnPlayerPickup crossbowpickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_crossbow,AddOutput,OnPlayerPickup crossbowpickup:EquipAllPlayers::0.1:1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_rpg,AddOutput,OnPlayerPickup rpgpickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_rpg,AddOutput,OnPlayerPickup rpgpickup:EquipAllPlayers::0.1:1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_frag,AddOutput,OnPlayerPickup fragpickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_frag,AddOutput,OnPlayerPickup fragpickup,EquipAllPlayers::0.1:1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_physcannon,AddOutput,OnPlayerPickup physcannonpickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_physcannon,AddOutput,OnPlayerPickup physcannonpickup:EquipAllPlayers::0.1:1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_bugbait,AddOutput,OnPlayerPickup bugbaitpickup:Enable::0:-1,0,-1");
+						DispatchKeyValue(iLogicEnt,"OnMapSpawn","weapon_bugbait,AddOutput,OnPlayerPickup bugbaitpickup:EquipAllPlayers::0.1:1,0,-1");
+						DispatchSpawn(iLogicEnt);
+						ActivateEntity(iLogicEnt);
+					}
+				}
+			}
 		}
 		longjumpactive = false;
 		hasread = false;
@@ -1497,6 +1557,23 @@ public void OnMapStart()
 		PrecacheSound("npc\\roller\\mine\\rmine_movefast_loop1.wav",true);
 		PrecacheSound("npc\\roller\\mine\\rmine_seek_loop2.wav",true);
 		PrecacheSound("npc\\turret_floor\\alarm.wav",true);
+	}
+}
+
+void CreatePlayerEquip(char[] szClass, char[] szStartDisabled)
+{
+	int iEquipEnts = CreateEntityByName("info_player_equip");
+	if (IsValidEntity(iEquipEnts))
+	{
+		char szName[64];
+		Format(szName,sizeof(szName),"%s",szClass);
+		ReplaceStringEx(szName,sizeof(szName),"weapon_","",-1,-1,false);
+		Format(szName,sizeof(szName),"%spickup",szName);
+		DispatchKeyValue(iEquipEnts,"targetname",szName);
+		DispatchKeyValue(iEquipEnts,"startdisabled",szStartDisabled);
+		DispatchKeyValue(iEquipEnts,szClass,"1");
+		DispatchSpawn(iEquipEnts);
+		ActivateEntity(iEquipEnts);
 	}
 }
 
@@ -19811,7 +19888,7 @@ bool findtargn(char[] targn)
 {
 	if (strlen(targn) < 1) return false;
 	float Time = GetTickedTime();
-	if (entrefresh <= Time)
+	if ((entrefresh <= Time) && (entrefresh > 0.0))
 	{
 		ClearArray(entlist);
 		entrefresh = Time + 10.0;
@@ -19860,6 +19937,10 @@ bool findtargn(char[] targn)
 				}
 			}
 		}
+	}
+	if (entrefresh == 0.0)
+	{
+		entrefresh = Time + 10.0;
 	}
 	if (found == 1)
 		return true;

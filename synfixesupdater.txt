@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99986"
-			"Previous"	"1.99985"
+			"Latest"  	"1.99987"
+			"Previous"	"1.99986"
 		}
 		
-		"Notes"	"Fixed configuration when not sequencechecking."
+		"Notes"	"Fixed entlist refresh time."
 	}
 	
 	"Files"

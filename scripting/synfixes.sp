@@ -58,7 +58,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99986"
+#define PLUGIN_VERSION "1.99987"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -4051,7 +4051,7 @@ bool findtargn(char[] targn)
 {
 	if (strlen(targn) < 1) return false;
 	float Time = GetTickedTime();
-	if (entrefresh <= Time)
+	if ((entrefresh <= Time) && (entrefresh > 0.0))
 	{
 		ClearArray(entlist);
 		entrefresh = Time + 10.0;
@@ -4100,6 +4100,10 @@ bool findtargn(char[] targn)
 				}
 			}
 		}
+	}
+	if (entrefresh == 0.0)
+	{
+		entrefresh = Time + 10.0;
 	}
 	if (found == 1)
 		return true;
