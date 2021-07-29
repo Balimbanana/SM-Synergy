@@ -2,75 +2,78 @@ void setupsquid(int entity)
 {
 	if ((IsValidEntity(entity)) && (entity != 0))
 	{
-		char cls[32];
-		GetEntityClassname(entity,cls,sizeof(cls));
-		if ((StrEqual(cls,"npc_bullsquid",false)) || (StrEqual(cls,"monster_bullchicken",false)))
+		if (FindValueInArray(squids,entity) == -1)
 		{
-			if (FindStringInArray(precachedarr,"npc_bullsquid") == -1)
+			char cls[32];
+			GetEntityClassname(entity,cls,sizeof(cls));
+			if ((StrEqual(cls,"npc_bullsquid",false)) || (StrEqual(cls,"monster_bullchicken",false)))
 			{
-				PrecacheSound("npc/antlion/idle1.wav",true);
-				PrecacheSound("npc/antlion/idle2.wav",true);
-				PrecacheSound("npc/antlion/idle3.wav",true);
-				PrecacheSound("npc/antlion/idle4.wav",true);
-				PrecacheSound("npc/antlion/idle5.wav",true);
-				PrecacheSound("npc/antlion/pain1.wav",true);
-				PrecacheSound("npc/antlion/pain2.wav",true);
-				PrecacheSound("npc/antlion/attack_single1.wav",true);
-				PrecacheSound("npc/antlion/attack_single2.wav",true);
-				PrecacheSound("npc/antlion/attack_single3.wav",true);
-				recursion("sound/npc/bullsquid/");
-				recursion("sound/bullchicken/");
-				PushArrayString(precachedarr,"npc_bullsquid");
+				if (FindStringInArray(precachedarr,"npc_bullsquid") == -1)
+				{
+					PrecacheSound("npc/antlion/idle1.wav",true);
+					PrecacheSound("npc/antlion/idle2.wav",true);
+					PrecacheSound("npc/antlion/idle3.wav",true);
+					PrecacheSound("npc/antlion/idle4.wav",true);
+					PrecacheSound("npc/antlion/idle5.wav",true);
+					PrecacheSound("npc/antlion/pain1.wav",true);
+					PrecacheSound("npc/antlion/pain2.wav",true);
+					PrecacheSound("npc/antlion/attack_single1.wav",true);
+					PrecacheSound("npc/antlion/attack_single2.wav",true);
+					PrecacheSound("npc/antlion/attack_single3.wav",true);
+					recursion("sound/npc/bullsquid/");
+					recursion("sound/bullchicken/");
+					PushArrayString(precachedarr,"npc_bullsquid");
+				}
+				float orgs[3];
+				float angs[3];
+				if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",orgs);
+				else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",orgs);
+				if (HasEntProp(entity,Prop_Data,"m_angAbsRotation")) GetEntPropVector(entity,Prop_Data,"m_angAbsRotation",angs);
+				if (HasEntProp(entity,Prop_Data,"m_bDisableJump")) SetEntProp(entity,Prop_Data,"m_bDisableJump",1);
+				if (HasEntProp(entity,Prop_Data,"m_bAgitatedSound")) SetEntProp(entity,Prop_Data,"m_bAgitatedSound",0);
+				PushArrayCell(squids,entity);
+				int entmdl = CreateEntityByName("prop_dynamic");
+				if (StrEqual(cls,"npc_bullsquid",false))
+				{
+					DispatchKeyValue(entmdl,"model","models/xenians/bullsquid.mdl");
+				}
+				else
+				{
+					DispatchKeyValue(entmdl,"model","models/bullsquid.mdl");
+				}
+				DispatchKeyValue(entmdl,"solid","0");
+				float tmpset[3];
+				tmpset[0] = orgs[0];
+				tmpset[1] = orgs[1];
+				tmpset[2] = orgs[2]-5.0;
+				TeleportEntity(entmdl,tmpset,angs,NULL_VECTOR);
+				DispatchSpawn(entmdl);
+				ActivateEntity(entmdl);
+				SetVariantString("!activator");
+				AcceptEntityInput(entmdl,"SetParent",entity);
+				PushArrayCell(squidsmdl,entmdl);
+				SDKHookEx(entity,SDKHook_Think,squidthink);
+				SDKHookEx(entity,SDKHook_OnTakeDamage,squidtkdmg);
+				HookSingleEntityOutput(entity,"OnDeath",EntityOutput:OnCDeath);
+				SetVariantString("0.5");
+				AcceptEntityInput(entity,"SetModelScale");
+				AcceptEntityInput(entity,"GagEnable");
+				Handle dp = CreateDataPack();
+				if (StrEqual(cls,"monster_bullchicken",false))
+				{
+					if (!IsModelPrecached("models/bullsquid.mdl")) PrecacheModel("models/bullsquid.mdl",true);
+					WritePackString(dp,"models/bullsquid.mdl");
+				}
+				else
+				{
+					if (!IsModelPrecached("models/xenians/bullsquid.mdl")) PrecacheModel("models/xenians/bullsquid.mdl",true);
+					WritePackString(dp,"models/xenians/bullsquid.mdl");
+				}
+				WritePackCell(dp,entity);
+				WritePackString(dp,cls);
+				CreateTimer(0.5,resetmdl,dp,TIMER_FLAG_NO_MAPCHANGE);
+				customents = true;
 			}
-			float orgs[3];
-			float angs[3];
-			if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",orgs);
-			else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",orgs);
-			if (HasEntProp(entity,Prop_Data,"m_angAbsRotation")) GetEntPropVector(entity,Prop_Data,"m_angAbsRotation",angs);
-			if (HasEntProp(entity,Prop_Data,"m_bDisableJump")) SetEntProp(entity,Prop_Data,"m_bDisableJump",1);
-			if (HasEntProp(entity,Prop_Data,"m_bAgitatedSound")) SetEntProp(entity,Prop_Data,"m_bAgitatedSound",0);
-			PushArrayCell(squids,entity);
-			int entmdl = CreateEntityByName("prop_dynamic");
-			if (StrEqual(cls,"npc_bullsquid",false))
-			{
-				DispatchKeyValue(entmdl,"model","models/xenians/bullsquid.mdl");
-			}
-			else
-			{
-				DispatchKeyValue(entmdl,"model","models/bullsquid.mdl");
-			}
-			DispatchKeyValue(entmdl,"solid","0");
-			float tmpset[3];
-			tmpset[0] = orgs[0];
-			tmpset[1] = orgs[1];
-			tmpset[2] = orgs[2]-5.0;
-			TeleportEntity(entmdl,tmpset,angs,NULL_VECTOR);
-			DispatchSpawn(entmdl);
-			ActivateEntity(entmdl);
-			SetVariantString("!activator");
-			AcceptEntityInput(entmdl,"SetParent",entity);
-			PushArrayCell(squidsmdl,entmdl);
-			SDKHookEx(entity,SDKHook_Think,squidthink);
-			SDKHookEx(entity,SDKHook_OnTakeDamage,squidtkdmg);
-			HookSingleEntityOutput(entity,"OnDeath",EntityOutput:OnCDeath);
-			SetVariantString("0.5");
-			AcceptEntityInput(entity,"SetModelScale");
-			AcceptEntityInput(entity,"GagEnable");
-			Handle dp = CreateDataPack();
-			if (StrEqual(cls,"monster_bullchicken",false))
-			{
-				if (!IsModelPrecached("models/bullsquid.mdl")) PrecacheModel("models/bullsquid.mdl",true);
-				WritePackString(dp,"models/bullsquid.mdl");
-			}
-			else
-			{
-				if (!IsModelPrecached("models/xenians/bullsquid.mdl")) PrecacheModel("models/xenians/bullsquid.mdl",true);
-				WritePackString(dp,"models/xenians/bullsquid.mdl");
-			}
-			WritePackCell(dp,entity);
-			WritePackString(dp,cls);
-			CreateTimer(0.5,resetmdl,dp,TIMER_FLAG_NO_MAPCHANGE);
-			customents = true;
 		}
 	}
 }

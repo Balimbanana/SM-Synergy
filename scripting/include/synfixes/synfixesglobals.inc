@@ -43,6 +43,7 @@ int difficulty = 1;
 int bulletindx = -1;
 int iActiveSpawnEnt = -1;
 int iActiveSpawner = -1;
+bool bHasInit[2048];
 bool showcc[128];
 bool customents = false;
 bool relsetvort = false;

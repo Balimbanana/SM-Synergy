@@ -117,7 +117,7 @@ bool bFixSoundScapes = true;
 bool bFixNPCStuck = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0037"
+#define PLUGIN_VERSION "2.0038"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -853,6 +853,7 @@ public void OnMapStart()
 			centnextsndtime[i] = 0.0;
 			glotext[i] = "";
 			bCheckedMdl[i] = false;
+			bHasInit[i] = false;
 			if (IsValidEntity(i))
 			{
 				GetEntityClassname(i,szClsGet,sizeof(szClsGet));
@@ -4132,6 +4133,7 @@ void findtouchingents(float mins[3], float maxs[3], int ent)
 			}
 			char clsname[32];
 			GetEntityClassname(i,clsname,sizeof(clsname));
+			if (StrContains(clsname,"npc_",false) == 0) continue;
 			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",porigin);
 			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
 			if ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]))
@@ -4491,7 +4493,10 @@ public Action onxenspawn(const char[] output, int caller, int activator, float d
 					if (HasEntProp(caller,Prop_Data,"m_ChildTargetName")) GetEntPropString(caller,Prop_Data,"m_ChildTargetName",szChildName,sizeof(szChildName));
 					if (strlen(szChildName) > 0)
 					{
-						if (HasEntProp(activator,Prop_Data,"m_iName")) SetEntPropString(activator,Prop_Data,"m_iName",szChildName);
+						if (!bHasInit[activator])
+						{
+							if (HasEntProp(activator,Prop_Data,"m_iName")) SetEntPropString(activator,Prop_Data,"m_iName",szChildName);
+						}
 					}
 				}
 			}
@@ -4546,7 +4551,10 @@ public Action onxenspawn(const char[] output, int caller, int activator, float d
 					if (HasEntProp(caller,Prop_Data,"m_ChildTargetName")) GetEntPropString(caller,Prop_Data,"m_ChildTargetName",szChildName,sizeof(szChildName));
 					if (strlen(szChildName) > 0)
 					{
-						if (HasEntProp(activator,Prop_Data,"m_iName")) SetEntPropString(activator,Prop_Data,"m_iName",szChildName);
+						if (!bHasInit[activator])
+						{
+							if (HasEntProp(activator,Prop_Data,"m_iName")) SetEntPropString(activator,Prop_Data,"m_iName",szChildName);
+						}
 					}
 				}
 				int rand = GetRandomInt(1,3);
@@ -11439,6 +11447,71 @@ public Action resetmdl(Handle timer, Handle dp)
 			GetEntityClassname(ent,clsname,sizeof(clsname));
 			if (!StrEqual(clsname,clschk,false)) return Plugin_Handled;
 			if (!IsModelPrecached(mdl)) PrecacheModel(mdl,true);
+			char chkName[128];
+			if (HasEntProp(ent,Prop_Data,"m_iName"))
+			{
+				GetEntPropString(ent,Prop_Data,"m_iName",chkName,sizeof(chkName));
+				if (StrContains(chkName,"npc_alien_slave",false) == 0)
+				{
+					ReplaceString(chkName,sizeof(chkName),"npc_alien_slave","",false);
+					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+				}
+				else if (StrContains(chkName,"npc_human_grunt",false) == 0)
+				{
+					ReplaceString(chkName,sizeof(chkName),"npc_human_grunt","",false);
+					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+				}
+				else if (StrContains(chkName,"npc_human_commander",false) == 0)
+				{
+					ReplaceString(chkName,sizeof(chkName),"npc_human_commander","",false);
+					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+				}
+				else if (StrContains(chkName,"npc_human_grenadier",false) == 0)
+				{
+					ReplaceString(chkName,sizeof(chkName),"npc_human_grenadier","",false);
+					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+				}
+				else if (StrContains(chkName,"npc_zombie_security_torso",false) == 0)
+				{
+					ReplaceString(chkName,sizeof(chkName),"npc_zombie_security_torso","",false);
+					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+				}
+				else if (StrContains(chkName,"npc_zombie_security",false) == 0)
+				{
+					ReplaceString(chkName,sizeof(chkName),"npc_zombie_security","",false);
+					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+				}
+				else if (StrContains(chkName,"npc_zombie_scientist_torso",false) == 0)
+				{
+					ReplaceString(chkName,sizeof(chkName),"npc_zombie_scientist_torso","",false);
+					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+				}
+				else if (StrContains(chkName,"npc_zombie_scientist",false) == 0)
+				{
+					ReplaceString(chkName,sizeof(chkName),"npc_zombie_security","",false);
+					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+				}
+				else if (StrContains(chkName,"npc_houndeye",false) == 0)
+				{
+					ReplaceString(chkName,sizeof(chkName),"npc_houndeye","",false);
+					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+				}
+				else if (StrContains(chkName,"npc_bullsquid",false) == 0)
+				{
+					ReplaceString(chkName,sizeof(chkName),"npc_bullsquid","",false);
+					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+				}
+				else if (StrContains(chkName,"npc_snark",false) == 0)
+				{
+					ReplaceString(chkName,sizeof(chkName),"npc_snark","",false);
+					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+				}
+				else if (StrContains(chkName,"npc_babycrab",false) == 0)
+				{
+					ReplaceString(chkName,sizeof(chkName),"npc_babycrab","",false);
+					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+				}
+			}
 			char szChkMdl[128];
 			GetEntPropString(ent,Prop_Data,"m_ModelName",szChkMdl,sizeof(szChkMdl));
 			if (StrEqual(szChkMdl,mdl,false)) return Plugin_Handled;
@@ -15699,6 +15772,7 @@ public void OnEntityDestroyed(int entity)
 		isattacking[entity] = 0;
 		centnextsndtime[entity] = 0.0;
 		bCheckedMdl[entity] = false;
+		bHasInit[entity] = false;
 		for (int i = 1;i<MaxClients+1;i++)
 		{
 			if (clrocket[i] == entity)
@@ -16232,6 +16306,7 @@ public void SetupLivingEnt(int entity)
 				DispatchKeyValue(entity,"classname","npc_bmsgargantua");
 				ReplaceString(cls,sizeof(cls),"npc_bmsgargantua","");
 				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				bHasInit[entity] = true;
 				SDKHookEx(entity,SDKHook_Think,bmsgargthink);
 				SDKHookEx(entity,SDKHook_OnTakeDamage,bmsgargtkdmg);
 				int healthset = 800;
@@ -16251,6 +16326,7 @@ public void SetupLivingEnt(int entity)
 				PushArrayCell(entlist,entity);
 			Handle dp = CreateDataPack();
 			float origin[3];
+			char szInput[128];
 			if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",origin);
 			else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",origin);
 			if (StrContains(cls,"pttemplate",false) == 0)
@@ -16279,6 +16355,7 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","npc_human_security");
 					ReplaceString(cls,sizeof(cls),"npc_human_security","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
 					DispatchKeyValue(entity,"model","models/humans/guard.mdl");
 					DispatchKeyValue(entity,"CitizenType","4");
 					int sf = GetEntProp(entity,Prop_Data,"m_spawnflags");
@@ -16368,19 +16445,27 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","npc_human_scientist_female");
 					ReplaceString(cls,sizeof(cls),"npc_human_scientist_female","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/humans/scientist_female.mdl");
 					WritePackString(dp,"models/humans/scientist_female.mdl");
 					SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
 				}
 			}
-			else if (StrContains(cls,"npc_alien_slave",false) == 0)
+			else if ((StrContains(cls,"npc_alien_slave",false) == 0) || (StrEqual(entcls,"npc_alien_slave",false)))
 			{
+				ReplaceString(cls,sizeof(cls),"npc_alien_slave","",false);
+				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				bHasInit[entity] = true;
+				Format(szInput,sizeof(szInput),"targetname %s",cls);
+				SetVariantString(szInput);
+				AcceptEntityInput(entity,"AddOutput");
 				if (FileExists("models/vortigaunt_slave.mdl",true,NULL_STRING))
 				{
 					SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
 					DispatchKeyValue(entity,"classname","npc_alien_slave");
-					ReplaceString(cls,sizeof(cls),"npc_alien_slave","");
-					SetEntPropString(entity,Prop_Data,"m_iName",cls);
 					DispatchKeyValue(entity,"model","models/vortigaunt_slave.mdl");
 					WritePackString(dp,"models/vortigaunt_slave.mdl");
 					setuprelations("npc_alien_slave");
@@ -16389,20 +16474,24 @@ public void SetupLivingEnt(int entity)
 					TeleportEntity(entity,origin,NULL_VECTOR,NULL_VECTOR);
 				}
 			}
-			else if (StrContains(cls,"npc_zombie_security_torso",false) == 0)
+			else if ((StrContains(cls,"npc_zombie_security_torso",false) == 0) || (StrEqual(entcls,"npc_zombie_security_torso",false)))
 			{
 				if (FileExists("models/zombies/zombie_guard_torso.mdl",true,NULL_STRING))
 				{
 					DispatchKeyValue(entity,"classname","npc_zombie_security_torso");
 					ReplaceString(cls,sizeof(cls),"npc_zombie_security_torso","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/zombies/zombie_guard_torso.mdl");
 					WritePackString(dp,"models/zombies/zombie_guard_torso.mdl");
 					SDKHookEx(entity,SDKHook_Think,zomthink);
 					SDKHookEx(entity,SDKHook_OnTakeDamage,zomtkdmg);
 				}
 			}
-			else if (StrContains(cls,"npc_zombie_security",false) == 0)
+			else if ((StrContains(cls,"npc_zombie_security",false) == 0) || (StrEqual(entcls,"npc_zombie_security",false)))
 			{
 				if ((FileExists("models/zombies/zombie_guard.mdl",true,NULL_STRING)) || (FileExists("models/zombie/zsecurity.mdl",true,NULL_STRING)))
 				{
@@ -16410,6 +16499,10 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"body","0");
 					ReplaceString(cls,sizeof(cls),"npc_zombie_security","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					if (FileExists("models/zombie/zsecurity.mdl",true,NULL_STRING))
 					{
 						DispatchKeyValue(entity,"model","models/zombie/zsecurity.mdl");
@@ -16426,26 +16519,34 @@ public void SetupLivingEnt(int entity)
 					SDKHookEx(entity,SDKHook_OnTakeDamage,zomtkdmg);
 				}
 			}
-			else if (StrContains(cls,"npc_zombie_scientist_torso",false) == 0)
+			else if ((StrContains(cls,"npc_zombie_scientist_torso",false) == 0) || (StrEqual(entcls,"npc_zombie_scientist_torso",false)))
 			{
 				if (FileExists("models/zombies/zombie_sci_torso.mdl",true,NULL_STRING))
 				{
 					DispatchKeyValue(entity,"classname","npc_zombie_scientist_torso");
 					ReplaceString(cls,sizeof(cls),"npc_zombie_scientist_torso","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/zombies/zombie_sci_torso.mdl");
 					WritePackString(dp,"models/zombies/zombie_sci_torso.mdl");
 					SDKHookEx(entity,SDKHook_Think,zomthink);
 					SDKHookEx(entity,SDKHook_OnTakeDamage,zomtkdmg);
 				}
 			}
-			else if (StrContains(cls,"npc_zombie_scientist",false) == 0)
+			else if ((StrContains(cls,"npc_zombie_scientist",false) == 0) || (StrEqual(entcls,"npc_zombie_scientist",false)))
 			{
 				if (FileExists("models/zombies/zombie_sci.mdl",true,NULL_STRING))
 				{
 					DispatchKeyValue(entity,"classname","npc_zombie_scientist");
 					ReplaceString(cls,sizeof(cls),"npc_zombie_scientist","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/zombies/zombie_sci.mdl");
 					WritePackString(dp,"models/zombies/zombie_sci.mdl");
 					setuprelations("npc_zombie_scientist");
@@ -16453,11 +16554,15 @@ public void SetupLivingEnt(int entity)
 					SDKHookEx(entity,SDKHook_OnTakeDamage,zomtkdmg);
 				}
 			}
-			else if (StrContains(cls,"monster_zombie",false) == 0)
+			else if ((StrContains(cls,"monster_zombie",false) == 0) || (StrEqual(entcls,"monster_zombie",false)))
 			{
 				DispatchKeyValue(entity,"classname","monster_zombie");
 				ReplaceString(cls,sizeof(cls),"monster_zombie","");
 				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				bHasInit[entity] = true;
+				Format(szInput,sizeof(szInput),"targetname %s",cls);
+				SetVariantString(szInput);
+				AcceptEntityInput(entity,"AddOutput");
 				DispatchKeyValue(entity,"model","models/zombie.mdl");
 				WritePackString(dp,"models/zombie.mdl");
 				setuprelations("monster_zombie");
@@ -16475,6 +16580,10 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","npc_human_grunt");
 					ReplaceString(cls,sizeof(cls),"npc_human_grunt","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/humans/marine.mdl");
 					WritePackString(dp,"models/humans/marine.mdl");
 					int rand = GetRandomInt(0,70);
@@ -16499,6 +16608,10 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","npc_human_commander");
 					ReplaceString(cls,sizeof(cls),"npc_human_commander","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/humans/marine.mdl");
 					WritePackString(dp,"models/humans/marine.mdl");
 					int rand = GetRandomInt(0,70);
@@ -16525,6 +16638,10 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","npc_human_grenadier");
 					ReplaceString(cls,sizeof(cls),"npc_human_grenadier","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/humans/marine.mdl");
 					WritePackString(dp,"models/humans/marine.mdl");
 					int rand = GetRandomInt(0,70);
@@ -16548,6 +16665,10 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","npc_human_medic");
 					ReplaceString(cls,sizeof(cls),"npc_human_medic","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/humans/marine.mdl");
 					WritePackString(dp,"models/humans/marine.mdl");
 					int rand = GetRandomInt(0,2);
@@ -16564,6 +16685,10 @@ public void SetupLivingEnt(int entity)
 				{
 					ReplaceString(cls,sizeof(cls),"npc_human_assassin","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					if (!IsModelPrecached("models/humans/hassassin.mdl")) PrecacheModel("models/humans/hassassin.mdl",true);
 					SDKHookEx(entity,SDKHook_Think,assassinthink);
 					SDKHookEx(entity,SDKHook_OnTakeDamage,assassintkdmg);
@@ -16662,6 +16787,10 @@ public void SetupLivingEnt(int entity)
 				{
 					ReplaceString(cls,sizeof(cls),"monster_human_assassin","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					SDKHookEx(entity,SDKHook_Think,assassinthink);
 					SDKHookEx(entity,SDKHook_OnTakeDamage,assassintkdmg);
 					if (FindStringInArray(precachedarr,"monster_human_assassin") == -1)
@@ -16678,13 +16807,17 @@ public void SetupLivingEnt(int entity)
 				CloseHandle(dp);
 				dp = INVALID_HANDLE;
 			}
-			else if (StrContains(cls,"npc_osprey",false) == 0)
+			else if ((StrContains(cls,"npc_osprey",false) == 0) || (StrEqual(entcls,"npc_osprey",false)))
 			{
 				if (FileExists("models/props_vehicles/osprey.mdl",true,NULL_STRING))
 				{
 					DispatchKeyValue(entity,"classname","npc_osprey");
 					ReplaceString(cls,sizeof(cls),"npc_osprey","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/props_vehicles/osprey.mdl");
 					WritePackString(dp,"models/props_vehicles/osprey.mdl");
 					SDKHookEx(entity,SDKHook_Think,ospreythink);
@@ -16696,7 +16829,7 @@ public void SetupLivingEnt(int entity)
 				SDKHookEx(entity,SDKHook_Think,apachethink);
 				SDKHookEx(entity,SDKHook_OnTakeDamage,apachetkdmg);
 			}
-			else if (StrContains(cls,"npc_houndeye",false) == 0)
+			else if ((StrContains(cls,"npc_houndeye",false) == 0) || (StrEqual(entcls,"npc_houndeye",false)))
 			{
 				if (FileExists("models/xenians/houndeye.mdl",true,NULL_STRING))
 				{
@@ -16712,13 +16845,17 @@ public void SetupLivingEnt(int entity)
 				DispatchKeyValue(entity,"classname","npc_houndeye");
 				ReplaceString(cls,sizeof(cls),"npc_houndeye","");
 				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				bHasInit[entity] = true;
+				Format(szInput,sizeof(szInput),"targetname %s",cls);
+				SetVariantString(szInput);
+				AcceptEntityInput(entity,"AddOutput");
 				setuprelations("npc_houndeye");
 				AcceptEntityInput(entity,"GagEnable");
 				origin[2]+=20.0;
 				TeleportEntity(entity,origin,NULL_VECTOR,NULL_VECTOR);
 				setuphound(entity);
 			}
-			else if (StrContains(cls,"monster_houndeye",false) == 0)
+			else if ((StrContains(cls,"monster_houndeye",false) == 0) || (StrEqual(entcls,"monster_houndeye",false)))
 			{
 				if (FileExists("models/houndeye.mdl",true,NULL_STRING))
 				{
@@ -16729,13 +16866,17 @@ public void SetupLivingEnt(int entity)
 				DispatchKeyValue(entity,"classname","monster_houndeye");
 				ReplaceString(cls,sizeof(cls),"monster_houndeye","");
 				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				bHasInit[entity] = true;
+				Format(szInput,sizeof(szInput),"targetname %s",cls);
+				SetVariantString(szInput);
+				AcceptEntityInput(entity,"AddOutput");
 				setuprelations("monster_houndeye");
 				AcceptEntityInput(entity,"GagEnable");
 				origin[2]+=20.0;
 				TeleportEntity(entity,origin,NULL_VECTOR,NULL_VECTOR);
 				setuphound(entity);
 			}
-			else if (StrContains(cls,"npc_bullsquid",false) == 0)
+			else if ((StrContains(cls,"npc_bullsquid",false) == 0) || (StrEqual(entcls,"npc_bullsquid",false)))
 			{
 				if (FileExists("models/xenians/bullsquid.mdl",true,NULL_STRING))
 				{
@@ -16743,6 +16884,10 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","npc_bullsquid");
 					ReplaceString(cls,sizeof(cls),"npc_bullsquid","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/xenians/bullsquid.mdl");
 					WritePackString(dp,"models/xenians/bullsquid.mdl");
 					AcceptEntityInput(entity,"GagEnable");
@@ -16759,6 +16904,10 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","npc_alien_grunt");
 					ReplaceString(cls,sizeof(cls),"npc_alien_grunt","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/xenians/agrunt.mdl");
 					WritePackString(dp,"models/xenians/agrunt.mdl");
 					AcceptEntityInput(entity,"GagEnable");
@@ -16775,6 +16924,10 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","npc_alien_grunt_unarmored");
 					ReplaceString(cls,sizeof(cls),"npc_alien_grunt_unarmored","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/xenians/agrunt_unarmored.mdl");
 					WritePackString(dp,"models/xenians/agrunt_unarmored.mdl");
 					setuprelations("npc_alien_grunt_unarmored");
@@ -16788,6 +16941,10 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","monster_alien_grunt");
 					ReplaceString(cls,sizeof(cls),"monster_alien_grunt","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/agrunt.mdl");
 					WritePackString(dp,"models/agrunt.mdl");
 					AcceptEntityInput(entity,"GagEnable");
@@ -16803,6 +16960,7 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","monster_gargantua");
 					ReplaceString(cls,sizeof(cls),"monster_gargantua","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					bHasInit[entity] = true;
 				}
 			}
 			else if ((StrContains(cls,"npc_snark",false) == 0) || (StrEqual(entcls,"npc_snark",false)))
@@ -16821,6 +16979,10 @@ public void SetupLivingEnt(int entity)
 					{
 						ReplaceString(cls,sizeof(cls),"npc_snark","");
 						SetEntPropString(entity,Prop_Data,"m_iName",cls);
+						bHasInit[entity] = true;
+						Format(szInput,sizeof(szInput),"targetname %s",cls);
+						SetVariantString(szInput);
+						AcceptEntityInput(entity,"AddOutput");
 					}
 					DispatchKeyValue(entity,"model","models/xenians/snark.mdl");
 					WritePackString(dp,"models/xenians/snark.mdl");
@@ -16844,6 +17006,10 @@ public void SetupLivingEnt(int entity)
 					{
 						ReplaceString(cls,sizeof(cls),"monster_snark","");
 						SetEntPropString(entity,Prop_Data,"m_iName",cls);
+						bHasInit[entity] = true;
+						Format(szInput,sizeof(szInput),"targetname %s",cls);
+						SetVariantString(szInput);
+						AcceptEntityInput(entity,"AddOutput");
 					}
 					DispatchKeyValue(entity,"model","models/w_squeak.mdl");
 					WritePackString(dp,"models/w_squeak.mdl");
@@ -16872,6 +17038,10 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","npc_abrams");
 					ReplaceString(cls,sizeof(cls),"npc_abrams","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					if (entity > 0) bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					DispatchKeyValue(entity,"model","models/props_vehicles/abrams.mdl");
 					CloseHandle(dp);
 					dp = INVALID_HANDLE;
@@ -16887,6 +17057,9 @@ public void SetupLivingEnt(int entity)
 						{
 							Format(cls,sizeof(cls),"npc_abrams%i",entity);
 							SetEntPropString(entity,Prop_Data,"m_iName",cls);
+							Format(szInput,sizeof(szInput),"targetname %s",cls);
+							SetVariantString(szInput);
+							AcceptEntityInput(entity,"AddOutput");
 						}
 						char boundbtarg[64];
 						Format(boundbtarg,sizeof(boundbtarg),"abramsbox%i",boundbox);
@@ -16943,6 +17116,10 @@ public void SetupLivingEnt(int entity)
 					DispatchKeyValue(entity,"classname","npc_alien_controller");
 					ReplaceString(cls,sizeof(cls),"npc_alien_controller","");
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
+					if (entity > 0) bHasInit[entity] = true;
+					Format(szInput,sizeof(szInput),"targetname %s",cls);
+					SetVariantString(szInput);
+					AcceptEntityInput(entity,"AddOutput");
 					if (FindStringInArray(precachedarr,"npc_alien_controller") == -1)
 					{
 						recursion("sound/npc/alien_controller/");
@@ -16985,6 +17162,10 @@ public void SetupLivingEnt(int entity)
 				DispatchKeyValue(entity,"classname","npc_gonarch");
 				ReplaceString(cls,sizeof(cls),"npc_gonarch","");
 				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				if (entity > 0) bHasInit[entity] = true;
+				Format(szInput,sizeof(szInput),"targetname %s",cls);
+				SetVariantString(szInput);
+				AcceptEntityInput(entity,"AddOutput");
 				if (FileExists("models/xenians/gonarch.mdl",true,NULL_STRING))
 				{
 					//DispatchKeyValue(entity,"model","models/xenians/gonarch.mdl");
@@ -17001,6 +17182,10 @@ public void SetupLivingEnt(int entity)
 				DispatchKeyValue(entity,"classname","npc_babycrab");
 				ReplaceString(cls,sizeof(cls),"npc_babycrab","");
 				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				if (entity > 0) bHasInit[entity] = true;
+				Format(szInput,sizeof(szInput),"targetname %s",cls);
+				SetVariantString(szInput);
+				AcceptEntityInput(entity,"AddOutput");
 				if (FileExists("models/xenians/babyheadcrab.mdl",true,NULL_STRING))
 					WritePackString(dp,"models/xenians/babyheadcrab.mdl");
 				else
@@ -17011,6 +17196,10 @@ public void SetupLivingEnt(int entity)
 				DispatchKeyValue(entity,"classname","npc_sentry_ceiling");
 				ReplaceString(cls,sizeof(cls),"npc_sentry_ceiling","");
 				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				if (entity > 0) bHasInit[entity] = true;
+				Format(szInput,sizeof(szInput),"targetname %s",cls);
+				SetVariantString(szInput);
+				AcceptEntityInput(entity,"AddOutput");
 				if (FileExists("models/NPCs/sentry_ceiling.mdl",true,NULL_STRING))
 				{
 					WritePackString(dp,"models/NPCs/sentry_ceiling.mdl");
@@ -17040,6 +17229,10 @@ public void SetupLivingEnt(int entity)
 				DispatchKeyValue(entity,"classname","npc_sentry_ground");
 				ReplaceString(cls,sizeof(cls),"npc_sentry_ground","");
 				SetEntPropString(entity,Prop_Data,"m_iName",cls);
+				if (entity > 0) bHasInit[entity] = true;
+				Format(szInput,sizeof(szInput),"targetname %s",cls);
+				SetVariantString(szInput);
+				AcceptEntityInput(entity,"AddOutput");
 				if (FileExists("models/NPCs/sentry_ground.mdl",true,NULL_STRING))
 				{
 					WritePackString(dp,"models/NPCs/sentry_ground.mdl");
