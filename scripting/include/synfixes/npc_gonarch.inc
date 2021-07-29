@@ -1,9 +1,38 @@
+bool bCheckedMdl[2048];
+
 void gonarchthink(int entity)
 {
 	if (IsValidEntity(entity))
 	{
 		int scripting = GetEntPropEnt(entity,Prop_Data,"m_hTargetEnt");
 		int curh = GetEntProp(entity,Prop_Data,"m_iHealth");
+		if (entity > MaxClients)
+		{
+			if (!bCheckedMdl[entity])
+			{
+				bCheckedMdl[entity] = true;
+				if (FileExists("models/xenians/gonarch.mdl",true,NULL_STRING))
+				{
+					if (!IsModelPrecached("models/xenians/gonarch.mdl")) PrecacheModel("models/xenians/gonarch.mdl",true);
+					SetEntityModel(entity,"models/xenians/gonarch.mdl");
+				}
+				else
+				{
+					if (!IsModelPrecached("models/gonarch.mdl")) PrecacheModel("models/gonarch.mdl",true);
+					SetEntityModel(entity,"models/gonarch.mdl");
+				}
+				float vMins[3];
+				float vMaxs[3];
+				vMins[0] = -30.0;
+				vMins[1] = -30.0;
+				vMins[2] = 0.0;
+				vMaxs[0] = 30.0;
+				vMaxs[1] = 30.0;
+				vMaxs[2] = 72.0;
+				SetEntPropVector(entity,Prop_Data,"m_vecMins",vMins);
+				SetEntPropVector(entity,Prop_Data,"m_vecMaxs",vMaxs);
+			}
+		}
 		if ((scripting == -1) && (curh > 1))
 		{
 			int seq = GetEntProp(entity,Prop_Data,"m_nSequence");

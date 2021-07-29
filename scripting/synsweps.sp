@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.996"
+#define PLUGIN_VERSION "0.997"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -21,6 +21,7 @@ bool loweredsprint = false;
 bool InChargeUp[2048];
 bool InIronSights[128];
 bool dbgmdlsetup = false;
+bool bCSS = false;
 int g_LastButtons[128];
 int difficulty = 1;
 int iWeapList = -1;
@@ -80,6 +81,7 @@ Handle swepsweap = INVALID_HANDLE; //Holds position for info array.
 Handle swepsinfo = INVALID_HANDLE; //Contains info read from scriptedweap.
 Handle weapanimcls = INVALID_HANDLE; //Holds position for info array.
 Handle weapaniminf = INVALID_HANDLE; //Contains info read from other weap.
+Handle hBaseWeapons = INVALID_HANDLE; //Automated list of base game weapons to ignore sweps functions
 Handle precachedarr = INVALID_HANDLE;
 
 ConVar hMolotovRadius;
@@ -101,6 +103,7 @@ public void OnPluginStart()
 	swepsinfo = CreateArray(48);
 	weapanimcls = CreateArray(48);
 	weapaniminf = CreateArray(48);
+	hBaseWeapons = CreateArray(64);
 	precachedarr = CreateArray(48);
 	HookEvent("player_spawn",OnPlayerSpawn,EventHookMode_Post);
 	Handle cvar = FindConVar("synswepsdbg");
@@ -242,6 +245,12 @@ public void OnPluginStart()
 	//AddAmbientSoundHook(weapsoundchecks);
 	//AddNormalSoundHook(weapnormsoundchecks);
 	//HookUserMessage(GetUserMessageId("ItemPickup"),pickupusrmsg,true,_);
+	char gamename[16];
+	GetGameFolderName(gamename,sizeof(gamename));
+	if ((StrEqual(gamename,"cstrike",false)) || (StrEqual(gamename,"csgo",false)))
+	{
+		bCSS = true;
+	}
 }
 
 public void OnMapStart()
@@ -857,11 +866,16 @@ public int Updater_OnPluginUpdated()
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
-	if ((StrContains(classname,"item_ammo",false) == 0) || (StrContains(classname,"weapon_",false) == 0))
+	if (StrContains(classname,"weapon_",false) == 0)
+	{
+		if (FindStringInArray(hBaseWeapons,classname) == -1) PushArrayString(hBaseWeapons,classname);
+		CreateTimer(0.5,waititem,entity,TIMER_FLAG_NO_MAPCHANGE);
+	}
+	else if (StrContains(classname,"item_ammo",false) == 0)
 	{
 		CreateTimer(0.5,waititem,entity,TIMER_FLAG_NO_MAPCHANGE);
 	}
-	if (((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false))) && (!StrEqual(classname,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(classname,"npc_bullseye",false)) && (!StrEqual(classname,"env_xen_portal",false)) && (!StrEqual(classname,"env_xen_portal_template",false)) && (!StrEqual(classname,"npc_maker",false)) && (!StrEqual(classname,"npc_template_maker",false)) && (StrContains(classname,"info_",false) == -1) && (StrContains(classname,"game_",false) == -1) && (StrContains(classname,"trigger_",false) == -1))
+	else if (((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false))) && (!StrEqual(classname,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(classname,"npc_bullseye",false)) && (!StrEqual(classname,"env_xen_portal",false)) && (!StrEqual(classname,"env_xen_portal_template",false)) && (!StrEqual(classname,"npc_maker",false)) && (!StrEqual(classname,"npc_template_maker",false)) && (StrContains(classname,"info_",false) == -1) && (StrContains(classname,"game_",false) == -1) && (StrContains(classname,"trigger_",false) == -1))
 	{
 		SDKHookEx(entity, SDKHook_OnTakeDamage, OnNPCTakeDamage);
 	}
@@ -1111,40 +1125,47 @@ public int MenuHandlerSweps(Menu menu, MenuAction action, int param1, int param2
 				{
 					bool nouse = false;
 					char basecls[64];
-					if (StrEqual(info,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
-					else if (StrEqual(info,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
-					else if ((StrEqual(info,"weapon_glock",false)) || (StrEqual(info,"weapon_pistol_worker",false)) || (StrEqual(info,"weapon_flaregun",false)) || (StrEqual(info,"weapon_manhack",false)) || (StrEqual(info,"weapon_manhackgun",false)) || (StrEqual(info,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
-					else if ((StrEqual(info,"weapon_medkit",false)) || (StrEqual(info,"weapon_healer",false)) || (StrEqual(info,"weapon_snark",false)) || (StrEqual(info,"weapon_hivehand",false)) || (StrEqual(info,"weapon_hornetgun",false)) || (StrEqual(info,"weapon_satchel",false)) || (StrEqual(info,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
-					else if ((StrEqual(info,"weapon_mp5",false)) || (StrEqual(info,"weapon_m4",false)) || (StrEqual(info,"weapon_sl8",false)) || (StrEqual(info,"weapon_g36c",false)) || (StrEqual(info,"weapon_oicw",false)) || (StrEqual(info,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
-					else if ((StrEqual(info,"weapon_gauss",false)) || (StrEqual(info,"weapon_tau",false)) || (StrEqual(info,"weapon_goop",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
-					else if (StrEqual(info,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
-					else if (StrEqual(info,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
-					else if (StrContains(info,"custom_",false) != -1)
+					if (bCSS)
 					{
-						Handle filehandlesub = OpenFile(weapscr,"r",true,NULL_STRING);
-						if (filehandlesub != INVALID_HANDLE)
+						Format(basecls,sizeof(basecls),"weapon_csbase_gun");
+					}
+					else
+					{
+						if (StrEqual(info,"weapon_gluon",false)) Format(basecls,sizeof(basecls),"weapon_shotgun");
+						else if (StrEqual(info,"weapon_handgrenade",false)) Format(basecls,sizeof(basecls),"weapon_frag");
+						else if ((StrEqual(info,"weapon_glock",false)) || (StrEqual(info,"weapon_pistol_worker",false)) || (StrEqual(info,"weapon_flaregun",false)) || (StrEqual(info,"weapon_manhack",false)) || (StrEqual(info,"weapon_manhackgun",false)) || (StrEqual(info,"weapon_manhacktoss",false))) Format(basecls,sizeof(basecls),"weapon_pistol");
+						else if ((StrEqual(info,"weapon_medkit",false)) || (StrEqual(info,"weapon_healer",false)) || (StrEqual(info,"weapon_snark",false)) || (StrEqual(info,"weapon_hivehand",false)) || (StrEqual(info,"weapon_hornetgun",false)) || (StrEqual(info,"weapon_satchel",false)) || (StrEqual(info,"weapon_tripmine",false))) Format(basecls,sizeof(basecls),"weapon_slam");
+						else if ((StrEqual(info,"weapon_mp5",false)) || (StrEqual(info,"weapon_m4",false)) || (StrEqual(info,"weapon_sl8",false)) || (StrEqual(info,"weapon_g36c",false)) || (StrEqual(info,"weapon_oicw",false)) || (StrEqual(info,"weapon_uzi",false))) Format(basecls,sizeof(basecls),"weapon_smg1");
+						else if ((StrEqual(info,"weapon_gauss",false)) || (StrEqual(info,"weapon_tau",false)) || (StrEqual(info,"weapon_goop",false))) Format(basecls,sizeof(basecls),"weapon_ar2");
+						else if (StrEqual(info,"weapon_cguard",false)) Format(basecls,sizeof(basecls),"weapon_stunstick");
+						else if (StrEqual(info,"weapon_axe",false)) Format(basecls,sizeof(basecls),"weapon_pipe");
+						else if (StrContains(info,"custom_",false) != -1)
 						{
-							char scrline[64];
-							while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
+							Handle filehandlesub = OpenFile(weapscr,"r",true,NULL_STRING);
+							if (filehandlesub != INVALID_HANDLE)
 							{
-								TrimString(scrline);
-								if (StrContains(scrline,"\"anim_prefix\"",false) != -1)
+								char scrline[64];
+								while(!IsEndOfFile(filehandlesub)&&ReadFileLine(filehandlesub,scrline,sizeof(scrline)))
 								{
-									ReplaceStringEx(scrline,sizeof(scrline),"\"anim_prefix\"","",_,_,false);
-									ReplaceString(scrline,sizeof(scrline),"\"","");
 									TrimString(scrline);
-									if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
-									else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
-									else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
-									else if (StrEqual(scrline,"grenade",false)) Format(scrline,sizeof(scrline),"crowbar");
-									Format(scrline,sizeof(scrline),"weapon_%s",scrline);
-									Format(basecls,sizeof(basecls),"%s",scrline);
-									nouse = true;
-									break;
+									if (StrContains(scrline,"\"anim_prefix\"",false) != -1)
+									{
+										ReplaceStringEx(scrline,sizeof(scrline),"\"anim_prefix\"","",_,_,false);
+										ReplaceString(scrline,sizeof(scrline),"\"","");
+										TrimString(scrline);
+										if (StrEqual(scrline,"python",false)) Format(scrline,sizeof(scrline),"357");
+										else if (StrEqual(scrline,"gauss",false)) Format(scrline,sizeof(scrline),"shotgun");
+										else if (StrEqual(scrline,"smg2",false)) Format(scrline,sizeof(scrline),"smg1");
+										else if (StrEqual(scrline,"grenade",false)) Format(scrline,sizeof(scrline),"crowbar");
+										Format(scrline,sizeof(scrline),"weapon_%s",scrline);
+										Format(basecls,sizeof(basecls),"%s",scrline);
+										nouse = true;
+										break;
+									}
 								}
 							}
+							CloseHandle(filehandlesub);
 						}
-						CloseHandle(filehandlesub);
 					}
 					int ent = CreateEntityByName(basecls);
 					if (ent != -1)
@@ -2207,6 +2228,48 @@ public Action waititem(Handle timer, int entity)
 					}
 				}
 			}
+			else if ((StrContains(cls,"weapon_",false) == 0) && (FindStringInArray(hBaseWeapons,cls) != -1))
+			{
+				int ammtype = 0;
+				if (HasEntProp(entity,Prop_Send,"m_iPrimaryAmmoType")) ammtype = GetEntProp(entity,Prop_Send,"m_iPrimaryAmmoType");
+				else if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) ammtype = GetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType");
+				if (ammtype <= 1)
+				{
+					if (StrEqual(cls,"weapon_ar2",false))
+					{
+						if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",1);
+						
+					}
+					else if (StrEqual(cls,"weapon_alyxgun",false))
+					{
+						if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",2);
+					}
+					else if (StrEqual(cls,"weapon_pistol",false))
+					{
+						if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",3);
+					}
+					else if (StrEqual(cls,"weapon_smg1",false))
+					{
+						if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",4);
+					}
+					else if ((StrEqual(cls,"weapon_357",false)) || (StrEqual(cls,"weapon_annabelle",false)))
+					{
+						if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",5);
+					}
+					else if (StrEqual(cls,"weapon_crossbow",false))
+					{
+						if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",6);
+					}
+					else if (StrEqual(cls,"weapon_shotgun",false))
+					{
+						if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",7);
+					}
+					else if (StrEqual(cls,"weapon_rpg",false))
+					{
+						if (HasEntProp(entity,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(entity,Prop_Data,"m_iPrimaryAmmoType",8);
+					}
+				}
+			}
 			/*
 			else if (StrContains(cls,"kzsmodifiedweaps/",false) == 0)
 			{
@@ -2236,6 +2299,7 @@ int GetWepAnim(char[] szWeapCls, int seq, char[] ACTVM)
 {
 	if (strlen(szWeapCls) > 0)
 	{
+		if (FindStringInArray(hBaseWeapons,szWeapCls) != -1) return 0;
 		int arrindx = FindStringInArray(weapanimcls,szWeapCls);
 		if (arrindx == -1)
 		{
@@ -2352,6 +2416,15 @@ int GetWepAnim(char[] szWeapCls, int seq, char[] ACTVM)
 						return rand;
 					}
 					*/
+				}
+			}
+			else
+			{
+				// Script was not found, add to ignore list
+				CloseHandle(dp);
+				if (FindStringInArray(hBaseWeapons,szWeapCls) == -1)
+				{
+					PushArrayString(hBaseWeapons,szWeapCls);
 				}
 			}
 		}
@@ -2786,7 +2859,7 @@ public void OnClientDisconnect_Post(int client)
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
-	if (buttons & IN_ZOOM) return Plugin_Continue;
+	if ((buttons & IN_ZOOM) || (IsFakeClient(client))) return Plugin_Continue;
 	bool setbuttons = true;
 	static char curweap[24];
 	static char custweap[64];
@@ -2797,6 +2870,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		GetEntPropString(weap,Prop_Data,"m_iszResponseContext",custweap,sizeof(custweap));
 		GetEntPropString(weap,Prop_Data,"m_iClassname",curweap,sizeof(curweap));
 	}
+	if (strlen(curweap) < 1) return Plugin_Continue;
+	if (FindStringInArray(hBaseWeapons,curweap) != -1) return Plugin_Continue;
 	int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
 	int useent = GetEntPropEnt(client,Prop_Data,"m_hUseEntity");
 	if ((vehicle == -1) && (useent == -1))
@@ -3308,8 +3383,11 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 													ActivateEntity(HandAttach[client]);
 													SetVariantString("!activator");
 													AcceptEntityInput(HandAttach[client],"SetParent",client);
-													SetVariantString("anim_attachment_RH");
-													AcceptEntityInput(HandAttach[client],"SetParentAttachment");
+													if (!bCSS)
+													{
+														SetVariantString("anim_attachment_RH");
+														AcceptEntityInput(HandAttach[client],"SetParentAttachment");
+													}
 													float orgoffs[3];
 													orgoffs[0] = 5.0;
 													orgoffs[1] = 0.0;
@@ -3329,8 +3407,11 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 														AcceptEntityInput(effect,"Activate");
 														SetVariantString("!activator");
 														AcceptEntityInput(effect,"SetParent",client);
-														SetVariantString("anim_attachment_RH");
-														AcceptEntityInput(effect,"SetParentAttachment");
+														if (!bCSS)
+														{
+															SetVariantString("anim_attachment_RH");
+															AcceptEntityInput(effect,"SetParentAttachment");
+														}
 														orgoffs[0] = 7.0;
 														orgoffs[1] = 0.0;
 														orgoffs[2] = 0.0;
@@ -3361,15 +3442,21 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 												{
 													DispatchKeyValue(beam,"model","sprites/goop/goop_beam.vmt");
 													DispatchKeyValue(beam,"texture","sprites/goop/goop_beam.vmt");
-													SetEntProp(beam,Prop_Data,"m_nModelIndex",goopbeam);
-													SetEntProp(beam,Prop_Data,"m_nHaloIndex",goopbeam);
+													if (goopbeam != -1)
+													{
+														SetEntProp(beam,Prop_Data,"m_nModelIndex",goopbeam);
+														SetEntProp(beam,Prop_Data,"m_nHaloIndex",goopbeam);
+													}
 												}
 												else
 												{
 													DispatchKeyValue(beam,"model","effects/gluon_beam.vmt");
 													DispatchKeyValue(beam,"texture","effects/gluon_beam.vmt");
-													SetEntProp(beam,Prop_Data,"m_nModelIndex",gluonbeam);
-													SetEntProp(beam,Prop_Data,"m_nHaloIndex",gluonbeam);
+													if (gluonbeam != -1)
+													{
+														SetEntProp(beam,Prop_Data,"m_nModelIndex",gluonbeam);
+														SetEntProp(beam,Prop_Data,"m_nHaloIndex",gluonbeam);
+													}
 												}
 												TeleportEntity(beam,plyfirepos,plyang,NULL_VECTOR);
 												DispatchSpawn(beam);
@@ -3402,7 +3489,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 												{
 													DispatchKeyValue(beam2,"model","effects/gluon_beam.vmt");
 													DispatchKeyValue(beam2,"texture","effects/gluon_beam.vmt");
-													SetEntProp(beam2,Prop_Data,"m_nModelIndex",gluonbeam);
+													if (gluonbeam != -1) SetEntProp(beam2,Prop_Data,"m_nModelIndex",gluonbeam);
 													TeleportEntity(beam2,plyfirepos,plyang,NULL_VECTOR);
 													DispatchSpawn(beam2);
 													ActivateEntity(beam2);
@@ -4255,8 +4342,11 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 										ActivateEntity(HandAttach[client]);
 										SetVariantString("!activator");
 										AcceptEntityInput(HandAttach[client],"SetParent",client);
-										SetVariantString("anim_attachment_RH");
-										AcceptEntityInput(HandAttach[client],"SetParentAttachment");
+										if (!bCSS)
+										{
+											SetVariantString("anim_attachment_RH");
+											AcceptEntityInput(HandAttach[client],"SetParentAttachment");
+										}
 										float orgoffs[3];
 										orgoffs[0] = 5.0;
 										orgoffs[1] = 0.0;
@@ -4330,8 +4420,11 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 											ActivateEntity(HandAttach[client]);
 											SetVariantString("!activator");
 											AcceptEntityInput(HandAttach[client],"SetParent",client);
-											SetVariantString("anim_attachment_RH");
-											AcceptEntityInput(HandAttach[client],"SetParentAttachment");
+											if (!bCSS)
+											{
+												SetVariantString("anim_attachment_RH");
+												AcceptEntityInput(HandAttach[client],"SetParentAttachment");
+											}
 											float orgoffs[3];
 											orgoffs[0] = 5.0;
 											orgoffs[1] = 0.0;
@@ -4432,8 +4525,11 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 										ActivateEntity(HandAttach[client]);
 										SetVariantString("!activator");
 										AcceptEntityInput(HandAttach[client],"SetParent",client);
-										SetVariantString("anim_attachment_RH");
-										AcceptEntityInput(HandAttach[client],"SetParentAttachment");
+										if (!bCSS)
+										{
+											SetVariantString("anim_attachment_RH");
+											AcceptEntityInput(HandAttach[client],"SetParentAttachment");
+										}
 										float orgoffs[3];
 										orgoffs[0] = 5.0;
 										orgoffs[1] = 0.0;
@@ -6673,6 +6769,8 @@ public Action OnWeaponUse(int client, int weapon)
 		if (iWeapList == -1) iWeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 		if (iWeapList != -1)
 		{
+			int nIndx = 1;
+			if (bCSS) nIndx = 2;
 			char szWeapCls[64];
 			for (int j; j<104; j += 4)
 			{
@@ -6681,7 +6779,7 @@ public Action OnWeaponUse(int client, int weapon)
 				{
 					if (HasEntProp(tmpi,Prop_Data,"m_nViewModelIndex"))
 					{
-						if (GetEntProp(tmpi,Prop_Data,"m_nViewModelIndex") == 1)
+						if (GetEntProp(tmpi,Prop_Data,"m_nViewModelIndex") == nIndx)
 						{
 							SetEntProp(tmpi,Prop_Data,"m_nViewModelIndex",0);
 							ChangeEdictState(tmpi);
@@ -6707,6 +6805,7 @@ public Action OnWeaponUse(int client, int weapon)
 			//GetEntityClassname(weapon,weapname,sizeof(weapname));
 			GetEntPropString(weapon,Prop_Data,"m_iClassname",weapname,sizeof(weapname));
 			GetEntPropString(weapon,Prop_Data,"m_iszResponseContext",weapresp,sizeof(weapresp));
+			if ((FindStringInArray(hBaseWeapons,weapname) != -1) && (strlen(weapresp) < 7)) return Plugin_Continue;
 			if ((StrEqual(weapname,"weapon_snark",false)) || (StrEqual(weapname,"weapon_satchel",false)) || (StrEqual(weapname,"weapon_frag",false)) || (StrEqual(weapname,"weapon_tripmine",false)))
 			{
 				int viewmdl = GetEntPropEnt(client,Prop_Data,"m_hViewModel");
@@ -6717,6 +6816,7 @@ public Action OnWeaponUse(int client, int weapon)
 				SetEntProp(weapon,Prop_Data,"m_bReloadsSingly",1);
 				SetEntProp(weapon,Prop_Data,"m_bFiresUnderwater",0);
 				SetEntPropFloat(weapon,Prop_Data,"m_flNextPrimaryAttack",GetGameTime()+100.0);
+				//flSetupWeapon[weapon] = GetGameTime()+0.1;
 				CreateTimer(0.1,resetviewindex,weapon,TIMER_FLAG_NO_MAPCHANGE);
 				if (HasEntProp(weapon,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(weapon,Prop_Data,"m_iPrimaryAmmoType",3);
 				int ammover = GetEntProp(client,Prop_Send,"m_iAmmo",_,3);
@@ -6725,8 +6825,11 @@ public Action OnWeaponUse(int client, int weapon)
 					Ammo3Reset[client] = ammover;
 					SetEntProp(client,Prop_Data,"m_iAmmo",flareammo[client],_,3);
 				}
-				SetVariantString("anim_attachment_RH");
-				AcceptEntityInput(weapon,"SetParentAttachment");
+				if (!bCSS)
+				{
+					SetVariantString("anim_attachment_RH");
+					AcceptEntityInput(weapon,"SetParentAttachment");
+				}
 				//SetEntProp(weapon,Prop_Data,"m_iParentAttachment",3);
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
 				char mdl[64];
@@ -6745,8 +6848,11 @@ public Action OnWeaponUse(int client, int weapon)
 				SetEntProp(weapon,Prop_Data,"m_bReloadsSingly",1);
 				SetEntProp(weapon,Prop_Data,"m_bFiresUnderwater",0);
 				SetEntPropFloat(weapon,Prop_Data,"m_flNextPrimaryAttack",GetGameTime()+100.0);
-				SetVariantString("anim_attachment_RH");
-				AcceptEntityInput(weapon,"SetParentAttachment");
+				if (!bCSS)
+				{
+					SetVariantString("anim_attachment_RH");
+					AcceptEntityInput(weapon,"SetParentAttachment");
+				}
 				//SetEntProp(weapon,Prop_Data,"m_iParentAttachment",3);
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
 				float angset[3];
@@ -6779,8 +6885,11 @@ public Action OnWeaponUse(int client, int weapon)
 			}
 			else if (StrEqual(weapname,"weapon_gluon",false))
 			{
-				SetVariantString("anim_attachment_RH");
-				AcceptEntityInput(weapon,"SetParentAttachment");
+				if (!bCSS)
+				{
+					SetVariantString("anim_attachment_RH");
+					AcceptEntityInput(weapon,"SetParentAttachment");
+				}
 				SetEntProp(weapon,Prop_Data,"m_fEffects",0);
 				float orgreset[3];
 				float angreset[3];
@@ -6814,8 +6923,11 @@ public Action OnWeaponUse(int client, int weapon)
 			else if (StrEqual(weapname,"weapon_molotov",false))
 			{
 				WeapAttackSpeed[client] = GetTickedTime()+0.2;
-				SetVariantString("anim_attachment_RH");
-				AcceptEntityInput(weapon,"SetParentAttachment");
+				if (!bCSS)
+				{
+					SetVariantString("anim_attachment_RH");
+					AcceptEntityInput(weapon,"SetParentAttachment");
+				}
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
 				SetEntProp(weapon,Prop_Data,"m_iSecondaryAmmoType",24);
 				SetEntProp(weapon,Prop_Data,"m_bReloadsSingly",1);
@@ -6832,8 +6944,11 @@ public Action OnWeaponUse(int client, int weapon)
 			}
 			else if (StrEqual(weapname,"weapon_goop",false))
 			{
-				SetVariantString("anim_attachment_RH");
-				AcceptEntityInput(weapon,"SetParentAttachment");
+				if (!bCSS)
+				{
+					SetVariantString("anim_attachment_RH");
+					AcceptEntityInput(weapon,"SetParentAttachment");
+				}
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
 				SetEntPropFloat(weapon,Prop_Data,"m_flModelScale",0.7);
 				CreateTimer(0.1,resetviewindex,weapon,TIMER_FLAG_NO_MAPCHANGE);
@@ -6857,8 +6972,11 @@ public Action OnWeaponUse(int client, int weapon)
 			}
 			else if (StrEqual(weapname,"weapon_bhg",false))
 			{
-				SetVariantString("anim_attachment_RH");
-				AcceptEntityInput(weapon,"SetParentAttachment");
+				if (!bCSS)
+				{
+					SetVariantString("anim_attachment_RH");
+					AcceptEntityInput(weapon,"SetParentAttachment");
+				}
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
 				SetEntPropFloat(weapon,Prop_Data,"m_flModelScale",0.7);
 				CreateTimer(0.1,resetviewindex,weapon,TIMER_FLAG_NO_MAPCHANGE);
@@ -6883,8 +7001,11 @@ public Action OnWeaponUse(int client, int weapon)
 			}
 			else if ((StrEqual(weapname,"weapon_tau",false)) || (StrEqual(weapname,"weapon_gauss",false)))
 			{
-				SetVariantString("anim_attachment_RH");
-				AcceptEntityInput(weapon,"SetParentAttachment");
+				if (!bCSS)
+				{
+					SetVariantString("anim_attachment_RH");
+					AcceptEntityInput(weapon,"SetParentAttachment");
+				}
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
 				SetEntProp(weapon,Prop_Data,"m_nViewModelIndex",0);
 				float orgreset[3];
@@ -7073,8 +7194,11 @@ public Action OnWeaponUse(int client, int weapon)
 				}
 				SetEntProp(weapon,Prop_Data,"m_iSecondaryAmmoType",24);
 				SetEntProp(weapon,Prop_Data,"m_bReloadsSingly",1);
-				SetVariantString("anim_attachment_RH");
-				AcceptEntityInput(weapon,"SetParentAttachment");
+				if (!bCSS)
+				{
+					SetVariantString("anim_attachment_RH");
+					AcceptEntityInput(weapon,"SetParentAttachment");
+				}
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
 				if (HasEntProp(weapon,Prop_Data,"m_iClip1")) SetEntProp(weapon,Prop_Data,"m_iClip1",HiveAmm[client]);
 				if (HasEntProp(weapon,Prop_Send,"m_iClip1")) SetEntProp(weapon,Prop_Send,"m_iClip1",HiveAmm[client]);
@@ -7126,8 +7250,11 @@ public Action OnWeaponUse(int client, int weapon)
 					SetEntProp(client,Prop_Data,"m_iAmmo",0,_,12);
 				}
 				if (GetEntProp(client,Prop_Send,"m_iAmmo",_,24) < 1) SetEntProp(client,Prop_Data,"m_iAmmo",1,_,24);
-				SetVariantString("anim_attachment_RH");
-				AcceptEntityInput(weapon,"SetParentAttachment");
+				if (!bCSS)
+				{
+					SetVariantString("anim_attachment_RH");
+					AcceptEntityInput(weapon,"SetParentAttachment");
+				}
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
 				SetEntPropFloat(weapon,Prop_Data,"m_flModelScale",0.5);
 				SetEntPropFloat(weapon,Prop_Data,"m_flTimeWeaponIdle",0.0);
@@ -7195,8 +7322,11 @@ public Action OnWeaponUse(int client, int weapon)
 					SetEntProp(client,Prop_Data,"m_iAmmo",0,_,12);
 				}
 				if (GetEntProp(client,Prop_Send,"m_iAmmo",_,24) < 1) SetEntProp(client,Prop_Data,"m_iAmmo",1,_,24);
-				SetVariantString("anim_attachment_RH");
-				AcceptEntityInput(weapon,"SetParentAttachment");
+				if (!bCSS)
+				{
+					SetVariantString("anim_attachment_RH");
+					AcceptEntityInput(weapon,"SetParentAttachment");
+				}
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
 				SetEntPropFloat(weapon,Prop_Data,"m_flModelScale",0.5);
 				SetEntProp(weapon,Prop_Data,"m_nViewModelIndex",0);
@@ -7224,8 +7354,11 @@ public Action OnWeaponUse(int client, int weapon)
 				if (HasEntProp(weapon,Prop_Data,"m_iPrimaryAmmoType")) SetEntProp(weapon,Prop_Data,"m_iPrimaryAmmoType",12);
 				SetVariantString("!activator");
 				AcceptEntityInput(weapon,"SetParent",client);
-				SetVariantString("anim_attachment_RH");
-				AcceptEntityInput(weapon,"SetParentAttachment");
+				if (!bCSS)
+				{
+					SetVariantString("anim_attachment_RH");
+					AcceptEntityInput(weapon,"SetParentAttachment");
+				}
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
 				SetEntPropFloat(weapon,Prop_Data,"m_flModelScale",0.8);
 				float orgreset[3];
@@ -7247,8 +7380,11 @@ public Action OnWeaponUse(int client, int weapon)
 			}
 			else if (StrEqual(weapname,"weapon_axe",false))
 			{
-				SetVariantString("anim_attachment_RH");
-				AcceptEntityInput(weapon,"SetParentAttachment");
+				if (!bCSS)
+				{
+					SetVariantString("anim_attachment_RH");
+					AcceptEntityInput(weapon,"SetParentAttachment");
+				}
 				SetEntProp(weapon,Prop_Data,"m_fEffects",16);
 				float angreset[3];
 				angreset[1] = 180.0;
@@ -7719,7 +7855,8 @@ public Action resetviewindex(Handle timer, int weapon)
 	{
 		if (HasEntProp(weapon,Prop_Data,"m_nViewModelIndex"))
 		{
-			SetEntProp(weapon,Prop_Data,"m_nViewModelIndex",1);
+			if (bCSS) SetEntProp(weapon,Prop_Data,"m_nViewModelIndex",2);
+			else SetEntProp(weapon,Prop_Data,"m_nViewModelIndex",1);
 			char szWeapCls[32];
 			GetEntityClassname(weapon,szWeapCls,sizeof(szWeapCls));
 			if (StrEqual(szWeapCls,"weapon_tau",false))
@@ -8089,8 +8226,11 @@ public Action chkdisttargs(Handle timer)
 								orgreset[2] = -5.0;
 								angreset[0] = -20.0;
 							}
-							SetVariantString("anim_attachment_RH");
-							AcceptEntityInput(weap,"SetParentAttachment");
+							if (!bCSS)
+							{
+								SetVariantString("anim_attachment_RH");
+								AcceptEntityInput(weap,"SetParentAttachment");
+							}
 							SetEntPropVector(weap,Prop_Data,"m_vecOrigin",orgreset);
 							SetEntPropVector(weap,Prop_Data,"m_angRotation",angreset);
 						}

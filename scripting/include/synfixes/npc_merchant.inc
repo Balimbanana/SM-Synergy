@@ -391,6 +391,7 @@ void CreateCustomItem(int client, char[] info, int cost)
 				char szCL[4];
 				Format(szCL,sizeof(szCL),"%i",client);
 				ReplaceString(basecls,sizeof(basecls),"$1",szCL,false);
+				//Add merch dbg message
 				ServerCommand("%s",basecls);
 			}
 		}

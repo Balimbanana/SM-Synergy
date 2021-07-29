@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.37"
-			"Previous"	"1.36"
+			"Latest"  	"1.38"
+			"Previous"	"1.37"
 		}
 		
-		"Notes"	"Added Prop_Data or Prop_Send to information listed properties. Added player names to listents."
+		"Notes"	"Additional info in gi."
 	}
 	
 	"Files"

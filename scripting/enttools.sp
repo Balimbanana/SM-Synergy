@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.37"
+#define PLUGIN_VERSION "1.38"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -1276,11 +1276,31 @@ public Action ResetTargn(Handle timer, int targ)
 
 public Action SetTargMdl(int client, int args)
 {
-	if ((args < 2) || (client == 0))
+	if (args < 2)
 	{
 		if (client == 0) PrintToServer("Must specify model to set");
 		else PrintToConsole(client,"Must specify model to set");
 		return Plugin_Handled;
+	}
+	else if (client == 0)
+	{
+		char first[64];
+		GetCmdArg(1,first,sizeof(first));
+		int targ = StringToInt(first);
+		if (!IsValidEntity(targ))
+		{
+			PrintToServer("Invalid target");
+			return Plugin_Handled;
+		}
+		char mdltoset[128];
+		GetCmdArg(2,mdltoset, sizeof(mdltoset));
+		if ((!FileExists(mdltoset,true,NULL_STRING)) && (!IsModelPrecached(mdltoset)))
+		{
+			PrintToServer("The model %s was not found.",mdltoset);
+			return Plugin_Handled;
+		}
+		if (!IsModelPrecached(mdltoset)) PrecacheModel(mdltoset,true);
+		SetEntityModel(targ,mdltoset);
 	}
 	else
 	{
@@ -1471,11 +1491,11 @@ public Handle findentsarrtarg(Handle arr, char[] namechk)
 public Action listedicts(int client, int args)
 {
 	int iCountEdicts = 0;
-	for (int i = 0;i<4096;i++)
+	for (int i = MaxClients+1;i<4096;i++)
 	{
 		if (IsValidEntity(i)) iCountEdicts++;
 	}
-	PrintToConsole(client,"Current Edicts: %i",iCountEdicts);
+	PrintToConsole(client,"Current Edicts: %i Number reported by native: %i\nMaximum: %i",iCountEdicts+MaxClients-1,GetEntityCount(),GetMaxEntities());
 	return Plugin_Handled;
 }
 
@@ -2923,6 +2943,12 @@ public Action getinf(int client, int args)
 			Format(inf,sizeof(inf),"%s CollisionGroup %i",inf,collgroup);
 		if (strlen(exprsc) > 0)
 			Format(inf,sizeof(inf),"%s\nTarget: %s %i %s",inf,exprsc,exprsci,exprtargname);
+		if (HasEntProp(targ,Prop_Data,"m_nSolidType"))
+			Format(inf,sizeof(inf),"%s Solid: %i ",inf,GetEntProp(targ,Prop_Data,"m_nSolidType"));
+		if (HasEntProp(targ,Prop_Data,"m_MoveType"))
+		{
+			Format(inf,sizeof(inf),"%sMoveType: %i",inf,GetEntProp(targ,Prop_Data,"m_MoveType"));
+		}
 		if (HasEntProp(targ,Prop_Data,"m_vehicleScript"))
 		{
 			char vehscript[128];
@@ -4065,7 +4091,7 @@ void PrintEntInfoFor(int targ)
 		char globname[128];
 		float vec[3];
 		float angs[3];
-		int parent = 0;
+		int parent = -1;
 		int ammotype = -1;
 		vec[0] = -1.1;
 		angs[0] = -1.1;

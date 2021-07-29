@@ -117,7 +117,7 @@ bool bFixSoundScapes = true;
 bool bFixNPCStuck = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0036"
+#define PLUGIN_VERSION "2.0037"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -852,6 +852,7 @@ public void OnMapStart()
 			isattacking[i] = 0;
 			centnextsndtime[i] = 0.0;
 			glotext[i] = "";
+			bCheckedMdl[i] = false;
 			if (IsValidEntity(i))
 			{
 				GetEntityClassname(i,szClsGet,sizeof(szClsGet));
@@ -3890,6 +3891,19 @@ public Action clticks(Handle timer)
 									if (HasEntProp(i,Prop_Data,"m_nRenderFX")) SetEntProp(i,Prop_Data,"m_nRenderFX",0);
 									SetEntProp(i,Prop_Data,"m_iHideHUD",2048);
 									ChangeEdictState(i);
+								}
+							}
+						}
+						if ((customents) && (HasEntProp(i,Prop_Data,"m_hGroundEntity")))
+						{
+							int iStandEnt = GetEntPropEnt(i,Prop_Data,"m_hGroundEntity");
+							if ((iStandEnt > MaxClients) && (IsValidEntity(iStandEnt)))
+							{
+								char szCls[18];
+								GetEntityClassname(iStandEnt,szCls,sizeof(szCls));
+								if (StrEqual(szCls,"env_xen_pushpad",false))
+								{
+									StartTouchPushPad(iStandEnt,i);
 								}
 							}
 						}
@@ -15684,6 +15698,15 @@ public void OnEntityDestroyed(int entity)
 		timesattacked[entity] = 0;
 		isattacking[entity] = 0;
 		centnextsndtime[entity] = 0.0;
+		bCheckedMdl[entity] = false;
+		for (int i = 1;i<MaxClients+1;i++)
+		{
+			if (clrocket[i] == entity)
+			{
+				clrocket[i] = -1;
+				break;
+			}
+		}
 	}
 	int find = FindValueInArray(hounds,entity);
 	if (find != -1)
@@ -16056,6 +16079,7 @@ public void SetupLivingEnt(int entity)
 		char entcls[128];
 		if (HasEntProp(entity,Prop_Data,"m_iName")) GetEntPropString(entity,Prop_Data,"m_iName",cls,sizeof(cls));
 		GetEntityClassname(entity,entcls,sizeof(entcls));
+		//PrintToServer("SETUPENT \"%s\" \"%s\"",entcls,cls);
 		if (StrEqual(entcls,"npc_barnacle",false))
 		{
 			SetVariantString("npc_ichthyosaur D_LI 99");
@@ -16772,7 +16796,7 @@ public void SetupLivingEnt(int entity)
 					setuprelations("npc_alien_grunt");
 				}
 			}
-			else if (StrContains(cls,"monster_gargantua",false) == 0)
+			else if ((StrContains(cls,"monster_gargantua",false) == 0) || (StrEqual(entcls,"monster_gargantua",false)))
 			{
 				if (FileExists("models/garg.mdl",true,NULL_STRING))
 				{
@@ -16781,7 +16805,7 @@ public void SetupLivingEnt(int entity)
 					SetEntPropString(entity,Prop_Data,"m_iName",cls);
 				}
 			}
-			else if (StrContains(cls,"npc_snark",false) == 0)
+			else if ((StrContains(cls,"npc_snark",false) == 0) || (StrEqual(entcls,"npc_snark",false)))
 			{
 				if (FileExists("models/xenians/snark.mdl",true,NULL_STRING))
 				{
@@ -16804,7 +16828,7 @@ public void SetupLivingEnt(int entity)
 					SDKHook(entity,SDKHook_StartTouch,StartTouchSnark);
 				}
 			}
-			else if (StrContains(cls,"monster_snark",false) == 0)
+			else if ((StrContains(cls,"monster_snark",false) == 0) || (StrEqual(entcls,"monster_snark",false)))
 			{
 				if (FileExists("models/w_squeak.mdl",true,NULL_STRING))
 				{
@@ -16832,7 +16856,7 @@ public void SetupLivingEnt(int entity)
 					dp = INVALID_HANDLE;
 				}
 			}
-			else if (StrContains(cls,"npc_abrams",false) == 0)
+			else if ((StrContains(cls,"npc_abrams",false) == 0) || (StrEqual(entcls,"npc_abrams",false)))
 			{
 				if (FileExists("models/props_vehicles/abrams.mdl",true,NULL_STRING))
 				{
@@ -16912,7 +16936,7 @@ public void SetupLivingEnt(int entity)
 					SDKHookEx(entity,SDKHook_Think,abramsthink);
 				}
 			}
-			else if (StrContains(cls,"npc_alien_controller",false) == 0)
+			else if ((StrContains(cls,"npc_alien_controller",false) == 0) || (StrEqual(entcls,"npc_alien_controller",false)))
 			{
 				if (FileExists("models/xenians/controller.mdl",true,NULL_STRING))
 				{
@@ -16956,19 +16980,19 @@ public void SetupLivingEnt(int entity)
 					}
 				}
 			}
-			else if (StrContains(cls,"npc_gonarch",false) == 0)
+			else if ((StrContains(cls,"npc_gonarch",false) == 0) || (StrEqual(entcls,"npc_gonarch",false)))
 			{
 				DispatchKeyValue(entity,"classname","npc_gonarch");
 				ReplaceString(cls,sizeof(cls),"npc_gonarch","");
 				SetEntPropString(entity,Prop_Data,"m_iName",cls);
 				if (FileExists("models/xenians/gonarch.mdl",true,NULL_STRING))
 				{
-					DispatchKeyValue(entity,"model","models/xenians/gonarch.mdl");
+					//DispatchKeyValue(entity,"model","models/xenians/gonarch.mdl");
 					WritePackString(dp,"models/xenians/gonarch.mdl");
 				}
 				else
 				{
-					DispatchKeyValue(entity,"model","models/gonarch.mdl");
+					//DispatchKeyValue(entity,"model","models/gonarch.mdl");
 					WritePackString(dp,"models/gonarch.mdl");
 				}
 			}
@@ -16982,7 +17006,7 @@ public void SetupLivingEnt(int entity)
 				else
 					WritePackString(dp,"models/xenians/headcrab.mdl");
 			}
-			else if (StrContains(cls,"npc_sentry_ceiling",false) == 0)
+			else if ((StrContains(cls,"npc_sentry_ceiling",false) == 0) || (StrEqual(entcls,"npc_sentry_ceiling",false)))
 			{
 				DispatchKeyValue(entity,"classname","npc_sentry_ceiling");
 				ReplaceString(cls,sizeof(cls),"npc_sentry_ceiling","");
@@ -17011,7 +17035,7 @@ public void SetupLivingEnt(int entity)
 					SDKHookEx(entity,SDKHook_Think,sentriesthink);
 				}
 			}
-			else if (StrContains(cls,"npc_sentry_ground",false) == 0)
+			else if ((StrContains(cls,"npc_sentry_ground",false) == 0) || (StrEqual(entcls,"npc_sentry_ground",false)))
 			{
 				DispatchKeyValue(entity,"classname","npc_sentry_ground");
 				ReplaceString(cls,sizeof(cls),"npc_sentry_ground","");
@@ -20438,27 +20462,31 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				{
 					int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
 					float Time = GetTickedTime();
-					if ((curclip > 0) && (centnextatk[weap] < Time))
+					if (curclip > 0)
 					{
 						if (HasEntProp(weap,Prop_Data,"m_bReloadsSingly")) SetEntProp(weap,Prop_Data,"m_bReloadsSingly",0);
 						if (HasEntProp(weap,Prop_Send,"m_bMustReload"))
 						{
 							int mustrel = GetEntProp(weap,Prop_Send,"m_bMustReload");
 							SetEntProp(weap,Prop_Send,"m_bMustReload",0);
-							if (mustrel)
+							if (centnextatk[weap] < Time)
 							{
-								SetEntProp(weap,Prop_Data,"m_bInReload",0);
-								char shootsnd[64];
-								int chan,sndlvl,pitch;
-								float vol;
-								GetGameSoundParams("Weapon_Crossbow.Single",chan,sndlvl,vol,pitch,shootsnd,sizeof(shootsnd),0);
-								if (strlen(shootsnd) > 0)
+								if (mustrel)
 								{
-									EmitGameSoundToAll("Weapon_Crossbow.Single",client);
+									SetEntProp(weap,Prop_Data,"m_bInReload",0);
+									char shootsnd[64];
+									int chan,sndlvl,pitch;
+									float vol;
+									GetGameSoundParams("Weapon_Crossbow.Single",chan,sndlvl,vol,pitch,shootsnd,sizeof(shootsnd),0);
+									if (strlen(shootsnd) > 0)
+									{
+										EmitGameSoundToAll("Weapon_Crossbow.Single",client);
+									}
 								}
+								CreateTimer(0.1,resetweapreload,weap,TIMER_FLAG_NO_MAPCHANGE);
 							}
-							CreateTimer(0.1,resetweapreload,weap,TIMER_FLAG_NO_MAPCHANGE);
 						}
+						SetEntProp(weap,Prop_Data,"m_nSequence",0);
 						centnextatk[weap] = Time + 2.0;
 					}
 				}
@@ -20633,6 +20661,10 @@ public Action resetweapreload(Handle timer, int weap)
 			SetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack",GetGameTime()-0.01);
 			SetEntProp(weap,Prop_Data,"m_bInReload",0);
 			if (HasEntProp(weap,Prop_Send,"m_bMustReload")) SetEntProp(weap,Prop_Send,"m_bMustReload",0);
+			if (StrEqual(clschk,"weapon_crossbow",false))
+			{
+				SetEntProp(weap,Prop_Data,"m_nSequence",0);
+			}
 		}
 	}
 	return Plugin_Handled;
@@ -20642,6 +20674,29 @@ public void OnButtonPressTankchk(int client, int button)
 {
 	findcontrolledtank(-1,"func_50cal",client);
 	findcontrolledtank(-1,"func_tow",client);
+	/*
+	char curweap[16];
+	GetClientWeapon(client,curweap,sizeof(curweap));
+	if (StrEqual(curweap,"weapon_rpg",false))
+	{
+		if ((IsValidEntity(clrocket[client])) && (clrocket[client] > MaxClients))
+		{
+			float Time = GetTickedTime();
+			if (centnextatk[clrocket[client]] >= Time)
+			{
+				centnextatk[clrocket[client]] = 0.0;
+				// Detonate somehow
+				// SDKHooksTakeDamage doesn't work
+				// Blocking with prop doesn't work
+				
+			}
+			else
+			{
+				centnextatk[clrocket[client]] = Time+0.2;
+			}
+		}
+	}
+	*/
 }
 
 public void OnButtonPress(int client, int button)

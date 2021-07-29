@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.996"
-			"Previous"	"0.995"
+			"Latest"  	"0.997"
+			"Previous"	"0.996"
 		}
 		
-		"Notes"	"Rescripted weapon_mp5. Fixes to weapon_tau. Minor fixes/adjustments to other weapons."
+		"Notes"	"Additional validations in certain beams."
 	}
 	
 	"Files"
