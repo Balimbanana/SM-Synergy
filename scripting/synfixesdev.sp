@@ -117,7 +117,7 @@ bool bFixSoundScapes = true;
 bool bFixNPCStuck = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0038"
+#define PLUGIN_VERSION "2.0039"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1780,7 +1780,25 @@ public Action fixbarney(int client, int args)
 	GetCurrentMap(tmpmap,sizeof(tmpmap));
 	if ((StrEqual(tmpmap,"ep1_c17_06",false)) || (StrEqual(tmpmap,"d1_trainstation_06",false))) return Plugin_Handled;
 	findgfollow(-1,"barney");
-	if (!findtargn("barney"))
+	int ent = -1;
+	char szName[16];
+	bool bFoundBarn = false;
+	while ((ent = FindEntityByClassname(ent,"npc_barney")) != -1)
+	{
+		if (IsValidEntity(ent))
+		{
+			if (HasEntProp(ent,Prop_Data,"m_iName"))
+			{
+				GetEntPropString(ent,Prop_Data,"m_iName",szName,sizeof(szName));
+				if (StrEqual(szName,"barney",false))
+				{
+					bFoundBarn = true;
+					break;
+				}
+			}
+		}
+	}
+	if ((!bFoundBarn) && (!findtargn("barney")))
 		readoutputs(client,"barney");
 	else
 	{

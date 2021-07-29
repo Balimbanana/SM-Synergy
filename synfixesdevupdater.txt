@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0038"
-			"Previous"	"2.0037"
+			"Latest"  	"2.0039"
+			"Previous"	"2.0038"
 		}
 		
 		"Notes"	"Fixed issues in targetname reset. Fixed bullsquid double model."
