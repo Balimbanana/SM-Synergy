@@ -136,6 +136,10 @@ public void OnMapStart()
 	{
 		return;
 	}
+	if (GetMapHistorySize() > 0)
+	{
+		HookEntityOutput("trigger_changelevel","OnChangeLevel",OnChangeLevel);
+	}
 	if(Recovered){
 		
 		//new sys sqlite
@@ -254,8 +258,6 @@ public void OnMapStart()
 				DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,TouchTest,,0.1,-1");
 				DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3rebuild,0,-1");
 				DispatchKeyValue(loginp, "OnMapSpawn","debug_choreo_start_in_elevator,Trigger,,0,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","pointTemplate_vortCalvary,ForceSpawn,,1,-1");
-				DispatchKeyValue(loginp, "OnMapSpawn","ss_heal_loop,BeginSequence,,1.2,-1");
 				DispatchSpawn(loginp);
 				ActivateEntity(loginp);
 			}
@@ -478,9 +480,17 @@ public void OnEntityCreated(int entity, const char[] classname)
 	}
 }
 
-public Action TrigChangeRestore(int entity, int other)
+public Action OnChangeLevel(const char[] output, int caller, int activator, float delay)
 {
-	if ((other > 0) && (other < MaxClients+1))
+	if ((IsValidEntity(caller)) && (IsEntNetworkable(caller)))
+	{
+		ApplyChangeLevelCheck(caller);
+	}
+}
+
+void ApplyChangeLevelCheck(int entity)
+{
+	if (IsValidEntity(entity))
 	{
 		if (HasEntProp(entity,Prop_Data,"m_szMapName"))
 		{
@@ -523,8 +533,16 @@ public Action TrigChangeRestore(int entity, int other)
 				//PrintToServer("SetCrashRestoreMap \"%s\"",szMap);
 				SetRestoreMap(szMap);
 			}
-			SDKUnhook(entity,SDKHook_StartTouch,TrigChangeRestore);
 		}
+	}
+}
+
+public Action TrigChangeRestore(int entity, int other)
+{
+	if ((other > 0) && (other < MaxClients+1))
+	{
+		ApplyChangeLevelCheck(entity);
+		SDKUnhook(entity,SDKHook_StartTouch,TrigChangeRestore);
 	}
 }
 
