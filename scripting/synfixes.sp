@@ -58,7 +58,7 @@ bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
 
-#define PLUGIN_VERSION "1.99987"
+#define PLUGIN_VERSION "1.99988"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -613,7 +613,7 @@ public Action fixbarney(int client, int args)
 	}
 	char tmpmap[24];
 	GetCurrentMap(tmpmap,sizeof(tmpmap));
-	if (StrEqual(tmpmap,"ep1_c17_06",false)) return Plugin_Handled;
+	if ((StrEqual(tmpmap,"ep1_c17_06",false)) || (StrEqual(tmpmap,"d1_trainstation_06",false)) || (StrEqual(tmpmap,"d3_c17_01",false))) return Plugin_Handled;
 	findgfollow(-1,"barney");
 	if (!findtargn("barney"))
 		readoutputs(client,"barney");

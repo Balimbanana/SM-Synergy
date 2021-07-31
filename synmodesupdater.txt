@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.46"
-			"Previous"	"1.45"
+			"Latest"  	"1.47"
+			"Previous"	"1.46"
 		}
 		
-		"Notes"	"Added configuration for equip on d1_trainstation_05."
+		"Notes"	"Added hax saysound."
 	}
 	
 	"Files"

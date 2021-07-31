@@ -39,7 +39,8 @@
 
 #include <sourcemod>
 #include <sdktools>
-#define PLUGIN_VERSION "1.61"
+#include <sdkhooks>
+#define PLUGIN_VERSION "1.62"
 #pragma semicolon 1;
 #pragma newdecls required;
 
@@ -108,6 +109,18 @@ public void OnPluginStart()
 		return;
 	}
 	RegServerCmd("crashmap_changerestoremap",changerestoremap);
+	// Plugin reloaded after map changes have occurred
+	if (GetMapHistorySize() > 0)
+	{
+		int ent = -1;
+		while((ent = FindEntityByClassname(ent,"trigger_changelevel")) != INVALID_ENT_REFERENCE)
+		{
+			if (IsValidEntity(ent))
+			{
+				SDKHookEx(ent,SDKHook_StartTouch,TrigChangeRestore);
+			}
+		}
+	}
 }
 
 public void OnMapStart()
@@ -274,18 +287,71 @@ public Action ChangeLevelDelay(Handle timer, Handle dp)
 	}
 }
 
+public void OnEntityDestroyed(int entity)
+{
+	if (IsValidEntity(entity))
+	{
+		char szCls[32];
+		GetEntityClassname(entity,szCls,sizeof(szCls));
+		if (StrEqual(szCls,"trigger_changelevel",false))
+		{
+			SDKUnhook(entity,SDKHook_StartTouch,TrigChangeRestore);
+		}
+	}
+}
+
+public void OnEntityCreated(int entity, const char[] classname)
+{
+	if (StrEqual(classname,"trigger_changelevel",false))
+	{
+		SDKHookEx(entity,SDKHook_StartTouch,TrigChangeRestore);
+	}
+}
+
+public Action TrigChangeRestore(int entity, int other)
+{
+	if ((other > 0) && (other < MaxClients+1))
+	{
+		if (HasEntProp(entity,Prop_Data,"m_szMapName"))
+		{
+			char szMap[128];
+			GetEntPropString(entity,Prop_Data,"m_szMapName",szMap,sizeof(szMap));
+			Handle cvar = FindConVar("content_metadata");
+			if (cvar != INVALID_HANDLE)
+			{
+				char contentdata[64];
+				GetConVarString(cvar,contentdata,sizeof(contentdata));
+				char fixuptmp[16][16];
+				ExplodeString(contentdata," ",fixuptmp,16,16,true);
+				Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+				if (strlen(fixuptmp[2]) > 0) Format(szMap,sizeof(szMap),"%s %s",fixuptmp[2],szMap);
+			}
+			CloseHandle(cvar);
+			//PrintToServer("SetCrashRestoreMap \"%s\"",szMap);
+			if (strlen(szMap)) SetRestoreMap(szMap);
+			SDKUnhook(entity,SDKHook_StartTouch,TrigChangeRestore);
+		}
+	}
+}
+
 public Action changerestoremap(int args)
 {
 	if (args > 0)
 	{
 		char changemap[64];
 		GetCmdArg(1,changemap,sizeof(changemap));
-		char Query[256];
-		Format(Query,256,"UPDATE srvcm SET mapname = '%s', restarts = 0 WHERE srvname = '%s';",changemap,srvname);
-		PrintToServer("Q %s",Query);
-		SQL_FastQuery(Handle_Database,Query);
+		PrintToServer("ChangeRestoreMap %s",changemap);
+		SetRestoreMap(changemap);
 	}
 	return Plugin_Handled;
+}
+
+void SetRestoreMap(char[] szMap)
+{
+	char Query[256];
+	Format(Query,256,"UPDATE srvcm SET mapname = '%s', restarts = 0 WHERE srvname = '%s';",szMap,srvname);
+	SQL_FastQuery(Handle_Database,Query);
+	return;
 }
 
 public Action delayedcheck(Handle timer, Handle hQuery)

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99987"
-			"Previous"	"1.99986"
+			"Latest"  	"1.99988"
+			"Previous"	"1.99987"
 		}
 		
-		"Notes"	"Fixed entlist refresh time."
+		"Notes"	"Block fixbarney on d3_c17_01."
 	}
 	
 	"Files"

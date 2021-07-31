@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.46"
+#define PLUGIN_VERSION "1.47"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -2220,6 +2220,123 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
 		return Plugin_Handled;
 	}
+	else if ((StrContains(sArgs, "*hacks*", false) != -1) || (StrContains(sArgs, "*hax*", false) != -1))
+	{
+		float Time = GetTickedTime();
+		if (antispamchk[client] <= Time)
+		{
+			char plymdl[64];
+			char randcat[64];
+			GetClientModel(client, plymdl, sizeof(plymdl));
+			if (StrContains(plymdl,"combine") != -1)
+			{
+				int randsound = GetRandomInt(1,26);
+				switch(randsound)
+				{
+					case 1:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\heavyresistance.wav");
+					case 2:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\bouncerbouncer.wav");
+					case 3:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\block31mace.wav");
+					case 4:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\alert1.wav");
+					case 5:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\bouncerbouncer.wav");
+					case 6:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\callhotpoint.wav");
+					case 7:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\closing.wav");
+					case 8:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\closing2.wav");
+					case 9:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\contact.wav");
+					case 10:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\contactconfim.wav");
+					case 11:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\contactconfirmprosecuting.wav");
+					case 12:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\displace.wav");
+					case 13:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\displace2.wav");
+					case 14:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\executingfullresponse.wav");
+					case 15:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\gosharp.wav");
+					case 16:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\inbound.wav");
+					case 17:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\infected.wav");
+					case 18:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\necroticsinbound.wav");
+					case 19:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\outbreak.wav");
+					case 20:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\overwatchreportspossiblehostiles.wav");
+					case 21:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\overwatchrequestreinforcement.wav");
+					case 22:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\overwatchrequestreserveactivation.wav");
+					case 23:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\prepforcontact.wav");
+					case 24:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\prosecuting.wav");
+					case 25:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\readyweaponshostilesinbound.wav");
+					case 26:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\ripcordripcord.wav");
+				}
+			}
+			else if (StrContains(plymdl,"female") != -1)
+			{
+				int randsound = GetRandomInt(1,8);
+				if (randsound < 3) Format(randcat,sizeof(randcat),"vo\\npc\\female01\\hacks0%i.wav",randsound);
+				else if (randsound < 5)
+				{
+					randsound-=2;
+					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\herecomehacks0%i.wav",randsound);
+				}
+				else if (randsound < 7)
+				{
+					randsound-=4;
+					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\itsamanhack0%i.wav",randsound);
+				}
+				else
+				{
+					randsound-=6;
+					Format(randcat,sizeof(randcat),"vo\\npc\\female01\\thehacks0%i.wav",randsound);
+				}
+			}
+			else
+			{
+				int randsound = GetRandomInt(1,8);
+				if (randsound < 3) Format(randcat,sizeof(randcat),"vo\\npc\\male01\\hacks0%i.wav",randsound);
+				else if (randsound < 5)
+				{
+					randsound-=2;
+					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\herecomehacks0%i.wav",randsound);
+				}
+				else if (randsound < 7)
+				{
+					randsound-=4;
+					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\itsamanhack0%i.wav",randsound);
+				}
+				else
+				{
+					randsound-=6;
+					Format(randcat,sizeof(randcat),"vo\\npc\\male01\\thehacks0%i.wav",randsound);
+				}
+			}
+			if (strlen(randcat) > 1)
+			{
+				PrecacheSound(randcat,true);
+				EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+			}
+		}
+		else
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+		return Plugin_Handled;
+	}
 	else if (StrContains(sArgs, "*enemy*", false) != -1)
 	{
 		float Time = GetTickedTime();
@@ -2992,8 +3109,8 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 
 public Action saysoundslist(int client, int args)
 {
-	if (client == 0) PrintToServer("*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese*");
-	else PrintToChat(client,"*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese*");
+	if (client == 0) PrintToServer("*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese* *hacks*");
+	else PrintToChat(client,"*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese* *hacks*");
 	return Plugin_Handled;
 }
 

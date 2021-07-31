@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0039"
-			"Previous"	"2.0038"
+			"Latest"  	"2.0040"
+			"Previous"	"2.0039"
 		}
 		
-		"Notes"	"Fixed issues in targetname reset. Fixed bullsquid double model."
+		"Notes"	"Block fixbarney on d3_c17_01."
 	}
 	
 	"Files"
