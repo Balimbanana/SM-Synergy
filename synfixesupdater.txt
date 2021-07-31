@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99988"
-			"Previous"	"1.99987"
+			"Latest"  	"1.99989"
+			"Previous"	"1.99988"
 		}
 		
-		"Notes"	"Block fixbarney on d3_c17_01."
+		"Notes"	"Block fixbarney on d1_trainstation_01."
 	}
 	
 	"Files"
