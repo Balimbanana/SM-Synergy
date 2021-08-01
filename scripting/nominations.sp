@@ -287,7 +287,7 @@ public Action Command_Nominate(int client, int args)
 			if ((similarmaps == 1) && (strlen(lastmapsearch) > 0))
 			{
 				Format(mapname,sizeof(mapname),"%s",lastmapsearch);
-				g_mapTrie.GetValue(mapname, status);
+				//g_mapTrie.GetValue(mapname, status);
 				CloseHandle(menu);
 			}
 			else if (similarmaps > 0)
@@ -296,13 +296,14 @@ public Action Command_Nominate(int client, int args)
 				ReplyToCommand(client, "But there were %i maps found with similar names. Check console", similarmaps);
 				menu.ExitButton = true;
 				menu.Display(client, 120);
+				return Plugin_Handled;
 			}
 			else
 			{
 				CloseHandle(menu);
 				ReplyToCommand(client, "%t", "Map was not found", mapname);
+				return Plugin_Handled;
 			}
-			return Plugin_Handled;
 		}
 		else return Plugin_Handled;
 	}
