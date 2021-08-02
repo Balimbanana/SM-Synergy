@@ -28,8 +28,12 @@ Handle ignoretrigs = INVALID_HANDLE;
 Handle dctimeoutarr = INVALID_HANDLE;
 Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
+ConVar hCVStuckInNPC;
+ConVar hCVFixWeapSnd;
 float entrefresh = 0.0;
 float removertimer = 30.0;
+float centnextatk[2048];
+float centnextsndtime[2048];
 int WeapList = -1;
 int spawneramt = 20;
 int restrictmode = 0;
@@ -38,8 +42,9 @@ int longjumpactive = false;
 int slavezap = 10;
 int playercapadj = 20;
 int instswitch = 1;
+int isattacking[2048];
 bool allownoguide = true;
-bool guiderocket[65];
+bool guiderocket[128];
 bool restrictact = false;
 bool friendlyfire = false;
 bool seqenablecheck = true;
@@ -49,7 +54,7 @@ bool syn56act = false;
 bool vehiclemaphook = false;
 bool playerteleports = false;
 bool hasread = false;
-bool DisplayedChapterTitle[65];
+bool DisplayedChapterTitle[128];
 bool appliedlargeplayeradj = false;
 bool bBlockEx = true;
 bool bFixRebind = false;
@@ -57,8 +62,10 @@ bool TrainBlockFix = true;
 bool GroundStuckFix = true;
 bool BlockChoreoSuicide = true;
 bool BlockTripMineDamage = true;
+bool bPrevWeapRPG[128];
+bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.99990"
+#define PLUGIN_VERSION "1.99991"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -76,7 +83,7 @@ public Plugin myinfo =
 
 float perclimit = 0.66;
 float delaylimit = 66.0;
-float votetime[65];
+float votetime[128];
 int clused = 0;
 int voteact = 0;
 
@@ -228,6 +235,10 @@ public void OnPluginStart()
 		HookConVarChange(cvar, blocktripmindmgech);
 	}
 	CloseHandle(cvar);
+	hCVStuckInNPC = FindConVar("synfixes_stuckinnpc");
+	if (hCVStuckInNPC == INVALID_HANDLE) hCVStuckInNPC = CreateConVar("synfixes_stuckinnpc", "1", "Removes collisions between players and NPCs when they are stuck inside each other.", _, true, 0.0, true, 1.0);
+	hCVFixWeapSnd = FindConVar("sm_fixweaponsounds");
+	if (hCVFixWeapSnd == INVALID_HANDLE) hCVFixWeapSnd = CreateConVar("sm_fixweaponsounds", "1", "Fixes predicted sounds not being played.", _, true, 0.0, true, 1.0);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -290,6 +301,7 @@ public void OnMapStart()
 					SDKHook(i,SDKHook_StartTouch,FallBackSuitOutputs);
 				}
 			}
+			centnextatk[i] = 0.0;
 		}
 		int rellogsv = CreateEntityByName("logic_auto");
 		if ((rellogsv != -1) && (IsValidEntity(rellogsv)))
@@ -1565,6 +1577,70 @@ public Action resetclanim(Handle timer)
 							SetEntProp(i,Prop_Data,"m_bClientSideAnimation",0);
 							SetEntProp(i,Prop_Data,"m_bClientSideAnimation",1);
 						}
+						if (hCVStuckInNPC.BoolValue)
+						{
+							char targn[64];
+							char targn2[64];
+							if (HasEntProp(i,Prop_Data,"m_iName")) GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+							if (strlen(targn) < 1)
+							{
+								Format(targn,sizeof(targn),"synplayer%i",i);
+								SetEntPropString(i,Prop_Data,"m_iName",targn);
+							}
+							float vFeetPos[3], vNPCPos[3];
+							bool bDistWithin = false;
+							GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",vFeetPos);
+							int ent = -1;
+							while((ent = FindEntityByClassname(ent,"npc_*")) != INVALID_ENT_REFERENCE)
+							{
+								if (ent > MaxClients)
+								{
+									if (IsValidEntity(ent))
+									{
+										if (HasEntProp(ent,Prop_Data,"m_CollisionGroup"))
+										{
+											if (GetEntProp(ent,Prop_Data,"m_CollisionGroup") != 5)
+											{
+												GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",vNPCPos);
+												if (GetVectorDistance(vFeetPos,vNPCPos,false) < 10.0) bDistWithin = true;
+												else
+												{
+													// In case player is lifted off ground by collision
+													vNPCPos[2]+=20.0;
+													if (GetVectorDistance(vFeetPos,vNPCPos,false) < 10.0) bDistWithin = true;
+												}
+												if (bDistWithin)
+												{
+													if (HasEntProp(ent,Prop_Data,"m_iName")) GetEntPropString(ent,Prop_Data,"m_iName",targn2,sizeof(targn2));
+													if (strlen(targn2) < 1)
+													{
+														Format(targn2,sizeof(targn2),"synveh%i",ent);
+														SetEntPropString(ent,Prop_Data,"m_iName",targn2);
+													}
+													int logcoll = CreateEntityByName("logic_collision_pair");
+													if (logcoll != -1)
+													{
+														DispatchKeyValue(logcoll,"attach1",targn);
+														DispatchKeyValue(logcoll,"attach2",targn2);
+														DispatchKeyValue(logcoll,"StartDisabled","1");
+														DispatchSpawn(logcoll);
+														ActivateEntity(logcoll);
+														AcceptEntityInput(logcoll,"DisableCollisions");
+														Handle dp2 = CreateDataPack();
+														WritePackCell(dp2,logcoll);
+														WritePackString(dp2,"logic_collision_pair");
+														CreateTimer(0.4,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+													}
+													SetEntProp(ent,Prop_Data,"m_CollisionGroup",5);
+													CreateTimer(0.4,ResetColl,ent,TIMER_FLAG_NO_MAPCHANGE);
+													break;
+												}
+											}
+										}
+									}
+								}
+							}
+						}
 						if (GroundStuckFix)
 						{
 							if (HasEntProp(i,Prop_Data,"m_hVehicle"))
@@ -1598,6 +1674,17 @@ public Action resetclanim(Handle timer)
 						}
 					}
 				}
+			}
+		}
+	}
+	int entity = -1;
+	while((entity = FindEntityByClassname(entity,"crossbow_bolt")) != INVALID_ENT_REFERENCE)
+	{
+		if (IsValidEntity(entity))
+		{
+			if (centnextatk[entity] <= GetGameTime())
+			{
+				AcceptEntityInput(entity,"kill");
 			}
 		}
 	}
@@ -1776,7 +1863,7 @@ void findtouchingents(float mins[3], float maxs[3], int ent)
 			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
 			if ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]))
 			{
-				if ((StrContains(clsname,"weapon_",false) == 0) || (StrContains(clsname,"item_",false) == 0))
+				if ((StrContains(clsname,"weapon_",false) == 0) || (StrContains(clsname,"item_",false) == 0) || (StrEqual(clsname,"crossbow_bolt",false)))
 				{
 					if (HasEntProp(i,Prop_Data,"m_hOwner"))
 					{
@@ -3156,6 +3243,8 @@ public void OnClientDisconnect(int client)
 {
 	votetime[client] = 0.0;
 	DisplayedChapterTitle[client] = false;
+	bPrevOpen[client] = false;
+	bPrevWeapRPG[client] = false;
 }
 
 public Action SynTripmineTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
@@ -3738,6 +3827,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		SDKHookEx(entity,SDKHook_SpawnPost,resetweapmv);
 	}
+	if (StrEqual(classname,"crossbow_bolt",false))
+	{
+		centnextatk[entity] = GetGameTime()+8.0;
+	}
 	if (StrEqual(classname,"rpg_missile",false))
 	{
 		if (IsValidEntity(entity))
@@ -3758,20 +3851,29 @@ public void OnEntityDestroyed(int entity)
 {
 	int find = FindValueInArray(entlist,entity);
 	if (find != -1) RemoveFromArray(entlist,find);
-	if ((IsValidEntity(entity)) && (entity > MaxClients))
+	if (IsValidEntity(entity))
 	{
-		char cls[64];
-		GetEntityClassname(entity,cls,sizeof(cls));
-		if ((StrContains(cls,"choreo",false) != -1) || (StrEqual(cls,"prop_vehicle_prisoner_pod",false)))
+		if (entity > MaxClients)
 		{
-			if (HasEntProp(entity,Prop_Data,"m_hPlayer"))
+			char cls[64];
+			GetEntityClassname(entity,cls,sizeof(cls));
+			if ((StrContains(cls,"choreo",false) != -1) || (StrEqual(cls,"prop_vehicle_prisoner_pod",false)))
 			{
-				int ply = GetEntPropEnt(entity,Prop_Data,"m_hPlayer");
-				if ((IsValidEntity(ply)) && (ply < MaxClients+1))
+				if (HasEntProp(entity,Prop_Data,"m_hPlayer"))
 				{
-					AcceptEntityInput(entity,"ExitVehicle",ply);
+					int ply = GetEntPropEnt(entity,Prop_Data,"m_hPlayer");
+					if ((IsValidEntity(ply)) && (ply < MaxClients+1))
+					{
+						AcceptEntityInput(entity,"ExitVehicle",ply);
+					}
 				}
 			}
+		}
+		if (entity > 0)
+		{
+			centnextatk[entity] = 0.0;
+			centnextsndtime[entity] = 0.0;
+			isattacking[entity] = 0;
 		}
 	}
 }
@@ -3978,6 +4080,25 @@ public Action rechkcol(Handle timer, int logent)
 	}
 }
 
+public Action ResetColl(Handle timer, int entity)
+{
+	if (IsValidEntity(entity))
+	{
+		char szCls[24];
+		GetEntityClassname(entity,szCls,sizeof(szCls));
+		if (StrContains(szCls,"npc_",false) == 0)
+		{
+			if (HasEntProp(entity,Prop_Data,"m_CollisionGroup"))
+			{
+				if (GetEntProp(entity,Prop_Data,"m_CollisionGroup") == 5)
+				{
+					SetEntProp(entity,Prop_Data,"m_CollisionGroup",10);
+				}
+			}
+		}
+	}
+}
+
 public Action rechk(Handle timer, int logent)
 {
 	if (IsValidEntity(logent))
@@ -4028,6 +4149,7 @@ public Action StartTouchprop(int entity, int other)
 
 public Action OnWeaponUse(int client, int weapon)
 {
+	bPrevOpen[client] = false;
 	if (instswitch > 0)
 	{
 		if ((IsValidEntity(weapon)) && (weapon != -1) && (IsValidEntity(client)))
@@ -4041,6 +4163,14 @@ public Action OnWeaponUse(int client, int weapon)
 				WritePackCell(data, client);
 				WritePackCell(data, weapon);
 				CreateTimer(0.1,resetinst,data);
+			}
+		}
+		if (hCVFixWeapSnd.BoolValue)
+		{
+			if (bPrevWeapRPG[client])
+			{
+				EmitSoundToAll("weapons/sniper/sniper_zoomout.wav", client, SNDCHAN_WEAPON, 30);
+				bPrevWeapRPG[client] = false;
 			}
 		}
 	}
@@ -4186,6 +4316,166 @@ public void OnClientDisconnect_Post(int client)
 
 public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3], float angles[3], int &weapon)
 {
+	int vehicle = -1;
+	if (HasEntProp(client,Prop_Data,"m_hVehicle")) vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
+	if (buttons & IN_ATTACK) {
+		char curweap[24];
+		GetClientWeapon(client,curweap,sizeof(curweap));
+		if ((StrEqual(curweap,"weapon_crossbow",false)) && (vehicle == -1))
+		{
+			int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+			if (IsValidEntity(weap))
+			{
+				if (HasEntProp(weap,Prop_Data,"m_iClip1"))
+				{
+					int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
+					float Time = GetTickedTime();
+					if (curclip > 0)
+					{
+						if (HasEntProp(weap,Prop_Data,"m_bReloadsSingly")) SetEntProp(weap,Prop_Data,"m_bReloadsSingly",0);
+						if (HasEntProp(weap,Prop_Send,"m_bMustReload"))
+						{
+							int mustrel = GetEntProp(weap,Prop_Send,"m_bMustReload");
+							SetEntProp(weap,Prop_Send,"m_bMustReload",0);
+							if (centnextatk[weap] < Time)
+							{
+								if (mustrel)
+								{
+									SetEntProp(weap,Prop_Data,"m_bInReload",0);
+									char shootsnd[64];
+									int chan,sndlvl,pitch;
+									float vol;
+									GetGameSoundParams("Weapon_Crossbow.Single",chan,sndlvl,vol,pitch,shootsnd,sizeof(shootsnd),0);
+									if (strlen(shootsnd) > 0)
+									{
+										EmitGameSoundToAll("Weapon_Crossbow.Single",client);
+									}
+								}
+								CreateTimer(0.1,resetweapreload,weap,TIMER_FLAG_NO_MAPCHANGE);
+							}
+						}
+						SetEntProp(weap,Prop_Data,"m_nSequence",0);
+						centnextatk[weap] = Time + 2.0;
+					}
+				}
+			}
+		}
+		else if (StrEqual(curweap,"weapon_physcannon",false))
+		{
+			int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+			centnextsndtime[weap] = GetTickedTime() + 0.5;
+			bPrevOpen[client] = false;
+		}
+	}
+	else if (hCVFixWeapSnd.BoolValue)
+	{
+		if (vehicle == -1)
+		{
+			int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+			if (IsValidEntity(weap))
+			{
+				char curweap[24];
+				GetEntPropString(weap,Prop_Data,"m_iClassname",curweap,sizeof(curweap));
+				if (StrEqual(curweap,"weapon_physcannon",false))
+				{
+					if (HasEntProp(weap,Prop_Send,"m_bOpen"))
+					{
+						float Time = GetTickedTime();
+						if (centnextsndtime[weap] <= Time)
+						{
+							int bOpen = GetEntProp(weap,Prop_Send,"m_bOpen");
+							int iEffState = GetEntProp(weap,Prop_Send,"m_EffectState");
+							if ((bOpen && !bPrevOpen[client]) && (iEffState != 3))
+							{
+								bPrevOpen[client] = true;
+								EmitSoundToAll("weapons/physcannon/physcannon_claws_open.wav", client, SNDCHAN_WEAPON, 35);
+							}
+							else if (!bOpen && bPrevOpen[client])
+							{
+								bPrevOpen[client] = false;
+								EmitSoundToAll("weapons/physcannon/physcannon_claws_close.wav", client, SNDCHAN_WEAPON, 35);
+							}
+							if (buttons & IN_ATTACK2)
+							{
+								if ((iEffState == 3) && (bOpen))
+								{
+									/*
+									if (GetEntProp(weap,Prop_Send,"m_bMegaState"))
+									{
+										
+									}
+									*/
+									float flIdle = GetEntPropFloat(weap,Prop_Send,"m_flTimeWeaponIdle");
+									float flNextSecond = GetEntPropFloat(weap,Prop_Send,"m_flNextSecondaryAttack");
+									if ((flIdle <= flNextSecond+1.0) && (!isattacking[weap]))
+									{
+										isattacking[weap] = 1;
+										EmitSoundToAll("weapons/physcannon/physcannon_pickup.wav", client, SNDCHAN_WEAPON, 35);
+									}
+								}
+							}
+							else isattacking[weap] = 0;
+						}
+					}
+				}
+				else if (StrEqual(curweap,"weapon_rpg",false))
+				{
+					if (HasEntProp(weap,Prop_Send,"m_bInitialStateUpdate"))
+					{
+						int bInit = GetEntProp(weap,Prop_Send,"m_bInitialStateUpdate");
+						if (!bInit && bPrevOpen[client])
+						{
+							bPrevOpen[client] = false;
+							EmitSoundToAll("weapons/sniper/sniper_zoomin.wav", client, SNDCHAN_WEAPON, 30);
+						}
+						else if (bInit) bPrevOpen[client] = true;
+						bPrevWeapRPG[client] = true;
+						float Time = GetGameTime();
+						float flPrimaryAtk = GetEntPropFloat(weap,Prop_Send,"m_flNextPrimaryAttack");
+						int iRPGAmm = 8;
+						if (HasEntProp(weap,Prop_Send,"m_iPrimaryAmmoType")) iRPGAmm = GetEntProp(weap,Prop_Send,"m_iPrimaryAmmoType");
+						int iCurAmm = GetEntProp(client,Prop_Send,"m_iAmmo",_,iRPGAmm);
+						if ((iCurAmm == 0) && (!isattacking[weap]) && (flPrimaryAtk > Time+2.0))
+						{
+							EmitSoundToAll("weapons/sniper/sniper_zoomout.wav", client, SNDCHAN_WEAPON, 30);
+							isattacking[weap] = 1;
+						}
+						else if (iCurAmm > 0) isattacking[weap] = 0;
+					}
+				}
+				else if (StrEqual(curweap,"weapon_crossbow",false))
+				{
+					int curclip = GetEntProp(weap,Prop_Data,"m_iClip1");
+					if ((curclip == 0) && (!bPrevOpen[client]))
+					{
+						if (HasEntProp(weap,Prop_Data,"m_bInReload"))
+						{
+							int bInReload = GetEntProp(weap,Prop_Data,"m_bInReload");
+							if (bInReload)
+							{
+								float Time = GetGameTime();
+								float flPrimaryAtk = GetEntPropFloat(weap,Prop_Send,"m_flNextPrimaryAttack");
+								if (flPrimaryAtk < Time+1.20)
+								{
+									bPrevOpen[client] = true;
+									char shootsnd[64];
+									int chan,sndlvl,pitch;
+									float vol;
+									GetGameSoundParams("Weapon_Crossbow.BoltElectrify",chan,sndlvl,vol,pitch,shootsnd,sizeof(shootsnd),0);
+									if (strlen(shootsnd) > 0)
+									{
+										EmitGameSoundToAll("Weapon_Crossbow.BoltElectrify",client);
+									}
+								}
+							}
+							else bPrevOpen[client] = false;
+						}
+					}
+					else if (curclip > 0) bPrevOpen[client] = false;
+				}
+			}
+		}
+	}
 	if (buttons & IN_ATTACK2) {
 		if (!(g_LastButtons[client] & IN_ATTACK2)) {
 			OnButtonPress(client,IN_ATTACK2);
@@ -4198,23 +4488,22 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	}
 	if (impulse == 100)
 	{
-		int vehicles = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
-		if ((vehicles > MaxClients) && (IsValidEntity(vehicles)))
+		if ((vehicle > MaxClients) && (IsValidEntity(vehicle)))
 		{
 			int driver = GetEntProp(client,Prop_Data,"m_iHideHUD");
 			int running = 1;
-			if (HasEntProp(vehicles,Prop_Data,"m_bIsOn")) running = GetEntProp(vehicles,Prop_Data,"m_bIsOn");
+			if (HasEntProp(vehicle,Prop_Data,"m_bIsOn")) running = GetEntProp(vehicle,Prop_Data,"m_bIsOn");
 			if ((driver == 3328) && (running))
 			{
 				char clsname[32];
-				GetEntityClassname(vehicles,clsname,sizeof(clsname));
+				GetEntityClassname(vehicle,clsname,sizeof(clsname));
 				if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
 				{
-					if (HasEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn"))
+					if (HasEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn"))
 					{
-						if (GetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn")) SetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn",0);
-						else SetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn",1);
-						EmitSoundToAll("items/flashlight1.wav", vehicles, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+						if (GetEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn")) SetEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn",0);
+						else SetEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn",1);
+						EmitSoundToAll("items/flashlight1.wav", vehicle, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 					}
 				}
 			}
@@ -4223,30 +4512,129 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	g_LastButtons[client] = buttons;
 }
 
+public Action resetweapreload(Handle timer, int weap)
+{
+	if (IsValidEntity(weap))
+	{
+		char clschk[24];
+		GetEntityClassname(weap,clschk,sizeof(clschk));
+		if (StrContains(clschk,"weapon_",false) == 0)
+		{
+			SetEntPropFloat(weap,Prop_Data,"m_flNextPrimaryAttack",GetGameTime()-0.01);
+			SetEntPropFloat(weap,Prop_Data,"m_flNextSecondaryAttack",GetGameTime()-0.01);
+			SetEntProp(weap,Prop_Data,"m_bInReload",0);
+			if (HasEntProp(weap,Prop_Send,"m_bMustReload")) SetEntProp(weap,Prop_Send,"m_bMustReload",0);
+			if (StrEqual(clschk,"weapon_crossbow",false))
+			{
+				SetEntProp(weap,Prop_Data,"m_nSequence",0);
+			}
+		}
+	}
+	return Plugin_Handled;
+}
+
 public void OnButtonPress(int client, int button)
 {
-	if (allownoguide)
+	int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
+	if (vehicle == -1)
 	{
-		char curweap[24];
-		GetClientWeapon(client,curweap,sizeof(curweap));
-		int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
-		if ((StrEqual(curweap,"weapon_rpg",false)) && (vehicle == -1))
+		if (allownoguide)
 		{
-			if (guiderocket[client])
+			char curweap[24];
+			GetClientWeapon(client,curweap,sizeof(curweap));
+			if (StrEqual(curweap,"weapon_rpg",false))
 			{
-				guiderocket[client] = false;
-				PrintToChat(client,"Turned off rocket guide.");
-				int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
-				SetEntProp(weap,Prop_Send,"m_bGuiding",0);
-				SetEntProp(weap,Prop_Data,"m_bInReload",0);
-				SetEntProp(weap,Prop_Data,"m_nSequence",2);
+				if (guiderocket[client])
+				{
+					guiderocket[client] = false;
+					PrintToChat(client,"Turned off rocket guide.");
+					int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+					SetEntProp(weap,Prop_Send,"m_bGuiding",0);
+					SetEntProp(weap,Prop_Data,"m_bInReload",0);
+					SetEntProp(weap,Prop_Data,"m_nSequence",2);
+					EmitSoundToAll("weapons/sniper/sniper_zoomout.wav", client, SNDCHAN_WEAPON, 30);
+					Handle laserdotarr = CreateArray(256);
+					FindAllByClassname(laserdotarr,-1,"env_laserdot");
+					if (GetArraySize(laserdotarr) > 0)
+					{
+						for (int i = 0;i<GetArraySize(laserdotarr);i++)
+						{
+							int laserdot = GetArrayCell(laserdotarr,i);
+							if (IsValidEntity(laserdot))
+							{
+								if (HasEntProp(laserdot,Prop_Data,"m_hOwnerEntity"))
+								{
+									int owner = GetEntPropEnt(laserdot,Prop_Data,"m_hOwnerEntity");
+									if (owner == client)
+									{
+										SetEntProp(laserdot,Prop_Data,"m_nRenderFX",6);
+										break;
+									}
+								}
+							}
+						}
+					}
+					CloseHandle(laserdotarr);
+				}
+				else
+				{
+					guiderocket[client] = true;
+					PrintToChat(client,"Turned on rocket guide.");
+					EmitSoundToAll("weapons/sniper/sniper_zoomin.wav", client, SNDCHAN_WEAPON, 30);
+					Handle laserdotarr = CreateArray(256);
+					FindAllByClassname(laserdotarr,-1,"env_laserdot");
+					if (GetArraySize(laserdotarr) > 0)
+					{
+						for (int i = 0;i<GetArraySize(laserdotarr);i++)
+						{
+							int laserdot = GetArrayCell(laserdotarr,i);
+							if (IsValidEntity(laserdot))
+							{
+								if (HasEntProp(laserdot,Prop_Data,"m_hOwnerEntity"))
+								{
+									int owner = GetEntPropEnt(laserdot,Prop_Data,"m_hOwnerEntity");
+									if (owner == client)
+									{
+										SetEntProp(laserdot,Prop_Data,"m_nRenderFX",0);
+										break;
+									}
+								}
+							}
+						}
+					}
+					CloseHandle(laserdotarr);
+				}
+				findrockets(-1,client);
 			}
-			else
+		}
+		if (hCVFixWeapSnd.BoolValue)
+		{
+			int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+			if (IsValidEntity(weap))
 			{
-				guiderocket[client] = true;
-				PrintToChat(client,"Turned on rocket guide.");
+				char curweap[24];
+				GetEntPropString(weap,Prop_Data,"m_iClassname",curweap,sizeof(curweap));
+				if (StrEqual(curweap,"weapon_physcannon",false))
+				{
+					if (HasEntProp(weap,Prop_Send,"m_bOpen"))
+					{
+						int bOpen = GetEntProp(weap,Prop_Send,"m_bOpen");
+						int iEffState = GetEntProp(weap,Prop_Send,"m_EffectState");
+						if (!bOpen)
+						{
+							EmitSoundToAll("weapons/physcannon/physcannon_tooheavy.wav", client, SNDCHAN_WEAPON, 35);
+						}
+						else if (iEffState == 2)
+						{
+							EmitSoundToAll("weapons/physcannon/physcannon_pickup.wav", client, SNDCHAN_WEAPON, 35);
+						}
+						else if (iEffState == 3)
+						{
+							EmitSoundToAll("weapons/physcannon/physcannon_drop.wav", client, SNDCHAN_WEAPON, 35);
+						}
+					}
+				}
 			}
-			findrockets(-1,client);
 		}
 	}
 }

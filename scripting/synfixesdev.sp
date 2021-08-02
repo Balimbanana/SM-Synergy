@@ -62,6 +62,8 @@ Handle addedinputs = INVALID_HANDLE;
 Handle hTemplateData = INVALID_HANDLE;
 ConVar hWeaponRespawn;
 ConVar hBaseEquipmentSetup;
+ConVar hCVStuckInNPC;
+ConVar hCVFixWeapSnd;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float fadingtime[128];
@@ -112,12 +114,10 @@ bool BlockChoreoSuicide = true;
 bool LongJumpMode = false;
 bool norunagain = false;
 bool BlockTripMineDamage = true;
-bool FixWeapSnd = true;
 bool bFixSoundScapes = true;
-bool bFixNPCStuck = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0041"
+#define PLUGIN_VERSION "2.0042"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -360,18 +360,8 @@ public void OnPluginStart()
 		HookConVarChange(cvar, blocktripmindmgech);
 	}
 	CloseHandle(cvar);
-	cvar = FindConVar("sm_fixweaponsounds");
-	if (cvar != INVALID_HANDLE)
-	{
-		FixWeapSnd = GetConVarBool(cvar);
-		HookConVarChange(cvar, fixweapsndch);
-	}
-	else
-	{
-		cvar = CreateConVar("sm_fixweaponsounds", "1", "Fixes predicted sounds not being played.", _, true, 0.0, true, 1.0);
-		FixWeapSnd = GetConVarBool(cvar);
-		HookConVarChange(cvar, fixweapsndch);
-	}
+	hCVFixWeapSnd = FindConVar("sm_fixweaponsounds");
+	if (hCVFixWeapSnd == INVALID_HANDLE) hCVFixWeapSnd = CreateConVar("sm_fixweaponsounds", "1", "Fixes predicted sounds not being played.", _, true, 0.0, true, 1.0);
 	CloseHandle(cvar);
 	cvar = FindConVar("synfixes_fixsoundscapes");
 	if (cvar != INVALID_HANDLE)
@@ -386,19 +376,8 @@ public void OnPluginStart()
 		HookConVarChange(cvar, fixsndscapech);
 	}
 	CloseHandle(cvar);
-	cvar = FindConVar("synfixes_stuckinnpc");
-	if (cvar != INVALID_HANDLE)
-	{
-		bFixNPCStuck = GetConVarBool(cvar);
-		HookConVarChange(cvar, stuckinnpcch);
-	}
-	else
-	{
-		cvar = CreateConVar("synfixes_stuckinnpc", "1", "Removes collisions between players and NPCs when they are stuck inside each other.", _, true, 0.0, true, 1.0);
-		bFixNPCStuck = GetConVarBool(cvar);
-		HookConVarChange(cvar, stuckinnpcch);
-	}
-	CloseHandle(cvar);
+	hCVStuckInNPC = FindConVar("synfixes_stuckinnpc");
+	if (hCVStuckInNPC == INVALID_HANDLE) hCVStuckInNPC = CreateConVar("synfixes_stuckinnpc", "1", "Removes collisions between players and NPCs when they are stuck inside each other.", _, true, 0.0, true, 1.0);
 	cvar = FindConVar("npc_merchant_currency");
 	if (cvar != INVALID_HANDLE)
 	{
@@ -3748,7 +3727,7 @@ public Action resetclanim(Handle timer)
 								}
 							}
 						}
-						if (bFixNPCStuck)
+						if (hCVStuckInNPC.BoolValue)
 						{
 							char targn[64];
 							char targn2[64];
@@ -3845,6 +3824,17 @@ public Action resetclanim(Handle timer)
 						}
 					}
 				}
+			}
+		}
+	}
+	int entity = -1;
+	while((entity = FindEntityByClassname(entity,"crossbow_bolt")) != INVALID_ENT_REFERENCE)
+	{
+		if (IsValidEntity(entity))
+		{
+			if (centnextatk[entity] <= GetGameTime())
+			{
+				AcceptEntityInput(entity,"kill");
 			}
 		}
 	}
@@ -4156,7 +4146,7 @@ void findtouchingents(float mins[3], float maxs[3], int ent)
 			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",porigin);
 			if ((porigin[0] > mins[0]) && (porigin[1] > mins[1]) && (porigin[2] > mins[2]) && (porigin[0] < maxs[0]) && (porigin[1] < maxs[1]) && (porigin[2] < maxs[2]))
 			{
-				if ((StrContains(clsname,"weapon_",false) == 0) || (StrContains(clsname,"item_",false) == 0))
+				if ((StrContains(clsname,"weapon_",false) == 0) || (StrContains(clsname,"item_",false) == 0) || (StrEqual(clsname,"crossbow_bolt",false)))
 				{
 					if (HasEntProp(i,Prop_Data,"m_hOwner"))
 					{
@@ -15679,6 +15669,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		SDKHookEx(entity,SDKHook_Spawn,resetweapmv);
 	}
+	if (StrEqual(classname,"crossbow_bolt",false))
+	{
+		centnextatk[entity] = GetGameTime()+8.0;
+	}
 	if (StrEqual(classname,"generic_actor",false))
 	{
 		SDKHookEx(entity,SDKHook_Spawn,chkgeneric);
@@ -20089,7 +20083,7 @@ public Action OnWeaponUse(int client, int weapon)
 				CreateTimer(0.1,resetinst,data,TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
-		if (FixWeapSnd)
+		if (hCVFixWeapSnd.BoolValue)
 		{
 			if (bPrevWeapRPG[client])
 			{
@@ -20633,13 +20627,12 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 		}
 	}
-	int vehicles = -1;
-	if (HasEntProp(client,Prop_Data,"m_hVehicle")) vehicles = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
+	int vehicle = -1;
+	if (HasEntProp(client,Prop_Data,"m_hVehicle")) vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
 	if (buttons & IN_ATTACK) {
 		if (!(g_LastButtons[client] & IN_ATTACK)) {
 			OnButtonPressTankchk(client,IN_ATTACK);
 		}
-		int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
 		if ((StrContains(mapbuf,"maps/ent_cache/bms_bm_c",false) == 0) || (StrContains(mapbuf,"maps/ent_cache/bms_hc_t",false) == 0) || (StrContains(mapbuf,"maps/ent_cache/bmsxen_xen_c",false) == 0))
 		{
 			char curweap[24];
@@ -20710,9 +20703,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			bPrevOpen[client] = false;
 		}
 	}
-	else if (FixWeapSnd)
+	else if (hCVFixWeapSnd.BoolValue)
 	{
-		int vehicle = GetEntPropEnt(client,Prop_Data,"m_hVehicle");
 		if (vehicle == -1)
 		{
 			int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
@@ -20825,29 +20817,29 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	}
 	if (impulse == 100)
 	{
-		if ((vehicles > MaxClients) && (IsValidEntity(vehicles)))
+		if ((vehicle > MaxClients) && (IsValidEntity(vehicle)))
 		{
 			int driver = GetEntProp(client,Prop_Data,"m_iHideHUD");
 			int running = 1;
-			if (HasEntProp(vehicles,Prop_Data,"m_bIsOn")) running = GetEntProp(vehicles,Prop_Data,"m_bIsOn");
+			if (HasEntProp(vehicle,Prop_Data,"m_bIsOn")) running = GetEntProp(vehicle,Prop_Data,"m_bIsOn");
 			if ((driver == 3328) && (running))
 			{
 				char clsname[32];
-				GetEntityClassname(vehicles,clsname,sizeof(clsname));
+				GetEntityClassname(vehicle,clsname,sizeof(clsname));
 				if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
 				{
-					if (HasEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn"))
+					if (HasEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn"))
 					{
-						if (GetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn")) SetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn",0);
-						else SetEntProp(vehicles,Prop_Data,"m_bHeadlightIsOn",1);
-						EmitSoundToAll("items/flashlight1.wav", vehicles, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+						if (GetEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn")) SetEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn",0);
+						else SetEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn",1);
+						EmitSoundToAll("items/flashlight1.wav", vehicle, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 					}
 				}
 			}
 		}
 	}
 	if (buttons & IN_JUMP) {
-		if ((!(g_LastButtons[client] & IN_JUMP)) && (vehicles == -1)) {
+		if ((!(g_LastButtons[client] & IN_JUMP)) && (vehicle == -1)) {
 			OnButtonPressJump(client,buttons);
 		}
 	}
@@ -20984,7 +20976,7 @@ public void OnButtonPress(int client, int button)
 				findrockets(-1,client);
 			}
 		}
-		if (FixWeapSnd)
+		if (hCVFixWeapSnd.BoolValue)
 		{
 			int weap = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
 			if (IsValidEntity(weap))
@@ -22041,28 +22033,12 @@ public void blocktripmindmgech(Handle convar, const char[] oldValue, const char[
 		BlockTripMineDamage = false;
 }
 
-public void fixweapsndch(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if (StringToInt(newValue) > 0)
-		FixWeapSnd = true;
-	else
-		FixWeapSnd = false;
-}
-
 public void fixsndscapech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (StringToInt(newValue) > 0)
 		bFixSoundScapes = true;
 	else
 		bFixSoundScapes = false;
-}
-
-public void stuckinnpcch(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if (StringToInt(newValue) > 0)
-		bFixNPCStuck = true;
-	else
-		bFixNPCStuck = false;
 }
 
 public void merchcurrencych(Handle convar, const char[] oldValue, const char[] newValue)
