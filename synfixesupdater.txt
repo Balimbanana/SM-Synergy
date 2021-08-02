@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99989"
-			"Previous"	"1.99988"
+			"Latest"  	"1.99990"
+			"Previous"	"1.99989"
 		}
 		
-		"Notes"	"Block fixbarney on d1_trainstation_01."
+		"Notes"	"Added a fix from dev in barney."
 	}
 	
 	"Files"
