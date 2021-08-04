@@ -117,7 +117,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0042"
+#define PLUGIN_VERSION "2.0043"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1757,7 +1757,7 @@ public Action fixbarney(int client, int args)
 	}
 	char tmpmap[24];
 	GetCurrentMap(tmpmap,sizeof(tmpmap));
-	if ((StrEqual(tmpmap,"ep1_c17_06",false)) || (StrEqual(tmpmap,"d1_trainstation_01",false)) || (StrEqual(tmpmap,"d1_trainstation_06",false)) || (StrEqual(tmpmap,"d3_c17_01",false))) return Plugin_Handled;
+	if ((StrEqual(tmpmap,"ep1_c17_06",false)) || (StrEqual(tmpmap,"ep1_c17_02b",false)) || (StrEqual(tmpmap,"d1_trainstation_01",false)) || (StrEqual(tmpmap,"d1_trainstation_06",false)) || (StrEqual(tmpmap,"d3_c17_01",false))) return Plugin_Handled;
 	findgfollow(-1,"barney");
 	int ent = -1;
 	char szName[16];

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99991"
-			"Previous"	"1.99990"
+			"Latest"  	"1.99992"
+			"Previous"	"1.99991"
 		}
 		
-		"Notes"	"Added crossbow_bolt to train collision check."
+		"Notes"	"Block barney on ep1_c17_02b."
 	}
 	
 	"Files"
