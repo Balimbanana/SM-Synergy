@@ -3842,12 +3842,12 @@ public Action resetclanim(Handle timer)
 	}
 	for (int i = MaxClients+1;i<2048;i++)
 	{
-		if (flEntCreateTime[entity] > 0.0)
+		if (flEntCreateTime[i] > 0.0)
 		{
-			if (flEntCreateTime[entity]+removertimer <= GetGameTime())
+			if (flEntCreateTime[i]+removertimer <= GetGameTime())
 			{
-				flEntCreateTime[entity] = 0.0;
-				AcceptEntityInput(entity,"kill");
+				flEntCreateTime[i] = 0.0;
+				AcceptEntityInput(i,"kill");
 			}
 		}
 	}
