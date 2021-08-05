@@ -69,6 +69,7 @@ float removertimer = 30.0;
 float fadingtime[128];
 float antispamchk[128];
 float LastJump[128];
+float flEntCreateTime[2048];
 int WeapList = -1;
 int tauhl2beam = -1;
 int spawneramt = 20;
@@ -117,7 +118,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0043"
+#define PLUGIN_VERSION "2.0044"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -833,6 +834,7 @@ public void OnMapStart()
 			glotext[i] = "";
 			bCheckedMdl[i] = false;
 			bHasInit[i] = false;
+			flEntCreateTime[i] = 0.0;
 			if (IsValidEntity(i))
 			{
 				GetEntityClassname(i,szClsGet,sizeof(szClsGet));
@@ -3834,6 +3836,17 @@ public Action resetclanim(Handle timer)
 		{
 			if (centnextatk[entity] <= GetGameTime())
 			{
+				AcceptEntityInput(entity,"kill");
+			}
+		}
+	}
+	for (int i = MaxClients+1;i<2048;i++)
+	{
+		if (flEntCreateTime[entity] > 0.0)
+		{
+			if (flEntCreateTime[entity]+removertimer <= GetGameTime())
+			{
+				flEntCreateTime[entity] = 0.0;
 				AcceptEntityInput(entity,"kill");
 			}
 		}
@@ -15605,11 +15618,14 @@ public void OnEntityCreated(int entity, const char[] classname)
 	if ((StrEqual(classname,"item_health_drop",false)) || (StrEqual(classname,"item_ammo_drop",false)) || (StrEqual(classname,"item_ammo_pack",false)))
 	{
 		SDKHook(entity, SDKHook_StartTouch, StartTouchprop);
+		flEntCreateTime[entity] = GetGameTime();
+		/*
 		Handle data;
 		data = CreateDataPack();
 		WritePackCell(data, entity);
 		WritePackString(data, classname);
 		CreateTimer(removertimer,cleanup,data,TIMER_FLAG_NO_MAPCHANGE);
+		*/
 	}
 	if ((StrEqual(classname,"logic_auto",false)) || (StrEqual(classname,"env_sprite",false)) || (StrEqual(classname,"env_laser",false)))
 	{

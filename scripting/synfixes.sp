@@ -34,6 +34,7 @@ float entrefresh = 0.0;
 float removertimer = 30.0;
 float centnextatk[2048];
 float centnextsndtime[2048];
+float flEntCreateTime[2048];
 int WeapList = -1;
 int spawneramt = 20;
 int restrictmode = 0;
@@ -65,7 +66,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.99992"
+#define PLUGIN_VERSION "1.99993"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -302,6 +303,7 @@ public void OnMapStart()
 				}
 			}
 			centnextatk[i] = 0.0;
+			flEntCreateTime[i] = 0.0;
 		}
 		int rellogsv = CreateEntityByName("logic_auto");
 		if ((rellogsv != -1) && (IsValidEntity(rellogsv)))
@@ -1629,7 +1631,7 @@ public Action resetclanim(Handle timer)
 														Handle dp2 = CreateDataPack();
 														WritePackCell(dp2,logcoll);
 														WritePackString(dp2,"logic_collision_pair");
-														CreateTimer(0.4,cleanup,dp2,TIMER_FLAG_NO_MAPCHANGE);
+														CreateTimer(0.4,cleanup,dp2);
 													}
 													SetEntProp(ent,Prop_Data,"m_CollisionGroup",5);
 													CreateTimer(0.4,ResetColl,ent,TIMER_FLAG_NO_MAPCHANGE);
@@ -1684,6 +1686,17 @@ public Action resetclanim(Handle timer)
 		{
 			if (centnextatk[entity] <= GetGameTime())
 			{
+				AcceptEntityInput(entity,"kill");
+			}
+		}
+	}
+	for (int i = MaxClients+1;i<2048;i++)
+	{
+		if (flEntCreateTime[entity] > 0.0)
+		{
+			if (flEntCreateTime[entity]+removertimer <= GetGameTime())
+			{
+				flEntCreateTime[entity] = 0.0;
 				AcceptEntityInput(entity,"kill");
 			}
 		}
@@ -3785,11 +3798,14 @@ public void OnEntityCreated(int entity, const char[] classname)
 	if ((StrEqual(classname,"item_health_drop",false)) || (StrEqual(classname,"item_ammo_drop",false)) || (StrEqual(classname,"item_ammo_pack",false)))
 	{
 		SDKHook(entity, SDKHook_StartTouch, StartTouchprop);
+		flEntCreateTime[entity] = GetGameTime();
+		/*
 		Handle data;
 		data = CreateDataPack();
 		WritePackCell(data, entity);
 		WritePackString(data, classname);
 		CreateTimer(removertimer,cleanup,data,TIMER_FLAG_NO_MAPCHANGE);
+		*/
 	}
 	if (StrEqual(classname,"logic_auto",false))
 	{
@@ -3874,6 +3890,7 @@ public void OnEntityDestroyed(int entity)
 			centnextatk[entity] = 0.0;
 			centnextsndtime[entity] = 0.0;
 			isattacking[entity] = 0;
+			flEntCreateTime[entity] = 0.0;
 		}
 	}
 }

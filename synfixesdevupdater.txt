@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0043"
-			"Previous"	"2.0042"
+			"Latest"  	"2.0044"
+			"Previous"	"2.0043"
 		}
 		
-		"Notes"	"Block barney on ep1_c17_02b."
+		"Notes"	"Rewrite of sm_removedrops to not use any handles."
 	}
 	
 	"Files"
