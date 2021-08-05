@@ -2483,7 +2483,7 @@ public void OnMapStart()
 				}
 			}
 			if ((dbg) && (GetArraySize(transitionents) > 0)) LogMessage("ClearTransitionEnts Array after restore of %i ents",GetArraySize(transitionents));
-			ClearArrayHandles(transitionents);
+			//ClearArrayHandles(transitionents);
 			ClearArray(transitionents);
 			if ((alyxtransition != -1) && (IsValidEntity(alyxtransition)))
 			{
