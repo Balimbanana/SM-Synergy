@@ -65,7 +65,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.176"
+#define PLUGIN_VERSION "2.177"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2483,6 +2483,7 @@ public void OnMapStart()
 				}
 			}
 			if ((dbg) && (GetArraySize(transitionents) > 0)) LogMessage("ClearTransitionEnts Array after restore of %i ents",GetArraySize(transitionents));
+			ClearArrayHandles(transitionents);
 			ClearArray(transitionents);
 			if ((alyxtransition != -1) && (IsValidEntity(alyxtransition)))
 			{
@@ -2553,6 +2554,24 @@ public void OnMapStart()
 						WriteFileLine(subfiletarg,"");
 					}
 					CloseHandle(subfiletarg);
+				}
+			}
+		}
+	}
+}
+
+void ClearArrayHandles(Handle array)
+{
+	if (array != INVALID_HANDLE)
+	{
+		if (view_as<int>(array) != 1634494062)
+		{
+			if (GetArraySize(array) > 0)
+			{
+				for (int i = 0;i<GetArraySize(array);i++)
+				{
+					Handle closearr = GetArrayCell(array,i);
+					if (closearr != INVALID_HANDLE) CloseHandle(closearr);
 				}
 			}
 		}
@@ -2695,10 +2714,13 @@ public void OnMapEnd()
 	else if (!reloadingmap)
 	{
 		ClearArray(transitionid);
+		ClearArrayHandles(transitiondp);
 		ClearArray(transitiondp);
 		ClearArray(transitionplyorigin);
 		if (dbg) LogMessage("ClearTransitionEnts Array");
+		ClearArrayHandles(transitionents);
 		ClearArray(transitionents);
+		ClearArrayHandles(globalstransition);
 		ClearArray(globalstransition);
 		ClearArray(equiparr);
 		prevmap = "";
@@ -2709,6 +2731,7 @@ public Action transitiontimeout(Handle timer)
 {
 	timouthndl = INVALID_HANDLE;
 	ClearArray(transitionid);
+	ClearArrayHandles(transitiondp);
 	ClearArray(transitiondp);
 	ClearArray(transitionplyorigin);
 	if (GetArraySize(equiparr) > 0)
@@ -2745,6 +2768,7 @@ public Action resettransition(int args)
 	if (!reloadingmap)
 	{
 		ClearArray(transitionid);
+		ClearArrayHandles(transitiondp);
 		ClearArray(transitiondp);
 		ClearArray(transitionplyorigin);
 		ClearArray(equiparr);
@@ -2785,6 +2809,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			if (StrEqual(clschk,"trigger_changelevel",false)) validchange = true;
 		}
 		ClearArray(transitionid);
+		ClearArrayHandles(transitiondp);
 		ClearArray(transitiondp);
 		ClearArray(transitionplyorigin);
 		ClearArray(ignoreent);

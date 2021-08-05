@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.176"
-			"Previous"	"2.175"
+			"Latest"  	"2.177"
+			"Previous"	"2.176"
 		}
 		
-		"Notes"	"Fix one potential handle leak."
+		"Notes"	"Fix potential handle leak."
 	}
 	
 	"Files"
