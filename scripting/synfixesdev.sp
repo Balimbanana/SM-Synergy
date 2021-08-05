@@ -118,7 +118,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0044"
+#define PLUGIN_VERSION "2.0045"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3842,14 +3842,18 @@ public Action resetclanim(Handle timer)
 	}
 	for (int i = MaxClients+1;i<2048;i++)
 	{
-		if (flEntCreateTime[i] > 0.0)
+		if (IsValidEntity(i))
 		{
-			if (flEntCreateTime[i]+removertimer <= GetGameTime())
+			if (flEntCreateTime[i] > 0.0)
 			{
-				flEntCreateTime[i] = 0.0;
-				AcceptEntityInput(i,"kill");
+				if (flEntCreateTime[i]+removertimer <= GetGameTime())
+				{
+					flEntCreateTime[i] = 0.0;
+					AcceptEntityInput(i,"kill");
+				}
 			}
 		}
+		else flEntCreateTime[i] = 0.0;
 	}
 }
 

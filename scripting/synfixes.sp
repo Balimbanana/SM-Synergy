@@ -66,7 +66,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.99994"
+#define PLUGIN_VERSION "1.99995"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1692,14 +1692,18 @@ public Action resetclanim(Handle timer)
 	}
 	for (int i = MaxClients+1;i<2048;i++)
 	{
-		if (flEntCreateTime[i] > 0.0)
+		if (IsValidEntity(i))
 		{
-			if (flEntCreateTime[i]+removertimer <= GetGameTime())
+			if (flEntCreateTime[i] > 0.0)
 			{
-				flEntCreateTime[i] = 0.0;
-				AcceptEntityInput(i,"kill");
+				if (flEntCreateTime[i]+removertimer <= GetGameTime())
+				{
+					flEntCreateTime[i] = 0.0;
+					AcceptEntityInput(i,"kill");
+				}
 			}
 		}
+		else flEntCreateTime[i] = 0.0;
 	}
 }
 

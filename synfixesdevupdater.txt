@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0044"
-			"Previous"	"2.0043"
+			"Latest"  	"2.0045"
+			"Previous"	"2.0044"
 		}
 		
-		"Notes"	"Rewrite of sm_removedrops to not use any handles."
+		"Notes"	"Additional validation in removedrops."
 	}
 	
 	"Files"
