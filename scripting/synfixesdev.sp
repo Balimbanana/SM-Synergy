@@ -3202,10 +3202,13 @@ public Action elevatorstart(const char[] output, int caller, int activator, floa
 				}
 			}
 		}
+		if (strlen(elevtargn) > 0)
+		{
+			CreateTimer(0.1,elevatorstartpost,caller);
+			//Post check
+			CreateTimer(5.0,elevatorstartpost,caller);
+		}
 	}
-	CreateTimer(0.1,elevatorstartpost,caller);
-	//Post check
-	CreateTimer(5.0,elevatorstartpost,caller);
 }
 
 public Action elevatorstartpost(Handle timer, int elev)

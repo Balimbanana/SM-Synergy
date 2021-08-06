@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.38"
-			"Previous"	"1.37"
+			"Latest"  	"1.39"
+			"Previous"	"1.38"
 		}
 		
-		"Notes"	"Additional info in gi."
+		"Notes"	"Fix potential handle leak in certain situations."
 	}
 	
 	"Files"

@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.38"
+#define PLUGIN_VERSION "1.39"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -1526,6 +1526,7 @@ public Action listents(int client, int args)
 		{
 			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",search);
 			else PrintToConsole(client,"No entities found with either classname or targetname of %s",search);
+			CloseHandle(arr);
 			return Plugin_Handled;
 		}
 		else
@@ -2172,6 +2173,7 @@ public Action moveentity(int client, int args)
 		{
 			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",search);
 			else PrintToConsole(client,"No entities found with either classname or targetname of %s",search);
+			CloseHandle(arr);
 			return Plugin_Handled;
 		}
 		else
@@ -2441,6 +2443,7 @@ public Action EntCreateReplace(int client, int args)
 									{
 										PrintToConsole(client,"The material %s was not found.",matchk);
 										AcceptEntityInput(stuff,"kill");
+										CloseHandle(passedarr);
 										return Plugin_Handled;
 									}
 									else if (!IsModelPrecached(matchk))
@@ -2454,6 +2457,7 @@ public Action EntCreateReplace(int client, int args)
 									{
 										PrintToConsole(client,"The model %s was not found.",tmp2);
 										AcceptEntityInput(stuff,"kill");
+										CloseHandle(passedarr);
 										return Plugin_Handled;
 									}
 									else if (!IsModelPrecached(tmp2))
@@ -2556,6 +2560,7 @@ public Action EntCreateReplace(int client, int args)
 				{
 					PrintToConsole(client,"Model must be defined for this type of entity.");
 					AcceptEntityInput(stuff,"kill");
+					CloseHandle(passedarr);
 					return Plugin_Handled;
 				}
 				if ((StrContains(ent,"prop_vehicle",false) != -1) && (!vehiclescriptdefined))
@@ -3063,6 +3068,7 @@ public Action setprops(int client, int args)
 	{
 		if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",first);
 		else PrintToConsole(client,"No entities found with either classname or targetname of %s",first);
+		CloseHandle(arr);
 		return Plugin_Handled;
 	}
 	char propinf[512];
@@ -3579,6 +3585,7 @@ public Action setprops(int client, int args)
 						{
 							if (client == 0) PrintToServer("Array index out of bounds.");
 							else PrintToConsole(client,"Array index out of bounds.");
+							CloseHandle(arr);
 							return Plugin_Handled;
 						}
 						else
@@ -3594,6 +3601,7 @@ public Action setprops(int client, int args)
 						{
 							if (client == 0) PrintToServer("Array index out of bounds.");
 							else PrintToConsole(client,"Array index out of bounds.");
+							CloseHandle(arr);
 							return Plugin_Handled;
 						}
 						else
@@ -4045,6 +4053,7 @@ public Action setprops(int client, int args)
 			else if (IsClientInGame(client)) PrintToConsole(client,"Invalid target");
 		}
 	}
+	CloseHandle(arr);
 	return Plugin_Handled;
 }
 

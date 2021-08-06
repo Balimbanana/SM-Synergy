@@ -1404,9 +1404,12 @@ public Action resetrot(Handle timer)
 
 public Action elevatorstart(const char[] output, int caller, int activator, float delay)
 {
-	CreateTimer(0.1,elevatorstartpost,caller,TIMER_FLAG_NO_MAPCHANGE);
-	//Post check
-	CreateTimer(5.0,elevatorstartpost,caller,TIMER_FLAG_NO_MAPCHANGE);
+	if (IsValidEntity(caller))
+	{
+		CreateTimer(0.1,elevatorstartpost,caller,TIMER_FLAG_NO_MAPCHANGE);
+		//Post check
+		CreateTimer(5.0,elevatorstartpost,caller,TIMER_FLAG_NO_MAPCHANGE);
+	}
 }
 
 public Action elevatorstartpost(Handle timer, int elev)
