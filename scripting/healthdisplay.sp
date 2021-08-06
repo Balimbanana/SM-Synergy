@@ -13,7 +13,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.992"
+#define PLUGIN_VERSION "1.993"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin myinfo = 
@@ -2269,6 +2269,7 @@ public void LoadClient(int client)
 			hChanged[client] = 1;
 		}
 	}
+	CloseHandle(hQuery);
 	return;
 }
 
