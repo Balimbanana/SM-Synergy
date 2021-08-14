@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.47"
+#define PLUGIN_VERSION "1.48"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -3077,6 +3077,41 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		}
 		return Plugin_Handled;
 	}
+	else if (StrContains(sArgs, "*nice*", false) != -1)
+	{
+		float Time = GetTickedTime();
+		if (antispamchk[client] <= Time)
+		{
+			antispamchk[client] = Time + 2.0;
+			char plymdl[64];
+			char randcat[64];
+			GetClientModel(client, plymdl, sizeof(plymdl));
+			if (StrContains(plymdl,"barney",false) != -1)
+			{
+				if (FileExists("sound/vo/npc/barneys/nice01.wav",true,NULL_STRING))
+					Format(randcat,sizeof(randcat),"vo\\npc\\barneys\\nice0%i.wav",GetRandomInt(1,2));
+				else
+					Format(randcat,sizeof(randcat),"vo/npc/male01/nice.wav");
+			}
+			else if (StrContains(plymdl,"female",false) != -1)
+				Format(randcat,sizeof(randcat),"vo/npc/female01/nice01.wav");
+			else if ((StrContains(plymdl,"combine",false) != -1) || (StrContains(plymdl,"metrocop",false) != -1))
+			{
+				Format(randcat,sizeof(randcat),"npc/combine_soldier/vo/ten.wav");
+				CreateTimer(0.1,tenfour,client);
+			}
+			else if (StrEqual(plymdl,"vort",false))
+			{
+				if (GetRandomInt(0,1) == 1) Format(randcat,sizeof(randcat),"vo/npc/vortigaunt/energyempower.wav");
+				else Format(randcat,sizeof(randcat),"vo/npc/vortigaunt/empowerus.wav");
+			}
+			else
+				Format(randcat,sizeof(randcat),"vo/npc/male01/nice.wav");
+			PrecacheSound(randcat,true);
+			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+		}
+		return Plugin_Handled;
+	}
 	else if (dmact)
 	{
 		char nick[64];
@@ -3107,10 +3142,16 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	return Plugin_Continue;
 }
 
+public Action tenfour(Handle timer, int entity)
+{
+	if (IsValidEntity(entity))
+		EmitSoundToAll("npc/combine_soldier/vo/four.wav", entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+}
+
 public Action saysoundslist(int client, int args)
 {
-	if (client == 0) PrintToServer("*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese* *hacks*");
-	else PrintToChat(client,"*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese* *hacks*");
+	if (client == 0) PrintToServer("*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese* *hacks* *givemedkit* *nice*");
+	else PrintToChat(client,"*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese* *hacks* *givemedkit* *nice*");
 	return Plugin_Handled;
 }
 

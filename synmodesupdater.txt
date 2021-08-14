@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.47"
-			"Previous"	"1.46"
+			"Latest"  	"1.48"
+			"Previous"	"1.47"
 		}
 		
-		"Notes"	"Added hax saysound."
+		"Notes"	"Added nice saysound."
 	}
 	
 	"Files"
