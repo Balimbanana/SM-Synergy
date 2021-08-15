@@ -10,6 +10,7 @@
 #define REQUIRE_EXTENSIONS
 #pragma semicolon 1;
 #pragma newdecls required;
+#pragma dynamic 2097152;
 
 bool enterfrom04 = false;
 bool enterfrom04pb = false;
@@ -65,7 +66,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.177"
+#define PLUGIN_VERSION "2.178"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1816,6 +1817,23 @@ public void OnMapStart()
 					DispatchSpawn(loginp);
 					ActivateEntity(loginp);
 				}
+				int iEnt = -1;
+				char szTargn[32];
+				while((iEnt = FindEntityByClassname(iEnt,"path_track")) != INVALID_ENT_REFERENCE)
+				{
+					if (IsValidEntity(iEnt))
+					{
+						if (HasEntProp(iEnt,Prop_Data,"m_iName"))
+						{
+							GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+							if (StrEqual(szTargn,"pathTrack_elevator_top4",false))
+							{
+								HookSingleEntityOutput(iEnt,"OnPass",Ep2ElevatorPass);
+								break;
+							}
+						}
+					}
+				}
 			}
 			else if (enterfrom04pb)
 				enterfrom04pb = false;
@@ -2557,6 +2575,34 @@ public void OnMapStart()
 				}
 			}
 		}
+	}
+}
+
+public void Ep2ElevatorPass(const char[] output, int caller, int activator, float delay)
+{
+	if (IsValidEntity(caller))
+	{
+		int iEnt = -1;
+		char szTargn[32];
+		while((iEnt = FindEntityByClassname(iEnt,"scripted_sequence")) != INVALID_ENT_REFERENCE)
+		{
+			if (IsValidEntity(iEnt))
+			{
+				if (HasEntProp(iEnt,Prop_Data,"m_iName"))
+				{
+					GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+					if (StrEqual(szTargn,"vort_enter_on_elevator_ss_1",false))
+					{
+						AcceptEntityInput(iEnt,"CancelSequence");
+					}
+					else if (StrEqual(szTargn,"vort_ride_elevator_from_04",false))
+					{
+						AcceptEntityInput(iEnt,"BeginSequence");
+					}
+				}
+			}
+		}
+		UnhookSingleEntityOutput(caller,output,Ep2ElevatorPass);
 	}
 }
 
@@ -3878,7 +3924,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 		for (int i = 0;i<GetArraySize(ignoreent);i++)
 		{
 			int j = GetArrayCell(ignoreent,i);
-			if (IsValidEntity(j)) AcceptEntityInput(j,"kill");
+			if ((IsValidEntity(j)) && (j != 0)) AcceptEntityInput(j,"kill");
 		}
 	}
 }
