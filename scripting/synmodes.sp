@@ -3121,14 +3121,14 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			if (StrContains(plymdl,"barney",false) != -1)
 				Format(randcat,sizeof(randcat),"vo\\npc\\barney\\ba_no01.wav");
 			else if (StrContains(plymdl,"female",false) != -1)
-				Format(randcat,sizeof(randcat),"vo\\npc\\female01\\no01.wav");
+				Format(randcat,sizeof(randcat),"vo\\npc\\female01\\no0%i.wav",GetRandomInt(1,2));
 			else if ((StrContains(plymdl,"combine",false) != -1) || (StrContains(plymdl,"metrocop",false) != -1))
 			{
 				if (GetRandomInt(0,1)) Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\nomad.wav");
 				else Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\nova.wav");
 			}
 			else
-				Format(randcat,sizeof(randcat),"vo\\npc\\male01\\no01.wav");
+				Format(randcat,sizeof(randcat),"vo\\npc\\male01\\no0%i.wav",GetRandomInt(1,2));
 			PrecacheSound(randcat,true);
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
