@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.48"
+#define PLUGIN_VERSION "1.49"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -2714,15 +2714,12 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			antispamchk[client] = Time + 5.0;
 			if (FileExists("sound/scientist/scream01.wav",true,NULL_STRING))
 			{
-				int randsound = GetRandomInt(0,25);
+				int randsound = GetRandomInt(1,25);
 				char randcat[64];
-				IntToString(randsound,randcat,sizeof(randcat));
-				if (randsound == 0)
-					Format(randcat,sizeof(randcat),"scientist\\c1a0_sci_catscream.wav");
-				else if (randsound < 10)
-					Format(randcat,sizeof(randcat),"scientist\\scream0%s.wav",randcat);
+				if (randsound < 10)
+					Format(randcat,sizeof(randcat),"scientist\\scream0%i.wav",randsound);
 				else
-					Format(randcat,sizeof(randcat),"scientist\\scream%s.wav",randcat);
+					Format(randcat,sizeof(randcat),"scientist\\scream%i.wav",randsound);
 				PrecacheSound(randcat,true);
 				EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 			}
@@ -3107,6 +3104,31 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			}
 			else
 				Format(randcat,sizeof(randcat),"vo/npc/male01/nice.wav");
+			PrecacheSound(randcat,true);
+			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+		}
+		return Plugin_Handled;
+	}
+	else if (StrContains(sArgs, "*no*", false) != -1)
+	{
+		float Time = GetTickedTime();
+		if (antispamchk[client] <= Time)
+		{
+			antispamchk[client] = Time + 2.0;
+			char plymdl[64];
+			char randcat[64];
+			GetClientModel(client, plymdl, sizeof(plymdl));
+			if (StrContains(plymdl,"barney",false) != -1)
+				Format(randcat,sizeof(randcat),"vo\\npc\\barney\\ba_no01.wav");
+			else if (StrContains(plymdl,"female",false) != -1)
+				Format(randcat,sizeof(randcat),"vo\\npc\\female01\\no01.wav");
+			else if ((StrContains(plymdl,"combine",false) != -1) || (StrContains(plymdl,"metrocop",false) != -1))
+			{
+				if (GetRandomInt(0,1)) Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\nomad.wav");
+				else Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\nova.wav");
+			}
+			else
+				Format(randcat,sizeof(randcat),"vo\\npc\\male01\\no01.wav");
 			PrecacheSound(randcat,true);
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.48"
-			"Previous"	"1.47"
+			"Latest"  	"1.49"
+			"Previous"	"1.48"
 		}
 		
-		"Notes"	"Added nice saysound."
+		"Notes"	"Added no saysound. Removed missing sci scream."
 	}
 	
 	"Files"
