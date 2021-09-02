@@ -66,7 +66,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.178"
+#define PLUGIN_VERSION "2.179"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -357,7 +357,28 @@ public Action votereload(int client, int args)
 {
 	Menu menu = new Menu(MenuHandlervote);
 	menu.SetTitle("Reload Checkpoint");
-	menu.AddItem("checkpoint","The current last checkpoint");
+	bool bAddCur = false;
+	if (strlen(savedir) > 1)
+	{
+		char curmapchk[128];
+		Format(curmapchk,sizeof(curmapchk),"%s/%s.hl2",savedir,mapbuf);
+		if (FileExists(curmapchk))
+		{
+			bAddCur = true;
+		}
+		else
+		{
+			Format(curmapchk,sizeof(curmapchk),"%s/autosave.hl1",savedir);
+			if (FileExists(curmapchk))
+			{
+				if (FileSize(curmapchk) > 15)
+					bAddCur = true;
+			}
+		}
+	}
+	else bAddCur = true;
+	if (bAddCur) menu.AddItem("checkpoint","The current last checkpoint");
+	else menu.AddItem("checkpoint","The current last checkpoint",ITEMDRAW_DISABLED);
 	if (allowvotereloadsaves)
 	{
 		char savepath[256];
@@ -2542,7 +2563,7 @@ public void OnMapStart()
 			resetareaportals(-1);
 			if (strlen(savedir) > 1)
 			{
-				char curmapchk[32];
+				char curmapchk[128];
 				Format(curmapchk,sizeof(curmapchk),"%s/%s.hl1",savedir,mapbuf);
 				if (!FileExists(curmapchk))
 				{

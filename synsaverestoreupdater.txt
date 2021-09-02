@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.178"
-			"Previous"	"2.177"
+			"Latest"  	"2.179"
+			"Previous"	"2.178"
 		}
 		
-		"Notes"	"Increased stack size. Fix to potential overflow of transition ents. Fallback fix to vort transition from ep2 4 to 2."
+		"Notes"	"Prevent reload from checkpoint if there is no checkpoint to restore."
 	}
 	
 	"Files"
