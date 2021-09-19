@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.49"
-			"Previous"	"1.48"
+			"Latest"  	"1.50"
+			"Previous"	"1.49"
 		}
 		
-		"Notes"	"Added no saysound. Removed missing sci scream."
+		"Notes"	"Added delay to using afk."
 	}
 	
 	"Files"

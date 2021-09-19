@@ -25,6 +25,7 @@ Handle g_EditClassOrgData = INVALID_HANDLE;
 Handle g_EditTargetsData = INVALID_HANDLE;
 Handle g_CreateEnts = INVALID_HANDLE;
 Handle g_ModifyCase = INVALID_HANDLE;
+ConVar hCVAlwaysApplyGlobal;
 
 char lastmap[72];
 char LineSpanning[1024];
@@ -38,7 +39,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.70"
+#define PLUGIN_VERSION "0.71"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -94,6 +95,8 @@ public void OnPluginStart()
 	cvar = FindConVar("edtprefix");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtprefix", "", "Add prefix to check for EDTs starting with this first. Functions as prefix_mapname.edt.", _, false);
 	CloseHandle(cvar);
+	hCVAlwaysApplyGlobal = FindConVar("edt_alwaysuse_global");
+	if (hCVAlwaysApplyGlobal == INVALID_HANDLE) hCVAlwaysApplyGlobal = CreateConVar("edt_alwaysuse_global", "0", "Always apply globaledt.edt otherwise only applies if there is a map.edt", _, true, 0.0, true, 1.0);
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -187,11 +190,16 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		}
 	}
 	CloseHandle(cvar);
+	bool bSkipReadMapValidate = false;
 	if (FileExists(curmap2,true,NULL_STRING)) Format(curmap,sizeof(curmap),"%s",curmap2);
-	if (FileExists(curmap,true,NULL_STRING))
+	if ((hCVAlwaysApplyGlobal.BoolValue) && (!FileExists(curmap,true,NULL_STRING)) && (FileExists("cfg/globaledt.edt",false)))
+	{
+		bSkipReadMapValidate = true;
+	}
+	if ((FileExists(curmap,true,NULL_STRING)) || (bSkipReadMapValidate))
 	{
 		if (dbglvl) PrintToServer("EDT %s exists",curmap);
-		ReadEDT(curmap);
+		if (!bSkipReadMapValidate) ReadEDT(curmap);
 		if (method == 1)
 		{
 			char szMapEntitiesbuff[2097152];
@@ -207,6 +215,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 			char portalnumber[64];
 			char edtkey[128];
 			char edtval[128];
+			char szSplitRand[16][64];
 			if (GetArraySize(g_ModifyCase) > 0)
 			{
 				for (int k = 0;k<GetArraySize(g_ModifyCase);k++)
@@ -393,6 +402,24 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 								else if (StrEqual(first,"origin",false))
 								{
 									OriginSpecified = true;
+								}
+								else if (StrEqual(first,"randmodel",false))
+								{
+									Format(first,sizeof(first),"model");
+									int maxrand = ExplodeString(second,",",szSplitRand,16,64);
+									Format(second,sizeof(second),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+								}
+								else if (StrEqual(first,"randbody",false))
+								{
+									Format(first,sizeof(first),"body");
+									int maxrand = ExplodeString(second,",",szSplitRand,16,64);
+									Format(second,sizeof(second),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+								}
+								else if (StrEqual(first,"randskin",false))
+								{
+									Format(first,sizeof(first),"skin");
+									int maxrand = ExplodeString(second,",",szSplitRand,16,64);
+									Format(second,sizeof(second),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
 								}
 							}
 						}
@@ -841,6 +868,18 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 											{
 												findedit = StrContains(szMapEntitiesbuff,"\"spawnflags\"",false);
 											}
+											else if (StrEqual(edtkey,"\"randmodel\"",false))
+											{
+												findedit = StrContains(szMapEntitiesbuff,"\"model\"",false);
+											}
+											else if (StrEqual(edtkey,"\"randbody\"",false))
+											{
+												findedit = StrContains(szMapEntitiesbuff,"\"body\"",false);
+											}
+											else if (StrEqual(edtkey,"\"randskin\"",false))
+											{
+												findedit = StrContains(szMapEntitiesbuff,"\"skin\"",false);
+											}
 											//if ((findedit != -1) && (strlen(edt_landmark) > 0) && (strlen(edt_map) > 0))
 											if ((findedit != -1) && (StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0) && (strlen(edtkey) > 1))
 											{
@@ -880,6 +919,24 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 												else if (StrEqual(edtkey,"\"edt_getbspmodelfor_origin\"",false))
 												{
 													Format(edtclassorg,sizeof(edtclassorg),"%s",edtval);
+												}
+												else if (StrEqual(edtkey,"\"randmodel\"",false))
+												{
+													Format(edtkey,sizeof(edtkey),"\"model\"");
+													int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+													Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+												}
+												else if (StrEqual(edtkey,"\"randbody\"",false))
+												{
+													Format(edtkey,sizeof(edtkey),"\"body\"");
+													int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+													Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+												}
+												else if (StrEqual(edtkey,"\"randskin\"",false))
+												{
+													Format(edtkey,sizeof(edtkey),"\"skin\"");
+													int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+													Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
 												}
 												if ((strlen(edtclass) > 0) && (strlen(edtclassorg) > 0))
 												{
@@ -974,6 +1031,24 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff);
 												ReplaceString(tmpbuf,sizeof(tmpbuf),"}","");
 												if (StrContains(tmpbuf,"\n\n",false) != -1) ReplaceString(tmpbuf,sizeof(tmpbuf),"\n\n","\n");
+												if (StrEqual(edtkey,"\"randmodel\"",false))
+												{
+													Format(edtkey,sizeof(edtkey),"\"model\"");
+													int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+													Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+												}
+												else if (StrEqual(edtkey,"\"randbody\"",false))
+												{
+													Format(edtkey,sizeof(edtkey),"\"body\"");
+													int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+													Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+												}
+												else if (StrEqual(edtkey,"\"randskin\"",false))
+												{
+													Format(edtkey,sizeof(edtkey),"\"skin\"");
+													int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+													Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+												}
 												if (dbglvl >= 3) PrintToServer("Add KV to %s\n%s \"%s\"",cls,edtkey,edtval);
 												Format(tmpbuf,sizeof(tmpbuf),"%s%s \"%s\"\n}\n",tmpbuf,edtkey,edtval);
 												ReplaceStringEx(szMapEntities,sizeof(szMapEntities),szMapEntitiesbuff,tmpbuf);
@@ -1200,6 +1275,18 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 											{
 												Format(edtclassorg,sizeof(edtclassorg),"%s",edtval);
 											}
+											else if (StrEqual(edtkey,"\"randmodel\"",false))
+											{
+												findedit = StrContains(szMapEntitiesbuff,"\"model\"",false);
+											}
+											else if (StrEqual(edtkey,"\"randbody\"",false))
+											{
+												findedit = StrContains(szMapEntitiesbuff,"\"body\"",false);
+											}
+											else if (StrEqual(edtkey,"\"randskin\"",false))
+											{
+												findedit = StrContains(szMapEntitiesbuff,"\"skin\"",false);
+											}
 											if ((strlen(edtclass) > 0) && (strlen(edtclassorg) > 0))
 											{
 												findedit = StrContains(szMapEntitiesbuff,"\"model\"",false);
@@ -1317,6 +1404,24 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 													Format(edtval,sizeof(edtval),"%i",checkneg);
 													Format(edtkey,sizeof(edtkey),"\"spawnflags\"");
 												}
+												else if (StrEqual(edtkey,"\"randmodel\"",false))
+												{
+													Format(edtkey,sizeof(edtkey),"\"model\"");
+													int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+													Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+												}
+												else if (StrEqual(edtkey,"\"randbody\"",false))
+												{
+													Format(edtkey,sizeof(edtkey),"\"body\"");
+													int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+													Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+												}
+												else if (StrEqual(edtkey,"\"randskin\"",false))
+												{
+													Format(edtkey,sizeof(edtkey),"\"skin\"");
+													int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+													Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+												}
 												Format(edtkey,sizeof(edtkey),"%s \"%s\"",edtkey,edtval);
 												if (StrEqual(edtkey,replacedata,false)) continue;
 												if (dbglvl >= 3) PrintToServer("Replace %s with %s",replacedata,edtkey);
@@ -1335,6 +1440,24 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff);
 												ReplaceString(tmpbuf,sizeof(tmpbuf),"}","");
 												if (StrContains(tmpbuf,"\n\n",false) != -1) ReplaceString(tmpbuf,sizeof(tmpbuf),"\n\n","\n");
+												if (StrEqual(edtkey,"\"randmodel\"",false))
+												{
+													Format(edtkey,sizeof(edtkey),"\"model\"");
+													int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+													Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+												}
+												else if (StrEqual(edtkey,"\"randbody\"",false))
+												{
+													Format(edtkey,sizeof(edtkey),"\"body\"");
+													int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+													Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+												}
+												else if (StrEqual(edtkey,"\"randskin\"",false))
+												{
+													Format(edtkey,sizeof(edtkey),"\"skin\"");
+													int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+													Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+												}
 												if (dbglvl >= 3) PrintToServer("Add KV to %s\n%s \"%s\"",cls,edtkey,edtval);
 												Format(tmpbuf,sizeof(tmpbuf),"%s%s \"%s\"\n}\n",tmpbuf,edtkey,edtval);
 												ReplaceStringEx(szMapEntities,sizeof(szMapEntities),szMapEntitiesbuff,tmpbuf);
@@ -1484,6 +1607,18 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										{
 											Format(edtclassorg,sizeof(edtclassorg),"%s",edtval);
 										}
+										else if (StrEqual(edtkey,"\"randmodel\"",false))
+										{
+											findedit = StrContains(szMapEntitiesbuff,"\"model\"",false);
+										}
+										else if (StrEqual(edtkey,"\"randbody\"",false))
+										{
+											findedit = StrContains(szMapEntitiesbuff,"\"body\"",false);
+										}
+										else if (StrEqual(edtkey,"\"randskin\"",false))
+										{
+											findedit = StrContains(szMapEntitiesbuff,"\"skin\"",false);
+										}
 										if ((strlen(edtclass) > 0) && (strlen(edtclassorg) > 0))
 										{
 											Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff);
@@ -1600,6 +1735,24 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 												Format(edtval,sizeof(edtval),"%i",checkneg);
 												Format(edtkey,sizeof(edtkey),"\"spawnflags\"");
 											}
+											else if (StrEqual(edtkey,"\"randmodel\"",false))
+											{
+												Format(edtkey,sizeof(edtkey),"\"model\"");
+												int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+												Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+											}
+											else if (StrEqual(edtkey,"\"randbody\"",false))
+											{
+												Format(edtkey,sizeof(edtkey),"\"body\"");
+												int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+												Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+											}
+											else if (StrEqual(edtkey,"\"randskin\"",false))
+											{
+												Format(edtkey,sizeof(edtkey),"\"skin\"");
+												int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+												Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+											}
 											Format(edtkey,sizeof(edtkey),"%s \"%s\"",edtkey,edtval);
 											if (StrEqual(edtkey,replacedata,false)) continue;
 											if (dbglvl >= 3) PrintToServer("Replace %s with %s",replacedata,edtkey);
@@ -1618,6 +1771,24 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 											Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff);
 											ReplaceString(tmpbuf,sizeof(tmpbuf),"}","");
 											if (StrContains(tmpbuf,"\n\n",false) != -1) ReplaceString(tmpbuf,sizeof(tmpbuf),"\n\n","\n");
+											if (StrEqual(edtkey,"\"randmodel\"",false))
+											{
+												Format(edtkey,sizeof(edtkey),"\"model\"");
+												int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+												Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+											}
+											else if (StrEqual(edtkey,"\"randbody\"",false))
+											{
+												Format(edtkey,sizeof(edtkey),"\"body\"");
+												int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+												Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+											}
+											else if (StrEqual(edtkey,"\"randskin\"",false))
+											{
+												Format(edtkey,sizeof(edtkey),"\"skin\"");
+												int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
+												Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
+											}
 											if (dbglvl >= 3) PrintToServer("Add KV to %s\n%s \"%s\"",cls,edtkey,edtval);
 											Format(tmpbuf,sizeof(tmpbuf),"%s%s \"%s\"\n}\n",tmpbuf,edtkey,edtval);
 											ReplaceStringEx(szMapEntities,sizeof(szMapEntities),szMapEntitiesbuff,tmpbuf);

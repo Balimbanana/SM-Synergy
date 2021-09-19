@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.49"
+#define PLUGIN_VERSION "1.50"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -26,7 +26,7 @@ public Plugin myinfo =
 	url = "https://github.com/Balimbanana/SM-Synergy/"
 }
 
-float antispamchk[128];
+float antispamchk[128][2];
 Handle equiparr = INVALID_HANDLE;
 
 bool dmact = false;
@@ -1174,6 +1174,12 @@ public Action setupafk(int client, int args)
 		PrintToChat(client,"Not supported in this mode.");
 		return Plugin_Handled;
 	}
+	if (antispamchk[client][1] > GetTickedTime())
+	{
+		PrintToChat(client,"You cannot use this for another %1.1f seconds...",antispamchk[client][1]-GetTickedTime());
+		return Plugin_Handled;
+	}
+	antispamchk[client][1] = GetTickedTime()+1.0;
 	if (!clinspectate[client])
 	{
 		clinspectate[client] = true;
@@ -1228,10 +1234,10 @@ public Action setupafk(int client, int args)
 		else if (instspawnuse)
 		{
 			clspawntimeallow[client] = false;
+			char resspawn[64];
 			if (!survivalact)
 			{
 				clspawntime[client] = clspawntimemax;
-				char resspawn[64];
 				Format(resspawn,sizeof(resspawn),"Allowed to respawn in: %i",clspawntime[client]);
 				SetHudTextParams(0.016, 0.05, 1.0, 255, 255, 0, 255, 1, 1.0, 1.0, 1.0);
 				ShowHudText(client, 3, "%s",resspawn);
@@ -1239,7 +1245,6 @@ public Action setupafk(int client, int args)
 			}
 			else if (survivalact)
 			{
-				char resspawn[64];
 				Format(resspawn,sizeof(resspawn),"You will respawn at the next checkpoint.");
 				SetHudTextParams(0.016, 0.05, 5.0, 255, 255, 0, 255, 1, 1.0, 1.0, 1.0);
 				ShowHudText(client, 3, "%s",resspawn);
@@ -2092,9 +2097,9 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	if (StrContains(sArgs, "*moan*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.5;
+			antispamchk[client][0] = Time + 1.5;
 			int randsound = GetRandomInt(1,5);
 			char randcat[64];
 			IntToString(randsound,randcat,sizeof(randcat));
@@ -2113,7 +2118,7 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 				if (randsound > 4)
 					Format(randcat,sizeof(randcat),"4");
 				Format(randcat,sizeof(randcat),"npc\\metropolice\\die%s.wav",randcat);
-				antispamchk[client] += 1.0;
+				antispamchk[client][0] += 1.0;
 			}
 			else
 				Format(randcat,sizeof(randcat),"ambient\\voices\\citizen_beaten%s.wav",randcat);
@@ -2121,15 +2126,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if (StrContains(sArgs, "*pain*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.5;
+			antispamchk[client][0] = Time + 1.5;
 			int randsound = GetRandomInt(1,9);
 			char randcat[64];
 			IntToString(randsound,randcat,sizeof(randcat));
@@ -2155,15 +2160,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if (StrContains(sArgs, "*dead*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 5.0;
+			antispamchk[client][0] = Time + 5.0;
 			int randsound = GetRandomInt(1,20);
 			char randcat[64];
 			IntToString(randsound,randcat,sizeof(randcat));
@@ -2195,15 +2200,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			}
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if (StrContains(sArgs, "*strider*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.5;
+			antispamchk[client][0] = Time + 1.5;
 			char plymdl[64];
 			char strisound[64];
 			GetClientModel(client, plymdl, sizeof(plymdl));
@@ -2217,13 +2222,13 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(strisound, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if ((StrContains(sArgs, "*hacks*", false) != -1) || (StrContains(sArgs, "*hax*", false) != -1))
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
 			char plymdl[64];
 			char randcat[64];
@@ -2334,15 +2339,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			}
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if (StrContains(sArgs, "*enemy*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.5;
+			antispamchk[client][0] = Time + 1.5;
 			int targ = GetClientAimTarget(client,false);
 			char clsname[64];
 			if (targ != -1) GetEntityClassname(targ,clsname,sizeof(clsname));
@@ -2630,15 +2635,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if (StrContains(sArgs, "*run*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.5;
+			antispamchk[client][0] = Time + 1.5;
 			char plymdl[64];
 			char strisound[64];
 			GetClientModel(client, plymdl, sizeof(plymdl));
@@ -2650,15 +2655,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(strisound, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if (StrContains(sArgs, "*help*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.5;
+			antispamchk[client][0] = Time + 1.5;
 			char plymdl[64];
 			int randsound = GetRandomInt(1,3);
 			char randcat[64];
@@ -2686,15 +2691,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if ((StrContains(sArgs, "*helpbro*", false) != -1) || (StrContains(sArgs, "*helpbrother*", false) != -1))
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.5;
+			antispamchk[client][0] = Time + 1.5;
 			int randsound = GetRandomInt(1,5);
 			char randcat[64];
 			IntToString(randsound,randcat,sizeof(randcat));
@@ -2703,15 +2708,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if (StrContains(sArgs, "*scream*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 5.0;
+			antispamchk[client][0] = Time + 5.0;
 			if (FileExists("sound/scientist/scream01.wav",true,NULL_STRING))
 			{
 				int randsound = GetRandomInt(1,25);
@@ -2737,15 +2742,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			}
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if ((StrContains(sArgs, "*vort*", false) != -1) || (StrContains(sArgs, "*vortigaunt*", false) != -1))
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.0;
+			antispamchk[client][0] = Time + 1.0;
 			int randsound = GetRandomInt(1,14);
 			char randcat[64];
 			IntToString(randsound,randcat,sizeof(randcat));
@@ -2757,15 +2762,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if (StrContains(sArgs, "*gunship*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.5;
+			antispamchk[client][0] = Time + 1.5;
 			char plymdl[64];
 			int randsound = GetRandomInt(1,3);
 			char randcat[64];
@@ -2793,15 +2798,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if (StrContains(sArgs, "*dropship*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.5;
+			antispamchk[client][0] = Time + 1.5;
 			char plymdl[64];
 			char randcat[64];
 			GetClientModel(client, plymdl, sizeof(plymdl));
@@ -2829,15 +2834,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if (StrContains(sArgs, "*cheer*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.5;
+			antispamchk[client][0] = Time + 1.5;
 			char plymdl[64];
 			int randsound = GetRandomInt(1,4);
 			char randcat[64];
@@ -2862,15 +2867,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if ((StrContains(sArgs, "*follow*", false) != -1) || (StrContains(sArgs, "*followme*", false) != -1))
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.5;
+			antispamchk[client][0] = Time + 1.5;
 			char plymdl[64];
 			char randcat[64];
 			GetClientModel(client, plymdl, sizeof(plymdl));
@@ -2932,15 +2937,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if ((StrContains(sArgs, "*lead*", false) != -1) || (StrContains(sArgs, "*leadon*", false) != -1))
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 1.5;
+			antispamchk[client][0] = Time + 1.5;
 			char plymdl[64];
 			char randcat[64];
 			GetClientModel(client, plymdl, sizeof(plymdl));
@@ -3023,15 +3028,15 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
 		else
-			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client]-Time);
+			PrintToChat(client,"Can't do that for another %.1f seconds.",antispamchk[client][0]-Time);
 		return Plugin_Handled;
 	}
 	else if (StrContains(sArgs, "*cheese*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 2.0;
+			antispamchk[client][0] = Time + 2.0;
 			char plymdl[64];
 			char randcat[64];
 			GetClientModel(client, plymdl, sizeof(plymdl));
@@ -3051,9 +3056,9 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	else if ((StrContains(sArgs, "*givemedical*", false) != -1) || (StrContains(sArgs, "*givemedkit*", false) != -1))
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 2.0;
+			antispamchk[client][0] = Time + 2.0;
 			char plymdl[64];
 			char randcat[64];
 			GetClientModel(client, plymdl, sizeof(plymdl));
@@ -3077,9 +3082,9 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	else if (StrContains(sArgs, "*nice*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 2.0;
+			antispamchk[client][0] = Time + 2.0;
 			char plymdl[64];
 			char randcat[64];
 			GetClientModel(client, plymdl, sizeof(plymdl));
@@ -3112,9 +3117,9 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	else if (StrContains(sArgs, "*no*", false) != -1)
 	{
 		float Time = GetTickedTime();
-		if (antispamchk[client] <= Time)
+		if (antispamchk[client][0] <= Time)
 		{
-			antispamchk[client] = Time + 2.0;
+			antispamchk[client][0] = Time + 2.0;
 			char plymdl[64];
 			char randcat[64];
 			GetClientModel(client, plymdl, sizeof(plymdl));
@@ -4411,7 +4416,8 @@ public void OnClientDisconnect(int client)
 	changeteamcd[client] = 0.0;
 	scoreshowcd[client] = 0.0;
 	g_LastButtons[client] = 0;
-	antispamchk[client] = 0.0;
+	antispamchk[client][0] = 0.0;
+	antispamchk[client][1] = 0.0;
 	clinspectate[client] = false;
 	SteamID[client] = "";
 }

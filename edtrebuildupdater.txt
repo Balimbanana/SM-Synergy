@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.70"
-			"Previous"	"0.69"
+			"Latest"  	"0.71"
+			"Previous"	"0.70"
 		}
 		
-		"Notes"	"Added edit class origin edt_getbspmodelfor_ replacement."
+		"Notes"	"Added CVar edt_alwaysuse_global enables using globaledt even when no edt exists for current map. Added randmodel,randbody,randskin keys."
 	}
 	
 	"Files"
