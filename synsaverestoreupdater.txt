@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.179"
-			"Previous"	"2.178"
+			"Latest"  	"2.180"
+			"Previous"	"2.179"
 		}
 		
-		"Notes"	"Prevent reload from checkpoint if there is no checkpoint to restore."
+		"Notes"	"Added transition failsave for d2_coast_08 - 07. Added Linux specific ep2_outland_04 - 02 configuration."
 	}
 	
 	"Files"

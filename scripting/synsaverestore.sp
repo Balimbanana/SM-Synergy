@@ -33,6 +33,7 @@ bool fallbackequip = false; //Set by cvar sm_equipfallback_disable
 bool reloadaftersetup = false;
 bool BMActive = false;
 bool SynLaterAct = false;
+bool bLinuxAct = false;
 bool SkipVer = false;
 bool bTransitionMode = false;
 int WeapList = -1;
@@ -66,7 +67,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.179"
+#define PLUGIN_VERSION "2.180"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -206,6 +207,11 @@ public void OnPluginStart()
 	GetGameFolderName(gamename,sizeof(gamename));
 	if (StrEqual(gamename,"bms",false)) BMActive = true;
 	else BMActive = false;
+	if ((FileExists("../bin/engine_srv.so",false)) && (FileExists("bin/server_srv.so",false)) && (FileExists("addons/metamod/bin/server.so",false)))
+	{
+		bLinuxAct = true;
+	}
+	else bLinuxAct = false;
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -1832,9 +1838,17 @@ public void OnMapStart()
 					DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,Trigger,,0.1,-1");
 					DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,TouchTest,,0.1,-1");
 					DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3rebuild,0,-1");
-					DispatchKeyValue(loginp, "OnMapSpawn","debug_choreo_start_in_elevator,Trigger,,0,-1");
-					DispatchKeyValue(loginp, "OnMapSpawn","pointTemplate_vortCalvary,ForceSpawn,,1,-1");
-					DispatchKeyValue(loginp, "OnMapSpawn","ss_heal_loop,BeginSequence,,1.2,-1");
+					if (!bLinuxAct)
+					{
+						// Windows works with this
+						DispatchKeyValue(loginp, "OnMapSpawn","debug_choreo_start_in_elevator,Trigger,,0,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","pointTemplate_vortCalvary,ForceSpawn,,1,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","ss_heal_loop,BeginSequence,,1.2,-1");
+					}
+					else
+					{
+						DispatchKeyValue(loginp, "OnMapSpawn","debug_choreo_start_in_elevator,Trigger,,0.4,-1");
+					}
 					DispatchSpawn(loginp);
 					ActivateEntity(loginp);
 				}
@@ -1966,6 +1980,12 @@ public void OnMapStart()
 					DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Close,,0.1,-1");
 					DispatchKeyValue(loginp, "OnMapSpawn","bridge_door_2,Lock,,0.5,-1");
 					DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_antiskip_hurt,Disable,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","field_trigger,Disable,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","forcefield3_sound_far,StopSound,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","forcefield3_sound_far,kill,,0.1,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","field_wall_poles,Skin,1,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","gate_sprite,color,0 255 0,0,1");
 					DispatchSpawn(loginp);
 					ActivateEntity(loginp);
 				}
