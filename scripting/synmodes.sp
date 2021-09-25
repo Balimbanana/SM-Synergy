@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.50"
+#define PLUGIN_VERSION "1.51"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -44,6 +44,7 @@ int scoreshowstat = -1;
 int dmkills[128];
 int teamnum[128];
 float scoreshowcd[128];
+float flForcedSpecTime[128];
 char SteamID[128][65];
 char g_sDMSoundTrack[128];
 int g_iDMSoundTrackVol = 80;
@@ -60,6 +61,8 @@ Handle respawnids = INVALID_HANDLE;
 Handle inputsarrorigincls = INVALID_HANDLE;
 Handle ignoretrigs = INVALID_HANDLE;
 Handle afkids = INVALID_HANDLE;
+Handle hForcedArr = INVALID_HANDLE;
+Handle hForcedArrTimes = INVALID_HANDLE;
 bool clspawntimeallow[128];
 int clspawntime[128];
 int clspawntimemax = 10;
@@ -100,6 +103,8 @@ public void OnPluginStart()
 	RegConsoleCmd("showscoresdm",scoreboardsh);
 	RegConsoleCmd("instantspawn",setinstspawn);
 	RegAdminCmd("instspawnply",spawnallply,ADMFLAG_BAN,".");
+	RegAdminCmd("sm_forcespec",ForceSpecatator,ADMFLAG_KICK,".");
+	RegAdminCmd("sm_releasespec",UndoForcedSpec,ADMFLAG_KICK,".");
 	equiparr = CreateArray(16);
 	RegConsoleCmd("spec_next",Atkspecpress);
 	Handle instspawn = INVALID_HANDLE;
@@ -122,8 +127,10 @@ public void OnPluginStart()
 	}
 	globalsarr = CreateArray(32);
 	changelevels = CreateArray(16);
-	respawnids = CreateArray(65);
-	afkids = CreateArray(65);
+	respawnids = CreateArray(128);
+	afkids = CreateArray(128);
+	hForcedArr = CreateArray(128);
+	hForcedArrTimes = CreateArray(128);
 	inputsarrorigincls = CreateArray(768);
 	ignoretrigs = CreateArray(1024);
 	Handle instspawntime = INVALID_HANDLE;
@@ -1174,6 +1181,11 @@ public Action setupafk(int client, int args)
 		PrintToChat(client,"Not supported in this mode.");
 		return Plugin_Handled;
 	}
+	if (ForcedSpectator(client))
+	{
+		PrintToChat(client,"You cannot leave spectator mode for another %1.1f seconds.",flForcedSpecTime[client]-GetTickedTime());
+		return Plugin_Handled;
+	}
 	if (antispamchk[client][1] > GetTickedTime())
 	{
 		PrintToChat(client,"You cannot use this for another %1.1f seconds...",antispamchk[client][1]-GetTickedTime());
@@ -1253,6 +1265,186 @@ public Action setupafk(int client, int args)
 		}
 	}
 	return Plugin_Handled;
+}
+
+public Action ForceSpecatator(int client, int args)
+{
+	if (args < 1)
+	{
+		PrintToConsole(client,"You must specify a client name...");
+		return Plugin_Handled;
+	}
+	char szTmp[128];
+	float flTimeSet = 30.0;
+	if (args >= 2)
+	{
+		GetCmdArg(2,szTmp,sizeof(szTmp));
+		flTimeSet = StringToFloat(szTmp);
+	}
+	GetCmdArg(1,szTmp,sizeof(szTmp));
+	char szCLName[128];
+	int iCL = -1;
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if (IsClientConnected(i))
+		{
+			if (IsClientInGame(i))
+			{
+				GetClientName(i,szCLName,sizeof(szCLName));
+				if (StrContains(szCLName,szTmp,false) != -1)
+				{
+					if (strlen(SteamID[i]) < 1)
+					{
+						GetClientAuthId(i,AuthId_Steam2,SteamID[i],sizeof(SteamID[]));
+					}
+					if (strlen(SteamID[i]) > 0)
+					{
+						iCL = i;
+						break;
+					}
+				}
+			}
+		}
+	}
+	if (iCL != -1)
+	{
+		flForcedSpecTime[iCL] = GetTickedTime()+flTimeSet;
+		clinspectate[iCL] = true;
+		teamnum[iCL] = 1;
+		if (IsValidEntity(iCL))
+		{
+			SetVariantInt(1);
+			AcceptEntityInput(iCL,"SetTeamNum");
+			SetEntProp(iCL,Prop_Data,"m_iTeamNum",1);
+			SetEntProp(iCL,Prop_Data,"deadflag",1);
+			SetEntProp(iCL,Prop_Data,"m_iObserverMode",5);
+			SetEntProp(iCL,Prop_Data,"m_iHideHUD",2056);
+			SetEntProp(iCL,Prop_Data,"m_fEffects",40);
+			ForcePlayerSuicide(iCL);
+		}
+		PrintToChatAll("%N has been forced to spectator for %1.1f seconds",iCL,flTimeSet);
+		if (FindStringInArray(hForcedArr,SteamID[iCL]) == -1)
+		{
+			PushArrayString(hForcedArr,SteamID[iCL]);
+			Format(szTmp,sizeof(szTmp),"%1.1f",flForcedSpecTime[iCL]);
+			PushArrayString(hForcedArrTimes,szTmp);
+		}
+		if (FindStringInArray(afkids,SteamID[iCL]) == -1) PushArrayString(afkids,SteamID[iCL]);
+	}
+	else PrintToConsole(client,"Unable to find client with name '%s'",szTmp);
+	return Plugin_Handled;
+}
+
+public Action UndoForcedSpec(int client, int args)
+{
+	if (args < 1)
+	{
+		PrintToConsole(client,"You must specify a client name...");
+		return Plugin_Handled;
+	}
+	char szTmp[128];
+	GetCmdArg(1,szTmp,sizeof(szTmp));
+	char szCLName[128];
+	int iCL = -1;
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if (IsClientConnected(i))
+		{
+			if (IsClientInGame(i))
+			{
+				GetClientName(i,szCLName,sizeof(szCLName));
+				if (StrContains(szCLName,szTmp,false) != -1)
+				{
+					if (strlen(SteamID[i]) > 0)
+					{
+						iCL = i;
+						break;
+					}
+				}
+			}
+		}
+	}
+	if (iCL != -1)
+	{
+		if (!clinspectate[iCL])
+		{
+			PrintToConsole(client,"%N is not in spectator mode...",iCL);
+			return Plugin_Handled;
+		}
+		flForcedSpecTime[iCL] = 0.0;
+		ForcedSpectator(iCL);
+		SetVariantInt(0);
+		AcceptEntityInput(iCL,"SetTeamNum");
+		SetEntProp(iCL,Prop_Data,"m_iTeamNum",0);
+		teamnum[iCL] = 0;
+		PrintToChatAll("%N has been released from spectators.",iCL);
+		int find = FindStringInArray(afkids,SteamID[iCL]);
+		if (find != -1) RemoveFromArray(afkids,find);
+		clinspectate[iCL] = false;
+		if (instspawnb)
+		{
+			if (((!dmset) && (!dmact)) && (lastspawned[iCL] == 0)) lastspawned[iCL]++;
+			if (((!dmset) && (!dmact)) && (lastspawned[iCL] > MaxClients)) lastspawned[iCL] = 1;
+			for (int i = lastspawned[iCL]; i<MaxClients+1; i++)
+			{
+				if (i != 0)
+				{
+					if (IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i) && (client != i))
+					{
+						int vck = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+						if ((vck == -1) && (teamnum[iCL] == teamnum[i]) && (iCL != i))
+						{
+							clused = i;
+							CreateTimer(0.2,tpclspawnnew,iCL,TIMER_FLAG_NO_MAPCHANGE);
+							lastspawned[iCL] = clused+1;
+							return Plugin_Continue;
+						}
+					}
+				}
+			}
+			if ((!dmset) && (!dmact)) lastspawned[iCL] = 0;
+			clused = 0;
+			CreateTimer(0.2,tpclspawnnew,iCL,TIMER_FLAG_NO_MAPCHANGE);
+		}
+		else if (instspawnuse)
+		{
+			clspawntimeallow[iCL] = false;
+			char resspawn[64];
+			if (!survivalact)
+			{
+				clspawntime[iCL] = clspawntimemax;
+				Format(resspawn,sizeof(resspawn),"Allowed to respawn in: %i",clspawntime[iCL]);
+				SetHudTextParams(0.016, 0.05, 1.0, 255, 255, 0, 255, 1, 1.0, 1.0, 1.0);
+				ShowHudText(iCL, 3, "%s",resspawn);
+				CreateTimer(1.0,respawntime,iCL);
+			}
+			else if (survivalact)
+			{
+				Format(resspawn,sizeof(resspawn),"You will respawn at the next checkpoint.");
+				SetHudTextParams(0.016, 0.05, 5.0, 255, 255, 0, 255, 1, 1.0, 1.0, 1.0);
+				ShowHudText(iCL, 3, "%s",resspawn);
+				if (FindStringInArray(respawnids,SteamID[iCL]) == -1) PushArrayString(respawnids,SteamID[iCL]);
+			}
+		}
+	}
+	else PrintToConsole(client,"Unable to find client with name '%s'",szTmp);
+	return Plugin_Handled;
+}
+
+bool ForcedSpectator(int client)
+{
+	int find = FindStringInArray(hForcedArr,SteamID[client]);
+	if (find != -1)
+	{
+		if (flForcedSpecTime[client] <= GetTickedTime())
+		{
+			RemoveFromArray(hForcedArr,find);
+			RemoveFromArray(hForcedArrTimes,find);
+			return false;
+		}
+		return true;
+	}
+	return false;
 }
 
 public Action scoreboardsh(int client, int args)
@@ -3220,7 +3412,7 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(GetEventInt(event,"userid"));
 	clspawntimeallow[client] = false;
-	if (FindStringInArray(afkids,SteamID[client]) != -1)
+	if ((FindStringInArray(afkids,SteamID[client]) != -1) || (ForcedSpectator(client)))
 	{
 		clinspectate[client] = true;
 		SetVariantInt(1);
@@ -3662,6 +3854,14 @@ public Action roundtimeout(Handle timer)
 						SetEntPropVector(i,Prop_Data,"m_vecOrigin",orgreset);
 					}
 					else ClientCommand(i,"spec_next");
+					if (FindStringInArray(hForcedArr,SteamID[i]) != -1)
+					{
+						if (!ForcedSpectator(i))
+						{
+							PrintToChat(i,"You have been released from spectator mode...");
+							setupafk(i,0);
+						}
+					}
 				}
 			}
 		}
@@ -3798,7 +3998,7 @@ public Action EverySpawnPost(Handle timer, int client)
 		ClientCommand(client,"crosshair 1");
 		if (HasEntProp(client,Prop_Send,"m_bDisplayReticle"))
 			SetEntProp(client,Prop_Send,"m_bDisplayReticle",1);
-		if (FindStringInArray(afkids,SteamID[client]) != -1)
+		if ((FindStringInArray(afkids,SteamID[client]) != -1) || (ForcedSpectator(client)))
 		{
 			clinspectate[client] = true;
 			SetVariantInt(1);
@@ -3887,6 +4087,13 @@ public Action EverySpawnPost(Handle timer, int client)
 public OnClientAuthorized(int client, const char[] szAuth)
 {
 	GetClientAuthId(client,AuthId_Steam2,SteamID[client],sizeof(SteamID[]));
+	int iFind = FindStringInArray(hForcedArr,SteamID[client]);
+	if (iFind != -1)
+	{
+		char szTmp[16];
+		GetArrayString(hForcedArrTimes,iFind,szTmp,sizeof(szTmp));
+		flForcedSpecTime[client] = StringToFloat(szTmp);
+	}
 	CreateTimer(2.0, joincfg, client);
 }
 
@@ -4420,4 +4627,5 @@ public void OnClientDisconnect(int client)
 	antispamchk[client][1] = 0.0;
 	clinspectate[client] = false;
 	SteamID[client] = "";
+	flForcedSpecTime[client] = 0.0;
 }

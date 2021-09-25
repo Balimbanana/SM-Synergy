@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.50"
-			"Previous"	"1.49"
+			"Latest"  	"1.51"
+			"Previous"	"1.50"
 		}
 		
-		"Notes"	"Added delay to using afk."
+		"Notes"	"Added commands sm_forcespec name time and sm_releasespec name."
 	}
 	
 	"Files"
