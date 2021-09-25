@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.180"
-			"Previous"	"2.179"
+			"Latest"  	"2.181"
+			"Previous"	"2.180"
 		}
 		
-		"Notes"	"Added transition failsave for d2_coast_08 - 07. Added Linux specific ep2_outland_04 - 02 configuration."
+		"Notes"	"Added failsave for corrupted datapack. Added field disable to d2_coast_08 - 07."
 	}
 	
 	"Files"

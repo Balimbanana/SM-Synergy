@@ -67,7 +67,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.180"
+#define PLUGIN_VERSION "2.181"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1982,6 +1982,7 @@ public void OnMapStart()
 					DispatchKeyValue(loginp, "OnMapSpawn","syn_starttptransition,kill,,30,1");
 					DispatchKeyValue(loginp, "OnMapSpawn","syn_antiskip_hurt,Disable,,0,-1");
 					DispatchKeyValue(loginp, "OnMapSpawn","field_trigger,Disable,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","bridge_field_02,Disable,,0,-1");
 					DispatchKeyValue(loginp, "OnMapSpawn","forcefield3_sound_far,StopSound,,0,-1");
 					DispatchKeyValue(loginp, "OnMapSpawn","forcefield3_sound_far,kill,,0.1,-1");
 					DispatchKeyValue(loginp, "OnMapSpawn","field_wall_poles,Skin,1,0,-1");
@@ -4623,6 +4624,7 @@ public Action anotherdelay(Handle timer, int client)
 				if (HasEntProp(client,Prop_Data,"m_iHealthPack")) SetEntProp(client,Prop_Send,"m_iHealthPack",medkitamm);
 				SetEntProp(client,Prop_Send,"m_bDucking",crouching);
 				ReadPackString(dp,ammoset,sizeof(ammoset));
+				int iInit = view_as<int>(dp);
 				while (!StrEqual(ammoset,"endofpack",false))
 				{
 					if (StrContains(ammoset,"propset ",false) == 0)
@@ -4725,6 +4727,7 @@ public Action anotherdelay(Handle timer, int client)
 							}
 						}
 					}
+					if (iInit != view_as<int>(dp)) break;
 					ReadPackString(dp,ammoset,sizeof(ammoset));
 				}
 				CloseHandle(dp);
