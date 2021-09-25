@@ -63,11 +63,12 @@ ConVar hDelTransitionEnts;
 
 char landmarkname[64];
 char mapbuf[128];
+char maptochange[64];
 char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.181"
+#define PLUGIN_VERSION "2.182"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2901,9 +2902,9 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		ClearArray(transitiondp);
 		ClearArray(transitionplyorigin);
 		ClearArray(ignoreent);
-		char maptochange[64];
 		GetCurrentMap(prevmap,sizeof(prevmap));
 		if (validchange) GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
+		else maptochange = "";
 		if (StrEqual(maptochange,"sp_ending",false)) return Plugin_Continue;
 		if ((StrEqual(prevmap,"d1_town_03",false)) && (StrEqual(maptochange,"d1_town_02",false)))
 		{
@@ -3376,6 +3377,10 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 					if ((StrEqual(targn,"alyx",false)) || (StrEqual(targn,"vort",false)) || (StrEqual(targn,"jeep",false)))
 						alwaystransition = 1;
 				}
+			}
+			else if ((StrEqual(clsname,"npc_monk",false)) && (StrEqual(mapbuf,"d1_town_02",false)) && (StrEqual(maptochange,"d1_town_02a",false)))
+			{
+				alwaystransition = 1;
 			}
 			int par = -1;
 			//if ((StrEqual(clsname,"prop_dynamic",false)) || (StrEqual(clsname,"prop_physics",false)))

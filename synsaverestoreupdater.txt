@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.181"
-			"Previous"	"2.180"
+			"Latest"  	"2.182"
+			"Previous"	"2.181"
 		}
 		
-		"Notes"	"Added failsave for corrupted datapack. Added field disable to d2_coast_08 - 07."
+		"Notes"	"Added static transition for npc_monk from d1_town_02 - 02a."
 	}
 	
 	"Files"
