@@ -60,6 +60,8 @@ Handle timouthndl = INVALID_HANDLE;
 Handle equiparr = INVALID_HANDLE;
 ConVar hDelTransitionPly;
 ConVar hDelTransitionEnts;
+ConVar hLandMarkBox;
+ConVar hLandMarkBoxSize;
 
 char landmarkname[64];
 char mapbuf[128];
@@ -68,7 +70,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.182"
+#define PLUGIN_VERSION "2.183"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -201,6 +203,10 @@ public void OnPluginStart()
 	if (hDelTransitionPly == INVALID_HANDLE) hDelTransitionPly = CreateConVar("sm_transition_rmply", "0", "Remove player entities over map change. May increase stability.", _, true, 0.0, true, 1.0);
 	hDelTransitionEnts = FindConVar("sm_transition_rments");
 	if (hDelTransitionEnts == INVALID_HANDLE) hDelTransitionEnts = CreateConVar("sm_transition_rments", "1", "Remove transition ents after store.", _, true, 0.0, true, 1.0);
+	hLandMarkBox = FindConVar("sm_transition_landmark_usebounds");
+	if (hLandMarkBox == INVALID_HANDLE) hLandMarkBox = CreateConVar("sm_transition_landmark_usebounds", "1", "Transition entities in a bounding box around the info_landmark.", _, true, 0.0, true, 1.0);
+	hLandMarkBoxSize = FindConVar("sm_transition_landmark_boundsize");
+	if (hLandMarkBoxSize == INVALID_HANDLE) hLandMarkBoxSize = CreateConVar("sm_transition_landmark_boundsize", "200.0", "info_landmark transition bounding box scale size.", _, true, 5.0, true, 1000.0);
 	RegServerCmd("changelevel",resettransition);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	AutoExecConfig(true, "synsaverestore");
@@ -2978,7 +2984,18 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 				maxs[1]+=vecOrgs[1];
 				maxs[2]+=vecOrgs[2];
 			}
+			// Even if this is not a valid change, alwaystransition entities will be caught by this check.
 			findtouchingents(mins,maxs,false);
+			if ((hLandMarkBox.BoolValue) && (validchange))
+			{
+				mins[0] = landmarkorigin[0]-hLandMarkBoxSize.FloatValue;
+				mins[1] = landmarkorigin[1]-hLandMarkBoxSize.FloatValue;
+				mins[2] = landmarkorigin[2]-hLandMarkBoxSize.FloatValue;
+				maxs[0] = landmarkorigin[0]+hLandMarkBoxSize.FloatValue;
+				maxs[1] = landmarkorigin[1]+hLandMarkBoxSize.FloatValue;
+				maxs[2] = landmarkorigin[2]+hLandMarkBoxSize.FloatValue;
+				findtouchingents(mins,maxs,false);
+			}
 			if (BMActive) transitionglobals(-1);
 			float plyorigin[3];
 			float plyangs[3];

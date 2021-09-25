@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.182"
-			"Previous"	"2.181"
+			"Latest"  	"2.183"
+			"Previous"	"2.182"
 		}
 		
-		"Notes"	"Added static transition for npc_monk from d1_town_02 - 02a."
+		"Notes"	"Added CVars sm_transition_landmark_usebounds and sm_transition_landmark_boundsize."
 	}
 	
 	"Files"
