@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.183"
-			"Previous"	"2.182"
+			"Latest"  	"2.184"
+			"Previous"	"2.183"
 		}
 		
-		"Notes"	"Added CVars sm_transition_landmark_usebounds and sm_transition_landmark_boundsize."
+		"Notes"	"Rebuild of relay for Linux transition from ep2_outland_04 - 02."
 	}
 	
 	"Files"

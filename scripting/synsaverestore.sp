@@ -70,7 +70,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.183"
+#define PLUGIN_VERSION "2.184"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1827,7 +1827,7 @@ public void OnMapStart()
 				if (spawnpos != -1)
 				{
 					DispatchKeyValue(spawnpos, "targetname","syn_spawn_player_3rebuild");
-					DispatchKeyValue(spawnpos, "StartDisabled","1");
+					DispatchKeyValue(spawnpos, "StartDisabled","0");
 					DispatchKeyValue(spawnpos, "parentname","elevator");
 					float spawnposg[3];
 					spawnposg[0] = -3106.0;
@@ -1854,7 +1854,24 @@ public void OnMapStart()
 					}
 					else
 					{
-						DispatchKeyValue(loginp, "OnMapSpawn","debug_choreo_start_in_elevator,Trigger,,0.4,-1");
+						//DispatchKeyValue(loginp, "OnMapSpawn","debug_choreo_start_in_elevator,Trigger,,0.4,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","vort,kill,,0,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","vort_calvary_1,kill,,0,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","vort_calvary_2,kill,,0,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","vort_calvary_actor,kill,,0,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","ss_crouch,kill,,0,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","griggs,kill,,0,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","sheckley,kill,,0,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","alyx,kill,,0,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","start_the_elevator_rl,Enable,,0,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","teleport_player_onto_elevator,Teleport,,0.1,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","griggs_sheckley_template,ForceSpawn,,0.1,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","vort_template,ForceSpawn,,0.1,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","vort,StartScripting,,0.2,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","vort_enter_on_elevator_ss_1,BeginSequence,,0.3,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","cheat_extract_template,ForceSpawn,,0.3,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","coming_from_04_scene_setup_2,Trigger,,1,-1");
+						DispatchKeyValue(loginp, "OnMapSpawn","alyx_interior,StartScripting,,1.1,-1");
 					}
 					DispatchSpawn(loginp);
 					ActivateEntity(loginp);
@@ -4305,20 +4322,10 @@ public Action restoreaim(Handle timer, Handle dp)
 	return Plugin_Handled;
 }
 */
-bool IsAsyncChangingMap()
-{
-    ConVar async_changingmap_cvar = FindConVar("async_changingmap");
-    if((async_changingmap_cvar != INVALID_HANDLE))
-    {
-        if (async_changingmap_cvar.BoolValue) return true;
-        CloseHandle(async_changingmap_cvar);
-    }
-    return false;
-}
 
 public void OnClientAuthorized(int client, const char[] szAuth)
 {
-	if ((rmsaves) && (!IsAsyncChangingMap()) && ((!SynLaterAct) || (SkipVer)))
+	if ((rmsaves) && ((!SynLaterAct) || (SkipVer)))
 	{
 		if ((!StrEqual(mapbuf,"d3_citadel_03",false)) && (!StrEqual(mapbuf,"ep2_outland_02",false)))
 		{
