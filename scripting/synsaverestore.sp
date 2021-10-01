@@ -70,7 +70,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.184"
+#define PLUGIN_VERSION "2.185"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1836,6 +1836,8 @@ public void OnMapStart()
 					TeleportEntity(spawnpos,spawnposg,NULL_VECTOR,NULL_VECTOR);
 					DispatchSpawn(spawnpos);
 					ActivateEntity(spawnpos);
+					SetVariantString("elevator");
+					AcceptEntityInput(spawnpos,"SetParent");
 				}
 				int loginp = CreateEntityByName("logic_auto");
 				if (loginp != -1)
@@ -1844,7 +1846,9 @@ public void OnMapStart()
 					DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,Enable,,0,-1");
 					DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,Trigger,,0.1,-1");
 					DispatchKeyValue(loginp, "OnMapSpawn","elevator_actor_setup_trigger,TouchTest,,0.1,-1");
-					DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3rebuild,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","info_player_coop,Disable,,0,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_player_3rebuild,Enable,,0.1,-1");
+					DispatchKeyValue(loginp, "OnMapSpawn","syn_spawn_manager,SetCheckPoint,syn_spawn_player_3rebuild,0.1,-1");
 					if (!bLinuxAct)
 					{
 						// Windows works with this
