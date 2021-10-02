@@ -13,7 +13,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.993"
+#define PLUGIN_VERSION "1.994"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin myinfo = 
@@ -381,6 +381,10 @@ public Action sethealthnum(int client, int args)
 
 public Action cleararr(Handle timer)
 {
+	//This is to force recheck of ai relationships as the lowest impact check possible.
+	ClearArray(htarr);
+	ClearArray(liarr);
+	ClearArray(airelarr);
 	for (int client = 1;client<MaxClients+1;client++)
 	{
 		if (IsClientInGame(client))
@@ -388,13 +392,14 @@ public Action cleararr(Handle timer)
 			if (!IsFakeClient(client))
 			{
 				CLStoreInTable(client);
+				if (strlen(SteamID[client]) > 8)
+				{
+					if (FindStringInArray(liarr,SteamID[client]) == -1)
+						PushArrayString(liarr,SteamID[client]);
+				}
 			}
 		}
 	}
-	//This is to force recheck of ai relationships as the lowest impact check possible.
-	ClearArray(htarr);
-	ClearArray(liarr);
-	ClearArray(airelarr);
 	findairel(-1,"ai_relationship");
 	addht("npc_combine_s");
 	addht("npc_metropolice");
