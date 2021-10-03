@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.185"
-			"Previous"	"2.184"
+			"Latest"  	"2.186"
+			"Previous"	"2.185"
 		}
 		
-		"Notes"	"Additional changes of Linux transition from ep2_outland_04 - 02."
+		"Notes"	"Failsaves added for transition from ep2_outland_04 - 02."
 	}
 	
 	"Files"

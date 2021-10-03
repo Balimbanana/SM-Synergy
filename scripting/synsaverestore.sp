@@ -70,7 +70,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.185"
+#define PLUGIN_VERSION "2.186"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1879,6 +1879,7 @@ public void OnMapStart()
 					}
 					DispatchSpawn(loginp);
 					ActivateEntity(loginp);
+					CreateTimer(1.5,TransitionPostAdjust,0,TIMER_FLAG_NO_MAPCHANGE);
 				}
 				int iEnt = -1;
 				char szTargn[32];
@@ -2648,6 +2649,103 @@ public void OnMapStart()
 	}
 }
 
+public Action TransitionPostAdjust(Handle timer, int Indx)
+{
+	if (Indx == 0)
+	{
+		bool bVorts[3];
+		int iEnt = -1;
+		char szTargn[32];
+		while((iEnt = FindEntityByClassname(iEnt,"npc_vortigaunt")) != INVALID_ENT_REFERENCE)
+		{
+			if (IsValidEntity(iEnt))
+			{
+				if (HasEntProp(iEnt,Prop_Data,"m_iName"))
+				{
+					GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+					if (StrEqual(szTargn,"vort_calvary_1",false))
+					{
+						bVorts[0] = true;
+					}
+					else if (StrEqual(szTargn,"vort_calvary_2",false))
+					{
+						bVorts[1] = true;
+					}
+					else if (StrEqual(szTargn,"vort_calvary_actor",false))
+					{
+						bVorts[2] = true;
+					}
+				}
+			}
+		}
+		float vecOrigin[3];
+		if (!bVorts[0])
+		{
+			iEnt = CreateEntityByName("npc_vortigaunt");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"targetname","vort_calvary_1");
+				DispatchKeyValue(iEnt,"squadname","vort_reinforcements");
+				DispatchKeyValue(iEnt,"damagefilter","null");
+				DispatchKeyValue(iEnt,"model","models/vortigaunt_blue.mdl");
+				vecOrigin[0] = -1888.0;
+				vecOrigin[1] = -9200.0;
+				vecOrigin[2] = -456.0;
+				TeleportEntity(iEnt,vecOrigin,NULL_VECTOR,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				AcceptEntityInput(iEnt,"SetReadinessHigh");
+				AcceptEntityInput(iEnt,"DisableArmorRecharge");
+				SetVariantString("600");
+				AcceptEntityInput(iEnt,"LockReadiness");
+			}
+		}
+		if (!bVorts[1])
+		{
+			iEnt = CreateEntityByName("npc_vortigaunt");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"targetname","vort_calvary_2");
+				DispatchKeyValue(iEnt,"squadname","vort_reinforcements");
+				DispatchKeyValue(iEnt,"damagefilter","null");
+				DispatchKeyValue(iEnt,"model","models/vortigaunt_blue.mdl");
+				vecOrigin[0] = -1894.0;
+				vecOrigin[1] = -9385.0;
+				vecOrigin[2] = -456.0;
+				TeleportEntity(iEnt,vecOrigin,NULL_VECTOR,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				AcceptEntityInput(iEnt,"SetReadinessHigh");
+				AcceptEntityInput(iEnt,"DisableArmorRecharge");
+				SetVariantString("600");
+				AcceptEntityInput(iEnt,"LockReadiness");
+			}
+		}
+		if (!bVorts[2])
+		{
+			iEnt = CreateEntityByName("npc_vortigaunt");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"targetname","vort_calvary_actor");
+				DispatchKeyValue(iEnt,"squadname","vort_reinforcements");
+				DispatchKeyValue(iEnt,"damagefilter","null");
+				DispatchKeyValue(iEnt,"model","models/vortigaunt_blue.mdl");
+				vecOrigin[0] = -1888.0;
+				vecOrigin[1] = -9312.0;
+				vecOrigin[2] = -455.0;
+				TeleportEntity(iEnt,vecOrigin,NULL_VECTOR,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				AcceptEntityInput(iEnt,"SetReadinessHigh");
+				AcceptEntityInput(iEnt,"DisableArmorRecharge");
+				SetVariantString("600");
+				AcceptEntityInput(iEnt,"LockReadiness");
+			}
+		}
+		if ((!bVorts[0]) || (!bVorts[1]) || (!bVorts[2])) SendInput("scripted_sequence","ss_heal_loop","BeginSequence",0);
+	}
+}
+
 public void Ep2ElevatorPass(const char[] output, int caller, int activator, float delay)
 {
 	if (IsValidEntity(caller))
@@ -2674,6 +2772,30 @@ public void Ep2ElevatorPass(const char[] output, int caller, int activator, floa
 		}
 		UnhookSingleEntityOutput(caller,output,Ep2ElevatorPass);
 	}
+}
+
+bool SendInput(char[] szClass, char[] szTargetName, char[] szInput, int iActivator)
+{
+	bool bRet = false;
+	int iEnt = -1;
+	char szTargn[32];
+	while((iEnt = FindEntityByClassname(iEnt,szClass)) != INVALID_ENT_REFERENCE)
+	{
+		if (IsValidEntity(iEnt))
+		{
+			if (HasEntProp(iEnt,Prop_Data,"m_iName"))
+			{
+				GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+				if (StrEqual(szTargn,szTargetName,false))
+				{
+					bRet = true;
+					if (iActivator != 0) AcceptEntityInput(iEnt,szInput,iActivator);
+					else AcceptEntityInput(iEnt,szInput);
+				}
+			}
+		}
+	}
+	return bRet;
 }
 
 void ClearArrayHandles(Handle array)
