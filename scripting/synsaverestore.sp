@@ -70,7 +70,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.186"
+#define PLUGIN_VERSION "2.187"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2223,7 +2223,7 @@ public void OnMapStart()
 						ReadPackString(dp,defanim,sizeof(defanim));
 						char response[64];
 						ReadPackString(dp,response,sizeof(response));
-						char scriptinf[1024];
+						char scriptinf[1280];
 						ReadPackString(dp,scriptinf,sizeof(scriptinf));
 						bool ragdoll = false;
 						if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"d2_prison_08",false)))
@@ -2475,6 +2475,11 @@ public void OnMapStart()
 										else if (StrEqual(scriptexp[j],"m_strItemClass",false))
 										{
 											DispatchKeyValue(ent,"ItemClass",scriptexp[jadd]);
+										}
+										else if (StrEqual(scriptexp[j],"m_clrRender",false))
+										{
+											Format(scriptexp[jadd],sizeof(scriptexp[]),"%s %s %s",scriptexp[jadd],firstv,scriptexp[jadd+1]);
+											DispatchKeyValue(ent,"RenderColor",scriptexp[jadd]);
 										}
 										else
 										{
@@ -3622,7 +3627,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 								char solidity[4];
 								char defanim[32];
 								char response[64];
-								char scriptinf[1024];
+								char scriptinf[1280];
 								int doorstate, sleepstate, gunenable, tkdmg, mvtype, gameend;
 								if (HasEntProp(i,Prop_Data,"m_iHealth")) curh = GetEntProp(i,Prop_Data,"m_iHealth");
 								if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
@@ -3823,6 +3828,25 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 								{
 									GetEntPropString(i,Prop_Data,"m_strItemClass",szTmp,sizeof(szTmp));
 									Format(scriptinf,sizeof(scriptinf),"%sm_strItemClass %s ",scriptinf,szTmp);
+								}
+								if (HasEntProp(i,Prop_Data,"m_clrRender"))
+								{
+									if (GetEntProp(i,Prop_Data,"m_clrRender") != -1)
+									{
+										int iOffs = GetEntSendPropOffs(i,"m_clrRender");
+										if (iOffs != -1)
+										{
+											// Could also get alpha at some point
+											Format(scriptinf,sizeof(scriptinf),"%sm_clrRender %i %i %i ",scriptinf,GetEntData(i,iOffs, 1),GetEntData(i,iOffs + 1, 1),GetEntData(i,iOffs + 2, 1));
+										}
+									}
+								}
+								if (HasEntProp(i,Prop_Data,"m_flModelScale"))
+								{
+									if (GetEntPropFloat(i,Prop_Data,"m_flModelScale") != 1.0)
+									{
+										Format(scriptinf,sizeof(scriptinf),"%sm_flModelScale %1.1f ",scriptinf,GetEntPropFloat(i,Prop_Data,"m_flModelScale"));
+									}
 								}
 								if (HasEntProp(i,Prop_Data,"m_iszResumeSceneFile"))
 								{
@@ -4202,7 +4226,7 @@ void transitionthisent(int i)
 	char npctype[4];
 	char solidity[4];
 	char response[64];
-	char scriptinf[1024];
+	char scriptinf[1280];
 	char scrtmp[64];
 	char defanim[32];
 	int doorstate, sleepstate, gunenable, tkdmg, mvtype, gameend;
