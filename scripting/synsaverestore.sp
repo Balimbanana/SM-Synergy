@@ -70,7 +70,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.188"
+#define PLUGIN_VERSION "2.189"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2478,8 +2478,16 @@ public void OnMapStart()
 										}
 										else if (StrEqual(scriptexp[j],"m_clrRender",false))
 										{
-											Format(scriptexp[jadd],sizeof(scriptexp[]),"%s %s %s",scriptexp[jadd],firstv,scriptexp[jadd+1]);
-											DispatchKeyValue(ent,"RenderColor",scriptexp[jadd]);
+											skip2 = true;
+											int iOffs = GetEntSendPropOffs(ent,"m_clrRender");
+											if (iOffs != -1)
+											{
+												SetEntData(ent,iOffs,StringToInt(scriptexp[jadd]),1,true);
+												SetEntData(ent,iOffs + 1,StringToInt(scriptexp[jadd+1]),1,true);
+												SetEntData(ent,iOffs + 2,StringToInt(scriptexp[jadd+2]),1,true);
+												SetEntData(ent,iOffs + 3,StringToInt(scriptexp[jadd+3]),1,true);
+											}
+											j++;
 										}
 										else
 										{
@@ -3837,7 +3845,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 										if (iOffs != -1)
 										{
 											// Could also get alpha at some point
-											Format(scriptinf,sizeof(scriptinf),"%sm_clrRender %i %i %i ",scriptinf,GetEntData(i,iOffs, 1),GetEntData(i,iOffs + 1, 1),GetEntData(i,iOffs + 2, 1));
+											Format(scriptinf,sizeof(scriptinf),"%sm_clrRender %i %i %i %i ",scriptinf,GetEntData(i,iOffs, 1),GetEntData(i,iOffs + 1, 1),GetEntData(i,iOffs + 2, 1),GetEntData(i,iOffs + 3, 1));
 										}
 									}
 								}

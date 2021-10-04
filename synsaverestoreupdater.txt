@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.188"
-			"Previous"	"2.187"
+			"Latest"  	"2.189"
+			"Previous"	"2.188"
 		}
 		
-		"Notes"	"Increased delay on transition check."
+		"Notes"	"Transition alpha in addition to color render."
 	}
 	
 	"Files"
