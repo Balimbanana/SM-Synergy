@@ -70,7 +70,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.187"
+#define PLUGIN_VERSION "2.188"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1879,7 +1879,7 @@ public void OnMapStart()
 					}
 					DispatchSpawn(loginp);
 					ActivateEntity(loginp);
-					CreateTimer(1.5,TransitionPostAdjust,0,TIMER_FLAG_NO_MAPCHANGE);
+					CreateTimer(4.0,TransitionPostAdjust,0,TIMER_FLAG_NO_MAPCHANGE);
 				}
 				int iEnt = -1;
 				char szTargn[32];

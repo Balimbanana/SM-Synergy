@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.187"
-			"Previous"	"2.186"
+			"Latest"  	"2.188"
+			"Previous"	"2.187"
 		}
 		
-		"Notes"	"Added color render and model scale to transition data."
+		"Notes"	"Increased delay on transition check."
 	}
 	
 	"Files"
