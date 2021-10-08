@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.994"
-			"Previous"	"1.993"
+			"Latest"  	"1.995"
+			"Previous"	"1.994"
 		}
 		
-		"Notes"	"Added IDs to LIArr."
+		"Notes"	"Added names by IDs."
 	}
 	
 	"Files"

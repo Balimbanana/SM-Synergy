@@ -13,7 +13,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.994"
+#define PLUGIN_VERSION "1.995"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin myinfo = 
@@ -643,7 +643,7 @@ public Action ShowTimer(Handle timer)
 					CloseHandle(hhitpos);
 					if ((targ != -1) && ((targ > MaxClients) || (ShowPlayers)))
 					{
-						char clsname[32];
+						char clsname[64];
 						GetEntityClassname(targ,clsname,sizeof(clsname));
 						int vck = GetEntProp(client,Prop_Send,"m_hVehicle");
 						if ((StrContains(clsname,"clip",false) != -1) || ((StrContains(clsname,"prop_vehicle",false) != -1) && (vck != -1)))
@@ -940,6 +940,8 @@ public Action ShowTimer(Handle timer)
 								float Time = GetTickedTime();
 								if ((antispamchk[client] <= Time) && (curh > 0))
 								{
+									char targn[64];
+									if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
 									if (StrEqual(clsname,"combine_s",false))
 									{
 										char cmodel[64];
@@ -960,10 +962,8 @@ public Action ShowTimer(Handle timer)
 									else if (StrEqual(clsname,"combinedropship",false)) Format(clsname,sizeof(clsname),"Combine Dropship");
 									else if (StrEqual(clsname,"citizen",false))
 									{
-										char targn[64];
 										char cmodel[64];
 										GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
-										if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
 										if (StrEqual(cmodel,"models/odessa.mdl",false)) Format(clsname,sizeof(clsname),"Odessa Cubbage");
 										else if (StrContains(cmodel,"models/humans/group03m/",false) == 0) Format(clsname,sizeof(clsname),"Rebel Medic");
 										else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
@@ -1031,11 +1031,20 @@ public Action ShowTimer(Handle timer)
 										curh = 1;
 										maxh = 1;
 									}
-									else if (StrEqual(clsname,"alyx",false))
+									else if ((StrEqual(clsname,"alyx",false)) && (StrEqual(targn,"clockface_npc",false)))
 									{
-										char targn[64];
-										if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
-										if (StrEqual(targn,"clockface_npc",false)) Format(clsname,sizeof(clsname),"Clock Face");
+										Format(clsname,sizeof(clsname),"Clock Face");
+									}
+									else if (StrContains(targn,"STEAM_",false) != -1)
+									{
+										for (int i = 1;i<MaxClients+1;i++)
+										{
+											if (StrEqual(targn,SteamID[i],false))
+											{
+												Format(clsname,sizeof(clsname),"%N's %s",i,clsname);
+												break;
+											}
+										}
 									}
 									antispamchk[client] = Time + 0.07;
 									PrintTheMsg(client,curh,maxh,clsname,friendly);
@@ -1043,7 +1052,7 @@ public Action ShowTimer(Handle timer)
 							}
 							else
 							{
-								char friendfoe[32];
+								char friendfoe[64];
 								Format(friendfoe,sizeof(friendfoe),clsname);
 								int curh = GetEntProp(targ,Prop_Data,"m_iHealth");
 								if (StrContains(clsname,"monster_",false) != -1)
@@ -1085,6 +1094,19 @@ public Action ShowTimer(Handle timer)
 								if ((antispamchk[client] <= Time) && (curh > 0))
 								{
 									antispamchk[client] = Time + 0.07;
+									char targn[32];
+									if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
+									if (StrContains(targn,"STEAM_",false) != -1)
+									{
+										for (int i = 1;i<MaxClients+1;i++)
+										{
+											if (StrEqual(targn,SteamID[i],false))
+											{
+												Format(friendfoe,sizeof(friendfoe),"%N's %s",i,friendfoe);
+												break;
+											}
+										}
+									}
 									PrintTheMsgf(client,curh,maxh,friendfoe,targ);
 								}
 							}
@@ -1097,7 +1119,7 @@ public Action ShowTimer(Handle timer)
 	return Plugin_Handled;
 }
 
-public void PrintTheMsg(int client, int curh, int maxh, char clsname[32], bool friendly)
+public void PrintTheMsg(int client, int curh, int maxh, char clsname[64], bool friendly)
 {
 	char hudbuf[40];
 	if (StrEqual(clsname,"monk",false)) Format(clsname,sizeof(clsname),"Father Grigori");
@@ -1165,7 +1187,7 @@ public void PrintTheMsg(int client, int curh, int maxh, char clsname[32], bool f
 	}
 }
 
-public void PrintTheMsgf(int client, int curh, int maxh, char clsname[32], int targ)
+public void PrintTheMsgf(int client, int curh, int maxh, char clsname[64], int targ)
 {
 	bool targetally = false;
 	if (StrEqual(clsname,"npc_metropolice",false))
