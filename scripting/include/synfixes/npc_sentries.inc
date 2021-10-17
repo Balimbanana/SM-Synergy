@@ -32,7 +32,7 @@ void sentriesthink(int entity)
 						char snd[64];
 						if (StrEqual(cls,"npc_sentry_ceiling",false)) Format(snd,sizeof(snd),"npc\\sentry_ceiling\\deploy.wav");
 						else Format(snd,sizeof(snd),"npc\\sentry_ground\\deploy.wav");
-						EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
+						EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 					}
 				}
 				float Time = GetTickedTime();
@@ -489,7 +489,7 @@ void sentriesthink(int entity)
 										char snd[64];
 										if (StrEqual(sentrycls,"npc_sentry_ceiling",false)) Format(snd,sizeof(snd),"npc\\sentry_ceiling\\ping2.wav");
 										else Format(snd,sizeof(snd),"npc\\sentry_ground\\ping.wav");
-										EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
+										EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 										break;
 									}
 								}
@@ -547,7 +547,7 @@ void sentriesthink(int entity)
 						char snd[64];
 						if (StrEqual(cls,"npc_sentry_ceiling",false)) Format(snd,sizeof(snd),"npc\\sentry_ceiling\\retract.wav");
 						else Format(snd,sizeof(snd),"npc\\sentry_ground\\retract.wav");
-						EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
+						EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 					}
 				}
 			}

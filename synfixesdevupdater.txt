@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0045"
-			"Previous"	"2.0044"
+			"Latest"  	"2.0046"
+			"Previous"	"2.0045"
 		}
 		
-		"Notes"	"Additional validation in removedrops."
+		"Notes"	"Added setup for global transition info."
 	}
 	
 	"Files"

@@ -62,6 +62,7 @@ ConVar hDelTransitionPly;
 ConVar hDelTransitionEnts;
 ConVar hLandMarkBox;
 ConVar hLandMarkBoxSize;
+ConVar hCVTransitionGlobals;
 
 char landmarkname[64];
 char mapbuf[128];
@@ -70,7 +71,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.189"
+#define PLUGIN_VERSION "2.190"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -207,6 +208,8 @@ public void OnPluginStart()
 	if (hLandMarkBox == INVALID_HANDLE) hLandMarkBox = CreateConVar("sm_transition_landmark_usebounds", "1", "Transition entities in a bounding box around the info_landmark.", _, true, 0.0, true, 1.0);
 	hLandMarkBoxSize = FindConVar("sm_transition_landmark_boundsize");
 	if (hLandMarkBoxSize == INVALID_HANDLE) hLandMarkBoxSize = CreateConVar("sm_transition_landmark_boundsize", "200.0", "info_landmark transition bounding box scale size.", _, true, 5.0, true, 1000.0);
+	hCVTransitionGlobals = FindConVar("sm_transition_globals");
+	if (hCVTransitionGlobals == INVALID_HANDLE) hCVTransitionGlobals = CreateConVar("sm_transition_globals", "0", "Transtition global states might not work for every mod.", _, true, 0.0, true, 1.0);
 	RegServerCmd("changelevel",resettransition);
 	WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
 	AutoExecConfig(true, "synsaverestore");
@@ -2835,13 +2838,19 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		if (GetArraySize(globalstransition) > 0)
 		{
-			CreateTimer(0.1,rechkglobal,entity,TIMER_FLAG_NO_MAPCHANGE);
+			if (!SDKHookEx(entity,SDKHook_Spawn,rechkglobal)) CreateTimer(0.1,rechkglobaltimer,entity,TIMER_FLAG_NO_MAPCHANGE);
 		}
 	}
 }
 
-public Action rechkglobal(Handle timer, int entity)
+public Action rechkglobaltimer(Handle timer, int entity)
 {
+	rechkglobal(entity);
+}
+
+void rechkglobal(int entity)
+{
+	SDKUnhook(entity,SDKHook_Spawn,rechkglobal);
 	if (IsValidEntity(entity))
 	{
 		for (int i = 0;i<GetArraySize(globalstransition);i++)
@@ -2864,9 +2873,12 @@ public Action rechkglobal(Handle timer, int entity)
 			int m_fFlags = ReadPackCell(dp);
 			//CloseHandle(dp);
 			char statechk[64];
+			char szEntName[64];
 			GetEntPropString(entity,Prop_Data,"m_globalstate",statechk,sizeof(statechk));
-			if (StrEqual(statechk,m_globalstate,false))
+			if (HasEntProp(entity,Prop_Data,"m_iName")) GetEntPropString(entity,Prop_Data,"m_iName",szEntName,sizeof(szEntName));
+			if ((StrEqual(statechk,m_globalstate,false)) || (StrEqual(m_iName,szEntName,false)))
 			{
+				if (dbg) LogMessage("Set global state for '%s' '%s' State: %i Counter: %i",statechk,m_iName,m_initialstate,m_counter);
 				if (HasEntProp(entity,Prop_Data,"m_globalstate")) SetEntPropString(entity,Prop_Data,"m_globalstate",m_globalstate);
 				if (HasEntProp(entity,Prop_Data,"m_iName")) SetEntPropString(entity,Prop_Data,"m_iName",m_iName);
 				if (HasEntProp(entity,Prop_Data,"m_triggermode")) SetEntProp(entity,Prop_Data,"m_triggermode",m_triggermode);
@@ -2880,9 +2892,29 @@ public Action rechkglobal(Handle timer, int entity)
 				if (HasEntProp(entity,Prop_Data,"m_spawnflags")) SetEntProp(entity,Prop_Data,"m_spawnflags",m_spawnflags);
 				if (HasEntProp(entity,Prop_Data,"m_fFlags")) SetEntProp(entity,Prop_Data,"m_fFlags",m_fFlags);
 			}
+			if ((m_counter) || (m_initialstate))
+			{
+				int iEnt = -1;
+				char szGlobalState[32];
+				while((iEnt = FindEntityByClassname(iEnt,"logic_auto")) != INVALID_ENT_REFERENCE)
+				{
+					if (IsValidEntity(iEnt))
+					{
+						if (HasEntProp(iEnt,Prop_Data,"m_globalstate"))
+						{
+							GetEntPropString(iEnt,Prop_Data,"m_globalstate",szGlobalState,sizeof(szGlobalState));
+							if (StrEqual(szGlobalState,m_globalstate,false))
+							{
+								if (HasEntProp(iEnt,Prop_Data,"m_OnMapSpawn")) FireEntityOutput(iEnt,"OnMapSpawn",0,0.0);
+								if (HasEntProp(iEnt,Prop_Data,"m_OnMapTransition")) FireEntityOutput(iEnt,"OnMapTransition",0,0.0);
+							}
+						}
+					}
+				}
+			}
 		}
 	}
-	return Plugin_Handled;
+	return;
 }
 
 public bool OutOfWorldBounds(float origin[3], float scale)
@@ -3152,7 +3184,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 				maxs[2] = landmarkorigin[2]+hLandMarkBoxSize.FloatValue;
 				findtouchingents(mins,maxs,false);
 			}
-			if (BMActive) transitionglobals(-1);
+			if ((BMActive) || (hCVTransitionGlobals.BoolValue)) transitionglobals(-1);
 			float plyorigin[3];
 			float plyangs[3];
 			char SteamID[32];
@@ -4174,10 +4206,29 @@ void transitionglobals(int ent)
 	if ((IsValidEntity(thisent)) && (thisent != -1))
 	{
 		char m_globalstate[64];
+		if (HasEntProp(thisent,Prop_Data,"m_globalstate")) GetEntPropString(thisent,Prop_Data,"m_globalstate",m_globalstate,sizeof(m_globalstate));
+		if (GetArraySize(globalstransition) > 0)
+		{
+			char szGlobalState[64];
+			for (int i = 0;i<GetArraySize(globalstransition);i++)
+			{
+				Handle dp = GetArrayCell(globalstransition,i);
+				if (dp != INVALID_HANDLE)
+				{
+					ResetPack(dp);
+					ReadPackString(dp,szGlobalState,sizeof(szGlobalState));
+					if (StrEqual(m_globalstate,szGlobalState,false))
+					{
+						CloseHandle(dp);
+						RemoveFromArray(globalstransition,i);
+						break;
+					}
+				}
+			}
+		}
 		char m_iName[64];
 		int m_triggermode,m_initialstate,m_counter,m_fEffects,m_lifeState,m_iHealth,m_iMaxHealth,m_iEFlags,m_spawnflags,m_fFlags;
 		Handle globaldp = CreateDataPack();
-		if (HasEntProp(thisent,Prop_Data,"m_globalstate")) GetEntPropString(thisent,Prop_Data,"m_globalstate",m_globalstate,sizeof(m_globalstate));
 		if (HasEntProp(thisent,Prop_Data,"m_iName")) GetEntPropString(thisent,Prop_Data,"m_iName",m_iName,sizeof(m_iName));
 		if (HasEntProp(thisent,Prop_Data,"m_triggermode")) m_triggermode = GetEntProp(thisent,Prop_Data,"m_triggermode");
 		if (HasEntProp(thisent,Prop_Data,"m_initialstate")) m_initialstate = GetEntProp(thisent,Prop_Data,"m_initialstate");

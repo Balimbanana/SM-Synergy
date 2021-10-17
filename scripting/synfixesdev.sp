@@ -118,7 +118,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0045"
+#define PLUGIN_VERSION "2.0046"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1002,6 +1002,10 @@ public void OnMapStart()
 		{
 			HookEntityOutput("func_door","OnOpen",createelev);
 			HookEntityOutput("func_door","OnClose",createelev);
+		}
+		else if (StrEqual(mapbuf,"ep1_citadel_04",false))
+		{
+			HookEntityOutput("npc_rollermine","OnPhysGunPickup",Ep1RollermineFallback);
 		}
 		if (StrContains(mapbuf,"ep1_",false) == 0)
 		{
@@ -3324,10 +3328,21 @@ public Action mapendchg(const char[] output, int caller, int activator, float de
 					DeleteFile(findnode);
 				}
 			}
+			bool bChangeImmediate = false;
+			ConVar hCV = FindConVar("g_debug_transitions");
+			if (hCV != INVALID_HANDLE)
+			{
+				if (hCV.IntValue)
+				{
+					bChangeImmediate = true;
+				}
+			}
+			CloseHandle(hCV);
 			Handle data = CreateDataPack();
 			WritePackString(data, maptochange);
 			WritePackString(data, curmapbuf);
-			CreateTimer(1.0,changeleveldelay,data);
+			if (bChangeImmediate) CreateTimer(0.1,changeleveldelay,data);
+			else CreateTimer(1.0,changeleveldelay,data);
 			mapchanging = true;
 		}
 	}
@@ -5278,6 +5293,8 @@ public Action trigtp(const char[] output, int caller, int activator, float delay
 		readoutputstp(caller,targn,tmpout,"EquipPlayer",origin,actmod);
 		readoutputstp(caller,targn,tmpout,"SetCheckPoint",origin,actmod);
 		readoutputstp(caller,targn,tmpout,"CLCommand",origin,actmod);
+		readoutputstp(caller,targn,tmpout,"TurnOn",origin,actmod);
+		readoutputstp(caller,targn,tmpout,"TurnOff",origin,actmod);
 		if (GetArraySize(addedinputs) > 0)
 		{
 			char inputadded[64];
@@ -5378,6 +5395,40 @@ public Action centcratebreak(const char[] output, int caller, int activator, flo
 				}
 			}
 		}
+	}
+}
+
+public Action Ep1RollermineFallback(const char[] output, int caller, int activator, float delay)
+{
+	if (IsValidEntity(caller))
+	{
+		if (HasEntProp(caller,Prop_Data,"m_iName"))
+		{
+			char szTargn[32];
+			GetEntPropString(caller,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+			if (StrEqual(szTargn,"rollermine",false))
+			{
+				SetVariantString("rollermine");
+				int iFindAlyx = -1;
+				while((iFindAlyx = FindEntityByClassname(iFindAlyx,"npc_alyx")) != INVALID_ENT_REFERENCE)
+				{
+					if (IsValidEntity(iFindAlyx))
+					{
+						if (HasEntProp(iFindAlyx,Prop_Data,"m_iName"))
+						{
+							GetEntPropString(iFindAlyx,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+							if (StrEqual(szTargn,"alyx",false))
+							{
+								break;
+							}
+						}
+					}
+				}
+				if (IsValidEntity(iFindAlyx))
+					AcceptEntityInput(iFindAlyx,"ForceInteractionWithNPC",caller);
+			}
+		}
+		UnhookSingleEntityOutput(caller,output,Ep1RollermineFallback);
 	}
 }
 
@@ -6280,7 +6331,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						if (!IsModelPrecached("models/eli.mdl"))
 						{
 							PushArrayString(passedarr,"model");
-							PushArrayString(passedarr,"models/humans/scientist_kliener.mdl");
+							PushArrayString(passedarr,"models/humans/scientist_eli.mdl");
 						}
 						else
 						{
@@ -12312,6 +12363,36 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 			}
 		}
 	}
+	/*
+	// Needs to be death by squish
+	else if (StrEqual(clsname,"npc_antlion_grub",false))
+	{
+		if (FileExists("sound/vo/outland_03_04/tunnels/vort_squishgrub01.wav",true,NULL_STRING))
+		{
+			float vecOrigin[3];
+			float vecVortOrigin[3];
+			if (HasEntProp(killed,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(killed,Prop_Data,"m_vecAbsOrigin",vecOrigin);
+			else if (HasEntProp(killed,Prop_Send,"m_vecOrigin")) GetEntPropVector(killed,Prop_Send,"m_vecOrigin",vecOrigin);
+			int ent = -1;
+			while((ent = FindEntityByClassname(ent,"npc_vortigaunt")) != INVALID_ENT_REFERENCE)
+			{
+				if (IsValidEntity(ent))
+				{
+					if (HasEntProp(ent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",vecVortOrigin);
+					else if (HasEntProp(ent,Prop_Send,"m_vecOrigin")) GetEntPropVector(ent,Prop_Send,"m_vecOrigin",vecVortOrigin);
+					if ((GetVectorDistance(vecOrigin,vecVortOrigin,false) < 512.0) && (centnextsndtime[ent] < GetGameTime()))
+					{
+						centnextsndtime[ent] = GetGameTime()+3.0;
+						char szSnd[64];
+						Format(szSnd,sizeof(szSnd),"vo\\outland_03_04\\tunnels\\vort_squishgrub0%i.wav",GetRandomInt(1,4));
+						EmitSoundToAll(szSnd, ent, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+						break;
+					}
+				}
+			}
+		}
+	}
+	*/
 	if ((inflictor < MaxClients+1) && (inflictor > 0)) attacker = inflictor;
 	if ((attacker < MaxClients+1) && (attacker > 0))
 	{
@@ -13121,6 +13202,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								playerbranches(lineorgrescom[0],delay);
 							}
+							else if ((StrEqual(input,"TurnOn",false)) || (StrEqual(input,"TurnOff",false)))
+							{
+								envglobalsset(lineorgrescom[0],input);
+							}
 							Call_StartForward(SFEntInputHook);
 							Call_PushString(input);
 							Call_PushCell(activator);
@@ -13245,6 +13330,10 @@ void readoutputstp(int caller, char[] targn, char[] output, char[] input, float 
 							{
 								playerbranches(lineorgrescom[0],delay);
 							}
+							else if ((StrEqual(input,"TurnOn",false)) || (StrEqual(input,"TurnOff",false)))
+							{
+								envglobalsset(lineorgrescom[0],input);
+							}
 							Call_StartForward(SFEntInputHook);
 							Call_PushString(input);
 							Call_PushCell(activator);
@@ -13307,7 +13396,7 @@ void readoutputsforinputs()
 	if (filehandle != INVALID_HANDLE)
 	{
 		char line[128];
-		Handle inputs = CreateArray(32);
+		Handle inputs = CreateArray(64);
 		PushArrayString(inputs,",Teleport,,");
 		PushArrayString(inputs,",Save,,");
 		PushArrayString(inputs,",StartPortal,,");
@@ -13344,6 +13433,16 @@ void readoutputsforinputs()
 		{
 			PushArrayString(inputs,"!picker,");
 		}
+		ConVar hCV = FindConVar("g_debug_transitions");
+		if (hCV != INVALID_HANDLE)
+		{
+			if (hCV.IntValue)
+			{
+				PushArrayString(inputs,",TurnOn,,");
+				PushArrayString(inputs,",TurnOff,,");
+			}
+		}
+		CloseHandle(hCV);
 		if (GetArraySize(addedinputs) > 0)
 		{
 			char inputadded[64];
@@ -14888,6 +14987,43 @@ void RMAmmCheck(int ent, int activator, char[] input, char[] ammtype)
 		}
 	}
 	return;
+}
+
+void envglobalsset(char[] szTargn, char[] szInput)
+{
+	int ent = -1;
+	char szEntTargn[64];
+	while((ent = FindEntityByClassname(ent,"env_global")) != INVALID_ENT_REFERENCE)
+	{
+		if (IsValidEntity(ent))
+		{
+			if (HasEntProp(ent,Prop_Data,"m_iName"))
+			{
+				GetEntPropString(ent,Prop_Data,"m_iName",szEntTargn,sizeof(szEntTargn));
+				if (StrEqual(szTargn,szEntTargn,false))
+				{
+					envglobalsetstate(ent,szInput);
+				}
+			}
+		}
+	}
+}
+
+void envglobalsetstate(int entity, char[] szInput)
+{
+	if (IsValidEntity(entity))
+	{
+		int iVal = 0;
+		if (StrEqual(szInput,"TurnOn",false)) iVal = 1;
+		if (HasEntProp(entity,Prop_Data,"m_initialstate"))
+		{
+			SetEntProp(entity,Prop_Data,"m_initialstate",iVal);
+		}
+		if (HasEntProp(entity,Prop_Data,"m_counter"))
+		{
+			SetEntProp(entity,Prop_Data,"m_counter",iVal);
+		}
+	}
 }
 
 void playerbranches(char[] targn, float delay)
@@ -21835,9 +21971,9 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 	//Check func_door emitter m_NoiseMoving prevent future sounds until SingleEntityOutput OnFullyOpen/OnFullyClosed
 	if (IsValidEntity(entity))
 	{
-		char cls[32];
-		GetEntityClassname(entity,cls,sizeof(cls));
-		if (StrEqual(cls,"func_door",false))
+		char szCls[32];
+		GetEntityClassname(entity,szCls,sizeof(szCls));
+		if (StrEqual(szCls,"func_door",false))
 		{
 			if (HasEntProp(entity,Prop_Data,"m_NoiseMoving"))
 			{
@@ -21851,6 +21987,13 @@ public Action customsoundchecksnorm(int clients[64], int& numClients, char sampl
 						return Plugin_Changed;
 					}
 				}
+			}
+		}
+		else if (StrContains(sample,"npc/antlion",false) != -1)
+		{
+			if ((StrEqual(szCls,"npc_bullsquid",false)) || (StrEqual(szCls,"npc_houndeye",false)))
+			{
+				return Plugin_Stop;
 			}
 		}
 	}
