@@ -2838,19 +2838,13 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		if (GetArraySize(globalstransition) > 0)
 		{
-			if (!SDKHookEx(entity,SDKHook_Spawn,rechkglobal)) CreateTimer(0.1,rechkglobaltimer,entity,TIMER_FLAG_NO_MAPCHANGE);
+			CreateTimer(0.1,rechkglobaltimer,entity,TIMER_FLAG_NO_MAPCHANGE);
 		}
 	}
 }
 
 public Action rechkglobaltimer(Handle timer, int entity)
 {
-	rechkglobal(entity);
-}
-
-void rechkglobal(int entity)
-{
-	SDKUnhook(entity,SDKHook_Spawn,rechkglobal);
 	if (IsValidEntity(entity))
 	{
 		for (int i = 0;i<GetArraySize(globalstransition);i++)
@@ -2914,7 +2908,7 @@ void rechkglobal(int entity)
 			}
 		}
 	}
-	return;
+	return Plugin_Handled;
 }
 
 public bool OutOfWorldBounds(float origin[3], float scale)
