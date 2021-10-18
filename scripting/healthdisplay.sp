@@ -1041,7 +1041,8 @@ public Action ShowTimer(Handle timer)
 										{
 											if (StrEqual(targn,SteamID[i],false))
 											{
-												Format(clsname,sizeof(clsname),"%N's %s",i,clsname);
+												if (IsValidEntity(i)) Format(clsname,sizeof(clsname),"%N's %s",i,clsname);
+												else Format(clsname,sizeof(clsname),"Summoned %s",clsname);
 												break;
 											}
 										}
