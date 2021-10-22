@@ -25,7 +25,7 @@ Handle g_EditClassOrgData = INVALID_HANDLE;
 Handle g_EditTargetsData = INVALID_HANDLE;
 Handle g_CreateEnts = INVALID_HANDLE;
 Handle g_ModifyCase = INVALID_HANDLE;
-ConVar hCVAlwaysApplyGlobal;
+Handle hCVAlwaysApplyGlobal = INVALID_HANDLE;
 
 char lastmap[72];
 char LineSpanning[1024];
@@ -39,7 +39,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.71"
+#define PLUGIN_VERSION "0.72"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -148,8 +148,8 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		if (StrEqual(fixuptmp[1],"|",false)) Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
 		else if (StrEqual(fixuptmp[0],szMapName,false)) Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
 		else Format(contentdata,sizeof(contentdata),"%s",fixuptmp[0]);
+		CloseHandle(cvar);
 	}
-	CloseHandle(cvar);
 	char curmap[128];
 	char curmap2[128];
 	Format(curmap,sizeof(curmap),"maps/%s.edt",szMapName);
@@ -188,11 +188,11 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				if (FileExists(mapchk,true,NULL_STRING)) Format(curmap2,sizeof(curmap2),"%s",mapchk);
 			}
 		}
+		CloseHandle(cvar);
 	}
-	CloseHandle(cvar);
 	bool bSkipReadMapValidate = false;
 	if (FileExists(curmap2,true,NULL_STRING)) Format(curmap,sizeof(curmap),"%s",curmap2);
-	if ((hCVAlwaysApplyGlobal.BoolValue) && (!FileExists(curmap,true,NULL_STRING)) && (FileExists("cfg/globaledt.edt",false)))
+	if ((GetConVarBool(hCVAlwaysApplyGlobal)) && (!FileExists(curmap,true,NULL_STRING)) && (FileExists("cfg/globaledt.edt",false)))
 	{
 		bSkipReadMapValidate = true;
 	}
