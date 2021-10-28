@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0046"
-			"Previous"	"2.0045"
+			"Latest"  	"2.0047"
+			"Previous"	"2.0046"
 		}
 		
-		"Notes"	"Added setup for global transition info."
+		"Notes"	"Changed the way elevator blocks work."
 	}
 	
 	"Files"

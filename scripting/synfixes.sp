@@ -25,6 +25,7 @@ Handle physboxharr = INVALID_HANDLE;
 Handle elevlist = INVALID_HANDLE;
 Handle inputsarrorigincls = INVALID_HANDLE;
 Handle ignoretrigs = INVALID_HANDLE;
+Handle ignoreelevators = INVALID_HANDLE;
 Handle dctimeoutarr = INVALID_HANDLE;
 Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
@@ -66,7 +67,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.99995"
+#define PLUGIN_VERSION "1.99996"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -255,6 +256,7 @@ public void OnPluginStart()
 	elevlist = CreateArray(64);
 	inputsarrorigincls = CreateArray(768);
 	ignoretrigs = CreateArray(1024);
+	ignoreelevators = CreateArray(256);
 	dctimeoutarr = CreateArray(MAXPLAYERS+1);
 	if (addedinputs == INVALID_HANDLE) addedinputs = CreateArray(64);
 	RegConsoleCmd("alyx",fixalyx);
@@ -327,6 +329,7 @@ public void OnMapStart()
 		ClearArray(elevlist);
 		ClearArray(inputsarrorigincls);
 		ClearArray(ignoretrigs);
+		ClearArray(ignoreelevators);
 		char gamedescoriginal[24];
 		GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
 		if (StrEqual(gamedescoriginal,"synergy 56.16",false)) syn56act = true;
@@ -1406,9 +1409,16 @@ public Action elevatorstart(const char[] output, int caller, int activator, floa
 {
 	if (IsValidEntity(caller))
 	{
+		if (FindValueInArray(ignoreelevators,caller) == -1)
+		{
+			CreateTimer(0.2,elevatorstartpost,caller,TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
+			PushArrayCell(ignoreelevators,caller);
+		}
+		/*
 		CreateTimer(0.1,elevatorstartpost,caller,TIMER_FLAG_NO_MAPCHANGE);
 		//Post check
 		CreateTimer(5.0,elevatorstartpost,caller,TIMER_FLAG_NO_MAPCHANGE);
+		*/
 	}
 }
 
@@ -1418,40 +1428,69 @@ public Action elevatorstartpost(Handle timer, int elev)
 	{
 		float origin[3];
 		GetEntPropVector(elev,Prop_Data,"m_vecAbsOrigin",origin);
-		for (int i = MaxClients+1; i<GetMaxEntities(); i++)
+		origin[2]+=10.0;
+		float origin2[3];
+		origin2[0]=origin[0];
+		origin2[1]=origin[1];
+		origin2[2]=origin[2];
+		origin2[2]+=200.0;
+		char elevtargn[32];
+		GetEntPropString(elev,Prop_Data,"m_iName",elevtargn,sizeof(elevtargn));
+		float espeed;
+		if (HasEntProp(elev,Prop_Data,"m_flSpeed")) espeed = GetEntPropFloat(elev,Prop_Data,"m_flSpeed");
+		if (espeed > 150.0)
 		{
-			if (IsValidEntity(i) && IsEntNetworkable(i))
+			for (int i = MaxClients+1; i<GetMaxEntities(); i++)
 			{
-				char clsname[32];
-				GetEntityClassname(i,clsname,sizeof(clsname));
-				if ((StrEqual(clsname,"prop_physics",false)) || (StrEqual(clsname,"prop_ragdoll",false)) || (StrContains(clsname,"item_",false) != -1))
+				if (IsValidEntity(i) && IsEntNetworkable(i))
 				{
-					float proporigin[3];
-					GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",proporigin);
-					int parentchk = 0;
-					if (HasEntProp(i,Prop_Data,"m_hParent"))
-						parentchk = GetEntPropEnt(i,Prop_Data,"m_hParent");
-					if (parentchk < 1)
+					char clsname[32];
+					GetEntityClassname(i,clsname,sizeof(clsname));
+					if ((StrEqual(clsname,"prop_physics",false)) || (StrEqual(clsname,"prop_ragdoll",false)) || ((StrContains(clsname,"item_",false) != -1) && (!StrEqual(clsname,"item_healthcharger",false)) && (!StrEqual(clsname,"item_suitcharger",false))))
 					{
-						float chkdist = GetVectorDistance(origin,proporigin,false);
-						bool below = true;
-						if ((origin[2] < 0) && (origin[2] > proporigin[2])) below = false;
-						else if ((origin[2] > -1) && (origin[2] < proporigin[2])) below = false;
-						if (StrEqual(clsname,"prop_ragdoll",false)) below = false;
-						if ((chkdist < 200.0) && (!below))
+						float proporigin[3];
+						GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",proporigin);
+						int parentchk = 0;
+						if (HasEntProp(i,Prop_Data,"m_hParent"))
+							parentchk = GetEntPropEnt(i,Prop_Data,"m_hParent");
+						if (parentchk < 1)
 						{
-							if (debuglvl > 0)
+							float chkdist = GetVectorDistance(origin,proporigin,false);
+							float chkdist2 = GetVectorDistance(origin2,proporigin,false);
+							bool below = true;
+							if ((origin[2] < 0) && (origin[2] < proporigin[2])) below = false;
+							else if ((origin[2] > -1) && (origin[2] > proporigin[2])) below = false;
+							if (((chkdist < 200.0) || (chkdist2 < 200.0)) && (!below))
 							{
-								char targn[32];
-								GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-								PrintToServer("Removed %i %s %s colliding with elevator",i,targn,clsname);
+								/*
+								if (debuglvl > 0)
+								{
+									char targn[32];
+									GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+									PrintToServer("Removed %i %s %s colliding with elevator",i,targn,clsname);
+								}
+								AcceptEntityInput(i,"kill");
+								*/
+								proporigin[2]+=1.5;
+								TeleportEntity(i,proporigin,NULL_VECTOR,NULL_VECTOR);
 							}
-							AcceptEntityInput(i,"kill");
 						}
 					}
 				}
 			}
 		}
+		else
+		{
+			int iFind = FindValueInArray(ignoreelevators,elev);
+			if (iFind != -1) RemoveFromArray(ignoreelevators,iFind);
+			KillTimer(timer);
+		}
+	}
+	else
+	{
+		int iFind = FindValueInArray(ignoreelevators,elev);
+		if (iFind != -1) RemoveFromArray(ignoreelevators,iFind);
+		KillTimer(timer);
 	}
 }
 
@@ -2159,6 +2198,38 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				}
 			}
 		}
+		/*
+		// Needs to be death by squish
+		char clsname[64];
+		GetEntityClassname(killed, clsname, sizeof(clsname));
+		if (StrEqual(clsname,"npc_antlion_grub",false))
+		{
+			if (FileExists("sound/vo/outland_03_04/tunnels/vort_squishgrub01.wav",true,NULL_STRING))
+			{
+				float vecOrigin[3];
+				float vecVortOrigin[3];
+				if (HasEntProp(killed,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(killed,Prop_Data,"m_vecAbsOrigin",vecOrigin);
+				else if (HasEntProp(killed,Prop_Send,"m_vecOrigin")) GetEntPropVector(killed,Prop_Send,"m_vecOrigin",vecOrigin);
+				int ent = -1;
+				while((ent = FindEntityByClassname(ent,"npc_vortigaunt")) != INVALID_ENT_REFERENCE)
+				{
+					if (IsValidEntity(ent))
+					{
+						if (HasEntProp(ent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(ent,Prop_Data,"m_vecAbsOrigin",vecVortOrigin);
+						else if (HasEntProp(ent,Prop_Send,"m_vecOrigin")) GetEntPropVector(ent,Prop_Send,"m_vecOrigin",vecVortOrigin);
+						if ((GetVectorDistance(vecOrigin,vecVortOrigin,false) < 512.0) && (centnextsndtime[ent] < GetGameTime()))
+						{
+							centnextsndtime[ent] = GetGameTime()+3.0;
+							char szSnd[64];
+							Format(szSnd,sizeof(szSnd),"vo\\outland_03_04\\tunnels\\vort_squishgrub0%i.wav",GetRandomInt(1,4));
+							EmitSoundToAll(szSnd, ent, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+							break;
+						}
+					}
+				}
+			}
+		}
+		*/
 	}
 }
 
@@ -3874,6 +3945,8 @@ public void OnEntityDestroyed(int entity)
 {
 	int find = FindValueInArray(entlist,entity);
 	if (find != -1) RemoveFromArray(entlist,find);
+	find = FindValueInArray(ignoreelevators,entity);
+	if (find != -1) RemoveFromArray(ignoreelevators,find);
 	if (IsValidEntity(entity))
 	{
 		if (entity > MaxClients)

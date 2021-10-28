@@ -53,6 +53,7 @@ Handle delayedspeech = INVALID_HANDLE;
 Handle passedstrings = INVALID_HANDLE;
 Handle restorecustoments = INVALID_HANDLE;
 Handle ignoretrigs = INVALID_HANDLE;
+Handle ignoreelevators = INVALID_HANDLE;
 Handle spawnerswait = INVALID_HANDLE;
 Handle globalsarr = INVALID_HANDLE;
 Handle dctimeoutarr = INVALID_HANDLE;
@@ -118,7 +119,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0046"
+#define PLUGIN_VERSION "2.0047"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -443,6 +444,7 @@ public void OnPluginStart()
 	d_ht = CreateArray(128);
 	customrelations = CreateArray(128);
 	ignoretrigs = CreateArray(1024);
+	ignoreelevators = CreateArray(256);
 	spawnerswait = CreateArray(256);
 	globalsarr = CreateArray(32);
 	dctimeoutarr = CreateArray(128);
@@ -803,6 +805,7 @@ public void OnMapStart()
 		ClearArray(d_ht);
 		ClearArray(customrelations);
 		ClearArray(ignoretrigs);
+		ClearArray(ignoreelevators);
 		ClearArray(spawnerswait);
 		ClearArray(precachedarr);
 		ClearArray(conveyors);
@@ -3193,6 +3196,7 @@ public Action elevatorstart(const char[] output, int caller, int activator, floa
 							else if ((origin[2] > -1) && (origin[2] > proporigin[2])) below = false;
 							if (((chkdist < 200.0) || (chkdist2 < 200.0)) && (!below))
 							{
+								/*
 								if (debuglvl > 0)
 								{
 									char targn[32];
@@ -3200,6 +3204,9 @@ public Action elevatorstart(const char[] output, int caller, int activator, floa
 									PrintToServer("Removed %i %s %s colliding with elevator",i,targn,clsname);
 								}
 								AcceptEntityInput(i,"kill");
+								*/
+								proporigin[2]+=1.5;
+								TeleportEntity(i,proporigin,NULL_VECTOR,NULL_VECTOR);
 							}
 						}
 					}
@@ -3208,9 +3215,14 @@ public Action elevatorstart(const char[] output, int caller, int activator, floa
 		}
 		if (strlen(elevtargn) > 0)
 		{
-			CreateTimer(0.1,elevatorstartpost,caller);
+			if (FindValueInArray(ignoreelevators,caller) == -1)
+			{
+				CreateTimer(0.2,elevatorstartpost,caller,TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
+				PushArrayCell(ignoreelevators,caller);
+			}
+			//CreateTimer(0.1,elevatorstartpost,caller,TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 			//Post check
-			CreateTimer(5.0,elevatorstartpost,caller);
+			//CreateTimer(5.0,elevatorstartpost,caller);
 		}
 	}
 }
@@ -3255,6 +3267,7 @@ public Action elevatorstartpost(Handle timer, int elev)
 							else if ((origin[2] > -1) && (origin[2] > proporigin[2])) below = false;
 							if (((chkdist < 200.0) || (chkdist2 < 200.0)) && (!below))
 							{
+								/*
 								if (debuglvl > 0)
 								{
 									char targn[32];
@@ -3262,12 +3275,27 @@ public Action elevatorstartpost(Handle timer, int elev)
 									PrintToServer("Removed %i %s %s colliding with elevator",i,targn,clsname);
 								}
 								AcceptEntityInput(i,"kill");
+								*/
+								proporigin[2]+=1.5;
+								TeleportEntity(i,proporigin,NULL_VECTOR,NULL_VECTOR);
 							}
 						}
 					}
 				}
 			}
 		}
+		else
+		{
+			int iFind = FindValueInArray(ignoreelevators,elev);
+			if (iFind != -1) RemoveFromArray(ignoreelevators,iFind);
+			KillTimer(timer);
+		}
+	}
+	else
+	{
+		int iFind = FindValueInArray(ignoreelevators,elev);
+		if (iFind != -1) RemoveFromArray(ignoreelevators,iFind);
+		KillTimer(timer);
 	}
 }
 
@@ -16004,6 +16032,8 @@ public void OnEntityDestroyed(int entity)
 	if (find != -1) RemoveFromArray(grenlist,find);
 	find = FindValueInArray(entlist,entity);
 	if (find != -1) RemoveFromArray(entlist,find);
+	find = FindValueInArray(ignoreelevators,entity);
+	if (find != -1) RemoveFromArray(ignoreelevators,find);
 	if ((IsValidEntity(entity)) && (entity > MaxClients))
 	{
 		char cls[64];
