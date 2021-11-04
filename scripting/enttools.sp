@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.39"
+#define PLUGIN_VERSION "1.40"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -51,6 +51,7 @@ public void OnPluginStart()
 	RegAdminCmd("listedicts",listedicts,ADMFLAG_GENERIC,".");
 	RegAdminCmd("moveent",moveentity,ADMFLAG_KICK,".");
 	RegAdminCmd("uptime",SrvUptime,ADMFLAG_BAN,"Prints server uptime.");
+	RegAdminCmd("entflags",GetSetEntFlags,ADMFLAG_BAN,"Get or set flags.");
 	RegConsoleCmd("ent_create",EntCreateReplace);
 	SetCommandFlags("ent_create",GetCommandFlags("ent_create")^FCVAR_CHEAT);
 	RegConsoleCmd("ent_fire",EntFireReplace);
@@ -99,7 +100,281 @@ public void OnLibraryAdded(const char[] name)
 
 public Action SrvUptime(int client, int args)
 {
-	PrintToConsole(client,"Time: %1.1f Days %1.1f Hours %1.1f Mins %1.f Seconds",((GetTickedTime()/60)/60)/24,(GetTickedTime()/60)/60,GetTickedTime()/60,GetTickedTime());
+	PrintToConsole(client,"Time: %1.1f Days %1.1f Hours %1.1f Mins %1.f Seconds\nMap changes: %i",((GetTickedTime()/60)/60)/24,(GetTickedTime()/60)/60,GetTickedTime()/60,GetTickedTime(),GetMapHistorySize());
+	return Plugin_Handled;
+}
+
+public Action GetSetEntFlags(int client, int args)
+{
+	if (args < 1)
+	{
+		PrintToConsole(client,"Usage entflags <entity> to get flags and entflags <entity> flag or entflags <entity> +-flag to add or remove flag");
+		return Plugin_Handled;
+	}
+	if (args < 2)
+	{
+		char szEnt[64];
+		GetCmdArg(1,szEnt,sizeof(szEnt));
+		Handle arr = CreateArray(64);
+		int iEnt = -1;
+		if (StringToInt(szEnt) > 0)
+		{
+			PushArrayCell(arr,StringToInt(szEnt));
+		}
+		else if (StringToInt(szEnt) == 0) findentsarrtarg(arr,szEnt);
+		//Checks must be separate
+		if (arr == INVALID_HANDLE)
+		{
+			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",szEnt);
+			else PrintToConsole(client,"No entities found with either classname or targetname of %s",szEnt);
+			CloseHandle(arr);
+			return Plugin_Handled;
+		}
+		else if (GetArraySize(arr) < 1)
+		{
+			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",szEnt);
+			else PrintToConsole(client,"No entities found with either classname or targetname of %s",szEnt);
+			CloseHandle(arr);
+			return Plugin_Handled;
+		}
+		else
+		{
+			for (int i = 0;i<GetArraySize(arr);i++)
+			{
+				iEnt = GetArrayCell(arr,i);
+				if (IsValidEntity(iEnt))
+				{
+					int iEFlags = GetEntityFlags(iEnt);
+					if (iEFlags == 0)
+					{
+						if (client == 0) PrintToServer("Entity %i %s has no flags set.",iEnt,szEnt);
+						else PrintToConsole(client,"Entity %i %s has no flags set.",iEnt,szEnt);
+					}
+					else
+					{
+						char szDesc[128];
+						Format(szDesc,sizeof(szDesc),"Entity %i has:\n",iEnt);
+						if (iEFlags & FL_ONGROUND) StrCat(szDesc,sizeof(szDesc),"FL_ONGROUND ");
+						if (iEFlags & FL_DUCKING) StrCat(szDesc,sizeof(szDesc),"FL_DUCKING ");
+						if (iEFlags & FL_WATERJUMP) StrCat(szDesc,sizeof(szDesc),"FL_WATERJUMP ");
+						if (iEFlags & FL_ONTRAIN) StrCat(szDesc,sizeof(szDesc),"FL_ONTRAIN ");
+						if (iEFlags & FL_INRAIN) StrCat(szDesc,sizeof(szDesc),"FL_INRAIN ");
+						if (iEFlags & FL_FROZEN) StrCat(szDesc,sizeof(szDesc),"FL_FROZEN ");
+						if (iEFlags & FL_ATCONTROLS) StrCat(szDesc,sizeof(szDesc),"FL_ATCONTROLS ");
+						if (iEFlags & FL_CLIENT) StrCat(szDesc,sizeof(szDesc),"FL_CLIENT ");
+						if (iEFlags & FL_FAKECLIENT) StrCat(szDesc,sizeof(szDesc),"FL_FAKECLIENT ");
+						//PLAYER_FLAG_BITS		9
+						if (iEFlags & FL_INWATER) StrCat(szDesc,sizeof(szDesc),"FL_INWATER ");
+						if (iEFlags & FL_FLY) StrCat(szDesc,sizeof(szDesc),"FL_FLY ");
+						if (iEFlags & FL_SWIM) StrCat(szDesc,sizeof(szDesc),"FL_SWIM ");
+						if (iEFlags & FL_CONVEYOR) StrCat(szDesc,sizeof(szDesc),"FL_CONVEYOR ");
+						if (iEFlags & FL_NPC) StrCat(szDesc,sizeof(szDesc),"FL_NPC ");
+						if (iEFlags & FL_GODMODE) StrCat(szDesc,sizeof(szDesc),"FL_GODMODE ");
+						if (iEFlags & FL_NOTARGET) StrCat(szDesc,sizeof(szDesc),"FL_NOTARGET ");
+						if (iEFlags & FL_AIMTARGET) StrCat(szDesc,sizeof(szDesc),"FL_AIMTARGET ");
+						if (iEFlags & FL_PARTIALGROUND) StrCat(szDesc,sizeof(szDesc),"FL_PARTIALGROUND ");
+						if (iEFlags & FL_STATICPROP) StrCat(szDesc,sizeof(szDesc),"FL_STATICPROP ");
+						if (iEFlags & FL_GRAPHED) StrCat(szDesc,sizeof(szDesc),"FL_GRAPHED ");
+						if (iEFlags & FL_GRENADE) StrCat(szDesc,sizeof(szDesc),"FL_GRENADE ");
+						if (iEFlags & FL_STEPMOVEMENT) StrCat(szDesc,sizeof(szDesc),"FL_STEPMOVEMENT ");
+						if (iEFlags & FL_DONTTOUCH) StrCat(szDesc,sizeof(szDesc),"FL_DONTTOUCH ");
+						if (iEFlags & FL_BASEVELOCITY) StrCat(szDesc,sizeof(szDesc),"FL_BASEVELOCITY ");
+						if (iEFlags & FL_WORLDBRUSH) StrCat(szDesc,sizeof(szDesc),"FL_WORLDBRUSH ");
+						if (iEFlags & FL_OBJECT) StrCat(szDesc,sizeof(szDesc),"FL_OBJECT ");
+						if (iEFlags & FL_KILLME) StrCat(szDesc,sizeof(szDesc),"FL_KILLME ");
+						if (iEFlags & FL_ONFIRE) StrCat(szDesc,sizeof(szDesc),"FL_ONFIRE ");
+						if (iEFlags & FL_DISSOLVING) StrCat(szDesc,sizeof(szDesc),"FL_DISSOLVING ");
+						if (iEFlags & FL_TRANSRAGDOLL) StrCat(szDesc,sizeof(szDesc),"FL_TRANSRAGDOLL ");
+						if (iEFlags & FL_UNBLOCKABLE_BY_PLAYER) StrCat(szDesc,sizeof(szDesc),"FL_UNBLOCKABLE_BY_PLAYER ");
+						if (iEFlags & FL_FREEZING) StrCat(szDesc,sizeof(szDesc),"FL_FREEZING ");
+						if (iEFlags & FL_EP2V_UNKNOWN1) StrCat(szDesc,sizeof(szDesc),"FL_EP2V_UNKNOWN1 ");
+						PrintToConsole(client,"%s",szDesc);
+					}
+				}
+			}
+		}
+		CloseHandle(arr);
+	}
+	else
+	{
+		char szEnt[64];
+		char szFlag[128];
+		GetCmdArg(1,szEnt,sizeof(szEnt));
+		GetCmdArg(2,szFlag,sizeof(szFlag));
+		int iSetting = 2;
+		if (StrContains(szFlag,"+",false) == 0)
+		{
+			iSetting = 1;
+			ReplaceStringEx(szFlag,sizeof(szFlag),"+","");
+		}
+		else if (StrContains(szFlag,"-",false) == 0)
+		{
+			iSetting = 0;
+			ReplaceStringEx(szFlag,sizeof(szFlag),"-","");
+		}
+		Handle arr = CreateArray(64);
+		int iEnt = -1;
+		if (StringToInt(szEnt) > 0)
+		{
+			PushArrayCell(arr,StringToInt(szEnt));
+		}
+		else if (StringToInt(szEnt) == 0) findentsarrtarg(arr,szEnt);
+		//Checks must be separate
+		if (arr == INVALID_HANDLE)
+		{
+			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",szEnt);
+			else PrintToConsole(client,"No entities found with either classname or targetname of %s",szEnt);
+			CloseHandle(arr);
+			return Plugin_Handled;
+		}
+		else if (GetArraySize(arr) < 1)
+		{
+			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",szEnt);
+			else PrintToConsole(client,"No entities found with either classname or targetname of %s",szEnt);
+			CloseHandle(arr);
+			return Plugin_Handled;
+		}
+		else
+		{
+			int iSetFlags = 0;
+			if (iSetting == 2)
+			{
+				if (StrContains(szFlag,"|",false) != -1)
+				{
+					char szFlagSplit[16][16];
+					int iExplMax = ExplodeString(szFlag,"|",szFlagSplit,16,16);
+					for (int i = 0;i<iExplMax;i++)
+					{
+						if (StrEqual(szFlagSplit[i],"FL_ONGROUND",false)) iSetFlags |= FL_ONGROUND;
+						else if (StrEqual(szFlagSplit[i],"FL_DUCKING",false)) iSetFlags |= FL_DUCKING;
+						else if (StrEqual(szFlagSplit[i],"FL_WATERJUMP",false)) iSetFlags |= FL_WATERJUMP;
+						else if (StrEqual(szFlagSplit[i],"FL_ONTRAIN",false)) iSetFlags |= FL_ONTRAIN;
+						else if (StrEqual(szFlagSplit[i],"FL_INRAIN",false)) iSetFlags |= FL_INRAIN;
+						else if (StrEqual(szFlagSplit[i],"FL_FROZEN",false)) iSetFlags |= FL_FROZEN;
+						else if (StrEqual(szFlagSplit[i],"FL_ATCONTROLS",false)) iSetFlags |= FL_ATCONTROLS;
+						else if (StrEqual(szFlagSplit[i],"FL_CLIENT",false)) iSetFlags |= FL_CLIENT;
+						else if (StrEqual(szFlagSplit[i],"FL_FAKECLIENT",false)) iSetFlags |= FL_FAKECLIENT;
+						else if (StrEqual(szFlagSplit[i],"FL_INWATER",false)) iSetFlags |= FL_INWATER;
+						else if (StrEqual(szFlagSplit[i],"FL_FLY",false)) iSetFlags |= FL_FLY;
+						else if (StrEqual(szFlagSplit[i],"FL_SWIM",false)) iSetFlags |= FL_SWIM;
+						else if (StrEqual(szFlagSplit[i],"FL_CONVEYOR",false)) iSetFlags |= FL_CONVEYOR;
+						else if (StrEqual(szFlagSplit[i],"FL_NPC",false)) iSetFlags |= FL_NPC;
+						else if (StrEqual(szFlagSplit[i],"FL_GODMODE",false)) iSetFlags |= FL_GODMODE;
+						else if (StrEqual(szFlagSplit[i],"FL_NOTARGET",false)) iSetFlags |= FL_NOTARGET;
+						else if (StrEqual(szFlagSplit[i],"FL_AIMTARGET",false)) iSetFlags |= FL_AIMTARGET;
+						else if (StrEqual(szFlagSplit[i],"FL_PARTIALGROUND",false)) iSetFlags |= FL_PARTIALGROUND;
+						else if (StrEqual(szFlagSplit[i],"FL_STATICPROP",false)) iSetFlags |= FL_STATICPROP;
+						else if (StrEqual(szFlagSplit[i],"FL_GRAPHED",false)) iSetFlags |= FL_GRAPHED;
+						else if (StrEqual(szFlagSplit[i],"FL_GRENADE",false)) iSetFlags |= FL_GRENADE;
+						else if (StrEqual(szFlagSplit[i],"FL_STEPMOVEMENT",false)) iSetFlags |= FL_STEPMOVEMENT;
+						else if (StrEqual(szFlagSplit[i],"FL_DONTTOUCH",false)) iSetFlags |= FL_DONTTOUCH;
+						else if (StrEqual(szFlagSplit[i],"FL_BASEVELOCITY",false)) iSetFlags |= FL_BASEVELOCITY;
+						else if (StrEqual(szFlagSplit[i],"FL_WORLDBRUSH",false)) iSetFlags |= FL_WORLDBRUSH;
+						else if (StrEqual(szFlagSplit[i],"FL_OBJECT",false)) iSetFlags |= FL_OBJECT;
+						else if (StrEqual(szFlagSplit[i],"FL_KILLME",false)) iSetFlags |= FL_KILLME;
+						else if (StrEqual(szFlagSplit[i],"FL_ONFIRE",false)) iSetFlags |= FL_ONFIRE;
+						else if (StrEqual(szFlagSplit[i],"FL_DISSOLVING",false)) iSetFlags |= FL_DISSOLVING;
+						else if (StrEqual(szFlagSplit[i],"FL_TRANSRAGDOLL",false)) iSetFlags |= FL_TRANSRAGDOLL;
+						else if (StrEqual(szFlagSplit[i],"FL_UNBLOCKABLE_BY_PLAYER",false)) iSetFlags |= FL_UNBLOCKABLE_BY_PLAYER;
+						else if (StrEqual(szFlagSplit[i],"FL_FREEZING",false)) iSetFlags |= FL_FREEZING;
+						else if (StrEqual(szFlagSplit[i],"FL_EP2V_UNKNOWN1",false)) iSetFlags |= FL_EP2V_UNKNOWN1;
+					}
+				}
+			}
+			for (int i = 0;i<GetArraySize(arr);i++)
+			{
+				iEnt = GetArrayCell(arr,i);
+				if (IsValidEntity(iEnt))
+				{
+					if (iSetting == 1)
+					{
+						int iEFlags = GetEntityFlags(iEnt);
+						if (StrEqual(szFlag,"FL_ONGROUND",false)) iEFlags |= FL_ONGROUND;
+						else if (StrEqual(szFlag,"FL_DUCKING",false)) iEFlags |= FL_DUCKING;
+						else if (StrEqual(szFlag,"FL_WATERJUMP",false)) iEFlags |= FL_WATERJUMP;
+						else if (StrEqual(szFlag,"FL_ONTRAIN",false)) iEFlags |= FL_ONTRAIN;
+						else if (StrEqual(szFlag,"FL_INRAIN",false)) iEFlags |= FL_INRAIN;
+						else if (StrEqual(szFlag,"FL_FROZEN",false)) iEFlags |= FL_FROZEN;
+						else if (StrEqual(szFlag,"FL_ATCONTROLS",false)) iEFlags |= FL_ATCONTROLS;
+						else if (StrEqual(szFlag,"FL_CLIENT",false)) iEFlags |= FL_CLIENT;
+						else if (StrEqual(szFlag,"FL_FAKECLIENT",false)) iEFlags |= FL_FAKECLIENT;
+						else if (StrEqual(szFlag,"FL_INWATER",false)) iEFlags |= FL_INWATER;
+						else if (StrEqual(szFlag,"FL_FLY",false)) iEFlags |= FL_FLY;
+						else if (StrEqual(szFlag,"FL_SWIM",false)) iEFlags |= FL_SWIM;
+						else if (StrEqual(szFlag,"FL_CONVEYOR",false)) iEFlags |= FL_CONVEYOR;
+						else if (StrEqual(szFlag,"FL_NPC",false)) iEFlags |= FL_NPC;
+						else if (StrEqual(szFlag,"FL_GODMODE",false)) iEFlags |= FL_GODMODE;
+						else if (StrEqual(szFlag,"FL_NOTARGET",false)) iEFlags |= FL_NOTARGET;
+						else if (StrEqual(szFlag,"FL_AIMTARGET",false)) iEFlags |= FL_AIMTARGET;
+						else if (StrEqual(szFlag,"FL_PARTIALGROUND",false)) iEFlags |= FL_PARTIALGROUND;
+						else if (StrEqual(szFlag,"FL_STATICPROP",false)) iEFlags |= FL_STATICPROP;
+						else if (StrEqual(szFlag,"FL_GRAPHED",false)) iEFlags |= FL_GRAPHED;
+						else if (StrEqual(szFlag,"FL_GRENADE",false)) iEFlags |= FL_GRENADE;
+						else if (StrEqual(szFlag,"FL_STEPMOVEMENT",false)) iEFlags |= FL_STEPMOVEMENT;
+						else if (StrEqual(szFlag,"FL_DONTTOUCH",false)) iEFlags |= FL_DONTTOUCH;
+						else if (StrEqual(szFlag,"FL_BASEVELOCITY",false)) iEFlags |= FL_BASEVELOCITY;
+						else if (StrEqual(szFlag,"FL_WORLDBRUSH",false)) iEFlags |= FL_WORLDBRUSH;
+						else if (StrEqual(szFlag,"FL_OBJECT",false)) iEFlags |= FL_OBJECT;
+						else if (StrEqual(szFlag,"FL_KILLME",false)) iEFlags |= FL_KILLME;
+						else if (StrEqual(szFlag,"FL_ONFIRE",false)) iEFlags |= FL_ONFIRE;
+						else if (StrEqual(szFlag,"FL_DISSOLVING",false)) iEFlags |= FL_DISSOLVING;
+						else if (StrEqual(szFlag,"FL_TRANSRAGDOLL",false)) iEFlags |= FL_TRANSRAGDOLL;
+						else if (StrEqual(szFlag,"FL_UNBLOCKABLE_BY_PLAYER",false)) iEFlags |= FL_UNBLOCKABLE_BY_PLAYER;
+						else if (StrEqual(szFlag,"FL_FREEZING",false)) iEFlags |= FL_FREEZING;
+						else if (StrEqual(szFlag,"FL_EP2V_UNKNOWN1",false)) iEFlags |= FL_EP2V_UNKNOWN1;
+						SetEntityFlags(iEnt,iEFlags);
+						PrintToConsole(client,"Added %s on %i",szFlag,iEnt);
+					}
+					else if (iSetting == 0)
+					{
+						int iEFlags = GetEntityFlags(iEnt);
+						if (StrEqual(szFlag,"FL_ONGROUND",false)) iEFlags &= ~FL_ONGROUND;
+						else if (StrEqual(szFlag,"FL_DUCKING",false)) iEFlags &= ~FL_DUCKING;
+						else if (StrEqual(szFlag,"FL_WATERJUMP",false)) iEFlags &= ~FL_WATERJUMP;
+						else if (StrEqual(szFlag,"FL_ONTRAIN",false)) iEFlags &= ~FL_ONTRAIN;
+						else if (StrEqual(szFlag,"FL_INRAIN",false)) iEFlags &= ~FL_INRAIN;
+						else if (StrEqual(szFlag,"FL_FROZEN",false)) iEFlags &= ~FL_FROZEN;
+						else if (StrEqual(szFlag,"FL_ATCONTROLS",false)) iEFlags &= ~FL_ATCONTROLS;
+						else if (StrEqual(szFlag,"FL_CLIENT",false)) iEFlags &= ~FL_CLIENT;
+						else if (StrEqual(szFlag,"FL_FAKECLIENT",false)) iEFlags &= ~FL_FAKECLIENT;
+						else if (StrEqual(szFlag,"FL_INWATER",false)) iEFlags &= ~FL_INWATER;
+						else if (StrEqual(szFlag,"FL_FLY",false)) iEFlags &= ~FL_FLY;
+						else if (StrEqual(szFlag,"FL_SWIM",false)) iEFlags &= ~FL_SWIM;
+						else if (StrEqual(szFlag,"FL_CONVEYOR",false)) iEFlags &= ~FL_CONVEYOR;
+						else if (StrEqual(szFlag,"FL_NPC",false)) iEFlags &= ~FL_NPC;
+						else if (StrEqual(szFlag,"FL_GODMODE",false)) iEFlags &= ~FL_GODMODE;
+						else if (StrEqual(szFlag,"FL_NOTARGET",false)) iEFlags &= ~FL_NOTARGET;
+						else if (StrEqual(szFlag,"FL_AIMTARGET",false)) iEFlags &= ~FL_AIMTARGET;
+						else if (StrEqual(szFlag,"FL_PARTIALGROUND",false)) iEFlags &= ~FL_PARTIALGROUND;
+						else if (StrEqual(szFlag,"FL_STATICPROP",false)) iEFlags &= ~FL_STATICPROP;
+						else if (StrEqual(szFlag,"FL_GRAPHED",false)) iEFlags &= ~FL_GRAPHED;
+						else if (StrEqual(szFlag,"FL_GRENADE",false)) iEFlags &= ~FL_GRENADE;
+						else if (StrEqual(szFlag,"FL_STEPMOVEMENT",false)) iEFlags &= ~FL_STEPMOVEMENT;
+						else if (StrEqual(szFlag,"FL_DONTTOUCH",false)) iEFlags &= ~FL_DONTTOUCH;
+						else if (StrEqual(szFlag,"FL_BASEVELOCITY",false)) iEFlags &= ~FL_BASEVELOCITY;
+						else if (StrEqual(szFlag,"FL_WORLDBRUSH",false)) iEFlags &= ~FL_WORLDBRUSH;
+						else if (StrEqual(szFlag,"FL_OBJECT",false)) iEFlags &= ~FL_OBJECT;
+						else if (StrEqual(szFlag,"FL_KILLME",false)) iEFlags &= ~FL_KILLME;
+						else if (StrEqual(szFlag,"FL_ONFIRE",false)) iEFlags &= ~FL_ONFIRE;
+						else if (StrEqual(szFlag,"FL_DISSOLVING",false)) iEFlags &= ~FL_DISSOLVING;
+						else if (StrEqual(szFlag,"FL_TRANSRAGDOLL",false)) iEFlags &= ~FL_TRANSRAGDOLL;
+						else if (StrEqual(szFlag,"FL_UNBLOCKABLE_BY_PLAYER",false)) iEFlags &= ~FL_UNBLOCKABLE_BY_PLAYER;
+						else if (StrEqual(szFlag,"FL_FREEZING",false)) iEFlags &= ~FL_FREEZING;
+						else if (StrEqual(szFlag,"FL_EP2V_UNKNOWN1",false)) iEFlags &= ~FL_EP2V_UNKNOWN1;
+						SetEntityFlags(iEnt,iEFlags);
+						PrintToConsole(client,"Removed %s on %i",szFlag,iEnt);
+					}
+					else if (iSetting == 2)
+					{
+						SetEntityFlags(iEnt,iSetFlags);
+						PrintToConsole(client,"Set %s on %i",szFlag,iEnt);
+					}
+				}
+			}
+		}
+		CloseHandle(arr);
+		
+	}
 	return Plugin_Handled;
 }
 
