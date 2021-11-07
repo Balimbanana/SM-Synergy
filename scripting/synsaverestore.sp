@@ -71,7 +71,7 @@ char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
 
-#define PLUGIN_VERSION "2.190"
+#define PLUGIN_VERSION "2.191"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2149,6 +2149,7 @@ public void OnMapStart()
 			bool alyxenter = false;
 			float aljeepchk[3];
 			float aljeepchkj[3];
+			float vecOrgs[3];
 			if (strlen(landmarkname) > 0)
 			{
 				findlandmark(-1,"info_landmark");
@@ -2582,6 +2583,32 @@ public void OnMapStart()
 								if (HasEntProp(ent,Prop_Data,"m_iEFlags")) SetEntProp(ent,Prop_Data,"m_iEFlags",12845056);
 							}
 							if (ragdoll) AcceptEntityInput(ent,"BecomeRagdoll");
+							// Find duplicate names on transition
+							if (strlen(targn) > 1)
+							{
+								int iEnt = -1;
+								char szTargn[32];
+								while((iEnt = FindEntityByClassname(iEnt,clsname)) != INVALID_ENT_REFERENCE)
+								{
+									if ((IsValidEntity(iEnt)) && (iEnt != ent))
+									{
+										if (HasEntProp(iEnt,Prop_Data,"m_iName"))
+										{
+											GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+											if (StrEqual(szTargn,targn,false))
+											{
+												if (HasEntProp(iEnt,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(iEnt,Prop_Data,"m_vecAbsOrigin",vecOrgs);
+												else if (HasEntProp(iEnt,Prop_Data,"m_vecOrigin")) GetEntPropVector(iEnt,Prop_Data,"m_vecOrigin",vecOrgs);
+												if (GetVectorDistance(porigin,vecOrgs,false) < 512.0)
+												{
+													AcceptEntityInput(iEnt,"kill");
+													break;
+												}
+											}
+										}
+									}
+								}
+							}
 						}
 						CloseHandle(dp);
 					}
@@ -2603,6 +2630,26 @@ public void OnMapStart()
 							char targn[16];
 							GetEntPropString(aldouble2,Prop_Data,"m_iName",targn,sizeof(targn));
 							if (StrEqual(targn,"alyx",false)) AcceptEntityInput(aldouble2,"kill");
+						}
+					}
+				}
+				if (StrEqual(mapbuf,"d1_eli_02",false))
+				{
+					int iEnt = -1;
+					char szTargn[32];
+					while((iEnt = FindEntityByClassname(iEnt,"npc_template_maker")) != INVALID_ENT_REFERENCE)
+					{
+						if (IsValidEntity(iEnt))
+						{
+							if (HasEntProp(iEnt,Prop_Data,"m_iName"))
+							{
+								GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+								if (StrEqual(szTargn,"spawn_alyx",false))
+								{
+									AcceptEntityInput(iEnt,"kill");
+									break;
+								}
+							}
 						}
 					}
 				}
@@ -3553,6 +3600,28 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 			{
 				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
 				if ((StrEqual(targn,"door.into.09.garage",false)) || (SynLaterAct))
+				{
+					AcceptEntityInput(i,"kill");
+					porigin[0] = mins[0]-mins[0];
+					porigin[1] = mins[1]-mins[1];
+					porigin[2] = mins[2]-mins[2];
+					alwaystransition = -1;
+					clsname = "";
+				}
+			}
+			else if (StrEqual(clsname,"syn_transition_wall",false))
+			{
+				AcceptEntityInput(i,"kill");
+				porigin[0] = mins[0]-mins[0];
+				porigin[1] = mins[1]-mins[1];
+				porigin[2] = mins[2]-mins[2];
+				alwaystransition = -1;
+				clsname = "";
+			}
+			else if (StrEqual(clsname,"prop_dynamic",false))
+			{
+				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+				if (StrContains(targn,"antirush",false))
 				{
 					AcceptEntityInput(i,"kill");
 					porigin[0] = mins[0]-mins[0];

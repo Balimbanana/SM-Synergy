@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.190"
-			"Previous"	"2.189"
+			"Latest"  	"2.191"
+			"Previous"	"2.190"
 		}
 		
-		"Notes"	"Added CVar sm_transition_globals. Enables transitioning env_globals in some games."
+		"Notes"	"Prevent transition of syn_transition_wall or any antirush props."
 	}
 	
 	"Files"
