@@ -130,3 +130,9 @@ public Action LogMerchDisabled(const char[] output, int caller, int activator, f
 {
 	//PrintToServer("LogMerch %i %s activator %i",caller,output,activator);
 }
+
+public Action MerchantBlockDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
+{
+	damage = 0.0;
+	return Plugin_Changed;
+}

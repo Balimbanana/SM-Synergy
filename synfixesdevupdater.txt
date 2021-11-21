@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0047"
-			"Previous"	"2.0046"
+			"Latest"  	"2.0048"
+			"Previous"	"2.0047"
 		}
 		
-		"Notes"	"Changed the way elevator blocks work."
+		"Notes"	"Potential fallback for broken physics flags applied to props."
 	}
 	
 	"Files"

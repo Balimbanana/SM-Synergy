@@ -119,7 +119,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0047"
+#define PLUGIN_VERSION "2.0048"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3886,10 +3886,24 @@ public Action resetclanim(Handle timer)
 			}
 		}
 	}
+	char szCls[16];
 	for (int i = MaxClients+1;i<2048;i++)
 	{
 		if (IsValidEntity(i))
 		{
+			if (HasEntProp(i,Prop_Data,"m_usSolidFlags"))
+			{
+				int iusSolid = GetEntProp(i,Prop_Data,"m_usSolidFlags");
+				if (iusSolid & (1<<2))
+				{
+					GetEntityClassname(i,szCls,sizeof(szCls));
+					if ((StrContains(szCls,"prop",false) != -1) && (!StrEqual(szCls,"prop_dynamic",false)))
+					{
+						SetEntProp(i,Prop_Data,"m_usSolidFlags",iusSolid & ~(1<<2));
+						PrintToServer("Reset broken solid flags on entity %i",i);
+					}
+				}
+			}
 			if (flEntCreateTime[i] > 0.0)
 			{
 				if (flEntCreateTime[i]+removertimer <= GetGameTime())
@@ -7585,6 +7599,7 @@ void readcache(int client, char[] cache, float offsetpos[3])
 						{
 							SetEntProp(ent,Prop_Data,"m_iEFlags",flageffects+1073741824);
 						}
+						SDKHookEx(ent,SDKHook_OnTakeDamage,MerchantBlockDamage);
 					}
 					else if (StrEqual(oldcls,"game_player_equip",false))
 					{
@@ -16349,9 +16364,21 @@ public void SetupLivingEnt(int entity)
 {
 	if (IsValidEntity(entity))
 	{
+		char entcls[128];
+		if (HasEntProp(entity,Prop_Data,"m_usSolidFlags"))
+		{
+			int iusSolid = GetEntProp(entity,Prop_Data,"m_usSolidFlags");
+			if (iusSolid & (1<<2))
+			{
+				GetEntityClassname(entity,entcls,sizeof(entcls));
+				if ((StrContains(entcls,"prop",false) != -1) && (!StrEqual(entcls,"prop_dynamic",false)))
+				{
+					SetEntProp(entity,Prop_Data,"m_usSolidFlags",iusSolid & ~(1<<2));
+				}
+			}
+		}
 		bool resetname = true;
 		char cls[128];
-		char entcls[128];
 		if (HasEntProp(entity,Prop_Data,"m_iName")) GetEntPropString(entity,Prop_Data,"m_iName",cls,sizeof(cls));
 		GetEntityClassname(entity,entcls,sizeof(entcls));
 		//PrintToServer("SETUPENT \"%s\" \"%s\"",entcls,cls);
@@ -18856,6 +18883,7 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 					{
 						SetEntProp(ent,Prop_Data,"m_iEFlags",flageffects+1073741824);
 					}
+					SDKHookEx(ent,SDKHook_OnTakeDamage,MerchantBlockDamage);
 				}
 				else if ((StrEqual(oldcls,"npc_human_security",false)) || (StrEqual(oldcls,"npc_human_scientist",false)) || (StrEqual(oldcls,"npc_human_scientist_female",false)))
 				{
@@ -20512,6 +20540,7 @@ void findentlist(int ent, char[] clsname)
 		{
 			customents = true;
 			HookSingleEntityOutput(thisent,"OnUser1",MerchantUse);
+			SDKHookEx(thisent,SDKHook_OnTakeDamage,MerchantBlockDamage);
 		}
 		else if (StrEqual(clsofent,"npc_alien_slave",false))
 		{
