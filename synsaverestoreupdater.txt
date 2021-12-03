@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.191"
-			"Previous"	"2.190"
+			"Latest"  	"2.192"
+			"Previous"	"2.191"
 		}
 		
-		"Notes"	"Prevent transition of syn_transition_wall or any antirush props."
+		"Notes"	"Failsave iterate through players for suit status. Attempt to find outputs to restore to ents over transition."
 	}
 	
 	"Files"
