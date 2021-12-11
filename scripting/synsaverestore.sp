@@ -72,7 +72,7 @@ char savedir[64];
 char reloadthissave[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.193"
+#define PLUGIN_VERSION "2.194"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2047,6 +2047,7 @@ public void OnMapStart()
 					tporigin[2] = 1601.0;
 					TeleportEntity(trigtpstart,tporigin,NULL_VECTOR,NULL_VECTOR);
 				}
+				CreateTimer(0.1,TransitionPostAdjust,1);
 			}
 			else if (enterfrom08pb)
 				enterfrom08pb = false;
@@ -2862,6 +2863,167 @@ public Action TransitionPostAdjust(Handle timer, int Indx)
 			}
 		}
 		if ((!bVorts[0]) || (!bVorts[1]) || (!bVorts[2])) SendInput("scripted_sequence","ss_heal_loop","BeginSequence",0);
+	}
+	if (Indx == 1)
+	{
+		int iTrainCount = 0;
+		int iEnt = -1;
+		char szTargn[32];
+		while((iEnt = FindEntityByClassname(iEnt,"prop_dynamic")) != INVALID_ENT_REFERENCE)
+		{
+			if (IsValidEntity(iEnt))
+			{
+				if (HasEntProp(iEnt,Prop_Data,"m_iName"))
+				{
+					GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
+					if (StrContains(szTargn,"razortrain_car",false))
+					{
+						iTrainCount++;
+					}
+				}
+			}
+		}
+		if (iTrainCount < 4)
+		{
+			PrintToServer("TrainMissing Count: %i",iTrainCount);
+			float vecOrigin[3];
+			float vecAngles[3];
+			vecOrigin[0] = 472.679931;
+			vecOrigin[1] = -12486.0;
+			vecOrigin[2] = 2051.59;
+			iEnt = CreateEntityByName("prop_dynamic");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"targetname","razortrain_car1");
+				DispatchKeyValue(iEnt,"model","models/props_combine/CombineTrain01a.mdl");
+				DispatchKeyValue(iEnt,"solid","6");
+				TeleportEntity(iEnt,vecOrigin,vecAngles,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				SetVariantString("razortrain");
+				AcceptEntityInput(iEnt,"SetParent");
+			}
+			vecOrigin[0] = 5916.679687;
+			vecAngles[1] = 180.0;
+			iEnt = CreateEntityByName("prop_dynamic");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"targetname","razortrain_car2");
+				DispatchKeyValue(iEnt,"model","models/props_combine/CombineTrain01a.mdl");
+				DispatchKeyValue(iEnt,"solid","6");
+				TeleportEntity(iEnt,vecOrigin,vecAngles,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				SetVariantString("razortrain");
+				AcceptEntityInput(iEnt,"SetParent");
+			}
+			vecOrigin[0] = 2273.680175;
+			vecOrigin[1] = -12486.0;
+			vecOrigin[2] = 2175.0;
+			vecAngles[1] = 270.0;
+			iEnt = CreateEntityByName("prop_dynamic");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"targetname","razortrain_car3");
+				DispatchKeyValue(iEnt,"model","models/props_combine/combine_train02b.mdl");
+				DispatchKeyValue(iEnt,"solid","6");
+				TeleportEntity(iEnt,vecOrigin,vecAngles,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				SetVariantString("razortrain");
+				AcceptEntityInput(iEnt,"SetParent");
+			}
+			vecOrigin[0] = 1657.68;
+			vecOrigin[1] = -12486.0;
+			vecOrigin[2] = 2175.68;
+			iEnt = CreateEntityByName("prop_dynamic");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"targetname","razortrain_car4");
+				DispatchKeyValue(iEnt,"model","models/props_combine/combine_train02b.mdl");
+				DispatchKeyValue(iEnt,"solid","6");
+				TeleportEntity(iEnt,vecOrigin,vecAngles,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				SetVariantString("razortrain");
+				AcceptEntityInput(iEnt,"SetParent");
+			}
+			vecOrigin[0] = 1041.68;
+			vecOrigin[1] = -12486.0;
+			vecOrigin[2] = 2175.59;
+			vecAngles[1] = 270.0;
+			iEnt = CreateEntityByName("prop_dynamic");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"model","models/props_combine/combine_train02a.mdl");
+				DispatchKeyValue(iEnt,"solid","6");
+				TeleportEntity(iEnt,vecOrigin,vecAngles,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				SetVariantString("razortrain");
+				AcceptEntityInput(iEnt,"SetParent");
+			}
+			vecOrigin[0] = 2885.68;
+			iEnt = CreateEntityByName("prop_dynamic");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"model","models/props_combine/combine_train02a.mdl");
+				DispatchKeyValue(iEnt,"solid","6");
+				TeleportEntity(iEnt,vecOrigin,vecAngles,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				SetVariantString("razortrain");
+				AcceptEntityInput(iEnt,"SetParent");
+			}
+			vecOrigin[0] = 3501.68;
+			iEnt = CreateEntityByName("prop_dynamic");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"model","models/props_combine/combine_train02a.mdl");
+				DispatchKeyValue(iEnt,"solid","6");
+				TeleportEntity(iEnt,vecOrigin,vecAngles,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				SetVariantString("razortrain");
+				AcceptEntityInput(iEnt,"SetParent");
+			}
+			vecOrigin[0] = 4116.68;
+			iEnt = CreateEntityByName("prop_dynamic");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"model","models/props_combine/combine_train02a.mdl");
+				DispatchKeyValue(iEnt,"solid","6");
+				TeleportEntity(iEnt,vecOrigin,vecAngles,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				SetVariantString("razortrain");
+				AcceptEntityInput(iEnt,"SetParent");
+			}
+			vecOrigin[0] = 4733.68;
+			iEnt = CreateEntityByName("prop_dynamic");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"model","models/props_combine/combine_train02b.mdl");
+				DispatchKeyValue(iEnt,"solid","6");
+				TeleportEntity(iEnt,vecOrigin,vecAngles,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				SetVariantString("razortrain");
+				AcceptEntityInput(iEnt,"SetParent");
+			}
+			vecOrigin[0] = 5348.68;
+			iEnt = CreateEntityByName("prop_dynamic");
+			if (IsValidEntity(iEnt))
+			{
+				DispatchKeyValue(iEnt,"model","models/props_combine/combine_train02a.mdl");
+				DispatchKeyValue(iEnt,"solid","6");
+				TeleportEntity(iEnt,vecOrigin,vecAngles,NULL_VECTOR);
+				DispatchSpawn(iEnt);
+				ActivateEntity(iEnt);
+				SetVariantString("razortrain");
+				AcceptEntityInput(iEnt,"SetParent");
+			}
+		}
 	}
 }
 

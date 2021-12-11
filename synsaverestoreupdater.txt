@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.193"
-			"Previous"	"2.192"
+			"Latest"  	"2.194"
+			"Previous"	"2.193"
 		}
 		
-		"Notes"	"Fix to restored outputs format."
+		"Notes"	"Added failsave train car setup on d2_coast_07."
 	}
 	
 	"Files"
