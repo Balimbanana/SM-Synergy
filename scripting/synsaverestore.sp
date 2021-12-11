@@ -72,7 +72,7 @@ char savedir[64];
 char reloadthissave[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.192"
+#define PLUGIN_VERSION "2.193"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2754,6 +2754,7 @@ void FindOutputsFor(int ent, char[] szTargn)
 						{
 							Format(szOuts[1],sizeof(szOuts[]),"%s %s",szOuts[1],szOuts[j]);
 						}
+						Format(szOuts[0],sizeof(szOuts[]),"On%s",szOuts[0]);
 						if (dbg) LogMessage("RestoreOutput: \"%s\" \"%s\"",szOuts[0],szOuts[1]);
 						if (strlen(szOuts[0]) && strlen(szOuts[1]))
 						{

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.192"
-			"Previous"	"2.191"
+			"Latest"  	"2.193"
+			"Previous"	"2.192"
 		}
 		
-		"Notes"	"Failsave iterate through players for suit status. Attempt to find outputs to restore to ents over transition."
+		"Notes"	"Fix to restored outputs format."
 	}
 	
 	"Files"
