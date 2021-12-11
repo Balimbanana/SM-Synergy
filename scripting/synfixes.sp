@@ -67,7 +67,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.99996"
+#define PLUGIN_VERSION "1.99997"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -281,6 +281,7 @@ public void OnPluginStart()
 	RegConsoleCmd("explode",suicideblock);
 	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
 	CreateTimer(0.5,resetclanim,_,TIMER_REPEAT);
+	CreateTimer(0.1,clticks,_,TIMER_REPEAT);
 	AutoExecConfig(true, "synfixes");
 	SFEntInputHook = CreateGlobalForward("SFHookEntityInput", ET_Ignore, Param_String, Param_Cell, Param_String, Param_String, Param_Float);
 }
@@ -929,6 +930,21 @@ public void OnClientPutInServer(int client)
 {
 	if (!IsFakeClient(client))
 	{
+		// Force a refresh of stale positions
+		int iPlyResource = FindEntityByClassname(-1,"player_manager");
+		if (IsValidEntity(iPlyResource))
+		{
+			if (HasEntProp(iPlyResource,Prop_Send,"m_vPosition"))
+			{
+				int iArrSize = GetEntPropArraySize(iPlyResource,Prop_Send,"m_vPosition");
+				float vPos[3];
+				for (int i = 0;i<iArrSize;i++)
+				{
+					SetEntPropVector(iPlyResource,Prop_Send,"m_vPosition",vPos,i);
+				}
+				ChangeEdictState(iPlyResource);
+			}
+		}
 		CreateTimer(0.5,clspawnpost,client);
 		if (forcehdr) QueryClientConVar(client,"mat_hdr_level",hdrchk,0);
 		if ((GetClientCount(true) >= playercapadj) && (!appliedlargeplayeradj) && (playercapadj > 0))
@@ -1600,6 +1616,19 @@ public Action FallBackSuitOutputs(int entity, int other)
 			{
 				SetEntProp(other,Prop_Data,"m_bWearingSuit",0);
 			}
+		}
+	}
+}
+
+public Action clticks(Handle timer)
+{
+	for (int i = 1;i<MaxClients+1;i++)
+	{
+		if ((IsValidEntity(i)) && (i != 0))
+		{
+			// This actually fixes some things and has no visual change in Synergy
+			if (HasEntProp(i,Prop_Data,"m_bGlowEnabled")) SetEntProp(i,Prop_Data,"m_bGlowEnabled",1);
+			if (HasEntProp(i,Prop_Send,"m_bGlowEnabled")) SetEntProp(i,Prop_Send,"m_bGlowEnabled",1);
 		}
 	}
 }

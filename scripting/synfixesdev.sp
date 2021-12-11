@@ -119,7 +119,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0048"
+#define PLUGIN_VERSION "2.0049"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2082,6 +2082,21 @@ public void OnClientPutInServer(int client)
 {
 	if (!IsFakeClient(client))
 	{
+		// Force a refresh of stale positions
+		int iPlyResource = FindEntityByClassname(-1,"player_manager");
+		if (IsValidEntity(iPlyResource))
+		{
+			if (HasEntProp(iPlyResource,Prop_Send,"m_vPosition"))
+			{
+				int iArrSize = GetEntPropArraySize(iPlyResource,Prop_Send,"m_vPosition");
+				float vPos[3];
+				for (int i = 0;i<iArrSize;i++)
+				{
+					SetEntPropVector(iPlyResource,Prop_Send,"m_vPosition",vPos,i);
+				}
+				ChangeEdictState(iPlyResource);
+			}
+		}
 		centnextatk[client] = 0.0;
 		CreateTimer(0.5,clspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
 		CreateTimer(1.0,ReBuildClientCustoms,_,TIMER_FLAG_NO_MAPCHANGE);
@@ -3923,6 +3938,9 @@ public Action clticks(Handle timer)
 	{
 		if ((IsValidEntity(i)) && (i != 0))
 		{
+			// This actually fixes some things and has no visual change in Synergy
+			if (HasEntProp(i,Prop_Data,"m_bGlowEnabled")) SetEntProp(i,Prop_Data,"m_bGlowEnabled",1);
+			if (HasEntProp(i,Prop_Send,"m_bGlowEnabled")) SetEntProp(i,Prop_Send,"m_bGlowEnabled",1);
 			if (IsClientConnected(i))
 			{
 				if (IsClientInGame(i))
