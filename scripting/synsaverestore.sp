@@ -70,8 +70,9 @@ char maptochange[64];
 char prevmap[64];
 char savedir[64];
 char reloadthissave[32];
+char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.191"
+#define PLUGIN_VERSION "2.192"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2424,7 +2425,11 @@ public void OnMapStart()
 								aljeepchkj[2] = porigin[2];
 							}
 							if (StrEqual(clsname,"info_particle_system",false)) DispatchKeyValue(ent,"effect_name",mdl);
-							if (strlen(targn) > 0) DispatchKeyValue(ent,"targetname",targn);
+							if (strlen(targn) > 0)
+							{
+								DispatchKeyValue(ent,"targetname",targn);
+								FindOutputsFor(ent,targn);
+							}
 							DispatchKeyValue(ent,"model",mdl);
 							if (strlen(vehscript) > 0) DispatchKeyValue(ent,"VehicleScript",vehscript);
 							if (strlen(additionalequip) > 0) DispatchKeyValue(ent,"AdditionalEquipment",additionalequip);
@@ -2710,6 +2715,56 @@ public void OnMapStart()
 			}
 		}
 	}
+}
+
+public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
+{
+	Format(szMapEntitiesBuff,sizeof(szMapEntitiesBuff),"%s",szMapEntities);
+	return Plugin_Continue;
+}
+
+void FindOutputsFor(int ent, char[] szTargn)
+{
+	if (!IsValidEntity(ent)) return;
+	char szSearch[128];
+	static char szMapEntBuff[4096];
+	Format(szSearch,sizeof(szSearch),"\"targetname\" \"%s\"",szTargn);
+	int iFindStart = StrContains(szMapEntitiesBuff,szSearch,false);
+	if (iFindStart != -1)
+	{
+		Format(szMapEntBuff,sizeof(szMapEntBuff),"%s",szMapEntitiesBuff[iFindStart]);
+		iFindStart = StrContains(szMapEntBuff,"}",false);
+		if (iFindStart != -1)
+		{
+			Format(szMapEntBuff,iFindStart+1,"%s",szMapEntBuff);
+			static char szKVs[32][64];
+			static char szOuts[4][64];
+			int iOut = ExplodeString(szMapEntBuff,"\"On",szKVs,32,64);
+			if (iOut > 0)
+			{
+				for (int i = 1;i<iOut;i++)
+				{
+					iFindStart = StrContains(szKVs[i],"\n",false);
+					if (iFindStart > 0)
+					{
+						Format(szKVs[i],iFindStart+1,"%s",szKVs[i]);
+						int iLast = ExplodeString(szKVs[i]," ",szOuts,4,64);
+						if (iLast > 2)
+						for (int j = 2;j<iLast;j++)
+						{
+							Format(szOuts[1],sizeof(szOuts[]),"%s %s",szOuts[1],szOuts[j]);
+						}
+						if (dbg) LogMessage("RestoreOutput: \"%s\" \"%s\"",szOuts[0],szOuts[1]);
+						if (strlen(szOuts[0]) && strlen(szOuts[1]))
+						{
+							DispatchKeyValue(ent,szOuts[0],szOuts[1]);
+						}
+					}
+				}
+			}
+		}
+	}
+	return;
 }
 
 public Action TransitionPostAdjust(Handle timer, int Indx)
@@ -3236,6 +3291,21 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 			char weapname[64];
 			char weapnamepamm[64];
 			bool bFutureSuit = false;
+			// Have to check through all players for suit and possibly other transition information
+			for (int i = 1;i<MaxClients+1;i++)
+			{
+				if (IsValidEntity(i))
+				{
+					if (HasEntProp(i,Prop_Send,"m_bWearingSuit"))
+					{
+						if (GetEntProp(i,Prop_Send,"m_bWearingSuit"))
+						{
+							bFutureSuit = true;
+							break;
+						}
+					}
+				}
+			}
 			for (int i = 1;i<MaxClients+1;i++)
 			{
 				if ((IsValidEntity(i)) && (IsClientInGame(i)))
@@ -3314,7 +3384,6 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					int kills = GetEntProp(i,Prop_Data,"m_iFrags");
 					int deaths = GetEntProp(i,Prop_Data,"m_iDeaths");
 					int suitset = GetEntProp(i,Prop_Send,"m_bWearingSuit");
-					if (suitset) bFutureSuit = true;
 					if ((!IsPlayerAlive(i)) && (bFutureSuit)) suitset = 1;
 					int medkitamm = 0;
 					if (HasEntProp(i,Prop_Data,"m_iHealthPack")) medkitamm = GetEntProp(i,Prop_Send,"m_iHealthPack");
