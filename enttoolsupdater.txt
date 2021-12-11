@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.40"
-			"Previous"	"1.39"
+			"Latest"  	"1.41"
+			"Previous"	"1.40"
 		}
 		
-		"Notes"	"Added entflags command. Allows getting and setting FL_Flags with plus or minus."
+		"Notes"	"Additional detection and attempting to read/set values for properties that are not detected by SM."
 	}
 	
 	"Files"

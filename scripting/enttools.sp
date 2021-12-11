@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.40"
+#define PLUGIN_VERSION "1.41"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -3348,6 +3348,8 @@ public Action setprops(int client, int args)
 	}
 	char propinf[512];
 	char cls[64];
+	// Only show warnings once
+	bool bDesc = false;
 	for (int i = 0;i<GetArraySize(arr);i++)
 	{
 		int targ = GetArrayCell(arr,i);
@@ -3371,7 +3373,21 @@ public Action setprops(int client, int args)
 					char srvcls[64];
 					GetEntityNetClass(targ,srvcls,sizeof(srvcls));
 					FindSendPropInfo(srvcls,propname,type);
-					if (type == PropField_Unsupported) datatypeunsupported = true;
+					if (type == PropField_Unsupported)
+					{
+						if (GetEntPropArraySize(targ,Prop_Send,propname) > 1)
+						{
+							if (StrContains(propname,"m_isz",false) == 0) type = PropField_String;
+							else if ((StrContains(propname,"m_i",false) == 0) || (StrContains(propname,"m_n",false) == 0) || (StrContains(propname,"m_b",false) == 0)) type = PropField_Integer;
+							else if (StrContains(propname,"m_vec",false) == 0) type = PropField_Vector;
+							else if (StrContains(propname,"m_fl",false) == 0) type = PropField_Float;
+							else if (StrContains(propname,"m_v",false) == 0) type = PropField_Vector;
+							else if (StrContains(propname,"m_h",false) == 0) type = PropField_Entity;
+							else datatypeunsupported = true;
+							if (!bDesc) PrintToConsole(client,"Type is an array for class %s type %i",srvcls,type);
+						}
+						else datatypeunsupported = true;
+					}
 					if (type == PropField_String)
 					{
 						int arrsize = GetEntPropArraySize(targ,Prop_Send,propname);
@@ -3380,15 +3396,13 @@ public Action setprops(int client, int args)
 							for (int j = 0;j<arrsize;j++)
 							{
 								GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf),j);
-								if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
-								else PrintToConsole(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+								PrintToConsole(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
 							}
 						}
 						else
 						{
 							GetEntPropString(targ,Prop_Send,propname,propinf,sizeof(propinf));
-							if (client == 0) PrintToServer("%i Prop_Send %s %s is %s",targ,cls,propname,propinf);
-							else PrintToConsole(client,"%i Prop_Send %s %s is %s",targ,cls,propname,propinf);
+							PrintToConsole(client,"%i Prop_Send %s %s is %s",targ,cls,propname,propinf);
 						}
 					}
 					else if (type == PropField_Entity)
@@ -3399,15 +3413,13 @@ public Action setprops(int client, int args)
 							for (int j = 0;j<arrsize;j++)
 							{
 								int enth = GetEntPropEnt(targ,Prop_Send,propname,j);
-								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
-								else PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+								PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
 							}
 						}
 						else
 						{
 							int enth = GetEntPropEnt(targ,Prop_Send,propname);
-							if (client == 0) PrintToServer("%i Prop_Send %s %s is %i",targ,cls,propname,enth);
-							else PrintToConsole(client,"%i Prop_Send %s %s is %i",targ,cls,propname,enth);
+							PrintToConsole(client,"%i Prop_Send %s %s is %i",targ,cls,propname,enth);
 						}
 					}
 					else if (type == PropField_Integer)
@@ -3418,15 +3430,13 @@ public Action setprops(int client, int args)
 							for (int j = 0;j<arrsize;j++)
 							{
 								int enti = GetEntProp(targ,Prop_Send,propname,j);
-								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
-								else PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+								PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
 							}
 						}
 						else
 						{
 							int enti = GetEntProp(targ,Prop_Send,propname);
-							if (client == 0) PrintToServer("%i Prop_Send %s %s is %i",targ,cls,propname,enti);
-							else PrintToConsole(client,"%i Prop_Send %s %s is %i",targ,cls,propname,enti);
+							PrintToConsole(client,"%i Prop_Send %s %s is %i",targ,cls,propname,enti);
 						}
 					}
 					else if (type == PropField_Float)
@@ -3437,15 +3447,13 @@ public Action setprops(int client, int args)
 							for (int j = 0;j<arrsize;j++)
 							{
 								float entf = GetEntPropFloat(targ,Prop_Send,propname,j);
-								if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
-								else PrintToConsole(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+								PrintToConsole(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
 							}
 						}
 						else
 						{
 							float entf = GetEntPropFloat(targ,Prop_Send,propname);
-							if (client == 0) PrintToServer("%i Prop_Send %s %s is %f",targ,cls,propname,entf);
-							else PrintToConsole(client,"%i Prop_Send %s %s is %f",targ,cls,propname,entf);
+							PrintToConsole(client,"%i Prop_Send %s %s is %f",targ,cls,propname,entf);
 						}
 					}
 					else if (type == PropField_Vector)
@@ -3457,16 +3465,14 @@ public Action setprops(int client, int args)
 							{
 								float entvec[3];
 								GetEntPropVector(targ,Prop_Send,propname,entvec,j);
-								if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
-								else PrintToConsole(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+								PrintToConsole(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
 							}
 						}
 						else
 						{
 							float entvec[3];
 							GetEntPropVector(targ,Prop_Send,propname,entvec);
-							if (client == 0) PrintToServer("%i Prop_Send %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
-							else PrintToConsole(client,"%i Prop_Send %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
+							PrintToConsole(client,"%i Prop_Send %s %s is %f %f %f",targ,cls,propname,entvec[0],entvec[1],entvec[2]);
 						}
 					}
 				}
@@ -3483,15 +3489,13 @@ public Action setprops(int client, int args)
 							for (int j = 0;j<arrsize;j++)
 							{
 								GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf),j);
-								if (client == 0) PrintToServer("%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
-								else PrintToConsole(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
+								PrintToConsole(client,"%i %s %s [%i] is %s",targ,cls,propname,j,propinf);
 							}
 						}
 						else
 						{
 							GetEntPropString(targ,Prop_Data,propname,propinf,sizeof(propinf));
-							if (client == 0) PrintToServer("%i Prop_Data %s is %s",targ,propname,propinf);
-							else PrintToConsole(client,"%i Prop_Data %s is %s",targ,propname,propinf);
+							PrintToConsole(client,"%i Prop_Data %s is %s",targ,propname,propinf);
 						}
 					}
 					else if (type == PropField_Entity)
@@ -3502,15 +3506,13 @@ public Action setprops(int client, int args)
 							for (int j = 0;j<arrsize;j++)
 							{
 								int enth = GetEntPropEnt(targ,Prop_Data,propname,j);
-								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enth);
-								else PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
+								PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enth);
 							}
 						}
 						else
 						{
 							int enth = GetEntPropEnt(targ,Prop_Data,propname);
-							if (client == 0) PrintToServer("%i Prop_Data %s is %i",targ,propname,enth);
-							else PrintToConsole(client,"%i Prop_Data %s is %i",targ,propname,enth);
+							PrintToConsole(client,"%i Prop_Data %s is %i",targ,propname,enth);
 						}
 					}
 					else if (type == PropField_Integer)
@@ -3525,15 +3527,13 @@ public Action setprops(int client, int args)
 								int enti = 0;
 								if (!useelement) enti = GetEntProp(targ,Prop_Data,propname,j);
 								else enti = GetEntProp(targ,Prop_Data,propname,_,j);
-								if (client == 0) PrintToServer("%i %s %s [%i] is %i",targ,cls,propname,j,enti);
-								else PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
+								PrintToConsole(client,"%i %s %s [%i] is %i",targ,cls,propname,j,enti);
 							}
 						}
 						else
 						{
 							int enti = GetEntProp(targ,Prop_Data,propname);
-							if (client == 0) PrintToServer("%i Prop_Data %s is %i",targ,propname,enti);
-							else PrintToConsole(client,"%i Prop_Data %s is %i",targ,propname,enti);
+							PrintToConsole(client,"%i Prop_Data %s is %i",targ,propname,enti);
 							if ((enti < -10000) && (StrContains(propname,"m_n",false) != 0) && (StrContains(propname,"m_i",false) != 0) && (StrContains(propname,"m_fl",false) != 0))
 							{
 								int propoffs = GetEntSendPropOffs(targ,propname);
@@ -3556,15 +3556,13 @@ public Action setprops(int client, int args)
 							for (int j = 0;j<arrsize;j++)
 							{
 								float entf = GetEntPropFloat(targ,Prop_Data,propname,j);
-								if (client == 0) PrintToServer("%i %s %s [%i] is %f",targ,cls,propname,j,entf);
-								else PrintToConsole(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
+								PrintToConsole(client,"%i %s %s [%i] is %f",targ,cls,propname,j,entf);
 							}
 						}
 						else
 						{
 							float entf = GetEntPropFloat(targ,Prop_Data,propname);
-							if (client == 0) PrintToServer("%i Prop_Data %s is %f",targ,propname,entf);
-							else PrintToConsole(client,"%i Prop_Data %s is %f",targ,propname,entf);
+							PrintToConsole(client,"%i Prop_Data %s is %f",targ,propname,entf);
 						}
 					}
 					else if (type == PropField_Vector)
@@ -3576,58 +3574,60 @@ public Action setprops(int client, int args)
 							{
 								float entvec[3];
 								GetEntPropVector(targ,Prop_Data,propname,entvec,j);
-								if (client == 0) PrintToServer("%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
-								else PrintToConsole(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
+								PrintToConsole(client,"%i %s %s [%i] is %f %f %f",targ,cls,propname,j,entvec[0],entvec[1],entvec[2]);
 							}
 						}
 						else
 						{
 							float entvec[3];
 							GetEntPropVector(targ,Prop_Data,propname,entvec);
-							if (client == 0) PrintToServer("%i Prop_Data %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
-							else PrintToConsole(client,"%i Prop_Data %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
+							PrintToConsole(client,"%i Prop_Data %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
+						}
+					}
+					else if (type == PropField_Variant)
+					{
+						datamapoffs = FindDataMapInfo(targ, propname);
+						datamaptype = PropField_Float;
+						if ((datamapoffs != -1) && (!bDesc))
+						{
+							PrintToConsole(client,"Detection by type failed, attempting read float...");
+							bDesc = true;
 						}
 					}
 				}
-				if ((datamapoffs != -1) && (!HasEntProp(targ,Prop_Data,propname)) && (!HasEntProp(targ,Prop_Send,propname)))
+				if ((datamapoffs != -1) && (HasEntProp(targ,Prop_Data,propname)) && (!HasEntProp(targ,Prop_Send,propname)))
 				{
 					if ((datamaptype == PropField_String) || (datamaptype == PropField_String_T))
 					{
 						GetEntDataString(targ,datamapoffs,propinf,sizeof(propinf));
-						if (client == 0) PrintToServer("%i %s %s is %s",targ,cls,propname,propinf);
-						else PrintToConsole(client,"%i %s %s is %s",targ,cls,propname,propinf);
+						PrintToConsole(client,"%i %s %s is %s",targ,cls,propname,propinf);
 					}
 					else if (datamaptype == PropField_Entity)
 					{
 						int enth = GetEntDataEnt2(targ,datamapoffs);
-						if (client == 0) PrintToServer("%i %s is %i",targ,propname,enth);
-						else PrintToConsole(client,"%i %s is %i",targ,propname,enth);
+						PrintToConsole(client,"%i %s is %i",targ,propname,enth);
 					}
 					else if (datamaptype == PropField_Integer)
 					{
 						int enti = GetEntData(targ,datamapoffs,4);
-						if (client == 0) PrintToServer("%i %s is %i",targ,propname,enti);
-						else PrintToConsole(client,"%i %s is %i",targ,propname,enti);
+						PrintToConsole(client,"%i %s is %i",targ,propname,enti);
 					}
 					else if (datamaptype == PropField_Float)
 					{
 						float entf = GetEntDataFloat(targ,datamapoffs);
-						if (client == 0) PrintToServer("%i %s is %f",targ,propname,entf);
-						else PrintToConsole(client,"%i %s is %f",targ,propname,entf);
+						PrintToConsole(client,"%i %s is %f",targ,propname,entf);
 					}
 					else if (datamaptype == PropField_Vector)
 					{
 						float entvec[3];
 						GetEntDataVector(targ,datamapoffs,entvec);
-						if (client == 0) PrintToServer("%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
-						else PrintToConsole(client,"%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
+						PrintToConsole(client,"%i %s is %f %f %f",targ,propname,entvec[0],entvec[1],entvec[2]);
 					}
 					else datamapoffs = -1;
 				}
 				if (((!HasEntProp(targ,Prop_Data,propname)) && (!HasEntProp(targ,Prop_Send,propname)) || (datatypeunsupported)) && (datamapoffs == -1))
 				{
-					if (client == 0) PrintToServer("%i %s doesn't have the %s property, or the type is unsupported.",targ,cls,propname);
-					else PrintToConsole(client,"%i %s doesn't have the %s property, or the type is unsupported.",targ,cls,propname);
+					PrintToConsole(client,"%i %s doesn't have the %s property, or the type is unsupported.",targ,cls,propname);
 				}
 			}
 			else
