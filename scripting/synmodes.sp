@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.51"
+#define PLUGIN_VERSION "1.52"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -222,10 +222,10 @@ public void OnPluginStart()
 	HookConVarChange(mpcvar,gmch);
 	char curgamemode[16];
 	GetConVarString(mpcvar,curgamemode,sizeof(curgamemode));
-	if (StrEqual(curgamemode,"dm",false)) setupdmfor("dm");
-	else if (StrEqual(curgamemode,"tdm",false)) setupdmfor("tdm");
-	else if (StrEqual(curgamemode,"survival",false)) setupdmfor("survival");
-	else setupdmfor("coop");
+	if (StrEqual(curgamemode,"dm",false)) setupdmfor("dm",true);
+	else if (StrEqual(curgamemode,"tdm",false)) setupdmfor("tdm",true);
+	else if (StrEqual(curgamemode,"survival",false)) setupdmfor("survival",true);
+	else setupdmfor("coop",true);
 	CloseHandle(mpcvar);
 }
 
@@ -599,10 +599,10 @@ public void gmch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	if (!StrEqual(newValue,oldValue,false))
 	{
-		if (StrEqual(newValue,"dm",false)) setupdmfor("dm");
-		else if (StrEqual(newValue,"tdm",false)) setupdmfor("tdm");
-		else if (StrEqual(newValue,"survival",false)) setupdmfor("survival");
-		else setupdmfor("coop");
+		if (StrEqual(newValue,"dm",false)) setupdmfor("dm",true);
+		else if (StrEqual(newValue,"tdm",false)) setupdmfor("tdm",true);
+		else if (StrEqual(newValue,"survival",false)) setupdmfor("survival",true);
+		else setupdmfor("coop",true);
 	}
 }
 
@@ -984,7 +984,7 @@ public Action setupdm(int client, int args)
 	return Plugin_Handled;
 }
 
-void setupdmfor(char[] gametype)
+void setupdmfor(char[] gametype, bool bSetVars)
 {
 	char gametypedisp[32];
 	dmact = true;
@@ -1050,21 +1050,25 @@ void setupdmfor(char[] gametype)
 	}
 	if ((!dmact) && (!dmset))
 	{
-		Handle cvarset = FindConVar("sv_glow_enable");
-		if (cvarset != INVALID_HANDLE)
+		Handle cvarset = INVALID_HANDLE;
+		if (bSetVars)
 		{
-			int flags = GetConVarFlags(cvarset);
-			SetConVarFlags(cvarset, flags & ~FCVAR_NOTIFY);
-			SetConVarInt(cvarset,1,false,false);
-			SetConVarFlags(cvarset, flags);
-		}
-		cvarset = FindConVar("mp_friendlyfire");
-		if (cvarset != INVALID_HANDLE)
-		{
-			int flags = GetConVarFlags(cvarset);
-			SetConVarFlags(cvarset, flags & ~FCVAR_NOTIFY);
-			SetConVarInt(cvarset,0,false,false);
-			SetConVarFlags(cvarset, flags);
+			cvarset = FindConVar("sv_glow_enable");
+			if (cvarset != INVALID_HANDLE)
+			{
+				int flags = GetConVarFlags(cvarset);
+				SetConVarFlags(cvarset, flags & ~FCVAR_NOTIFY);
+				SetConVarInt(cvarset,1,false,false);
+				SetConVarFlags(cvarset, flags);
+			}
+			cvarset = FindConVar("mp_friendlyfire");
+			if (cvarset != INVALID_HANDLE)
+			{
+				int flags = GetConVarFlags(cvarset);
+				SetConVarFlags(cvarset, flags & ~FCVAR_NOTIFY);
+				SetConVarInt(cvarset,0,false,false);
+				SetConVarFlags(cvarset, flags);
+			}
 		}
 		cvarset = FindConVar("sm_instspawn");
 		if (cvarset != INVALID_HANDLE)
@@ -1131,7 +1135,7 @@ void setupdmfor(char[] gametype)
 	}
 	if (!StrEqual(activegamemode,gametypedisp,false))
 	{
-		PrintToChatAll("GameMode changed to %s",gametypedisp);
+		if (bSetVars) PrintToChatAll("GameMode changed to %s",gametypedisp);
 		Format(activegamemode,sizeof(activegamemode),"%s",gametypedisp);
 	}
 }
@@ -4190,10 +4194,10 @@ public Action rehooksaves(Handle timer)
 	Handle cvar = FindConVar("sm_gamemodeset");
 	if (cvar != INVALID_HANDLE) GetConVarString(cvar,curgamemode,sizeof(curgamemode));
 	CloseHandle(cvar);
-	if (StrEqual(curgamemode,"dm",false)) setupdmfor("dm");
-	else if (StrEqual(curgamemode,"tdm",false)) setupdmfor("tdm");
-	else if (StrEqual(curgamemode,"survival",false)) setupdmfor("survival");
-	else setupdmfor("coop");
+	if (StrEqual(curgamemode,"dm",false)) setupdmfor("dm",false);
+	else if (StrEqual(curgamemode,"tdm",false)) setupdmfor("tdm",false);
+	else if (StrEqual(curgamemode,"survival",false)) setupdmfor("survival",false);
+	else setupdmfor("coop",false);
 	readoutputsforinputs();
 }
 
