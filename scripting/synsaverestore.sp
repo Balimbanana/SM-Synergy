@@ -72,7 +72,7 @@ char savedir[64];
 char reloadthissave[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.194"
+#define PLUGIN_VERSION "2.195"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2152,6 +2152,7 @@ public void OnMapStart()
 			float aljeepchk[3];
 			float aljeepchkj[3];
 			float vecOrgs[3];
+			int iRestored = 0;
 			if (strlen(landmarkname) > 0)
 			{
 				findlandmark(-1,"info_landmark");
@@ -2520,6 +2521,7 @@ public void OnMapStart()
 							DispatchKeyValue(ent,"skin",skin);
 							DispatchSpawn(ent);
 							ActivateEntity(ent);
+							iRestored++;
 							if (strlen(parentname) > 0)
 							{
 								SetVariantString(parentname);
@@ -2620,7 +2622,7 @@ public void OnMapStart()
 					}
 				}
 			}
-			if ((dbg) && (GetArraySize(transitionents) > 0)) LogMessage("ClearTransitionEnts Array after restore of %i ents",GetArraySize(transitionents));
+			if ((dbg) && (GetArraySize(transitionents) > 0)) LogMessage("ClearTransitionEnts Array after restore of %i/%i ents",iRestored,GetArraySize(transitionents));
 			//ClearArrayHandles(transitionents);
 			ClearArray(transitionents);
 			if ((alyxtransition != -1) && (IsValidEntity(alyxtransition)))
@@ -3881,6 +3883,17 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 			else if ((StrEqual(clsname,"npc_monk",false)) && (StrEqual(mapbuf,"d1_town_02",false)) && (StrEqual(maptochange,"d1_town_02a",false)))
 			{
 				alwaystransition = 1;
+			}
+			else if (StrEqual(clsname,"npc_manhack",false))
+			{
+				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+				if (StrContains(targn,"STEAM_0",false) != -1)
+				{
+					AcceptEntityInput(i,"kill");
+					alwaystransition = -1;
+					clsname = "";
+					continue;
+				}
 			}
 			int par = -1;
 			//if ((StrEqual(clsname,"prop_dynamic",false)) || (StrEqual(clsname,"prop_physics",false)))
