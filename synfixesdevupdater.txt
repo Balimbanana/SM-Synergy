@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0049"
-			"Previous"	"2.0048"
+			"Latest"  	"2.0050"
+			"Previous"	"2.0049"
 		}
 		
-		"Notes"	"Potential fix to tab crash."
+		"Notes"	"Added CVar synfixes_noairboatpunt default 0, disables gravity gun punt for airboats."
 	}
 	
 	"Files"

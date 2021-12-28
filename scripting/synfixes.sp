@@ -29,8 +29,7 @@ Handle ignoreelevators = INVALID_HANDLE;
 Handle dctimeoutarr = INVALID_HANDLE;
 Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
-ConVar hCVStuckInNPC;
-ConVar hCVFixWeapSnd;
+ConVar hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float centnextatk[2048];
@@ -67,7 +66,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.99997"
+#define PLUGIN_VERSION "1.99998"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -241,6 +240,9 @@ public void OnPluginStart()
 	if (hCVStuckInNPC == INVALID_HANDLE) hCVStuckInNPC = CreateConVar("synfixes_stuckinnpc", "1", "Removes collisions between players and NPCs when they are stuck inside each other.", _, true, 0.0, true, 1.0);
 	hCVFixWeapSnd = FindConVar("sm_fixweaponsounds");
 	if (hCVFixWeapSnd == INVALID_HANDLE) hCVFixWeapSnd = CreateConVar("sm_fixweaponsounds", "1", "Fixes predicted sounds not being played.", _, true, 0.0, true, 1.0);
+	hCVNoAirboatPunt = FindConVar("synfixes_noairboatpunt");
+	if (hCVNoAirboatPunt == INVALID_HANDLE) hCVNoAirboatPunt = CreateConVar("synfixes_noairboatpunt", "0", "Prevents punting airboat with gravity gun.", _, true, 0.0, true, 1.0);
+	HookConVarChange(hCVNoAirboatPunt, NoAirBoatPuntChanged);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -3902,6 +3904,17 @@ public void OnEntityCreated(int entity, const char[] classname)
 			SDKHook(entity, SDKHook_OnTakeDamage, SynTripmineTakeDamage);
 		}
 	}
+	if (hCVNoAirboatPunt.BoolValue)
+	{
+		if ((StrEqual(classname,"prop_vehicle_airboat",false)) && (HasEntProp(entity,Prop_Data,"m_iEFlags")))
+		{
+			int flageffects = GetEntProp(entity,Prop_Data,"m_iEFlags");
+			if (!(flageffects & 1<<30))
+			{
+				SetEntProp(entity,Prop_Data,"m_iEFlags",flageffects+1073741824);
+			}
+		}
+	}
 	if ((StrEqual(classname,"item_health_drop",false)) || (StrEqual(classname,"item_ammo_drop",false)) || (StrEqual(classname,"item_ammo_pack",false)))
 	{
 		SDKHook(entity, SDKHook_StartTouch, StartTouchprop);
@@ -5034,6 +5047,40 @@ public void blocktripmindmgech(Handle convar, const char[] oldValue, const char[
 		BlockTripMineDamage = true;
 	else
 		BlockTripMineDamage = false;
+}
+
+public void NoAirBoatPuntChanged(Handle convar, const char[] oldValue, const char[] newValue)
+{
+	if (StringToInt(newValue) > 0)
+	{
+		int iEnt = -1;
+		while((iEnt = FindEntityByClassname(iEnt,"prop_vehicle_airboat")) != INVALID_ENT_REFERENCE)
+		{
+			if (IsValidEntity(iEnt))
+			{
+				int flageffects = GetEntProp(iEnt,Prop_Data,"m_iEFlags");
+				if (!(flageffects & 1<<30))
+				{
+					SetEntProp(iEnt,Prop_Data,"m_iEFlags",flageffects+1073741824);
+				}
+			}
+		}
+	}
+	else
+	{
+		int iEnt = -1;
+		while((iEnt = FindEntityByClassname(iEnt,"prop_vehicle_airboat")) != INVALID_ENT_REFERENCE)
+		{
+			if (IsValidEntity(iEnt))
+			{
+				int flageffects = GetEntProp(iEnt,Prop_Data,"m_iEFlags");
+				if (flageffects & 1<<30)
+				{
+					SetEntProp(iEnt,Prop_Data,"m_iEFlags",flageffects-1073741824);
+				}
+			}
+		}
+	}
 }
 
 public void noguidech(Handle convar, const char[] oldValue, const char[] newValue)
