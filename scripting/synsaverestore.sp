@@ -72,7 +72,7 @@ char savedir[64];
 char reloadthissave[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.195"
+#define PLUGIN_VERSION "2.196"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3889,7 +3889,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
 				if (StrContains(targn,"STEAM_0",false) != -1)
 				{
-					AcceptEntityInput(i,"kill");
+					PushArrayCell(ignoreent,i);
 					alwaystransition = -1;
 					clsname = "";
 					continue;
