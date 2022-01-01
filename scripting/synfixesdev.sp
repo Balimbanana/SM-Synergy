@@ -61,7 +61,7 @@ Handle dctimeoutarr = INVALID_HANDLE;
 Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
 Handle hTemplateData = INVALID_HANDLE;
-ConVar hWeaponRespawn, hBaseEquipmentSetup, hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt;
+ConVar hWeaponRespawn, hBaseEquipmentSetup, hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeathTime;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float fadingtime[128];
@@ -116,7 +116,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0050"
+#define PLUGIN_VERSION "2.0051"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -364,6 +364,10 @@ public void OnPluginStart()
 	hCVNoAirboatPunt = FindConVar("synfixes_noairboatpunt");
 	if (hCVNoAirboatPunt == INVALID_HANDLE) hCVNoAirboatPunt = CreateConVar("synfixes_noairboatpunt", "0", "Prevents punting airboat with gravity gun.", _, true, 0.0, true, 1.0);
 	HookConVarChange(hCVNoAirboatPunt, NoAirBoatPuntChanged);
+	hCVRemoveRagdoll = FindConVar("synfixes_remove_playerragdolls");
+	if (hCVRemoveRagdoll == INVALID_HANDLE) hCVRemoveRagdoll = CreateConVar("synfixes_remove_playerragdolls", "1", "Removes player ragdolls after mp_deathtime.", _, true, 0.0, true, 1.0);
+	hCVDeathTime = FindConVar("mp_deathtime");
+	if (hCVDeathTime == INVALID_HANDLE) hCVDeathTime = CreateConVar("mp_deathtime", "3.0", "Remove player ragdolls after this time.", _, true, 0.0, true, 60.0);
 	cvar = FindConVar("synfixes_fixsoundscapes");
 	if (cvar != INVALID_HANDLE)
 	{
@@ -3900,7 +3904,7 @@ public Action resetclanim(Handle timer)
 			}
 		}
 	}
-	char szCls[16];
+	char szCls[24];
 	for (int i = MaxClients+1;i<2048;i++)
 	{
 		if (IsValidEntity(i))
@@ -3911,19 +3915,31 @@ public Action resetclanim(Handle timer)
 				if (iusSolid & (1<<2))
 				{
 					GetEntityClassname(i,szCls,sizeof(szCls));
-					if ((StrContains(szCls,"prop",false) != -1) && (!StrEqual(szCls,"prop_dynamic",false)))
+					if ((StrContains(szCls,"prop",false) != -1) && (!StrEqual(szCls,"prop_dynamic",false)) && (!StrEqual(szCls,"prop_combine_ball",false)))
 					{
 						SetEntProp(i,Prop_Data,"m_usSolidFlags",iusSolid & ~(1<<2));
-						PrintToServer("Reset broken solid flags on entity %i",i);
+						PrintToServer("Reset broken solid flags on entity %i %s",i,szCls);
 					}
 				}
 			}
 			if (flEntCreateTime[i] > 0.0)
 			{
-				if (flEntCreateTime[i]+removertimer <= GetGameTime())
+				GetEntityClassname(i,szCls,sizeof(szCls));
+				if (StrEqual(szCls,"hl2mp_ragdoll",false))
 				{
-					flEntCreateTime[i] = 0.0;
-					AcceptEntityInput(i,"kill");
+					if (flEntCreateTime[i]+hCVDeathTime.FloatValue+0.5 <= GetGameTime())
+					{
+						flEntCreateTime[i] = 0.0;
+						AcceptEntityInput(i,"kill");
+					}
+				}
+				else
+				{
+					if (flEntCreateTime[i]+removertimer <= GetGameTime())
+					{
+						flEntCreateTime[i] = 0.0;
+						AcceptEntityInput(i,"kill");
+					}
 				}
 			}
 		}
@@ -15840,6 +15856,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 		WritePackString(data, classname);
 		CreateTimer(removertimer,cleanup,data,TIMER_FLAG_NO_MAPCHANGE);
 		*/
+	}
+	else if ((hCVRemoveRagdoll.BoolValue) && (StrEqual(classname,"hl2mp_ragdoll",false)))
+	{
+		flEntCreateTime[entity] = GetGameTime();
 	}
 	if ((StrEqual(classname,"logic_auto",false)) || (StrEqual(classname,"env_sprite",false)) || (StrEqual(classname,"env_laser",false)))
 	{

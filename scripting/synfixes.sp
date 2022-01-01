@@ -29,7 +29,7 @@ Handle ignoreelevators = INVALID_HANDLE;
 Handle dctimeoutarr = INVALID_HANDLE;
 Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
-ConVar hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt;
+ConVar hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeathTime;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float centnextatk[2048];
@@ -66,7 +66,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.99998"
+#define PLUGIN_VERSION "1.99999"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -243,6 +243,10 @@ public void OnPluginStart()
 	hCVNoAirboatPunt = FindConVar("synfixes_noairboatpunt");
 	if (hCVNoAirboatPunt == INVALID_HANDLE) hCVNoAirboatPunt = CreateConVar("synfixes_noairboatpunt", "0", "Prevents punting airboat with gravity gun.", _, true, 0.0, true, 1.0);
 	HookConVarChange(hCVNoAirboatPunt, NoAirBoatPuntChanged);
+	hCVRemoveRagdoll = FindConVar("synfixes_remove_playerragdolls");
+	if (hCVRemoveRagdoll == INVALID_HANDLE) hCVRemoveRagdoll = CreateConVar("synfixes_remove_playerragdolls", "1", "Removes player ragdolls after mp_deathtime.", _, true, 0.0, true, 1.0);
+	hCVDeathTime = FindConVar("mp_deathtime");
+	if (hCVDeathTime == INVALID_HANDLE) hCVDeathTime = CreateConVar("mp_deathtime", "3.0", "Remove player ragdolls after this time.", _, true, 0.0, true, 60.0);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -1763,16 +1767,29 @@ public Action resetclanim(Handle timer)
 			}
 		}
 	}
+	char szCls[24];
 	for (int i = MaxClients+1;i<2048;i++)
 	{
 		if (IsValidEntity(i))
 		{
 			if (flEntCreateTime[i] > 0.0)
 			{
-				if (flEntCreateTime[i]+removertimer <= GetGameTime())
+				GetEntityClassname(i,szCls,sizeof(szCls));
+				if (StrEqual(szCls,"hl2mp_ragdoll",false))
 				{
-					flEntCreateTime[i] = 0.0;
-					AcceptEntityInput(i,"kill");
+					if (flEntCreateTime[i]+hCVDeathTime.FloatValue+0.5 <= GetGameTime())
+					{
+						flEntCreateTime[i] = 0.0;
+						AcceptEntityInput(i,"kill");
+					}
+				}
+				else
+				{
+					if (flEntCreateTime[i]+removertimer <= GetGameTime())
+					{
+						flEntCreateTime[i] = 0.0;
+						AcceptEntityInput(i,"kill");
+					}
 				}
 			}
 		}
@@ -3926,6 +3943,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 		WritePackString(data, classname);
 		CreateTimer(removertimer,cleanup,data,TIMER_FLAG_NO_MAPCHANGE);
 		*/
+	}
+	else if ((hCVRemoveRagdoll.BoolValue) && (StrEqual(classname,"hl2mp_ragdoll",false)))
+	{
+		flEntCreateTime[entity] = GetGameTime();
 	}
 	if (StrEqual(classname,"logic_auto",false))
 	{
