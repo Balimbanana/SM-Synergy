@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.41"
+#define PLUGIN_VERSION "1.42"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -759,10 +759,18 @@ public Action CreateStuff(int client, int args)
 			AcceptEntityInput(stuff,"kill");
 			return Plugin_Handled;
 		}
-		if ((StrContains(ent,"prop_vehicle",false) != -1) && (!vehiclescriptdefined))
+		if (!vehiclescriptdefined)
 		{
-			PrintToConsole(client,"VehicleScript was not defined, defaulting to \"scripts/vehicles/jeep_test.txt\"");
-			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
+			if (StrEqual(ent,"prop_vehicle_airboat",false))
+			{
+				PrintToConsole(client,"VehicleScript was not defined, defaulting to \"scripts/vehicles/airboat.txt\"");
+				DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/airboat.txt");
+			}
+			else if (StrContains(ent,"prop_vehicle",false) != -1)
+			{
+				PrintToConsole(client,"VehicleScript was not defined, defaulting to \"scripts/vehicles/jeep_test.txt\"");
+				DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
+			}
 		}
 		TeleportEntity(stuff, PlayerOrigin, NULL_VECTOR, NULL_VECTOR);
 		CloseHandle(passedarr);
@@ -1137,10 +1145,18 @@ public Action CreateStuffThere(int client, int args)
 			AcceptEntityInput(stuff,"kill");
 			return Plugin_Handled;
 		}
-		if ((StrContains(ent,"prop_vehicle",false) != -1) && (!vehiclescriptdefined))
+		if (!vehiclescriptdefined)
 		{
-			PrintToConsole(client,"VehicleScript was not defined, defaulting to \"scripts/vehicles/jeep_test.txt\"");
-			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
+			if (StrEqual(ent,"prop_vehicle_airboat",false))
+			{
+				PrintToConsole(client,"VehicleScript was not defined, defaulting to \"scripts/vehicles/airboat.txt\"");
+				DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/airboat.txt");
+			}
+			else if (StrContains(ent,"prop_vehicle",false) != -1)
+			{
+				PrintToConsole(client,"VehicleScript was not defined, defaulting to \"scripts/vehicles/jeep_test.txt\"");
+				DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/jeep_test.txt");
+			}
 		}
 		CloseHandle(passedarr);
 		PrintToConsole(client,"%s",fullstr);

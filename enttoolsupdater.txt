@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.41"
-			"Previous"	"1.40"
+			"Latest"  	"1.42"
+			"Previous"	"1.41"
 		}
 		
-		"Notes"	"Additional detection and attempting to read/set values for properties that are not detected by SM."
+		"Notes"	"If no vehiclescript is defined for prop_vehicle_airboat default to correct vehiclescript."
 	}
 	
 	"Files"

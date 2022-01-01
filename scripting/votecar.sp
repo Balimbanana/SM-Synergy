@@ -43,6 +43,7 @@ int vehsetown = 0;
 
 int useapc = 0;
 int usejal = 0;
+int useski = 0;
 //int collisiongroup = -1;
 
 Menu g_hVoteMenu = null;
@@ -56,7 +57,7 @@ enum voteType
 
 voteType g_voteType = question;
 
-#define PLUGIN_VERSION "1.16"
+#define PLUGIN_VERSION "1.17"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/votecarupdater.txt"
 
 public Plugin myinfo = 
@@ -133,6 +134,7 @@ public void OnMapStart()
 	}
 	useapc = FileExists("models/vehicles/combine_apcdrivable.mdl",false);
 	usejal = FileExists("models/vehicle.mdl",true,NULL_STRING);
+	useski = FileExists("models/airboatski.mdl",true,NULL_STRING);
 	if (restrictbyvehon)
 		plyhasenteredvehicle = false;
 	//PrintToServer("APC: %i, Jalopy %i",useapc,usejal);
@@ -170,6 +172,8 @@ public Action votecar(int client, int args)
 	if ((restrictbyveh) && (StrContains(mapbuf,"d1_canals_",false) != -1))
 	{
 		menu.AddItem("2","Airboat");
+		if (useski)
+			menu.AddItem("8","AirboatSki");
 	}
 	else
 	{
@@ -182,6 +186,8 @@ public Action votecar(int client, int args)
 			menu.AddItem("6","Jalopy");
 		if (useapc)
 			menu.AddItem("7","APC");
+		if (useski)
+			menu.AddItem("8","AirboatSki");
 	}
 	if (plyvehicle[client])
 		menu.AddItem("remvh","Remove Vehicle");
@@ -252,7 +258,7 @@ public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 			remvh(param1,plyvehicle[param1]);
 			delete menu;
 		}
-		if ((StringToInt(info) > 0) && (StringToInt(info) < 8))
+		if ((StringToInt(info) > 0) && (StringToInt(info) < 9))
 			vehiclemdltype[param1] = StringToInt(info);
 		else
 			vehiclemdltype[param1] = 100;
@@ -295,6 +301,11 @@ public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 			{
 				Format(buff,sizeof(buff),"Spawn APC where %s is looking?",nick);
 				Format(vehicletype,sizeof(vehicletype),"APC");
+			}
+			else if ((vehiclemdltype[param1] == 8) && (useski))
+			{
+				Format(buff,sizeof(buff),"Spawn AirboatSki where %s is looking?",nick);
+				Format(vehicletype,sizeof(vehicletype),"AirboatSki");
 			}
 			else if (vehiclemdltype[param1] == 100)
 			{
@@ -571,6 +582,8 @@ bool CCreateVehicle(int client, char[] vehiclemodel)
 						DispatchKeyValue(vehholo[client], "model", "models/vehicle.mdl");
 					else if ((vehiclemdltype[client] == 7) && (usejal) && (useapc))
 						DispatchKeyValue(vehholo[client], "model", "models/vehicles/combine_apcdrivable.mdl");
+					else if ((vehiclemdltype[client] == 8) && (useski))
+						DispatchKeyValue(vehholo[client], "model", "models/airboatski.mdl");
 					else if (vehiclemdltype[client] == 100)
 						DispatchKeyValue(vehholo[client], "model", vehiclemodel);
 					DispatchKeyValue(vehholo[client], "solid","0");
@@ -728,19 +741,13 @@ void CreateVehicle(int client)
 					if (JeepsHaveGuns)
 						DispatchKeyValue(veh, "EnableGun","1");
 				}
-				else if ((vehiclemdltype[client] == 6) && (usejal) && (useapc))
+				else if ((vehiclemdltype[client] == 6) && (usejal))
 				{
 					veh = CreateEntityByName("prop_vehicle_jeep_episodic");
 					DispatchKeyValue(veh, "model", "models/vehicle.mdl");
 					DispatchKeyValue(veh, "vehiclescript", "scripts/vehicles/jeep_test.txt");
 				}
-				else if ((vehiclemdltype[client] == 6) && (usejal) && (!useapc))
-				{
-					veh = CreateEntityByName("prop_vehicle_jeep_episodic");
-					DispatchKeyValue(veh, "model", "models/vehicle.mdl");
-					DispatchKeyValue(veh, "vehiclescript", "scripts/vehicles/jeep_test.txt");
-				}
-				else if ((vehiclemdltype[client] == 7) && (usejal) && (useapc))
+				else if ((vehiclemdltype[client] == 7) && (useapc))
 				{
 					veh = CreateEntityByName("prop_vehicle_jeep");
 					DispatchKeyValue(veh, "model", "models/vehicles/combine_apcdrivable.mdl");
@@ -748,6 +755,15 @@ void CreateVehicle(int client)
 					findent(MaxClients+1,"prop_vehicle_jeep");
 					findent(MaxClients+1,"prop_vehicle_mp");
 					if (JeepsHaveGuns)
+						DispatchKeyValue(veh, "EnableGun","1");
+				}
+				else if ((vehiclemdltype[client] == 8) && (useski))
+				{
+					veh = CreateEntityByName("prop_vehicle_airboat");
+					DispatchKeyValue(veh, "model", "models/airboatski.mdl");
+					DispatchKeyValue(veh, "vehiclescript", "scripts/vehicles/airboat.txt");
+					findent(MaxClients+1,"prop_vehicle_airboat");
+					if (BoatsHaveGuns)
 						DispatchKeyValue(veh, "EnableGun","1");
 				}
 				else if (vehiclemdltype[client] == 100)
