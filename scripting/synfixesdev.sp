@@ -116,7 +116,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0051"
+#define PLUGIN_VERSION "2.0052"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1907,9 +1907,9 @@ public Action suicideblock(int client, int args)
 	{
 		if (IsValidEntity(client))
 		{
-			if (HasEntProp(client,Prop_Send,"m_hVehicle"))
+			if (HasEntProp(client,Prop_Data,"m_hVehicle"))
 			{
-				int vck = GetEntProp(client, Prop_Send, "m_hVehicle");
+				int vck = GetEntPropEnt(client, Prop_Data, "m_hVehicle");
 				if (IsValidEntity(vck))
 				{
 					char vckcls[64];

@@ -66,7 +66,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.99999"
+#define PLUGIN_VERSION "1.20000"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -774,9 +774,9 @@ public Action suicideblock(int client, int args)
 	{
 		if (IsValidEntity(client))
 		{
-			if (HasEntProp(client,Prop_Send,"m_hVehicle"))
+			if (HasEntProp(client,Prop_Data,"m_hVehicle"))
 			{
-				int vck = GetEntProp(client, Prop_Send, "m_hVehicle");
+				int vck = GetEntPropEnt(client, Prop_Data, "m_hVehicle");
 				if (IsValidEntity(vck))
 				{
 					char vckcls[64];

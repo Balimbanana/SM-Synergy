@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.99999"
-			"Previous"	"1.99998"
+			"Latest"  	"1.20000"
+			"Previous"	"1.99999"
 		}
 		
-		"Notes"	"Added CVar synfixes_remove_playerragdolls which will remove player ragdolls after mp_deathtime."
+		"Notes"	"Fixed sm_blockchoreokill."
 	}
 	
 	"Files"
