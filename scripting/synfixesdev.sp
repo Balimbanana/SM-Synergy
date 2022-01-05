@@ -4108,7 +4108,7 @@ public Action dropshipchk(Handle timer)
 					CreateTimer(10.0,rmcolliding,i);
 				}
 			}
-			if ((HasEntProp(i,Prop_Data,"m_iGlobalname")) && (StrEqual(clsname,"prop_",false)) && (syn56act))
+			if ((HasEntProp(i,Prop_Data,"m_iGlobalname")) && (StrEqual(clsname,"prop_physics",false)) && (syn56act))
 			{
 				char glname[32];
 				GetEntPropString(i,Prop_Data,"m_iGlobalname",glname,sizeof(glname));
