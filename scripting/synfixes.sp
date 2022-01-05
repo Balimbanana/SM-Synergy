@@ -66,7 +66,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20000"
+#define PLUGIN_VERSION "1.20001"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1823,7 +1823,7 @@ public Action dropshipchk(Handle timer)
 					CreateTimer(10.0,rmcolliding,i);
 				}
 			}
-			if ((HasEntProp(i,Prop_Data,"m_iGlobalname")) && (StrContains(clsname,"prop_",false) != -1) && (syn56act))
+			if ((HasEntProp(i,Prop_Data,"m_iGlobalname")) && (StrEqual(clsname,"prop_physics",false)) && (syn56act))
 			{
 				char glname[32];
 				GetEntPropString(i,Prop_Data,"m_iGlobalname",glname,sizeof(glname));
@@ -3554,36 +3554,8 @@ void FindSaveTPHooks()
 				GetEntPropString(i,Prop_Data,"m_target",pttarget,sizeof(pttarget));
 				if ((StrEqual(pttarget,"!activator",false)) || (StrEqual(pttarget,"!player",false)) || (StrEqual(pttarget,"player",false))) playerteleports = true;
 			}
-			/*
-			else if (StrEqual(clsname,"logic_relay",false))
-			{
-				HookSingleEntityOutput(i,"OnTrigger",trigtp);
-			}
-			else if (StrEqual(clsname,"func_door",false))
-			{
-				HookSingleEntityOutput(i,"OnOpen",trigtp);
-				HookSingleEntityOutput(i,"OnFullyOpen",trigtp);
-				HookSingleEntityOutput(i,"OnClose",trigtp);
-				HookSingleEntityOutput(i,"OnFullyClosed",trigtp);
-			}
-			*/
 		}
 	}
-	/*
-	HookEntityOutput("trigger_coop","OnPlayersIn",trigtp);
-	HookEntityOutput("trigger_coop","OnStartTouch",trigtp);
-	HookEntityOutput("trigger_multiple","OnTrigger",trigtp);
-	HookEntityOutput("trigger_multiple","OnStartTouch",trigtp);
-	HookEntityOutput("trigger_once","OnTrigger",trigtp);
-	HookEntityOutput("trigger_once","OnStartTouch",trigtp);
-	HookEntityOutput("point_viewcontrol","OnEndFollow",trigtp);
-	HookEntityOutput("func_button","OnPressed",trigtp);
-	HookEntityOutput("func_button","OnUseLocked",trigtp);
-	//HookEntityOutput("prop_door_rotating","OnOpen",trigtp);
-	//HookEntityOutput("prop_door_rotating","OnFullyOpen",trigtp);
-	//HookEntityOutput("prop_door_rotating","OnClose",trigtp);
-	//HookEntityOutput("prop_door_rotating","OnFullyClosed",trigtp);
-	*/
 }
 
 public Action rehooksaves(Handle timer)

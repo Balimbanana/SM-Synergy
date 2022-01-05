@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0052"
-			"Previous"	"2.0051"
+			"Latest"  	"2.0053"
+			"Previous"	"2.0052"
 		}
 		
-		"Notes"	"Fixed sm_blockchoreokill."
+		"Notes"	"Fixed global name removal to only apply to prop_physics."
 	}
 	
 	"Files"

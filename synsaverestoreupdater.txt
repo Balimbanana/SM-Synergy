@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.196"
-			"Previous"	"2.195"
+			"Latest"  	"2.197"
+			"Previous"	"2.196"
 		}
 		
-		"Notes"	"Additional information of number of restored entities. Prevent certain manhack scenario transitions."
+		"Notes"	"Minor optimizations."
 	}
 	
 	"Files"

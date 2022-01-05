@@ -116,7 +116,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0052"
+#define PLUGIN_VERSION "2.0053"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -4108,7 +4108,7 @@ public Action dropshipchk(Handle timer)
 					CreateTimer(10.0,rmcolliding,i);
 				}
 			}
-			if ((HasEntProp(i,Prop_Data,"m_iGlobalname")) && (StrContains(clsname,"prop_",false) != -1) && (syn56act))
+			if ((HasEntProp(i,Prop_Data,"m_iGlobalname")) && (StrEqual(clsname,"prop_",false)) && (syn56act))
 			{
 				char glname[32];
 				GetEntPropString(i,Prop_Data,"m_iGlobalname",glname,sizeof(glname));
