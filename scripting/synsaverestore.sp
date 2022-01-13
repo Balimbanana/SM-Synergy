@@ -23,7 +23,6 @@ bool enterfromep2 = false;
 bool enterfrom4g = false;
 bool reloadingmap = false;
 bool bIsVehicleMap = false;
-bool dbg = false;
 bool bRebuildTransition = false; //Set by cvar sm_disabletransition
 bool bNoDelete = true; //Set by cvar sm_disabletransition 3
 bool bTransitionPlayers = false; //Set by cvar sm_disabletransition 2
@@ -31,8 +30,6 @@ bool reloadaftersetup = false;
 bool BMActive = false;
 bool SynLaterAct = false;
 bool bLinuxAct = false;
-bool SkipVer = false;
-bool bTransitionMode = false;
 int iWeaponListOffset = -1;
 int reloadtype = 0;
 int logsv = -1;
@@ -69,7 +66,7 @@ ConVar hCVbTransitionGlobals;
 ConVar hCVbVoteReloadSaves, hCVbVoteCreateSaves;
 ConVar hCVflVoteRestorePercent, hCVflVoteCreateSavePercent;
 // Misc CVars
-ConVar g_hCVbApplyFallbackEquip;
+ConVar g_hCVbApplyFallbackEquip, g_hCVbDebugTransitions, g_hCVbTransitionSkipVersion, g_hCVbTransitionMode;
 
 char szLandmarkName[64];
 char mapbuf[128];
@@ -79,7 +76,7 @@ char savedir[64];
 char reloadthissave[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.197"
+#define PLUGIN_VERSION "2.198"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -160,22 +157,9 @@ public void OnPluginStart()
 	HookConVarChange(disabletransitionh, disabletransitionch);
 	CloseHandle(disabletransitionh);
 	g_hCVbApplyFallbackEquip = CreateConVar("sm_equipfallback_disable", "0", "Disables fallback equips when player spawns after transition.", _, true, 0.0, true, 1.0);
-	Handle transitiondbgh = CreateConVar("sm_transitiondebug", "0", "Logs transition entities for both save and restore.", _, true, 0.0, true, 1.0);
-	if (GetConVarBool(transitiondbgh) == true) dbg = true;
-	else dbg = false;
-	HookConVarChange(transitiondbgh, transitiondbgch);
-	CloseHandle(transitiondbgh);
-	transitiondbgh = FindConVar("sm_transitionskipver");
-	if (transitiondbgh == INVALID_HANDLE) transitiondbgh = CreateConVar("sm_transitionskipver", "0", "Skip version check and run full transition overrides.", _, true, 0.0, true, 1.0);
-	if (GetConVarBool(transitiondbgh) == true) SkipVer = true;
-	else SkipVer = false;
-	HookConVarChange(transitiondbgh, transitionskipverch);
-	CloseHandle(transitiondbgh);
-	transitiondbgh = FindConVar("sm_transition_mode");
-	if (transitiondbgh == INVALID_HANDLE) transitiondbgh = CreateConVar("sm_transition_mode", "0", "Changes mode of what entities to transition. 0 is base list, 1 is all stable entities.", _, true, 0.0, true, 1.0);
-	bTransitionMode = GetConVarBool(transitiondbgh);
-	HookConVarChange(transitiondbgh, transitionmodech);
-	CloseHandle(transitiondbgh);
+	g_hCVbDebugTransitions = CreateConVar("sm_transitiondebug", "0", "Logs transition entities for both save and restore.", _, true, 0.0, true, 1.0);
+	g_hCVbTransitionSkipVersion = CreateConVar("sm_transitionskipver", "0", "Skip version check and run full transition overrides.", _, true, 0.0, true, 1.0);
+	g_hCVbTransitionMode = CreateConVar("sm_transition_mode", "0", "Changes mode of what entities to transition. 0 is base list, 1 is all stable entities.", _, true, 0.0, true, 1.0);
 	Handle saveresetmode = FindConVar("sm_transitionreset_mode");
 	if (saveresetmode != INVALID_HANDLE)
 	{
@@ -283,24 +267,6 @@ public void disabletransitionch(Handle convar, const char[] oldValue, const char
 		bNoDelete = true;
 		bTransitionPlayers = false;
 	}
-}
-
-public void transitiondbgch(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if (StringToInt(newValue) == 1) dbg = true;
-	else dbg = false;
-}
-
-public void transitionskipverch(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if (StringToInt(newValue) == 1) SkipVer = true;
-	else SkipVer = false;
-}
-
-public void transitionmodech(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if (StringToInt(newValue) == 1) bTransitionMode = true;
-	else bTransitionMode = false;
 }
 
 public void transitionresetmch(Handle convar, const char[] oldValue, const char[] newValue)
@@ -1792,6 +1758,18 @@ public void OnMapStart()
 				ActivateEntity(loginp);
 			}
 		}
+		else if (StrEqual(mapbuf,"bm_c4a3d1",false))
+		{
+			int loginp = CreateEntityByName("logic_auto");
+			if (loginp != -1)
+			{
+				DispatchKeyValue(loginp, "spawnflags","1");
+				DispatchKeyValue(loginp, "OnMapSpawn","elevator_exit_door1,Open,,1,-1");
+				DispatchKeyValue(loginp, "OnMapSpawn","elevator_exit_door2,Open,,1,-1");
+				DispatchSpawn(loginp);
+				ActivateEntity(loginp);
+			}
+		}
 		if (reloadingmap)
 		{
 			if ((enterfrom04pb) && (StrEqual(mapbuf,"ep2_outland_02",false)))
@@ -2068,8 +2046,8 @@ public void OnMapStart()
 			}
 			CloseHandle(savedirrmh);
 			*/
-			if ((!SynLaterAct) || (SkipVer)) CreateTimer(0.1,Timer_ReDelete,_,TIMER_FLAG_NO_MAPCHANGE);
-			if ((logsv != -1) && (IsValidEntity(logsv)) && ((!SynLaterAct) || (SkipVer))) saveresetveh(false);
+			if ((!SynLaterAct) || (g_hCVbTransitionSkipVersion.BoolValue)) CreateTimer(0.1,Timer_ReDelete,_,TIMER_FLAG_NO_MAPCHANGE);
+			if ((logsv != -1) && (IsValidEntity(logsv)) && ((!SynLaterAct) || (g_hCVbTransitionSkipVersion.BoolValue))) saveresetveh(false);
 			if ((bTransitionPlayers) && (bIsVehicleMap))
 			{
 				findent(MaxClients+1,"info_player_equip");
@@ -2104,7 +2082,7 @@ public void OnMapStart()
 						DeleteFile(custentinffile,false);
 					}
 				}
-				if (dbg) LogMessage("%i entities to restore over map change.",GetArraySize(g_hTransitionEntities));
+				if (g_hCVbDebugTransitions.BoolValue) LogMessage("%i entities to restore over map change.",GetArraySize(g_hTransitionEntities));
 				if (GetArraySize(g_hTransitionEntities) > 0)
 				{
 					for (int i = 0;i<GetArraySize(g_hTransitionEntities);i++)
@@ -2332,13 +2310,13 @@ public void OnMapStart()
 						CloseHandle(hReturnedArray);
 						if ((TR_PointOutsideWorld(vecOrigin)) && (!skipoow))
 						{
-							if (dbg) LogMessage("Delete Transition Ent (OutOfWorld) %s info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\"",clsname,mdl,targn,StringToInt(solidity),StringToInt(spawnflags),mvtype);
+							if (g_hCVbDebugTransitions.BoolValue) LogMessage("Delete Transition Ent (OutOfWorld) %s info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\"",clsname,mdl,targn,StringToInt(solidity),StringToInt(spawnflags),mvtype);
 							if ((IsValidEntity(ent)) && (ent != 0)) AcceptEntityInput(ent,"kill");
 							ent = -1;
 						}
 						if (ent != -1)
 						{
-							if (dbg) LogMessage("Restore Ent %s Transition info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\" to origin \"%1.f %1.f %1.f\"",clsname,mdl,targn,StringToInt(solidity),StringToInt(spawnflags),mvtype,vecOrigin[0],vecOrigin[1],vecOrigin[2]);
+							if (g_hCVbDebugTransitions.BoolValue) LogMessage("Restore Ent %s Transition info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\" to origin \"%1.f %1.f %1.f\"",clsname,mdl,targn,StringToInt(solidity),StringToInt(spawnflags),mvtype,vecOrigin[0],vecOrigin[1],vecOrigin[2]);
 							bool beginseq = false;
 							bool applypropafter = false;
 							if (StrEqual(clsname,"npc_alyx",false))
@@ -2559,7 +2537,7 @@ public void OnMapStart()
 					}
 				}
 			}
-			if ((dbg) && (GetArraySize(g_hTransitionEntities) > 0)) LogMessage("ClearTransitionEnts Array after restore of %i/%i ents",iRestored,GetArraySize(g_hTransitionEntities));
+			if ((g_hCVbDebugTransitions.BoolValue) && (GetArraySize(g_hTransitionEntities) > 0)) LogMessage("ClearTransitionEnts Array after restore of %i/%i ents",iRestored,GetArraySize(g_hTransitionEntities));
 			//ClearArrayHandles(g_hTransitionEntities);
 			ClearArray(g_hTransitionEntities);
 			if ((alyxtransition != -1) && (IsValidEntity(alyxtransition)))
@@ -2614,7 +2592,7 @@ public void OnMapStart()
 					{
 						SetVariantString("jeep");
 						AcceptEntityInput(alyxtransition,"EnterVehicleImmediately");
-						if (dbg) LogMessage("Alyx entered jalopy on transition at %1.f %1.f %1.f",aljeepchkj[0],aljeepchkj[1],aljeepchkj[2]);
+						if (g_hCVbDebugTransitions.BoolValue) LogMessage("Alyx entered jalopy on transition at %1.f %1.f %1.f",aljeepchkj[0],aljeepchkj[1],aljeepchkj[2]);
 					}
 				}
 			}
@@ -2695,7 +2673,7 @@ void FindOutputsFor(int ent, char[] szTargn)
 							Format(szOuts[1],sizeof(szOuts[]),"%s %s",szOuts[1],szOuts[j]);
 						}
 						Format(szOuts[0],sizeof(szOuts[]),"On%s",szOuts[0]);
-						if (dbg) LogMessage("RestoreOutput: \"%s\" \"%s\"",szOuts[0],szOuts[1]);
+						if (g_hCVbDebugTransitions.BoolValue) LogMessage("RestoreOutput: \"%s\" \"%s\"",szOuts[0],szOuts[1]);
 						if (strlen(szOuts[0]) && strlen(szOuts[1]))
 						{
 							DispatchKeyValue(ent,szOuts[0],szOuts[1]);
@@ -3076,7 +3054,7 @@ public Action rechkglobaltimer(Handle timer, int entity)
 			if (HasEntProp(entity,Prop_Data,"m_iName")) GetEntPropString(entity,Prop_Data,"m_iName",szEntName,sizeof(szEntName));
 			if ((StrEqual(statechk,m_globalstate,false)) || (StrEqual(m_iName,szEntName,false)))
 			{
-				if (dbg) LogMessage("Set global state for '%s' '%s' State: %i Counter: %i",statechk,m_iName,m_initialstate,m_counter);
+				if (g_hCVbDebugTransitions.BoolValue) LogMessage("Set global state for '%s' '%s' State: %i Counter: %i",statechk,m_iName,m_initialstate,m_counter);
 				if (HasEntProp(entity,Prop_Data,"m_globalstate")) SetEntPropString(entity,Prop_Data,"m_globalstate",m_globalstate);
 				if (HasEntProp(entity,Prop_Data,"m_iName")) SetEntPropString(entity,Prop_Data,"m_iName",m_iName);
 				if (HasEntProp(entity,Prop_Data,"m_triggermode")) SetEntProp(entity,Prop_Data,"m_triggermode",m_triggermode);
@@ -3198,7 +3176,7 @@ public void OnMapEnd()
 		ClearArrayHandles(g_hTransitionDataPacks);
 		ClearArray(g_hTransitionDataPacks);
 		ClearArray(g_hTransitionPlayerOrigin);
-		if (dbg) LogMessage("ClearTransitionEnts Array");
+		if (g_hCVbDebugTransitions.BoolValue) LogMessage("ClearTransitionEnts Array");
 		ClearArrayHandles(g_hTransitionEntities);
 		ClearArray(g_hTransitionEntities);
 		ClearArrayHandles(g_hGlobalsTransition);
@@ -3537,7 +3515,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					*/
 					WritePackString(dp,"endofpack");
 					PushArrayCell(g_hTransitionDataPacks,dp);
-					if (dbg) LogMessage("Transition CL %N Transition info health: %i armor: %i ducking: %i Offset %1.f %1.f %1.f",i,curh,cura,crouching,plyorigin[0],plyorigin[1],plyorigin[2]);
+					if (g_hCVbDebugTransitions.BoolValue) LogMessage("Transition CL '%N' Transition info Health: %i Armor: %i Ducking: %i Offset %1.f %1.f %1.f",i,curh,cura,crouching,plyorigin[0],plyorigin[1],plyorigin[2]);
 					if (hCVbDelTransitionPly.BoolValue) AcceptEntityInput(i,"kill");
 				}
 			}
@@ -3569,7 +3547,7 @@ void findlandmark(int ent,char[] classname)
 				float maxs[3];
 				GetEntPropVector(thisent,Prop_Send,"m_vecMins",mins);
 				GetEntPropVector(thisent,Prop_Send,"m_vecMaxs",maxs);
-				if (dbg) LogMessage("Found trigger_transition %s",targn);
+				if (g_hCVbDebugTransitions.BoolValue) LogMessage("Found trigger_transition %s",targn);
 				float vecOrgs[3];
 				if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",vecOrgs);
 				else if (HasEntProp(thisent,Prop_Data,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecOrigin",vecOrgs);
@@ -3599,7 +3577,7 @@ void findtransitionback(int ent)
 			float maxs[3];
 			GetEntPropVector(thisent,Prop_Send,"m_vecMins",mins);
 			GetEntPropVector(thisent,Prop_Send,"m_vecMaxs",maxs);
-			if (dbg) LogMessage("Found trigger_transition %s",targn);
+			if (g_hCVbDebugTransitions.BoolValue) LogMessage("Found trigger_transition %s",targn);
 			float vecOrgs[3];
 			if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",vecOrgs);
 			else if (HasEntProp(thisent,Prop_Data,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecOrigin",vecOrgs);
@@ -3722,7 +3700,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 	maxs[1]+=5.0;
 	mins[2]-=5.0;
 	maxs[2]+=5.0;
-	if (dbg) LogMessage("Transition Mins %1.f %1.f %1.f Maxs %1.f %1.f %1.f",mins[0],mins[1],mins[2],maxs[0],maxs[1],maxs[2]);
+	if (g_hCVbDebugTransitions.BoolValue) LogMessage("Transition Mins %1.f %1.f %1.f Maxs %1.f %1.f %1.f",mins[0],mins[1],mins[2],maxs[0],maxs[1],maxs[2]);
 	char custentinffile[256];
 	char writemode[8];
 	char parentglobal[16];
@@ -3746,7 +3724,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 			char clsname[32];
 			GetEntityClassname(i,clsname,sizeof(clsname));
 			if (StrContains(clsname,"game_",false) == 0) continue;
-			if ((SynLaterAct) && (!SkipVer))
+			if ((SynLaterAct) && (!g_hCVbTransitionSkipVersion.BoolValue))
 			{
 				if (custentlist != INVALID_HANDLE)
 				{
@@ -3855,7 +3833,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 				{
 					//Add func_tracktrain check if exists on next map OnTransition might not fire
 					bool bPasschk = false;
-					if (!bTransitionMode)
+					if (!g_hCVbTransitionMode.BoolValue)
 					{
 						if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1) || (StrContains(clsname,"item_",false) != -1) || (StrContains(clsname,"weapon_",false) != -1)) && (!StrEqual(clsname,"item_ammo_drop",false)) && (!StrEqual(clsname,"item_health_drop",false)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_barnacle_tongue_tip",false)) && (!StrEqual(clsname,"light_dynamic",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"predicted_viewmodel",false)))
 						{
@@ -4376,7 +4354,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 										PushArrayCell(g_hTransitionEntities,dp);
 										PushArrayCell(g_hIgnoredEntities,i);
 									}
-									if (dbg) LogMessage("Save Transition %s TargetName \"%s\" Model \"%s\" Offset \"%1.f %1.f %1.f\"",clsname,targn,mdl,vecOrigin[0],vecOrigin[1],vecOrigin[2]);
+									if (g_hCVbDebugTransitions.BoolValue) LogMessage("Save Transition %s TargetName \"%s\" Model \"%s\" Offset \"%1.f %1.f %1.f\"",clsname,targn,mdl,vecOrigin[0],vecOrigin[1],vecOrigin[2]);
 								}
 							}
 						}
@@ -4785,7 +4763,7 @@ public Action Event_RoundStart(Handle event, const char[] name, bool Broadcast)
 
 public void OnClientAuthorized(int client, const char[] szAuth)
 {
-	if ((bRebuildTransition) && ((!SynLaterAct) || (SkipVer)))
+	if ((bRebuildTransition) && (!BMActive) && ((!SynLaterAct) || (g_hCVbTransitionSkipVersion.BoolValue)))
 	{
 		if ((!StrEqual(mapbuf,"d3_citadel_03",false)) && (!StrEqual(mapbuf,"ep2_outland_02",false)))
 		{
@@ -4845,7 +4823,7 @@ public void OnClientAuthorized(int client, const char[] szAuth)
 
 void saveresetveh(bool rmsave)
 {
-	if (StrContains(mapbuf,"oc_spaceinvaders",false) == -1)
+	if ((StrContains(mapbuf,"oc_spaceinvaders",false) == -1) && (!BMActive))
 	{
 		float Time = GetTickedTime();
 		if (flMapStartTime <= Time)
@@ -5077,7 +5055,7 @@ public Action anotherdelay(Handle timer, int client)
 				plyorigin[1]+=g_vecLandmarkOrigin[1];
 				plyorigin[2]+=g_vecLandmarkOrigin[2];
 				if (TR_PointOutsideWorld(plyorigin)) teleport = false;
-				if (dbg) LogMessage("Restore CL %N Transition info %i health %i armor Offset \"%1.f %1.f %1.f\" moveto %i",client,curh,cura,plyorigin[0],plyorigin[1],plyorigin[2],teleport);
+				if (g_hCVbDebugTransitions.BoolValue) LogMessage("Restore CL '%N' Transition info: Health: %i Armor: %i Offset \"%1.f %1.f %1.f\" moveto %i",client,curh,cura,plyorigin[0],plyorigin[1],plyorigin[2],teleport);
 				ReadPackString(dp,curweap,sizeof(curweap));
 				if (curh < 1)
 				{
