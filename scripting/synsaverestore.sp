@@ -76,7 +76,7 @@ char savedir[64];
 char reloadthissave[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.198"
+#define PLUGIN_VERSION "2.199"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -3750,7 +3750,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 			if (StrEqual(clsname,"prop_door_rotating",false))
 			{
 				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-				if ((StrEqual(targn,"door.into.09.garage",false)) || (SynLaterAct))
+				if ((StrEqual(targn,"door.into.09.garage",false)) || (StrEqual(targn,"door_2",false)) || (SynLaterAct))
 				{
 					AcceptEntityInput(i,"kill");
 					vecOrigin[0] = mins[0]-mins[0];
@@ -4101,7 +4101,6 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 										int iOffs = GetEntSendPropOffs(i,"m_clrRender");
 										if (iOffs != -1)
 										{
-											// Could also get alpha at some point
 											Format(scriptinf,sizeof(scriptinf),"%sm_clrRender %i %i %i %i ",scriptinf,GetEntData(i,iOffs, 1),GetEntData(i,iOffs + 1, 1),GetEntData(i,iOffs + 2, 1),GetEntData(i,iOffs + 3, 1));
 										}
 									}

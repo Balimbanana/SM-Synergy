@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.198"
-			"Previous"	"2.197"
+			"Latest"  	"2.199"
+			"Previous"	"2.198"
 		}
 		
-		"Notes"	"Minor optimizations. Fixes to BM transitions."
+		"Notes"	"Fix to door_2 transition to d2_prison_02."
 	}
 	
 	"Files"
