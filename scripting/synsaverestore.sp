@@ -70,13 +70,13 @@ ConVar g_hCVbApplyFallbackEquip, g_hCVbDebugTransitions, g_hCVbTransitionSkipVer
 
 char szLandmarkName[64];
 char mapbuf[128];
-char maptochange[64];
-char prevmap[64];
+char szNextMap[64];
+char szPreviousMap[64];
 char savedir[64];
-char reloadthissave[32];
+char szReloadSaveName[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.199"
+#define PLUGIN_VERSION "2.200"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1457,7 +1457,7 @@ public int MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			votetime = Time + 60;
 			reloadtype = 1;
 		}
-		else if ((strlen(info) > 1) && (strlen(reloadthissave) < 1) && (votetime <= Time))
+		else if ((strlen(info) > 1) && (strlen(szReloadSaveName) < 1) && (votetime <= Time))
 		{
 			g_hVoteMenu = CreateMenu(Handler_VoteCallback, MENU_ACTIONS_ALL);
 			Format(szDisplayBuffer,sizeof(szDisplayBuffer),"Reload the %s Save?",info);
@@ -1468,7 +1468,7 @@ public int MenuHandlervote(Menu menu, MenuAction action, int param1, int param2)
 			g_hVoteMenu.DisplayVoteToAll(20);
 			votetime = Time + 60;
 			reloadtype = 3;
-			Format(reloadthissave,sizeof(reloadthissave),info);
+			Format(szReloadSaveName,sizeof(szReloadSaveName),info);
 		}
 		else if (votetime > Time)
 			PrintToChat(param1,"You must wait %i seconds.",RoundFloat(votetime)-RoundFloat(Time));
@@ -1556,7 +1556,7 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 		if ((strcmp(item, VOTE_YES) == 0 && FloatCompare(percent,flPercentLimit) < 0 && param1 == 0) || (strcmp(item, VOTE_NO) == 0 && param1 == 1))
 		{
 			PrintToChatAll("%t","Vote Failed", RoundToNearest(100.0*flPercentLimit), RoundToNearest(100.0*percent), totalVotes);
-			Format(reloadthissave,sizeof(reloadthissave),"");
+			Format(szReloadSaveName,sizeof(szReloadSaveName),"");
 		}
 		else
 		{
@@ -1584,10 +1584,10 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 				reloadingmap = true;
 				CreateTimer(0.6,changelevel);
 			}
-			else if ((reloadtype == 3) && (strlen(reloadthissave) > 0))
+			else if ((reloadtype == 3) && (strlen(szReloadSaveName) > 0))
 			{
-				loadthissave(reloadthissave);
-				Format(reloadthissave,sizeof(reloadthissave),"");
+				loadthissave(szReloadSaveName);
+				Format(szReloadSaveName,sizeof(szReloadSaveName),"");
 			}
 			else if (reloadtype == 4)
 			{
@@ -2017,7 +2017,7 @@ public void OnMapStart()
 		ClearArray(g_hEquipEnts);
 		ClearArray(g_hIgnoredEntities);
 		bIsVehicleMap = findvmap(-1);
-		Format(reloadthissave,sizeof(reloadthissave),"");
+		Format(szReloadSaveName,sizeof(szReloadSaveName),"");
 		HookEntityOutput("trigger_changelevel","OnChangeLevel",onchangelevel);
 		if (bRebuildTransition)
 		{
@@ -2031,7 +2031,7 @@ public void OnMapStart()
 					if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 					{
 						Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-						if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
+						if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,szPreviousMap,false) == -1))
 						{
 							DeleteFile(subfilen,false);
 							Handle subfiletarg = OpenFile(subfilen,"wb");
@@ -2673,7 +2673,8 @@ void FindOutputsFor(int ent, char[] szTargn)
 							Format(szOuts[1],sizeof(szOuts[]),"%s %s",szOuts[1],szOuts[j]);
 						}
 						Format(szOuts[0],sizeof(szOuts[]),"On%s",szOuts[0]);
-						if (g_hCVbDebugTransitions.BoolValue) LogMessage("RestoreOutput: \"%s\" \"%s\"",szOuts[0],szOuts[1]);
+						if (StrContains(szOuts[0],"\"",false) != 0) Format(szOuts[0],sizeof(szOuts[]),"\"%s",szOuts[0]);
+						if (g_hCVbDebugTransitions.BoolValue) LogMessage("RestoreOutput: '%s' '%s'",szOuts[0],szOuts[1]);
 						if (strlen(szOuts[0]) && strlen(szOuts[1]))
 						{
 							DispatchKeyValue(ent,szOuts[0],szOuts[1]);
@@ -3150,7 +3151,7 @@ public void OnMapEnd()
 							if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 							{
 								Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-								if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
+								if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,szPreviousMap,false) == -1))
 								{
 									DeleteFile(subfilen,false);
 									/*
@@ -3182,7 +3183,7 @@ public void OnMapEnd()
 		ClearArrayHandles(g_hGlobalsTransition);
 		ClearArray(g_hGlobalsTransition);
 		ClearArray(g_hEquipEnts);
-		prevmap = "";
+		szPreviousMap = "";
 	}
 }
 
@@ -3231,7 +3232,7 @@ public Action resettransition(int args)
 		ClearArray(g_hTransitionDataPacks);
 		ClearArray(g_hTransitionPlayerOrigin);
 		ClearArray(g_hEquipEnts);
-		prevmap = "";
+		szPreviousMap = "";
 	}
 	char getmap[64];
 	GetCmdArg(1,getmap,sizeof(getmap));
@@ -3272,23 +3273,23 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 		ClearArray(g_hTransitionDataPacks);
 		ClearArray(g_hTransitionPlayerOrigin);
 		ClearArray(g_hIgnoredEntities);
-		GetCurrentMap(prevmap,sizeof(prevmap));
-		if (validchange) GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
-		else maptochange = "";
-		if (StrEqual(maptochange,"sp_ending",false)) return Plugin_Continue;
-		if ((StrEqual(prevmap,"d1_town_03",false)) && (StrEqual(maptochange,"d1_town_02",false)))
+		GetCurrentMap(szPreviousMap,sizeof(szPreviousMap));
+		if (validchange) GetEntPropString(caller,Prop_Data,"m_szMapName",szNextMap,sizeof(szNextMap));
+		else szNextMap = "";
+		if (StrEqual(szNextMap,"sp_ending",false)) return Plugin_Continue;
+		if ((StrEqual(szPreviousMap,"d1_town_03",false)) && (StrEqual(szNextMap,"d1_town_02",false)))
 		{
 			enterfrom03pb = true;
 		}
-		else if ((StrEqual(prevmap,"d2_coast_08",false)) && (StrEqual(maptochange,"d2_coast_07",false)))
+		else if ((StrEqual(szPreviousMap,"d2_coast_08",false)) && (StrEqual(szNextMap,"d2_coast_07",false)))
 		{
 			enterfrom08pb = true;
 		}
-		else if ((StrEqual(prevmap,"ep2_outland_04",false)) && (StrEqual(maptochange,"ep2_outland_02",false)))
+		else if ((StrEqual(szPreviousMap,"ep2_outland_04",false)) && (StrEqual(szNextMap,"ep2_outland_02",false)))
 		{
 			enterfrom04pb = true;
 		}
-		else if ((StrEqual(prevmap,"bm_c2a4g",false)) && (StrEqual(maptochange,"bm_c2a4fedt",false)))
+		else if ((StrEqual(szPreviousMap,"bm_c2a4g",false)) && (StrEqual(szNextMap,"bm_c2a4fedt",false)))
 		{
 			enterfrom4g = true;
 		}
@@ -3308,7 +3309,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 							if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 							{
 								Format(subfilen,sizeof(subfilen),"%s/%s",savedir,subfilen);
-								if ((StrContains(subfilen,"autosave.hl",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
+								if ((StrContains(subfilen,"autosave.hl",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,szPreviousMap,false) == -1))
 								{
 									DeleteFile(subfilen,false);
 									/*
@@ -3600,7 +3601,7 @@ void findprevlvls(int ent)
 	{
 		char mapchbuf[64];
 		GetEntPropString(thisent,Prop_Data,"m_szMapName",mapchbuf,sizeof(mapchbuf));
-		if ((StrEqual(mapchbuf,prevmap,false)) && (!StrEqual(mapchbuf,"d1_town_02",false))) AcceptEntityInput(thisent,"Disable");
+		if ((StrEqual(mapchbuf,szPreviousMap,false)) && (!StrEqual(mapchbuf,"d1_town_02",false))) AcceptEntityInput(thisent,"Disable");
 		findprevlvls(thisent++);
 	}
 }
@@ -3797,7 +3798,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 						alwaystransition = 1;
 				}
 			}
-			else if ((StrEqual(clsname,"npc_monk",false)) && (StrEqual(mapbuf,"d1_town_02",false)) && (StrEqual(maptochange,"d1_town_02a",false)))
+			else if ((StrEqual(clsname,"npc_monk",false)) && (StrEqual(mapbuf,"d1_town_02",false)) && (StrEqual(szNextMap,"d1_town_02a",false)))
 			{
 				alwaystransition = 1;
 			}
@@ -4840,7 +4841,7 @@ void saveresetveh(bool rmsave)
 							if ((!(StrContains(subfilen, ".ztmp", false) != -1)) && (!(StrContains(subfilen, ".bz2", false) != -1)))
 							{
 								Format(subfilen,sizeof(subfilen),"%s\\%s",savedir,subfilen);
-								if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,prevmap,false) == -1))
+								if ((StrContains(subfilen,"autosave.hl1",false) == -1) && (StrContains(subfilen,"customenttransitioninf.txt",false) == -1) && (StrContains(subfilen,szPreviousMap,false) == -1))
 								{
 									DeleteFile(subfilen,false);
 								}
