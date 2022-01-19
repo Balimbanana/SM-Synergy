@@ -76,7 +76,7 @@ char savedir[64];
 char szReloadSaveName[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.201"
+#define PLUGIN_VERSION "2.202"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1747,7 +1747,18 @@ public void OnMapStart()
 				ActivateEntity(loginp);
 			}
 		}
-		else if (StrEqual(mapbuf,"bm_c4a1b",false))
+		else if ((BMActive) && (StrEqual(mapbuf, "bm_c2a4g", false)))
+		{
+			int loginp = CreateEntityByName("logic_auto");
+			if (loginp != -1)
+			{
+				DispatchKeyValue(loginp, "spawnflags","1");
+				DispatchKeyValue(loginp, "OnMapSpawn","trigger_changelevel,Enable,,1,-1");
+				DispatchSpawn(loginp);
+				ActivateEntity(loginp);
+			}
+		}
+		else if (StrEqual(mapbuf, "bm_c4a1b", false))
 		{
 			int loginp = CreateEntityByName("logic_auto");
 			if (loginp != -1)
@@ -3719,6 +3730,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 	}
 	char szTmp[64];
 	float angax[3];
+	Handle hDeletedEntities = CreateArray(2048);
 	for (int i = 1;i<GetMaxEntities()+1;i++)
 	{
 		if (IsValidEntity(i) && IsEntNetworkable(i) && (FindValueInArray(g_hIgnoredEntities,i) == -1))
@@ -3774,7 +3786,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 			else if (StrEqual(clsname,"prop_dynamic",false))
 			{
 				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-				if (StrContains(targn,"antirush",false))
+				if (StrContains(targn,"antirush",false) != -1)
 				{
 					AcceptEntityInput(i,"kill");
 					vecOrigin[0] = mins[0]-mins[0];
@@ -4356,6 +4368,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 										PushArrayCell(g_hIgnoredEntities,i);
 									}
 									if (g_hCVbDebugTransitions.BoolValue) LogMessage("Save Transition %s TargetName \"%s\" Model \"%s\" Offset \"%1.f %1.f %1.f\"",clsname,targn,mdl,vecOrigin[0],vecOrigin[1],vecOrigin[2]);
+									if (hCVbDelTransitionEnts.BoolValue) PushArrayCell(hDeletedEntities, i);
 								}
 							}
 						}
@@ -4418,12 +4431,16 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 	}
 	if (hCVbDelTransitionEnts.BoolValue)
 	{
-		for (int i = 0;i<GetArraySize(g_hIgnoredEntities);i++)
+		if (GetArraySize(hDeletedEntities))
 		{
-			int j = GetArrayCell(g_hIgnoredEntities,i);
-			if ((IsValidEntity(j)) && (j != 0)) AcceptEntityInput(j,"kill");
+			for (int i = 0; i < GetArraySize(hDeletedEntities); i++)
+			{
+				int j = GetArrayCell(hDeletedEntities, i);
+				if ((IsValidEntity(j)) && (j != 0)) AcceptEntityInput(j,"kill");
+			}
 		}
 	}
+	CloseHandle(hDeletedEntities);
 }
 
 void transitionglobals(int ent)

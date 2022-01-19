@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.201"
-			"Previous"	"2.200"
+			"Latest"  	"2.202"
+			"Previous"	"2.201"
 		}
 		
-		"Notes"	"Fix for potential quote in restored outputs."
+		"Notes"	"Changed the way delete transition ents works."
 	}
 	
 	"Files"
