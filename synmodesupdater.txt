@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.52"
-			"Previous"	"1.51"
+			"Latest"  	"1.53"
+			"Previous"	"1.52"
 		}
 		
-		"Notes"	"Set up configuration on hook saves to set some info only if changed."
+		"Notes"	"Fix to help saysound."
 	}
 	
 	"Files"
