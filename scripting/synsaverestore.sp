@@ -76,7 +76,7 @@ char savedir[64];
 char szReloadSaveName[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.202"
+#define PLUGIN_VERSION "2.203"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -274,7 +274,7 @@ public void transitionresetmch(Handle convar, const char[] oldValue, const char[
 	saveresetm = StringToInt(newValue);
 	if (GetMapHistorySize() > -1)
 	{
-		if ((IsValidEntity(logsv)) && (logsv != 0)) AcceptEntityInput(logsv,"kill");
+		if ((IsValidEntity(logsv)) && (logsv != 0)) AcceptEntityInput(logsv, "kill");
 		if (saveresetm == 1) logsv = CreateEntityByName("logic_autosave");
 		else if (saveresetm == 2) logsv = CreateEntityByName("logic_playerproxy");
 	}
@@ -615,18 +615,18 @@ public Action savecurgamedp(Handle timer, any dp)
 					if (FindStringInArray(custentlist,cls) != -1)
 					{
 						WriteFileLine(custentinf,"{");
-						char targn[32];
+						char szTargetname[32];
 						char mdl[64];
 						float vecOrigin[3];
 						float angs[3];
 						float flSpeed = 0.0;
 						if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",vecOrigin);
 						else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",vecOrigin);
-						GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+						GetEntPropString(i,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
 						char vehscript[64];
 						char additionalequip[32];
 						char spawnercls[64];
-						char spawnertargn[64];
+						char szChildSpawnTargetname[64];
 						char parentname[32];
 						char npctarg[4];
 						char npctargpath[32];
@@ -703,7 +703,7 @@ public Action savecurgamedp(Handle timer, any dp)
 							}
 						}
 						if (HasEntProp(i,Prop_Data,"m_iszNPCClassname")) GetEntPropString(i,Prop_Data,"m_iszNPCClassname",spawnercls,sizeof(spawnercls));
-						if (HasEntProp(i,Prop_Data,"m_ChildTargetName")) GetEntPropString(i,Prop_Data,"m_ChildTargetName",spawnertargn,sizeof(spawnertargn));
+						if (HasEntProp(i,Prop_Data,"m_ChildTargetName")) GetEntPropString(i,Prop_Data,"m_ChildTargetName",szChildSpawnTargetname,sizeof(szChildSpawnTargetname));
 						if (HasEntProp(i,Prop_Data,"m_nSequence")) sequence = GetEntProp(i,Prop_Data,"m_nSequence");
 						if (HasEntProp(i,Prop_Data,"m_iParentAttachment")) parentattach = GetEntProp(i,Prop_Data,"m_iParentAttachment");
 						if (HasEntProp(i,Prop_Data,"m_nBody")) body = GetEntProp(i,Prop_Data,"m_nBody");
@@ -722,9 +722,9 @@ public Action savecurgamedp(Handle timer, any dp)
 						}
 						Format(pushch,sizeof(pushch),"\"spawnflags\" \"%i\"",sf);
 						WriteFileLine(custentinf,pushch);
-						if (strlen(targn) > 0)
+						if (strlen(szTargetname) > 0)
 						{
-							Format(pushch,sizeof(pushch),"\"targetname\" \"%s\"",targn);
+							Format(pushch,sizeof(pushch),"\"targetname\" \"%s\"",szTargetname);
 							WriteFileLine(custentinf,pushch);
 						}
 						if (strlen(mdl) > 0)
@@ -767,9 +767,9 @@ public Action savecurgamedp(Handle timer, any dp)
 							Format(pushch,sizeof(pushch),"\"NPCType\" \"%s\"",spawnercls);
 							WriteFileLine(custentinf,pushch);
 						}
-						if (strlen(spawnertargn) > 0)
+						if (strlen(szChildSpawnTargetname) > 0)
 						{
-							Format(pushch,sizeof(pushch),"\"NPCTargetname\" \"%s\"",spawnertargn);
+							Format(pushch,sizeof(pushch),"\"NPCTargetname\" \"%s\"",szChildSpawnTargetname);
 							WriteFileLine(custentinf,pushch);
 						}
 						if (curh != 0)
@@ -960,9 +960,9 @@ void findpathtrack(int ent, float pathorigin[3], char[] findpathname)
 		Format(pathorgs,sizeof(pathorgs),"%1.f %1.f %1.f",pathorigin[0],pathorigin[1],pathorigin[2]);
 		if (StrEqual(orgsch,pathorgs))
 		{
-			char targn[128];
-			GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
-			Format(findpathname,128,"%s",targn);
+			char szTargetname[128];
+			GetEntPropString(thisent,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+			Format(findpathname,128,"%s",szTargetname);
 		}
 		else findpathtrack(thisent++,pathorigin,findpathname);
 	}
@@ -1844,15 +1844,15 @@ public void OnMapStart()
 					CreateTimer(4.0,TransitionPostAdjust,0,TIMER_FLAG_NO_MAPCHANGE);
 				}
 				int iEnt = -1;
-				char szTargn[32];
+				char szTargetname[32];
 				while((iEnt = FindEntityByClassname(iEnt,"path_track")) != INVALID_ENT_REFERENCE)
 				{
 					if (IsValidEntity(iEnt))
 					{
 						if (HasEntProp(iEnt,Prop_Data,"m_iName"))
 						{
-							GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
-							if (StrEqual(szTargn,"pathTrack_elevator_top4",false))
+							GetEntPropString(iEnt,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+							if (StrEqual(szTargetname,"pathTrack_elevator_top4",false))
 							{
 								HookSingleEntityOutput(iEnt,"OnPass",Ep2ElevatorPass);
 								break;
@@ -2101,11 +2101,11 @@ public void OnMapStart()
 						Handle dp = GetArrayCell(g_hTransitionEntities,i);
 						ResetPack(dp);
 						char clsname[32];
-						char targn[32];
+						char szTargetname[32];
 						char mdl[64];
 						bool editent = false;
 						ReadPackString(dp,clsname,sizeof(clsname));
-						ReadPackString(dp,targn,sizeof(targn));
+						ReadPackString(dp,szTargetname,sizeof(szTargetname));
 						ReadPackString(dp,mdl,sizeof(mdl));
 						if (!IsModelPrecached(mdl)) PrecacheModel(mdl,true);
 						if (StrContains(mdl,"*",false) != -1)
@@ -2159,98 +2159,98 @@ public void OnMapStart()
 						char scriptinf[1280];
 						ReadPackString(dp,scriptinf,sizeof(scriptinf));
 						bool ragdoll = false;
-						if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"d2_prison_08",false)))
+						if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"d2_prison_08",false)))
 						{
 							vecOrigin[0] = -2497.0;
 							vecOrigin[1] = 2997.0;
 							vecOrigin[2] = 999.0;
 						}
-						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"d3_c17_01",false)))
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"d3_c17_01",false)))
 						{
 							vecOrigin[0] = -7180.0;
 							vecOrigin[1] = -1200.0;
 							vecOrigin[2] = 48.0;
 						}
-						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_05",false)))
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_05",false)))
 						{
 							vecOrigin[0] = -2952.0;
 							vecOrigin[1] = 736.0;
 							vecOrigin[2] = 190.0;
 						}
-						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_06",false)))
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_06",false)))
 						{
 							vecOrigin[0] = -448.0;
 							vecOrigin[1] = 112.0;
 							vecOrigin[2] = 878.0;
 						}
-						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_11b",false)))
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"ep2_outland_11b",false)))
 						{
 							vecOrigin[0] = 453.0;
 							vecOrigin[1] = -9489.0;
 							vecOrigin[2] = -283.0;
 						}
-						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_01",false)))
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_01",false)))
 						{
 							vecOrigin[0] = -6208.0;
 							vecOrigin[1] = 6424.0;
 							vecOrigin[2] = 2685.0;
 						}
-						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_02",false)))
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_02",false)))
 						{
 							vecOrigin[0] = -8602.0;
 							vecOrigin[1] = 924.0;
 							vecOrigin[2] = 837.0;
 						}
-						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_02b",false)))
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"ep1_citadel_02b",false)))
 						{
 							vecOrigin[0] = 1951.0;
 							vecOrigin[1] = 4367.0;
 							vecOrigin[2] = 2532.0;
 						}
-						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_00a",false)))
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_00a",false)))
 						{
 							vecOrigin[0] = 800.0;
 							vecOrigin[1] = 2600.0;
 							vecOrigin[2] = 353.0;
 						}
-						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_01",false)))
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_01",false)))
 						{
 							vecOrigin[0] = 4881.0;
 							vecOrigin[1] = -339.0;
 							vecOrigin[2] = -203.0;
 						}
-						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_02a",false)))
+						else if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"ep1_c17_02a",false)))
 						{
 							vecOrigin[0] = 5364.0;
 							vecOrigin[1] = 6440.0;
 							vecOrigin[2] = -2511.0;
 						}
-						else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_06",false)))
+						else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(szTargetname,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_06",false)))
 						{
 							vecOrigin[0] = -448.0;
 							vecOrigin[1] = 40.0;
 							vecOrigin[2] = 878.0;
 						}
-						else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_04",false)))
+						else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(szTargetname,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_04",false)))
 						{
 							vecOrigin[0] = 4244.0;
 							vecOrigin[1] = -1708.0;
 							vecOrigin[2] = 425.0;
 						}
-						else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_03",false)))
+						else if ((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(szTargetname,"vort",false)) && (StrEqual(mapbuf,"ep2_outland_03",false)))
 						{
 							vecOrigin[0] = -1300.0;
 							vecOrigin[1] = -3885.0;
 							vecOrigin[2] = -855.0;
 						}
-						else if ((StrEqual(clsname,"npc_barney",false)) && (StrEqual(targn,"barney",false)) && (StrEqual(mapbuf,"d3_c17_10a",false)))
+						else if ((StrEqual(clsname,"npc_barney",false)) && (StrEqual(szTargetname,"barney",false)) && (StrEqual(mapbuf,"d3_c17_10a",false)))
 						{
 							vecOrigin[0] = -4083.0;
 							vecOrigin[1] = 6789.0;
 							vecOrigin[2] = 48.0;
 						}
 						bool skipoow = false;
-						if (((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(targn,"vort",false))) || ((StrEqual(clsname,"npc_barney",false)) && (StrEqual(targn,"barney",false))) || ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(targn,"alyx",false))))
+						if (((StrEqual(clsname,"npc_vortigaunt",false)) && (StrEqual(szTargetname,"vort",false))) || ((StrEqual(clsname,"npc_barney",false)) && (StrEqual(szTargetname,"barney",false))) || ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false))))
 						{
 							skipoow = true;
 							if (OutOfWorldBounds(vecOrigin,2.0)) skipoow = false;
@@ -2265,7 +2265,7 @@ public void OnMapStart()
 						int ent = -1;
 						Handle hReturnedArray = CreateArray(3);
 						char szCheckTargetname[128];
-						Format(szCheckTargetname,sizeof(szCheckTargetname),"%s",targn);
+						Format(szCheckTargetname,sizeof(szCheckTargetname),"%s",szTargetname);
 						SearchForClass(szCheckTargetname,hReturnedArray);
 						if (editent)
 						{
@@ -2321,13 +2321,13 @@ public void OnMapStart()
 						CloseHandle(hReturnedArray);
 						if ((TR_PointOutsideWorld(vecOrigin)) && (!skipoow))
 						{
-							if (g_hCVbDebugTransitions.BoolValue) LogMessage("Delete Transition Ent (OutOfWorld) %s info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\"",clsname,mdl,targn,StringToInt(solidity),StringToInt(spawnflags),mvtype);
-							if ((IsValidEntity(ent)) && (ent != 0)) AcceptEntityInput(ent,"kill");
+							if (g_hCVbDebugTransitions.BoolValue) LogMessage("Delete Transition Ent (OutOfWorld) %s info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\"",clsname,mdl,szTargetname,StringToInt(solidity),StringToInt(spawnflags),mvtype);
+							if ((IsValidEntity(ent)) && (ent != 0)) AcceptEntityInput(ent, "kill");
 							ent = -1;
 						}
 						if (ent != -1)
 						{
-							if (g_hCVbDebugTransitions.BoolValue) LogMessage("Restore Ent %s Transition info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\" to origin \"%1.f %1.f %1.f\"",clsname,mdl,targn,StringToInt(solidity),StringToInt(spawnflags),mvtype,vecOrigin[0],vecOrigin[1],vecOrigin[2]);
+							if (g_hCVbDebugTransitions.BoolValue) LogMessage("Restore Ent %s Transition info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\" to origin \"%1.f %1.f %1.f\"",clsname,mdl,szTargetname,StringToInt(solidity),StringToInt(spawnflags),mvtype,vecOrigin[0],vecOrigin[1],vecOrigin[2]);
 							bool beginseq = false;
 							bool applypropafter = false;
 							if (StrEqual(clsname,"npc_alyx",false))
@@ -2339,10 +2339,10 @@ public void OnMapStart()
 							}
 							if (StrEqual(clsname,"prop_vehicle_jeep_episodic",false))
 							{
-								if (StrEqual(targn,"jeep",false))
+								if (StrEqual(szTargetname,"jeep",false))
 								{
 									char tmp[128];
-									Format(tmp,sizeof(tmp),"alyx,EnterVehicle,%s,0,-1",targn);
+									Format(tmp,sizeof(tmp),"alyx,EnterVehicle,%s,0,-1",szTargetname);
 									DispatchKeyValue(ent,"PlayerOn",tmp);
 									Format(tmp,sizeof(tmp),"alyx,ExitVehicle,,0,-1");
 									DispatchKeyValue(ent,"PlayerOff",tmp);
@@ -2353,10 +2353,10 @@ public void OnMapStart()
 								aljeepchkj[2] = vecOrigin[2];
 							}
 							if (StrEqual(clsname,"info_particle_system",false)) DispatchKeyValue(ent,"effect_name",mdl);
-							if (strlen(targn) > 0)
+							if (strlen(szTargetname) > 0)
 							{
-								DispatchKeyValue(ent,"targetname",targn);
-								FindOutputsFor(ent,targn);
+								DispatchKeyValue(ent,"targetname",szTargetname);
+								FindOutputsFor(ent,szTargetname);
 							}
 							DispatchKeyValue(ent,"model",mdl);
 							if (strlen(vehscript) > 0) DispatchKeyValue(ent,"VehicleScript",vehscript);
@@ -2518,24 +2518,24 @@ public void OnMapStart()
 							}
 							if (ragdoll) AcceptEntityInput(ent,"BecomeRagdoll");
 							// Find duplicate names on transition
-							if (strlen(targn) > 1)
+							if (strlen(szTargetname) > 1)
 							{
 								int iEnt = -1;
-								char szTargn[32];
+								char szSearchTargetname[32];
 								while((iEnt = FindEntityByClassname(iEnt,clsname)) != INVALID_ENT_REFERENCE)
 								{
 									if ((IsValidEntity(iEnt)) && (iEnt != ent))
 									{
 										if (HasEntProp(iEnt,Prop_Data,"m_iName"))
 										{
-											GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
-											if (StrEqual(szTargn,targn,false))
+											GetEntPropString(iEnt, Prop_Data, "m_iName", szSearchTargetname, sizeof(szSearchTargetname));
+											if (StrEqual(szSearchTargetname, szTargetname, false))
 											{
 												if (HasEntProp(iEnt,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(iEnt,Prop_Data,"m_vecAbsOrigin",vecOrgs);
 												else if (HasEntProp(iEnt,Prop_Data,"m_vecOrigin")) GetEntPropVector(iEnt,Prop_Data,"m_vecOrigin",vecOrgs);
 												if (GetVectorDistance(vecOrigin,vecOrgs,false) < 512.0)
 												{
-													AcceptEntityInput(iEnt,"kill");
+													AcceptEntityInput(iEnt, "kill");
 													break;
 												}
 											}
@@ -2561,26 +2561,26 @@ public void OnMapStart()
 					{
 						if (HasEntProp(aldouble2,Prop_Data,"m_iName"))
 						{
-							char targn[16];
-							GetEntPropString(aldouble2,Prop_Data,"m_iName",targn,sizeof(targn));
-							if (StrEqual(targn,"alyx",false)) AcceptEntityInput(aldouble2,"kill");
+							char szTargetname[16];
+							GetEntPropString(aldouble2,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+							if (StrEqual(szTargetname,"alyx",false)) AcceptEntityInput(aldouble2, "kill");
 						}
 					}
 				}
 				if (StrEqual(mapbuf,"d1_eli_02",false))
 				{
 					int iEnt = -1;
-					char szTargn[32];
+					char szTargetname[32];
 					while((iEnt = FindEntityByClassname(iEnt,"npc_template_maker")) != INVALID_ENT_REFERENCE)
 					{
 						if (IsValidEntity(iEnt))
 						{
 							if (HasEntProp(iEnt,Prop_Data,"m_iName"))
 							{
-								GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
-								if (StrEqual(szTargn,"spawn_alyx",false))
+								GetEntPropString(iEnt,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+								if (StrEqual(szTargetname,"spawn_alyx",false))
 								{
-									AcceptEntityInput(iEnt,"kill");
+									AcceptEntityInput(iEnt, "kill");
 									break;
 								}
 							}
@@ -2589,9 +2589,9 @@ public void OnMapStart()
 				}
 				if ((aldouble != -1) && (IsValidEntity(aldouble)) && (aldouble != alyxtransition))
 				{
-					char targn[16];
-					GetEntPropString(aldouble,Prop_Data,"m_iName",targn,sizeof(targn));
-					if (StrEqual(targn,"alyx",false)) AcceptEntityInput(aldouble,"kill");
+					char szTargetname[16];
+					GetEntPropString(aldouble,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+					if (StrEqual(szTargetname,"alyx",false)) AcceptEntityInput(aldouble, "kill");
 				}
 			}
 			if ((alyxenter) && (IsValidEntity(alyxtransition)) && (alyxtransition > MaxClients))
@@ -2652,12 +2652,12 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 	return Plugin_Continue;
 }
 
-void FindOutputsFor(int ent, char[] szTargn)
+void FindOutputsFor(int ent, char[] szTargetname)
 {
 	if (!IsValidEntity(ent)) return;
 	char szSearch[128];
 	static char szMapEntBuff[4096];
-	Format(szSearch,sizeof(szSearch),"\"targetname\" \"%s\"",szTargn);
+	Format(szSearch,sizeof(szSearch),"\"targetname\" \"%s\"",szTargetname);
 	int iFindStart = StrContains(szMapEntitiesBuff,szSearch,false);
 	if (iFindStart != -1)
 	{
@@ -2705,23 +2705,23 @@ public Action TransitionPostAdjust(Handle timer, int Indx)
 	{
 		bool bVorts[3];
 		int iEnt = -1;
-		char szTargn[32];
+		char szTargetname[32];
 		while((iEnt = FindEntityByClassname(iEnt,"npc_vortigaunt")) != INVALID_ENT_REFERENCE)
 		{
 			if (IsValidEntity(iEnt))
 			{
 				if (HasEntProp(iEnt,Prop_Data,"m_iName"))
 				{
-					GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
-					if (StrEqual(szTargn,"vort_calvary_1",false))
+					GetEntPropString(iEnt,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+					if (StrEqual(szTargetname,"vort_calvary_1",false))
 					{
 						bVorts[0] = true;
 					}
-					else if (StrEqual(szTargn,"vort_calvary_2",false))
+					else if (StrEqual(szTargetname,"vort_calvary_2",false))
 					{
 						bVorts[1] = true;
 					}
-					else if (StrEqual(szTargn,"vort_calvary_actor",false))
+					else if (StrEqual(szTargetname,"vort_calvary_actor",false))
 					{
 						bVorts[2] = true;
 					}
@@ -2798,15 +2798,15 @@ public Action TransitionPostAdjust(Handle timer, int Indx)
 	{
 		int iTrainCount = 0;
 		int iEnt = -1;
-		char szTargn[32];
+		char szTargetname[32];
 		while((iEnt = FindEntityByClassname(iEnt,"prop_dynamic")) != INVALID_ENT_REFERENCE)
 		{
 			if (IsValidEntity(iEnt))
 			{
 				if (HasEntProp(iEnt,Prop_Data,"m_iName"))
 				{
-					GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
-					if (StrContains(szTargn,"razortrain_car",false))
+					GetEntPropString(iEnt,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+					if (StrContains(szTargetname,"razortrain_car",false))
 					{
 						iTrainCount++;
 					}
@@ -2962,19 +2962,19 @@ public void Ep2ElevatorPass(const char[] output, int caller, int activator, floa
 	if (IsValidEntity(caller))
 	{
 		int iEnt = -1;
-		char szTargn[32];
+		char szTargetname[32];
 		while((iEnt = FindEntityByClassname(iEnt,"scripted_sequence")) != INVALID_ENT_REFERENCE)
 		{
 			if (IsValidEntity(iEnt))
 			{
 				if (HasEntProp(iEnt,Prop_Data,"m_iName"))
 				{
-					GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
-					if (StrEqual(szTargn,"vort_enter_on_elevator_ss_1",false))
+					GetEntPropString(iEnt,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+					if (StrEqual(szTargetname,"vort_enter_on_elevator_ss_1",false))
 					{
 						AcceptEntityInput(iEnt,"CancelSequence");
 					}
-					else if (StrEqual(szTargn,"vort_ride_elevator_from_04",false))
+					else if (StrEqual(szTargetname,"vort_ride_elevator_from_04",false))
 					{
 						AcceptEntityInput(iEnt,"BeginSequence");
 					}
@@ -2989,15 +2989,15 @@ bool SendInput(char[] szClass, char[] szTargetName, char[] szInput, int iActivat
 {
 	bool bRet = false;
 	int iEnt = -1;
-	char szTargn[32];
+	char szTargetname[32];
 	while((iEnt = FindEntityByClassname(iEnt,szClass)) != INVALID_ENT_REFERENCE)
 	{
 		if (IsValidEntity(iEnt))
 		{
 			if (HasEntProp(iEnt,Prop_Data,"m_iName"))
 			{
-				GetEntPropString(iEnt,Prop_Data,"m_iName",szTargn,sizeof(szTargn));
-				if (StrEqual(szTargn,szTargetName,false))
+				GetEntPropString(iEnt,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+				if (StrEqual(szTargetname,szTargetName,false))
 				{
 					bRet = true;
 					if (iActivator != 0) AcceptEntityInput(iEnt,szInput,iActivator);
@@ -3529,7 +3529,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 					WritePackString(dp,"endofpack");
 					PushArrayCell(g_hTransitionDataPacks,dp);
 					if (g_hCVbDebugTransitions.BoolValue) LogMessage("Transition CL '%N' Transition info Health: %i Armor: %i Ducking: %i Offset %1.f %1.f %1.f",i,curh,cura,crouching,plyorigin[0],plyorigin[1],plyorigin[2]);
-					if (hCVbDelTransitionPly.BoolValue) AcceptEntityInput(i,"kill");
+					if (hCVbDelTransitionPly.BoolValue) AcceptEntityInput(i, "kill");
 				}
 			}
 		}
@@ -3549,9 +3549,9 @@ void findlandmark(int ent,char[] classname)
 	int thisent = FindEntityByClassname(ent,classname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
-		char targn[64];
-		GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
-		if (StrEqual(targn,szLandmarkName))
+		char szTargetname[64];
+		GetEntPropString(thisent,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+		if (StrEqual(szTargetname,szLandmarkName))
 		{
 			if (StrEqual(classname,"info_landmark",false)) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",g_vecLandmarkOrigin);
 			else if (StrEqual(classname,"trigger_transition"))
@@ -3560,7 +3560,7 @@ void findlandmark(int ent,char[] classname)
 				float maxs[3];
 				GetEntPropVector(thisent,Prop_Send,"m_vecMins",mins);
 				GetEntPropVector(thisent,Prop_Send,"m_vecMaxs",maxs);
-				if (g_hCVbDebugTransitions.BoolValue) LogMessage("Found trigger_transition %s",targn);
+				if (g_hCVbDebugTransitions.BoolValue) LogMessage("Found trigger_transition %s",szTargetname);
 				float vecOrgs[3];
 				if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",vecOrgs);
 				else if (HasEntProp(thisent,Prop_Data,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecOrigin",vecOrgs);
@@ -3582,15 +3582,15 @@ void findtransitionback(int ent)
 	int thisent = FindEntityByClassname(ent,"trigger_transition");
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
-		char targn[64];
-		GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
-		if (StrEqual(targn,szLandmarkName))
+		char szTargetname[64];
+		GetEntPropString(thisent,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+		if (StrEqual(szTargetname,szLandmarkName))
 		{
 			float mins[3];
 			float maxs[3];
 			GetEntPropVector(thisent,Prop_Send,"m_vecMins",mins);
 			GetEntPropVector(thisent,Prop_Send,"m_vecMaxs",maxs);
-			if (g_hCVbDebugTransitions.BoolValue) LogMessage("Found trigger_transition %s",targn);
+			if (g_hCVbDebugTransitions.BoolValue) LogMessage("Found trigger_transition %s",szTargetname);
 			float vecOrgs[3];
 			if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",vecOrgs);
 			else if (HasEntProp(thisent,Prop_Data,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecOrigin",vecOrgs);
@@ -3670,7 +3670,7 @@ public int FindByTargetName(char[] entname)
 
 void findtouchingents(float mins[3], float maxs[3], bool remove)
 {
-	char targn[32];
+	char szTargetname[32];
 	char mdl[64];
 	float vecOrigin[3];
 	float angs[3];
@@ -3713,36 +3713,37 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 	maxs[1]+=5.0;
 	mins[2]-=5.0;
 	maxs[2]+=5.0;
-	if (g_hCVbDebugTransitions.BoolValue) LogMessage("Transition Mins %1.f %1.f %1.f Maxs %1.f %1.f %1.f",mins[0],mins[1],mins[2],maxs[0],maxs[1],maxs[2]);
+	if (g_hCVbDebugTransitions.BoolValue) LogMessage("Transition Mins %1.f %1.f %1.f Maxs %1.f %1.f %1.f", mins[0], mins[1], mins[2], maxs[0], maxs[1], maxs[2]);
 	char custentinffile[256];
 	char writemode[8];
 	char parentglobal[16];
-	Format(writemode,sizeof(writemode),"a");
-	Format(custentinffile,sizeof(custentinffile),"%s\\customenttransitioninf.txt",savedir);
-	if (!FileExists(custentinffile,false)) Format(writemode,sizeof(writemode),"w");
-	ReplaceString(custentinffile,sizeof(custentinffile),"/","\\");
+	Format(writemode, sizeof(writemode), "a");
+	Format(custentinffile, sizeof(custentinffile), "%s\\customenttransitioninf.txt", savedir);
+	if (!FileExists(custentinffile,false)) Format(writemode, sizeof(writemode), "w");
+	ReplaceString(custentinffile, sizeof(custentinffile), "/", "\\");
 	Handle custentlist = INVALID_HANDLE;
 	Handle custentinf = INVALID_HANDLE;
 	if (SynFixesRunning)
 	{
 		custentlist = GetCustomEntList();
-		custentinf = OpenFile(custentinffile,writemode);
+		custentinf = OpenFile(custentinffile, writemode);
 	}
 	char szTmp[64];
 	float angax[3];
 	Handle hDeletedEntities = CreateArray(2048);
 	for (int i = 1;i<GetMaxEntities()+1;i++)
 	{
-		if (IsValidEntity(i) && IsEntNetworkable(i) && (FindValueInArray(g_hIgnoredEntities,i) == -1))
+		if (IsValidEntity(i) && IsEntNetworkable(i) && (FindValueInArray(g_hIgnoredEntities, i) == -1))
 		{
 			char clsname[32];
-			GetEntityClassname(i,clsname,sizeof(clsname));
-			if (StrContains(clsname,"game_",false) == 0) continue;
+			GetEntityClassname(i, clsname, sizeof(clsname));
+			GetEntPropString(i, Prop_Data, "m_iName", szTargetname, sizeof(szTargetname));
+			if (StrContains(clsname, "game_", false) == 0) continue;
 			if ((SynLaterAct) && (!g_hCVbTransitionSkipVersion.BoolValue))
 			{
 				if (custentlist != INVALID_HANDLE)
 				{
-					if ((FindStringInArray(custentlist,clsname) == -1) && (!StrEqual(clsname,"player",false)))
+					if ((FindStringInArray(custentlist, clsname) == -1) && (!StrEqual(clsname, "player", false)))
 					{
 						continue;
 					}
@@ -3750,9 +3751,9 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 				else if (!StrEqual(clsname,"player",false)) continue;
 			}
 			int alwaystransition = 0;
-			if (HasEntProp(i,Prop_Data,"m_bAlwaysTransition")) alwaystransition = GetEntProp(i,Prop_Data,"m_bAlwaysTransition");
-			if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",vecOrigin);
-			else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",vecOrigin);
+			if (HasEntProp(i, Prop_Data, "m_bAlwaysTransition")) alwaystransition = GetEntProp(i, Prop_Data, "m_bAlwaysTransition");
+			if (HasEntProp(i, Prop_Data, "m_vecAbsOrigin")) GetEntPropVector(i, Prop_Data, "m_vecAbsOrigin", vecOrigin);
+			else if (HasEntProp(i, Prop_Send, "m_vecOrigin")) GetEntPropVector(i, Prop_Send, "m_vecOrigin", vecOrigin);
 			if ((i < MaxClients+1) && (i > 0))
 			{
 				if (IsPlayerAlive(i))
@@ -3763,51 +3764,35 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 			}
 			if (StrEqual(clsname,"prop_door_rotating",false))
 			{
-				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-				if ((StrEqual(targn,"door.into.09.garage",false)) || (StrEqual(targn,"door_2",false)) || (SynLaterAct))
+				if ((StrEqual(szTargetname, "door.into.09.garage", false)) || (StrEqual(szTargetname, "door_2", false)) || (SynLaterAct))
 				{
-					AcceptEntityInput(i,"kill");
-					vecOrigin[0] = mins[0]-mins[0];
-					vecOrigin[1] = mins[1]-mins[1];
-					vecOrigin[2] = mins[2]-mins[2];
-					alwaystransition = -1;
-					clsname = "";
+					PushArrayCell(g_hIgnoredEntities, i);
+					continue;
 				}
 			}
 			else if (StrEqual(clsname,"syn_transition_wall",false))
 			{
-				AcceptEntityInput(i,"kill");
-				vecOrigin[0] = mins[0]-mins[0];
-				vecOrigin[1] = mins[1]-mins[1];
-				vecOrigin[2] = mins[2]-mins[2];
-				alwaystransition = -1;
-				clsname = "";
+				PushArrayCell(g_hIgnoredEntities, i);
+				continue;
 			}
 			else if (StrEqual(clsname,"prop_dynamic",false))
 			{
-				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-				if (StrContains(targn,"antirush",false) != -1)
+				if (StrContains(szTargetname,"antirush",false) != -1)
 				{
-					AcceptEntityInput(i,"kill");
-					vecOrigin[0] = mins[0]-mins[0];
-					vecOrigin[1] = mins[1]-mins[1];
-					vecOrigin[2] = mins[2]-mins[2];
-					alwaystransition = -1;
-					clsname = "";
+					PushArrayCell(g_hIgnoredEntities, i);
+					continue;
 				}
 			}
 			else if (StrEqual(clsname,"point_viewcontrol",false))
 			{
-				AcceptEntityInput(i,"kill");
-				alwaystransition = -1;
-				clsname = "";
+				PushArrayCell(g_hIgnoredEntities, i);
+				continue;
 			}
 			if ((StrEqual(clsname,"npc_alyx",false)) || (StrEqual(clsname,"npc_vortigaunt",false)) || (StrEqual(clsname,"prop_vehicle_jeep_episodic",false)))
 			{
-				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
 				if ((!StrEqual(mapbuf,"d1_town_05",false)) || (SynLaterAct))
 				{
-					if ((StrEqual(targn,"alyx",false)) || (StrEqual(targn,"vort",false)) || (StrEqual(targn,"jeep",false)))
+					if ((StrEqual(szTargetname,"alyx",false)) || (StrEqual(szTargetname,"vort",false)) || (StrEqual(szTargetname,"jeep",false)))
 						alwaystransition = 1;
 				}
 			}
@@ -3817,12 +3802,9 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 			}
 			else if (StrEqual(clsname,"npc_manhack",false))
 			{
-				GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-				if (StrContains(targn,"STEAM_0",false) != -1)
+				if (StrContains(szTargetname,"STEAM_0",false) != -1)
 				{
 					PushArrayCell(g_hIgnoredEntities,i);
-					alwaystransition = -1;
-					clsname = "";
 					continue;
 				}
 			}
@@ -3861,7 +3843,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 					if (bPasschk)
 					{
 						if (HasEntProp(i,Prop_Data,"m_ModelName")) GetEntPropString(i,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
-						if (StrContains(mdl,"*",false) != -1)
+						if ((StrContains(mdl,"*",false) != -1) || (StrContains(mdl,"transition",false) != -1))
 						{
 							//LogError("Attempt to transition ent with precached model %s %s",clsname,mdl);
 							PushArrayCell(g_hIgnoredEntities,i);
@@ -3870,7 +3852,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 						{
 							if ((remove) && (i > MaxClients))
 							{
-								AcceptEntityInput(i,"kill");
+								AcceptEntityInput(i, "kill");
 							}
 							else
 							{
@@ -3890,7 +3872,6 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 								vecOrigin[0]-=g_vecLandmarkOrigin[0];
 								vecOrigin[1]-=g_vecLandmarkOrigin[1];
 								vecOrigin[2]-=g_vecLandmarkOrigin[2];
-								GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
 								int curh = 0;
 								char vehscript[64];
 								char additionalequip[32];
@@ -4203,10 +4184,10 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 									{
 										int sequence, body, parentattach, maxh;
 										char spawnercls[64];
-										char spawnertargn[64];
+										char szChildSpawnTargetname[64];
 										if (HasEntProp(i,Prop_Data,"m_iMaxHealth")) maxh = GetEntProp(i,Prop_Data,"m_iMaxHealth");
 										if (HasEntProp(i,Prop_Data,"m_iszNPCClassname")) GetEntPropString(i,Prop_Data,"m_iszNPCClassname",spawnercls,sizeof(spawnercls));
-										if (HasEntProp(i,Prop_Data,"m_ChildTargetName")) GetEntPropString(i,Prop_Data,"m_ChildTargetName",spawnertargn,sizeof(spawnertargn));
+										if (HasEntProp(i,Prop_Data,"m_ChildTargetName")) GetEntPropString(i,Prop_Data,"m_ChildTargetName",szChildSpawnTargetname,sizeof(szChildSpawnTargetname));
 										if (HasEntProp(i,Prop_Data,"m_nSequence")) sequence = GetEntProp(i,Prop_Data,"m_nSequence");
 										if (HasEntProp(i,Prop_Data,"m_iParentAttachment")) parentattach = GetEntProp(i,Prop_Data,"m_iParentAttachment");
 										if (HasEntProp(i,Prop_Data,"m_nBody")) body = GetEntProp(i,Prop_Data,"m_nBody");
@@ -4223,9 +4204,9 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 										}
 										Format(pushch,sizeof(pushch),"\"spawnflags\" \"%s\"",spawnflags);
 										WriteFileLine(custentinf,pushch);
-										if (strlen(targn) > 0)
+										if (strlen(szTargetname) > 0)
 										{
-											Format(pushch,sizeof(pushch),"\"targetname\" \"%s\"",targn);
+											Format(pushch,sizeof(pushch),"\"targetname\" \"%s\"",szTargetname);
 											WriteFileLine(custentinf,pushch);
 										}
 										if (strlen(mdl) > 0)
@@ -4268,9 +4249,9 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 											Format(pushch,sizeof(pushch),"\"NPCType\" \"%s\"",spawnercls);
 											WriteFileLine(custentinf,pushch);
 										}
-										if (strlen(spawnertargn) > 0)
+										if (strlen(szChildSpawnTargetname) > 0)
 										{
-											Format(pushch,sizeof(pushch),"\"NPCTargetname\" \"%s\"",spawnertargn);
+											Format(pushch,sizeof(pushch),"\"NPCTargetname\" \"%s\"",szChildSpawnTargetname);
 											WriteFileLine(custentinf,pushch);
 										}
 										if (curh != 0)
@@ -4335,7 +4316,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 									else
 									{
 										WritePackString(dp,clsname);
-										WritePackString(dp,targn);
+										WritePackString(dp,szTargetname);
 										WritePackString(dp,mdl);
 										WritePackCell(dp,curh);
 										WritePackFloat(dp,vecOrigin[0]);
@@ -4365,9 +4346,9 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 										if (strlen(scriptinf) > 0) WritePackString(dp,scriptinf);
 										WritePackString(dp,"endofpack");
 										PushArrayCell(g_hTransitionEntities,dp);
-										PushArrayCell(g_hIgnoredEntities,i);
 									}
-									if (g_hCVbDebugTransitions.BoolValue) LogMessage("Save Transition %s TargetName \"%s\" Model \"%s\" Offset \"%1.f %1.f %1.f\"",clsname,targn,mdl,vecOrigin[0],vecOrigin[1],vecOrigin[2]);
+									PushArrayCell(g_hIgnoredEntities,i);
+									if (g_hCVbDebugTransitions.BoolValue) LogMessage("Save Transition %s TargetName \"%s\" Model \"%s\" Offset \"%1.f %1.f %1.f\"",clsname,szTargetname,mdl,vecOrigin[0],vecOrigin[1],vecOrigin[2]);
 									if (hCVbDelTransitionEnts.BoolValue) PushArrayCell(hDeletedEntities, i);
 								}
 							}
@@ -4436,7 +4417,7 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 			for (int i = 0; i < GetArraySize(hDeletedEntities); i++)
 			{
 				int j = GetArrayCell(hDeletedEntities, i);
-				if ((IsValidEntity(j)) && (j != 0)) AcceptEntityInput(j,"kill");
+				if ((IsValidEntity(j)) && (j != 0)) AcceptEntityInput(j, "kill");
 			}
 		}
 	}
@@ -4505,7 +4486,7 @@ void transitionthisent(int i)
 	if (!IsValidEntity(i)) return;
 	char clsname[32];
 	GetEntityClassname(i,clsname,sizeof(clsname));
-	char targn[32];
+	char szTargetname[32];
 	char mdl[64];
 	float vecOrigin[3];
 	float angs[3];
@@ -4515,7 +4496,7 @@ void transitionthisent(int i)
 	vecOrigin[0]-=g_vecLandmarkOrigin[0];
 	vecOrigin[1]-=g_vecLandmarkOrigin[1];
 	vecOrigin[2]-=g_vecLandmarkOrigin[2];
-	GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
+	GetEntPropString(i,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
 	int curh = 0;
 	char vehscript[64];
 	char additionalequip[32];
@@ -4563,7 +4544,7 @@ void transitionthisent(int i)
 			if (StrEqual(parentcls,"func_door",false))
 			{
 				CloseHandle(dp);
-				AcceptEntityInput(i,"kill");
+				PushArrayCell(g_hIgnoredEntities, i);
 				return;
 			}
 		}
@@ -4714,7 +4695,7 @@ void transitionthisent(int i)
 	if (HasEntProp(i,Prop_Data,"m_iszResponseContext")) GetEntPropString(i,Prop_Data,"m_iszResponseContext",response,sizeof(response));
 	TrimString(scriptinf);
 	WritePackString(dp,clsname);
-	WritePackString(dp,targn);
+	WritePackString(dp,szTargetname);
 	WritePackString(dp,mdl);
 	WritePackCell(dp,curh);
 	WritePackFloat(dp,vecOrigin[0]);
@@ -5435,8 +5416,6 @@ void findent(int ent, char[] clsname)
 	{
 		int bdisabled = 0;
 		if (HasEntProp(thisent,Prop_Data,"m_bDisabled")) bdisabled = GetEntProp(thisent,Prop_Data,"m_bDisabled");
-		char targn[4];
-		GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
 		if ((bdisabled == 0) && (FindValueInArray(g_hEquipEnts,thisent) == -1))
 			PushArrayCell(g_hEquipEnts,thisent);
 		findent(thisent++,clsname);
@@ -5461,9 +5440,9 @@ void findentwdis(int ent, char[] clsname)
 	int thisent = FindEntityByClassname(ent,clsname);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
-		char targneq[64];
-		GetEntPropString(thisent,Prop_Data,"m_iName",targneq,sizeof(targneq));
-		if (((StrEqual(targneq,"syn_equip_start",false)) || (StrEqual(targneq,"syn_equipment_base",false))) && (FindValueInArray(g_hEquipEnts,thisent) == -1))
+		char szTargetname[64];
+		GetEntPropString(thisent,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+		if (((StrEqual(szTargetname,"syn_equip_start",false)) || (StrEqual(szTargetname,"syn_equipment_base",false))) && (FindValueInArray(g_hEquipEnts,thisent) == -1))
 		{
 			PushArrayCell(g_hEquipEnts,thisent);
 			findentwdis(thisent++,clsname);
@@ -5493,7 +5472,7 @@ void findrmstarts(int start, char[] type)
 	int thisent = FindEntityByClassname(start,type);
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
-		AcceptEntityInput(thisent,"Kill");
+		AcceptEntityInput(thisent, "Kill");
 	}
 }
 
@@ -5545,15 +5524,15 @@ int SearchForClass(char tmptarg[128], Handle hReturnedArray)
 			{
 				if (HasEntProp(i,Prop_Data,"m_iName"))
 				{
-					char targn[128];
-					GetEntPropString(i,Prop_Data,"m_iName",targn,sizeof(targn));
-					if (StrContains(targn,"\"",false) != -1) ReplaceString(targn,sizeof(targn),"\"","");
+					char szTargetname[128];
+					GetEntPropString(i,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
+					if (StrContains(szTargetname,"\"",false) != -1) ReplaceString(szTargetname,sizeof(szTargetname),"\"","");
 					if (StrContains(tmptarg,"*",false) == 0)
 					{
 						char targwithout[128];
 						Format(targwithout,sizeof(targwithout),"%s",tmptarg);
 						ReplaceString(targwithout,sizeof(targwithout),"*","");
-						if (StrContains(targn,targwithout) != -1)
+						if (StrContains(szTargetname,targwithout) != -1)
 						{
 							GetEntityClassname(i,tmptarg,sizeof(tmptarg));
 							if (FindValueInArray(hReturnedArray,i) == -1) PushArrayCell(hReturnedArray,i);
@@ -5564,13 +5543,13 @@ int SearchForClass(char tmptarg[128], Handle hReturnedArray)
 						char targwithout[128];
 						Format(targwithout,sizeof(targwithout),"%s",tmptarg);
 						ReplaceString(targwithout,sizeof(targwithout),"*","");
-						if (StrContains(targn,targwithout) == 0)
+						if (StrContains(szTargetname,targwithout) == 0)
 						{
 							GetEntityClassname(i,tmptarg,sizeof(tmptarg));
 							if (FindValueInArray(hReturnedArray,i) == -1) PushArrayCell(hReturnedArray,i);
 						}
 					}
-					else if (StrEqual(targn,tmptarg))
+					else if (StrEqual(szTargetname,tmptarg))
 					{
 						GetEntityClassname(i,tmptarg,sizeof(tmptarg));
 						if (FindValueInArray(hReturnedArray,i) == -1) PushArrayCell(hReturnedArray,i);
@@ -5589,14 +5568,14 @@ public void FindTargetnameByClass(int ent, char cls[64], char tmptarg[128], Hand
 	{
 		if (HasEntProp(thisent,Prop_Data,"m_iName"))
 		{
-			char targn[128];
-			GetEntPropString(thisent,Prop_Data,"m_iName",targn,sizeof(targn));
+			char szTargetname[128];
+			GetEntPropString(thisent,Prop_Data,"m_iName",szTargetname,sizeof(szTargetname));
 			if (StrContains(tmptarg,"*",false) == 0)
 			{
 				char targwithout[128];
 				Format(targwithout,sizeof(targwithout),"%s",tmptarg);
 				ReplaceString(targwithout,sizeof(targwithout),"*","");
-				if (StrContains(targn,targwithout) != -1)
+				if (StrContains(szTargetname,targwithout) != -1)
 				{
 					GetEntityClassname(thisent,tmptarg,sizeof(tmptarg));
 					if (FindValueInArray(hReturnedArray,thisent) == -1) PushArrayCell(hReturnedArray,thisent);
@@ -5607,13 +5586,13 @@ public void FindTargetnameByClass(int ent, char cls[64], char tmptarg[128], Hand
 				char targwithout[128];
 				Format(targwithout,sizeof(targwithout),"%s",tmptarg);
 				ReplaceString(targwithout,sizeof(targwithout),"*","");
-				if (StrContains(targn,targwithout) == 0)
+				if (StrContains(szTargetname,targwithout) == 0)
 				{
 					GetEntityClassname(thisent,tmptarg,sizeof(tmptarg));
 					if (FindValueInArray(hReturnedArray,thisent) == -1) PushArrayCell(hReturnedArray,thisent);
 				}
 			}
-			else if (StrEqual(targn,tmptarg,false))
+			else if (StrEqual(szTargetname,tmptarg,false))
 			{
 				GetEntityClassname(thisent,tmptarg,sizeof(tmptarg));
 				if (FindValueInArray(hReturnedArray,thisent) == -1) PushArrayCell(hReturnedArray,thisent);
