@@ -76,7 +76,7 @@ char savedir[64];
 char szReloadSaveName[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.203"
+#define PLUGIN_VERSION "2.204"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -483,6 +483,7 @@ public Action savecurgamedp(Handle timer, any dp)
 	char SteamID[32];
 	float plyangs[3];
 	float plyorigin[3];
+	int iScore, iFrags, iDeaths;
 	for (int i = 1;i<MaxClients+1;i++)
 	{
 		if ((IsValidEntity(i)) && (IsClientInGame(i)))
@@ -529,10 +530,11 @@ public Action savecurgamedp(Handle timer, any dp)
 			//GetClientAbsOrigin(i,plyorigin);
 			if (IsPlayerAlive(i))
 			{
-				if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",plyorigin);
-				else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",plyorigin);
-				if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",plyangs);
-				int vck = GetEntPropEnt(i,Prop_Data,"m_hVehicle");
+				if (HasEntProp(i, Prop_Data, "m_vecAbsOrigin")) GetEntPropVector(i, Prop_Data, "m_vecAbsOrigin", plyorigin);
+				else if (HasEntProp(i, Prop_Send, "m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin", plyorigin);
+				if (HasEntProp(i, Prop_Data, "v_angle")) GetEntPropVector(i, Prop_Data, "v_angle", plyangs);
+				else if (HasEntProp(i, Prop_Data, "m_angRotation")) GetEntPropVector(i, Prop_Data, "m_angRotation", plyangs);
+				int vck = GetEntPropEnt(i, Prop_Data, "m_hVehicle");
 				if (vck > 0) plyorigin[2]+=60.0;
 			}
 			char curweap[64];
@@ -566,8 +568,11 @@ public Action savecurgamedp(Handle timer, any dp)
 			if (HasEntProp(i,Prop_Data,"m_iHealthPack")) medkitamm = GetEntProp(i,Prop_Send,"m_iHealthPack");
 			int crouching = GetEntProp(i,Prop_Send,"m_bDucked");
 			int suitset = GetEntProp(i,Prop_Send,"m_bWearingSuit");
+			if (HasEntProp(i,Prop_Data,"m_iPoints")) iScore = GetEntProp(i,Prop_Data,"m_iPoints");
+			iFrags = GetEntProp(i,Prop_Data,"m_iFrags");
+			iDeaths = GetEntProp(i,Prop_Data,"m_iDeaths");
 			char push[564];
-			Format(push,sizeof(push),"%s,%1.f %1.f %1.f,%1.f %1.f %1.f,%s,%i %i %i %i %i,%s",SteamID,plyangs[0],plyangs[1],plyangs[2],plyorigin[0],plyorigin[1],plyorigin[2],curweap,curh,cura,medkitamm,crouching,suitset,ammbufchk);
+			Format(push,sizeof(push),"%s,%1.f %1.f %1.f,%1.f %1.f %1.f,%s,%i %i %i %i %i %i %i %i,%s",SteamID,plyangs[0],plyangs[1],plyangs[2],plyorigin[0],plyorigin[1],plyorigin[2],curweap,curh,cura,medkitamm,crouching,suitset,iScore,iFrags,iDeaths,ammbufchk);
 			WriteFileLine(plyinf,push);
 		}
 	}
@@ -1052,6 +1057,27 @@ public int MenuHandlerDelSaves(Menu menu, MenuAction action, int param1, int par
 
 void loadthissave(char[] info)
 {
+	// This is to fix loading a save too early and all entities are deleted
+	int iForceSave = CreateEntityByName("logic_autosave");
+	if (IsValidEntity(iForceSave))
+	{
+		DispatchSpawn(iForceSave);
+		ActivateEntity(iForceSave);
+		AcceptEntityInput(iForceSave, "Save");
+	}
+	Handle dp = CreateDataPack();
+	WritePackString(dp, info);
+	CreateTimer(0.1, LoadSaveDelay, dp);
+	return;
+}
+
+public Action LoadSaveDelay(Handle timer, Handle hLoadDP)
+{
+	if (hLoadDP == INVALID_HANDLE) return Plugin_Handled;
+	ResetPack(hLoadDP);
+	char info[256];
+	ReadPackString(hLoadDP, info, sizeof(info));
+	CloseHandle(hLoadDP);
 	char savepath[256];
 	BuildPath(Path_SM,savepath,sizeof(savepath),"data/SynSaves/%s/%s",mapbuf,info);
 	if (DirExists(savepath,false))
@@ -1092,6 +1118,7 @@ void loadthissave(char[] info)
 		Handle dp = INVALID_HANDLE;
 		if (FileExists(plyinffile,false))
 		{
+			/*
 			dp = CreateDataPack();
 			Handle hReloadIDs = CreateArray(128);
 			Handle hReloadAngles = CreateArray(128);
@@ -1099,7 +1126,11 @@ void loadthissave(char[] info)
 			Handle hReloadAmmoSets = CreateArray(128);
 			Handle hReloadStats = CreateArray(128);
 			Handle hReloadCurrentWeapon = CreateArray(128);
+			*/
 			char sets[6][64];
+			char statssets[8][24];
+			char szWeaponsAmmo[64][384];
+			char szTmp[32];
 			char line[600];
 			Handle plyinf = OpenFile(plyinffile,"r");
 			while(!IsEndOfFile(plyinf)&&ReadFileLine(plyinf,line,sizeof(line)))
@@ -1117,6 +1148,7 @@ void loadthissave(char[] info)
 						adjustarr = 1;
 						Format(sets[3],sizeof(sets[]),"%sb%s",sets[3],sets[4]);
 					}
+					/*
 					PushArrayString(hReloadIDs,sets[0]);
 					PushArrayString(hReloadAngles,sets[1]);
 					PushArrayString(hReloadOrigins,sets[2]);
@@ -1131,9 +1163,62 @@ void loadthissave(char[] info)
 					ReplaceString(line,sizeof(line),",,,,,","");
 					ReplaceString(line,sizeof(line),"bbb","");
 					if (strlen(line) > 1) PushArrayString(hReloadAmmoSets,line);
+					*/
+					PushArrayString(g_hTransitionIDs,sets[0]);
+					dp = CreateDataPack();
+					
+					ExplodeString(sets[4+adjustarr]," ",statssets,8,24);
+					if (StringToInt(statssets[0]) > 0) WritePackCell(dp, StringToInt(statssets[0]));
+					else WritePackCell(dp, 100);
+					if (StringToInt(statssets[1]) > -1) WritePackCell(dp, StringToInt(statssets[1]));
+					else WritePackCell(dp, 0);
+					
+					if (StrContains(statssets[5], ",", false) == -1)
+					{
+						WritePackCell(dp,StringToInt(statssets[5]));// score
+						WritePackCell(dp,StringToInt(statssets[6]));// frags
+						WritePackCell(dp,StringToInt(statssets[7]));// deaths
+					}
+					else
+					{
+						WritePackCell(dp, 0);
+						WritePackCell(dp, 0);
+						WritePackCell(dp, 0);
+					}
+					
+					WritePackCell(dp, StringToInt(statssets[4]));//suit
+					WritePackCell(dp, StringToInt(statssets[2]));//healthpack
+					WritePackCell(dp, StringToInt(statssets[3]));//duck
+					
+					ExplodeString(sets[1], " ", statssets, 3, 64);
+					WritePackFloat(dp, StringToFloat(statssets[0]));
+					WritePackFloat(dp, StringToFloat(statssets[1]));
+					
+					ExplodeString(sets[2], " ", statssets, 3, 64);
+					WritePackFloat(dp, StringToFloat(statssets[0]));
+					WritePackFloat(dp, StringToFloat(statssets[1]));
+					WritePackFloat(dp, StringToFloat(statssets[2]));
+					WritePackString(dp, sets[3]);// Cur weapon
+					////////////////////// ammo sets at end of line past ,,,,, || bbb
+					
+					int iLastSplits = ExplodeString(line, ",", szWeaponsAmmo, 8, 384);
+					if (strlen(szWeaponsAmmo[iLastSplits-1]) > 1)
+					{
+						iLastSplits = ExplodeString(szWeaponsAmmo[iLastSplits-1], " ", szWeaponsAmmo, 64, 32);
+						for (int j = 0; j < iLastSplits; j+=2)
+						{
+							if (j >= iLastSplits) break;
+							Format(szTmp, sizeof(szTmp), "%s %s",szWeaponsAmmo[j], szWeaponsAmmo[j+1]);
+							WritePackString(dp, szTmp);
+						}
+					}
+					
+					WritePackString(dp,"endofpack");
+					PushArrayCell(g_hTransitionDataPacks,dp);
 				}
 			}
 			CloseHandle(plyinf);
+			/*
 			WritePackCell(dp,hReloadIDs);
 			WritePackCell(dp,hReloadAngles);
 			WritePackCell(dp,hReloadOrigins);
@@ -1141,12 +1226,17 @@ void loadthissave(char[] info)
 			WritePackCell(dp,hReloadStats);
 			WritePackCell(dp,hReloadCurrentWeapon);
 			WritePackString(dp,sets[3]);
+			*/
+			
+			
 		}
 		Handle hSavePathPack = CreateDataPack();
-		WritePackString(hSavePathPack,savepath);
-		CreateTimer(1.0,reloadtimer,hSavePathPack);
-		CreateTimer(1.1,reloadtimersetupcl,dp);
+		WritePackString(hSavePathPack, savepath);
+		CreateTimer(1.0, reloadtimer, hSavePathPack);
+		//CreateTimer(1.1, reloadtimersetupcl, dp);
+		CreateTimer(1.1, ReloadClientsFromSave);
 	}
+	return Plugin_Handled;
 }
 
 void DeleteThisSave(char[] info, int client)
@@ -1230,6 +1320,32 @@ public Action reloadentcache(Handle timer, Handle hSavePathPack)
 	}
 }
 
+public Action ReloadClientsFromSave(Handle timer)
+{
+	g_vecLandmarkOrigin[0] = 0.0;
+	g_vecLandmarkOrigin[1] = 0.0;
+	g_vecLandmarkOrigin[2] = 0.0;
+	Format(szLandmarkName, sizeof(szLandmarkName), "syn_savereload");
+	
+	if (g_hTimeout != INVALID_HANDLE) CloseHandle(g_hTimeout);
+	g_hTimeout = CreateTimer(60.0, transitiontimeout, _, TIMER_FLAG_NO_MAPCHANGE);
+	
+	for (int i = 1; i < MaxClients+1; i++)
+	{
+		if (IsValidEntity(i))
+		{
+			if (IsClientConnected(i))
+			{
+				if (IsClientInGame(i))
+				{
+					CreateTimer(0.1, anotherdelay, i, TIMER_FLAG_NO_MAPCHANGE);
+				}
+			}
+		}
+	}
+	return Plugin_Handled;
+}
+/*
 public Action reloadtimersetupcl(Handle timer, Handle dp)
 {
 	if (GetArraySize(g_hEquipEnts) > 0)
@@ -1268,7 +1384,7 @@ public Action reloadtimersetupcl(Handle timer, Handle dp)
 					char ammoch[600];
 					char ammosets[64][32];
 					char statsch[64];
-					char statssets[5][24];
+					char statssets[9][24];
 					if (arrindx != -1)
 					{
 						GetArrayString(hReloadAngles,arrindx,angch,sizeof(angch));
@@ -1350,7 +1466,7 @@ public Action reloadtimersetupcl(Handle timer, Handle dp)
 		CloseHandle(hReloadCurrentWeapon);
 	}
 }
-
+*/
 public Action DeleteSave(int client, int args)
 {
 	Menu menu = new Menu(MenuHandlerDelSaves);
@@ -2158,6 +2274,7 @@ public void OnMapStart()
 						ReadPackString(dp,response,sizeof(response));
 						char scriptinf[1280];
 						ReadPackString(dp,scriptinf,sizeof(scriptinf));
+						CloseHandle(dp);
 						bool ragdoll = false;
 						if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"d2_prison_08",false)))
 						{
@@ -2308,7 +2425,9 @@ public void OnMapStart()
 											else if (HasEntProp(iDuplicatedEntity,Prop_Send,"m_vecOrigin")) GetEntPropVector(iDuplicatedEntity,Prop_Send,"m_vecOrigin",vecDuplicatePosition);
 											if (GetVectorDistance(vecOrigin,vecDuplicatePosition,false) < 6.0)
 											{
-												bConflicted = true;
+												//bConflicted = true;
+												if (g_hCVbDebugTransitions.BoolValue) LogMessage("Transition Entity conflicted %s %s replacing with transitioned ent.", dupecls, szTargetname);
+												AcceptEntityInput(iDuplicatedEntity, "kill");
 												break;
 											}
 										}
@@ -2544,7 +2663,6 @@ public void OnMapStart()
 								}
 							}
 						}
-						CloseHandle(dp);
 					}
 				}
 			}
@@ -3444,12 +3562,13 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 							}
 						}
 					}
-					if ((FindStringInArray(g_hTransitionPlayerOrigin,SteamID) != -1) && (IsPlayerAlive(i)))
+					if ((FindStringInArray(g_hTransitionPlayerOrigin, SteamID) != -1) && (IsPlayerAlive(i)))
 					{
-						//GetClientAbsOrigin(i,plyorigin);
-						if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",plyorigin);
-						else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",plyorigin);
-						if (HasEntProp(i,Prop_Data,"m_angRotation")) GetEntPropVector(i,Prop_Data,"m_angRotation",plyangs);
+						//GetClientAbsOrigin(i, plyorigin);
+						if (HasEntProp(i, Prop_Data, "m_vecAbsOrigin")) GetEntPropVector(i, Prop_Data, "m_vecAbsOrigin", plyorigin);
+						else if (HasEntProp(i, Prop_Send, "m_vecOrigin")) GetEntPropVector(i, Prop_Send, "m_vecOrigin", plyorigin);
+						if (HasEntProp(i, Prop_Data, "v_angle")) GetEntPropVector(i, Prop_Data, "v_angle", plyangs);
+						else if (HasEntProp(i, Prop_Data, "m_angRotation")) GetEntPropVector(i, Prop_Data, "m_angRotation", plyangs);
 						plyorigin[0]-=g_vecLandmarkOrigin[0];
 						plyorigin[1]-=g_vecLandmarkOrigin[1];
 						plyorigin[2]-=g_vecLandmarkOrigin[2];
@@ -3460,7 +3579,7 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 						plyorigin[1] = 0.0;
 						plyorigin[2] = 0.0;
 					}
-					PushArrayString(g_hTransitionIDs,SteamID);
+					PushArrayString(g_hTransitionIDs, SteamID);
 					dp = CreateDataPack();
 					if (!IsPlayerAlive(i))
 					{

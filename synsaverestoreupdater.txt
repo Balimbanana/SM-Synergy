@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.203"
-			"Previous"	"2.202"
+			"Latest"  	"2.204"
+			"Previous"	"2.203"
 		}
 		
-		"Notes"	"Changed the way delete transition ents works."
+		"Notes"	"Additional configurations and changes to loading persistent saves."
 	}
 	
 	"Files"
