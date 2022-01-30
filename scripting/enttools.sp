@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.42"
+#define PLUGIN_VERSION "1.43"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -25,12 +25,15 @@ public Plugin myinfo =
 int showallcreated = 0;
 int showalldeleted = 0;
 int showalldeaths = 0;
+int iMapChanges = -1;
 bool showallnormsounds = false;
 bool showallambsounds = false;
+bool bSynergyActive = false;
 
 char CLClsSet[128][32];
 Handle modelsarr = INVALID_HANDLE;
 ConVar hCVReplaceCMD;
+ConVar hCVShowAllCmds;
 
 public void OnPluginStart()
 {
@@ -52,6 +55,7 @@ public void OnPluginStart()
 	RegAdminCmd("moveent",moveentity,ADMFLAG_KICK,".");
 	RegAdminCmd("uptime",SrvUptime,ADMFLAG_BAN,"Prints server uptime.");
 	RegAdminCmd("entflags",GetSetEntFlags,ADMFLAG_BAN,"Get or set flags.");
+	RegAdminCmd("et_fireevent",FireThisEvent,ADMFLAG_ROOT,"Fire event.");
 	RegConsoleCmd("ent_create",EntCreateReplace);
 	SetCommandFlags("ent_create",GetCommandFlags("ent_create")^FCVAR_CHEAT);
 	RegConsoleCmd("ent_fire",EntFireReplace);
@@ -79,9 +83,13 @@ public void OnPluginStart()
 	hCVReplaceCMD = FindConVar("sm_replace_entcmd");
 	if (hCVReplaceCMD == INVALID_HANDLE) hCVReplaceCMD = CreateConVar("sm_replace_entcmd", "0", "Replaces ent_fire and ent_create with EntTools versions.", _, true, 0.0, true, 1.0);
 	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
+	hCVShowAllCmds = CreateConVar("sm_showall_commands", "0", "Shows all commands but not CON_COMMAND()s", _, true, 0.0, true, 1.0);
 	AddNormalSoundHook(listnormsounds);
 	AddAmbientSoundHook(listambientsounds);
 	modelsarr = CreateArray(1024);
+	char szGameName[32];
+	GetGameFolderName(szGameName,sizeof(szGameName));
+	if (StrContains(szGameName,"synergy",false) != -1) bSynergyActive = true;
 }
 
 public void OnPluginEnd()
@@ -100,8 +108,14 @@ public void OnLibraryAdded(const char[] name)
 
 public Action SrvUptime(int client, int args)
 {
-	PrintToConsole(client,"Time: %1.1f Days %1.1f Hours %1.1f Mins %1.f Seconds\nMap changes: %i",((GetTickedTime()/60)/60)/24,(GetTickedTime()/60)/60,GetTickedTime()/60,GetTickedTime(),GetMapHistorySize());
+	PrintToConsole(client,"Time: %1.1f Days %1.1f Hours %1.1f Mins %1.f Seconds\nMap History: %i Map changes: %i",((GetTickedTime()/60)/60)/24,(GetTickedTime()/60)/60,GetTickedTime()/60,GetTickedTime(),GetMapHistorySize(),iMapChanges);
 	return Plugin_Handled;
+}
+
+public void OnMapStart()
+{
+	iMapChanges++;
+	if (iMapChanges < GetMapHistorySize()) iMapChanges = GetMapHistorySize();
 }
 
 public Action GetSetEntFlags(int client, int args)
@@ -378,6 +392,40 @@ public Action GetSetEntFlags(int client, int args)
 	return Plugin_Handled;
 }
 
+public Action FireThisEvent(int client, int args)
+{
+	if (args > 0)
+	{
+		char szEventName[64];
+		GetCmdArg(1,szEventName,sizeof(szEventName));
+		Handle hEvent = CreateEvent(szEventName);
+		if (hEvent != INVALID_HANDLE)
+		{
+			if (args > 3)
+			{
+				char szType[32];
+				char szKey[64];
+				char szValue[128];
+				for (int i = 2; i <= args; i++)
+				{
+					if (i+2 > args) break;
+					GetCmdArg(i, szType, sizeof(szType));
+					i++;
+					GetCmdArg(i, szKey, sizeof(szKey));
+					i++;
+					GetCmdArg(i, szValue, sizeof(szValue));
+					if (StrEqual(szType,"int",false)) SetEventInt(hEvent, szKey, StringToInt(szValue));
+					else if (StrEqual(szType,"float",false)) SetEventFloat(hEvent, szKey, StringToFloat(szValue));
+					else if (StrEqual(szType,"bool",false)) SetEventBool(hEvent, szKey, view_as<bool>(StringToInt(szValue)));
+					else if (StrEqual(szType,"string",false)) SetEventString(hEvent, szKey, szValue);
+				}
+			}
+			FireEvent(hEvent,false);
+		}
+	}
+	return Plugin_Handled;
+}
+
 public Action CreateStuff(int client, int args)
 {
 	char ent[64];
@@ -529,41 +577,44 @@ public Action CreateStuff(int client, int args)
 			DispatchKeyValue(stuff,"model","models/airboat.mdl");
 			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/airboat.txt");
 		}
-		else if (StrEqual(ent,"npc_bullsquid",false))
+		if (bSynergyActive)
 		{
-			Format(ent,sizeof(ent),"npc_antlion");
-			stuff = CreateEntityByName(ent);
-			Format(ent,sizeof(ent),"npc_bullsquid");
-			DispatchKeyValue(stuff,"classname","npc_bullsquid");
-			DispatchKeyValue(stuff,"model","models/xenians/bullsquid.mdl");
-			DispatchKeyValue(stuff,"RenderMode","10");
-		}
-		else if (StrEqual(ent,"npc_houndeye",false))
-		{
-			Format(ent,sizeof(ent),"npc_antlion");
-			stuff = CreateEntityByName(ent);
-			Format(ent,sizeof(ent),"npc_houndeye");
-			DispatchKeyValue(stuff,"classname","npc_houndeye");
-			DispatchKeyValue(stuff,"model","models/xenians/houndeye.mdl");
-			DispatchKeyValue(stuff,"RenderMode","10");
-		}
-		else if (StrEqual(ent,"npc_alien_controller",false))
-		{
-			Format(ent,sizeof(ent),"generic_actor");
-			stuff = CreateEntityByName(ent);
-			Format(ent,sizeof(ent),"npc_alien_controller");
-			DispatchKeyValue(stuff,"classname","npc_alien_controller");
-			DispatchKeyValue(stuff,"model","models/xenians/controller.mdl");
-		}
-		else if (StrEqual(ent,"npc_alien_grunt",false))
-		{
-			Format(ent,sizeof(ent),"npc_combine_s");
-			stuff = CreateEntityByName(ent);
-			Format(ent,sizeof(ent),"npc_alien_grunt");
-			DispatchKeyValue(stuff,"classname","npc_alien_grunt");
-			DispatchKeyValue(stuff,"model","models/xenians/agrunt.mdl");
-			DispatchKeyValue(stuff,"targetname","npc_alien_grunt");
-			targnamedefined = true;
+			if (StrEqual(ent,"npc_bullsquid",false))
+			{
+				Format(ent,sizeof(ent),"npc_antlion");
+				stuff = CreateEntityByName(ent);
+				Format(ent,sizeof(ent),"npc_bullsquid");
+				DispatchKeyValue(stuff,"classname","npc_bullsquid");
+				DispatchKeyValue(stuff,"model","models/xenians/bullsquid.mdl");
+				DispatchKeyValue(stuff,"RenderMode","10");
+			}
+			else if (StrEqual(ent,"npc_houndeye",false))
+			{
+				Format(ent,sizeof(ent),"npc_antlion");
+				stuff = CreateEntityByName(ent);
+				Format(ent,sizeof(ent),"npc_houndeye");
+				DispatchKeyValue(stuff,"classname","npc_houndeye");
+				DispatchKeyValue(stuff,"model","models/xenians/houndeye.mdl");
+				DispatchKeyValue(stuff,"RenderMode","10");
+			}
+			else if (StrEqual(ent,"npc_alien_controller",false))
+			{
+				Format(ent,sizeof(ent),"generic_actor");
+				stuff = CreateEntityByName(ent);
+				Format(ent,sizeof(ent),"npc_alien_controller");
+				DispatchKeyValue(stuff,"classname","npc_alien_controller");
+				DispatchKeyValue(stuff,"model","models/xenians/controller.mdl");
+			}
+			else if (StrEqual(ent,"npc_alien_grunt",false))
+			{
+				Format(ent,sizeof(ent),"npc_combine_s");
+				stuff = CreateEntityByName(ent);
+				Format(ent,sizeof(ent),"npc_alien_grunt");
+				DispatchKeyValue(stuff,"classname","npc_alien_grunt");
+				DispatchKeyValue(stuff,"model","models/xenians/agrunt.mdl");
+				DispatchKeyValue(stuff,"targetname","npc_alien_grunt");
+				targnamedefined = true;
+			}
 		}
 		if (stuff == 0) stuff = CreateEntityByName(ent);
 		if (stuff == -1)
@@ -960,41 +1011,44 @@ public Action CreateStuffThere(int client, int args)
 			DispatchKeyValue(stuff,"model","models/airboat.mdl");
 			DispatchKeyValue(stuff,"vehiclescript","scripts/vehicles/airboat.txt");
 		}
-		else if (StrEqual(ent,"npc_bullsquid",false))
+		if (bSynergyActive)
 		{
-			Format(ent,sizeof(ent),"npc_antlion");
-			stuff = CreateEntityByName(ent);
-			Format(ent,sizeof(ent),"npc_bullsquid");
-			DispatchKeyValue(stuff,"classname","npc_bullsquid");
-			DispatchKeyValue(stuff,"model","models/xenians/bullsquid.mdl");
-			DispatchKeyValue(stuff,"RenderMode","10");
-		}
-		else if (StrEqual(ent,"npc_houndeye",false))
-		{
-			Format(ent,sizeof(ent),"npc_antlion");
-			stuff = CreateEntityByName(ent);
-			Format(ent,sizeof(ent),"npc_houndeye");
-			DispatchKeyValue(stuff,"classname","npc_houndeye");
-			DispatchKeyValue(stuff,"model","models/xenians/houndeye.mdl");
-			DispatchKeyValue(stuff,"RenderMode","10");
-		}
-		else if (StrEqual(ent,"npc_alien_controller",false))
-		{
-			Format(ent,sizeof(ent),"generic_actor");
-			stuff = CreateEntityByName(ent);
-			Format(ent,sizeof(ent),"npc_alien_controller");
-			DispatchKeyValue(stuff,"classname","npc_alien_controller");
-			DispatchKeyValue(stuff,"model","models/xenians/controller.mdl");
-		}
-		else if (StrEqual(ent,"npc_alien_grunt",false))
-		{
-			Format(ent,sizeof(ent),"npc_combine_s");
-			stuff = CreateEntityByName(ent);
-			Format(ent,sizeof(ent),"npc_alien_grunt");
-			DispatchKeyValue(stuff,"classname","npc_alien_grunt");
-			DispatchKeyValue(stuff,"model","models/xenians/agrunt.mdl");
-			DispatchKeyValue(stuff,"targetname","npc_alien_grunt");
-			targnamedefined = true;
+			if (StrEqual(ent,"npc_bullsquid",false))
+			{
+				Format(ent,sizeof(ent),"npc_antlion");
+				stuff = CreateEntityByName(ent);
+				Format(ent,sizeof(ent),"npc_bullsquid");
+				DispatchKeyValue(stuff,"classname","npc_bullsquid");
+				DispatchKeyValue(stuff,"model","models/xenians/bullsquid.mdl");
+				DispatchKeyValue(stuff,"RenderMode","10");
+			}
+			else if (StrEqual(ent,"npc_houndeye",false))
+			{
+				Format(ent,sizeof(ent),"npc_antlion");
+				stuff = CreateEntityByName(ent);
+				Format(ent,sizeof(ent),"npc_houndeye");
+				DispatchKeyValue(stuff,"classname","npc_houndeye");
+				DispatchKeyValue(stuff,"model","models/xenians/houndeye.mdl");
+				DispatchKeyValue(stuff,"RenderMode","10");
+			}
+			else if (StrEqual(ent,"npc_alien_controller",false))
+			{
+				Format(ent,sizeof(ent),"generic_actor");
+				stuff = CreateEntityByName(ent);
+				Format(ent,sizeof(ent),"npc_alien_controller");
+				DispatchKeyValue(stuff,"classname","npc_alien_controller");
+				DispatchKeyValue(stuff,"model","models/xenians/controller.mdl");
+			}
+			else if (StrEqual(ent,"npc_alien_grunt",false))
+			{
+				Format(ent,sizeof(ent),"npc_combine_s");
+				stuff = CreateEntityByName(ent);
+				Format(ent,sizeof(ent),"npc_alien_grunt");
+				DispatchKeyValue(stuff,"classname","npc_alien_grunt");
+				DispatchKeyValue(stuff,"model","models/xenians/agrunt.mdl");
+				DispatchKeyValue(stuff,"targetname","npc_alien_grunt");
+				targnamedefined = true;
+			}
 		}
 		if (stuff == 0) stuff = CreateEntityByName(ent);
 		if (stuff == -1)
@@ -1327,6 +1381,7 @@ public Action cinp(int client, int args)
 {
 	char fullinp[128];
 	char firstarg[128];
+	int iActivator = -1;
 	GetCmdArgString(fullinp, sizeof(fullinp));
 	GetCmdArg(1,firstarg, sizeof(firstarg));
 	if ((StrEqual(firstarg,"!picker",false)) && (args > 1))
@@ -1345,13 +1400,22 @@ public Action cinp(int client, int args)
 		{
 			char argch[128];
 			GetCmdArg(i,argch,sizeof(argch));
-			if (i == 3)
+			if (StrEqual(argch,"!SetActivator"))
+			{
+				i++;
+				if (i <= args)
+				{
+					GetCmdArg(i,argch,sizeof(argch));
+					iActivator = StringToInt(argch);
+				}
+			}
+			else if (strlen(input) < 1)
 				Format(input,sizeof(input),"%s",argch);
 			else
 				Format(input,sizeof(input),"%s %s",input,argch);
 		}
 		SetVariantString(input);
-		AcceptEntityInput(targ,second);
+		AcceptEntityInput(targ,second,iActivator);
 		if (StrEqual(second,"SetMass",false))
 		{
 			char targn[128];
@@ -1387,6 +1451,13 @@ public Action cinp(int client, int args)
 		return Plugin_Handled;
 	}
 	PrintToConsole(client,"%s",fullinp);
+	if (StrContains(fullinp,"!SetActivator ",false) != -1)
+	{
+		char szSplit[8][8];
+		ExplodeString(fullinp, "!SetActivator ", szSplit, 8, 8);
+		ExplodeString(szSplit[1], " ", szSplit, 8, 8);
+		iActivator = StringToInt(szSplit[0]);
+	}
 	Handle arr = CreateArray(64);
 	if (StrEqual(firstarg,"!self",false))
 		PushArrayCell(arr,client);
@@ -1443,7 +1514,7 @@ public Action cinp(int client, int args)
 			{
 				int j = GetArrayCell(arr,i);
 				SetVariantString(fullinp);
-				AcceptEntityInput(j,input);
+				AcceptEntityInput(j,input,iActivator);
 				if (StrEqual(input,"DispatchSpawn",false))
 				{
 					DispatchSpawn(j);
@@ -1493,7 +1564,7 @@ public Action cinp(int client, int args)
 				Format(thisvar,sizeof(thisvar),"%s",fourth);
 			if (strlen(thisvar) > 0)
 				SetVariantString(thisvar);
-			AcceptEntityInput(targ,third);
+			AcceptEntityInput(targ,third,iActivator);
 		}
 	}
 	else
@@ -1550,7 +1621,7 @@ public Action cinp(int client, int args)
 				SetVariantString(fullinp);
 			else
 				SetVariantInt(varint);
-			AcceptEntityInput(targ,first);
+			AcceptEntityInput(targ,first,iActivator);
 		}
 	}
 	CloseHandle(arr);
@@ -2290,6 +2361,15 @@ public Action listents(int client, int args)
 						scrtmpi = GetEntProp(targ,Prop_Data,"m_iPlayerCountUpper");
 						Format(stateinf,sizeof(stateinf),"%s UpperPlayer: %i",stateinf,scrtmpi);
 					}
+					if (HasEntProp(targ,Prop_Data,"m_fScreenFlags")) Format(stateinf,sizeof(stateinf),"%s m_fScreenFlags: %i",stateinf, GetEntProp(targ,Prop_Data,"m_fScreenFlags"));
+					if (HasEntProp(targ,Prop_Data,"m_flWidth")) Format(stateinf,sizeof(stateinf),"%s m_flWidth: %1.1f",stateinf, GetEntPropFloat(targ,Prop_Data,"m_flWidth"));
+					if (HasEntProp(targ,Prop_Data,"m_flHeight")) Format(stateinf,sizeof(stateinf),"%s m_flHeight: %1.1f",stateinf, GetEntPropFloat(targ,Prop_Data,"m_flHeight"));
+					if (HasEntProp(targ,Prop_Data,"m_hPlayerOwner")) Format(stateinf,sizeof(stateinf),"%s m_hPlayerOwner: %i",stateinf, GetEntPropEnt(targ,Prop_Data,"m_hPlayerOwner"));
+					if (HasEntProp(targ,Prop_Data,"m_strOverlayMaterial"))
+					{
+						GetEntPropString(targ,Prop_Data,"m_strOverlayMaterial",scrtmp,sizeof(scrtmp));
+						Format(stateinf,sizeof(stateinf),"%s m_strOverlayMaterial: %s",stateinf, scrtmp);
+					}
 					TrimString(stateinf);
 					TrimString(scriptinf);
 					if (strlen(targname) > 0)
@@ -2469,6 +2549,7 @@ public Action moveentity(int client, int args)
 		}
 		else
 		{
+			char szTmp[16];
 			for (int i = 0;i<GetArraySize(arr);i++)
 			{
 				int targ = GetArrayCell(arr,i);
@@ -2484,37 +2565,43 @@ public Action moveentity(int client, int args)
 				else if (HasEntProp(targ,Prop_Send,"m_angAbsRotation")) GetEntPropVector(targ,Prop_Send,"m_angAbsRotation",tpangs);
 				if (StrContains(xch,"+",false) == 0)
 				{
-					ReplaceString(xch,sizeof(xch),"+","");
-					tporgs[0]+=StringToFloat(xch);
+					Format(szTmp, sizeof(szTmp), "%s", xch);
+					ReplaceString(szTmp, sizeof(szTmp), "+", "");
+					tporgs[0]+=StringToFloat(szTmp);
 				}
 				else if (StrContains(xch,"--",false) == 0)
 				{
-					ReplaceString(xch,sizeof(xch),"-","");
-					tporgs[0]-=StringToFloat(xch);
+					Format(szTmp, sizeof(szTmp), "%s", xch);
+					ReplaceString(szTmp, sizeof(szTmp), "-", "");
+					tporgs[0]-=StringToFloat(szTmp);
 				}
 				else if (!StrEqual(xch,"same",false))
 					tporgs[0] = StringToFloat(xch);
 				if (StrContains(ych,"+",false) == 0)
 				{
-					ReplaceString(ych,sizeof(ych),"+","");
-					tporgs[1]+=StringToFloat(ych);
+					Format(szTmp, sizeof(szTmp), "%s", ych);
+					ReplaceString(szTmp, sizeof(szTmp), "+", "");
+					tporgs[1]+=StringToFloat(szTmp);
 				}
 				else if (StrContains(ych,"--",false) == 0)
 				{
-					ReplaceString(ych,sizeof(ych),"-","");
-					tporgs[1]-=StringToFloat(ych);
+					Format(szTmp, sizeof(szTmp), "%s", ych);
+					ReplaceString(szTmp, sizeof(szTmp), "-", "");
+					tporgs[1]-=StringToFloat(szTmp);
 				}
 				else if (!StrEqual(ych,"same",false))
 					tporgs[1] = StringToFloat(ych);
 				if (StrContains(zch,"+",false) == 0)
 				{
-					ReplaceString(zch,sizeof(zch),"+","");
-					tporgs[2]+=StringToFloat(zch);
+					Format(szTmp, sizeof(szTmp), "%s", zch);
+					ReplaceString(szTmp, sizeof(szTmp), "+", "");
+					tporgs[2]+=StringToFloat(szTmp);
 				}
 				else if (StrContains(zch,"--",false) == 0)
 				{
-					ReplaceString(zch,sizeof(zch),"-","");
-					tporgs[2]-=StringToFloat(zch);
+					Format(szTmp, sizeof(szTmp), "%s", zch);
+					ReplaceString(szTmp, sizeof(szTmp), "-", "");
+					tporgs[2]-=StringToFloat(szTmp);
 				}
 				else if (!StrEqual(zch,"same",false))
 					tporgs[2] = StringToFloat(zch);
@@ -4949,6 +5036,19 @@ public Action listambientsounds(char sample[PLATFORM_MAX_PATH], int& entity, flo
 		if (IsValidEntity(entity)) GetEntityClassname(entity,cls,sizeof(cls));
 		PrintToServer("AmbientSound %s From %i %s Vol %f Level %i Pitch %i Flags %i",sample,entity,cls,volume,level,pitch,flags);
 	}
+}
+
+public Action OnClientCommand(int client, int args)
+{
+	if (hCVShowAllCmds.BoolValue)
+	{
+		char szCmd[32];
+		char szArgString[128];
+		GetCmdArgString(szArgString, sizeof(szArgString));
+		GetCmdArg(0, szCmd, sizeof(szCmd));
+		PrintToServer("ClientCommand '%i' '%N' '%s' '%s'", client, client, szCmd, szArgString);
+	}
+	return Plugin_Continue;
 }
 
 public void dbghch(Handle convar, const char[] oldValue, const char[] newValue)

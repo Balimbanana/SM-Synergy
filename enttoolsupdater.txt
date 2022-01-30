@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.42"
-			"Previous"	"1.41"
+			"Latest"  	"1.43"
+			"Previous"	"1.42"
 		}
 		
-		"Notes"	"If no vehiclescript is defined for prop_vehicle_airboat default to correct vehiclescript."
+		"Notes"	"Fix to moveent + or - of multiple entities."
 	}
 	
 	"Files"
