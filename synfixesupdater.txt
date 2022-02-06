@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20001"
-			"Previous"	"1.20000"
+			"Latest"  	"1.20002"
+			"Previous"	"1.20001"
 		}
 		
-		"Notes"	"Fixed global name removal to only apply to prop_physics."
+		"Notes"	"Fix to getting entity cache prefix. Added fix to enable boost on prop_vehicle_mp."
 	}
 	
 	"Files"

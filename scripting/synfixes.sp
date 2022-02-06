@@ -66,7 +66,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20001"
+#define PLUGIN_VERSION "1.20002"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -448,27 +448,75 @@ public void OnMapStart()
 		HookEntityOutput("trigger_changelevel","OnChangeLevel",mapendchg);
 		HookEntityOutput("npc_citizen","OnDeath",entdeath);
 		HookEntityOutput("func_physbox","OnPhysGunPunt",physpunt);
-		if (DirExists("maps/ent_cache",false))
+		Format(mapbuf,sizeof(mapbuf),"_%s.ent2",mapbuf);
+		char contentdata[64];
+		Handle cvar = FindConVar("content_metadata");
+		if (cvar != INVALID_HANDLE)
 		{
-			Handle mdirlisting = OpenDirectory("maps/ent_cache", false);
-			char buff[64];
-			while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
+			GetConVarString(cvar,contentdata,sizeof(contentdata));
+			char fixuptmp[16][16];
+			ExplodeString(contentdata," ",fixuptmp,16,16,true);
+			if (StrEqual(fixuptmp[1],"|",false)) Format(contentdata,sizeof(contentdata),"%s",fixuptmp[2]);
+			else Format(contentdata,sizeof(contentdata),"%s",fixuptmp[0]);
+		}
+		else
+		{
+			ReplaceStringEx(mapbuf,sizeof(mapbuf),"_","");
+		}
+		CloseHandle(cvar);
+		if (strlen(contentdata) > 1)
+		{
+			Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s%s",contentdata,mapbuf);
+			if (!FileExists(mapbuf,true,NULL_STRING)) ReplaceStringEx(mapbuf,sizeof(mapbuf),".ent2",".ent");
+			else
 			{
-				if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
+				char mapcachecheck[128];
+				Format(mapcachecheck,sizeof(mapcachecheck),"%s",mapbuf);
+				ReplaceStringEx(mapcachecheck,sizeof(mapcachecheck),".ent2",".ent");
+				if (GetFileTime(mapbuf,FileTime_LastChange) < GetFileTime(mapcachecheck,FileTime_LastChange)) Format(mapbuf,sizeof(mapbuf),"%s",mapcachecheck);
+			}
+		}
+		else if (!FileExists(mapbuf,true,NULL_STRING)) ReplaceStringEx(mapbuf,sizeof(mapbuf),".ent2",".ent");
+		else
+		{
+			char mapcachecheck[128];
+			Format(mapcachecheck,sizeof(mapcachecheck),"%s",mapbuf);
+			ReplaceStringEx(mapcachecheck,sizeof(mapcachecheck),".ent2",".ent");
+			if (GetFileTime(mapbuf,FileTime_LastChange) < GetFileTime(mapcachecheck,FileTime_LastChange)) Format(mapbuf,sizeof(mapbuf),"%s",mapcachecheck);
+		}
+		if ((!FileExists(mapbuf,true,NULL_STRING)) && (DirExists("maps/ent_cache",false)))
+		{
+			Handle mdirlisting = OpenDirectory("maps/ent_cache",false);
+			if (mdirlisting != INVALID_HANDLE)
+			{
+				char buff[64];
+				while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
 				{
-					if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
+					if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
 					{
-						if (StrContains(buff,mapbuf,false) != -1)
+						if ((!(StrContains(buff, ".ztmp", false) != -1)) && (!(StrContains(buff, ".bz2", false) != -1)))
 						{
-							Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s",buff);
-							if (debuglvl > 1) PrintToServer("Found ent cache %s",mapbuf);
-							break;
+							if (StrContains(mapbuf,buff,false) != -1)
+							{
+								char tmp[64];
+								Format(tmp,sizeof(tmp),"%s",buff);
+								ReplaceStringEx(tmp,sizeof(tmp),mapbuf,"");
+								// Fix for maps with similar names such as
+								// bms_bm_c0a0a and hl1_c0a0a HL1 c0a0a will come up as BMS first without this check
+								if (StrContains(tmp,"_",false) == -1)
+								{
+									Format(mapbuf,sizeof(mapbuf),"maps/ent_cache/%s",buff);
+									if (debuglvl > 1) PrintToServer("Found ent cache %s",mapbuf);
+									break;
+								}
+							}
 						}
 					}
 				}
 			}
 			CloseHandle(mdirlisting);
 		}
+		else if (debuglvl > 1) PrintToServer("Found ent cache %s",mapbuf);
 		
 		FindSaveTPHooks();
 		CreateTimer(0.1,rehooksaves,_,TIMER_FLAG_NO_MAPCHANGE);
@@ -4618,7 +4666,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			OnButtonPressUse(client);
 		}
 	}
-	if (impulse == 100)
+	if ((impulse == 100) || (buttons & IN_SPEED))
 	{
 		if ((vehicle > MaxClients) && (IsValidEntity(vehicle)))
 		{
@@ -4631,11 +4679,27 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 				GetEntityClassname(vehicle,clsname,sizeof(clsname));
 				if ((StrEqual(clsname,"prop_vehicle_jeep",false)) || (StrEqual(clsname,"prop_vehicle_mp",false)))
 				{
-					if (HasEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn"))
+					if (buttons & IN_SPEED)
 					{
-						if (GetEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn")) SetEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn",0);
-						else SetEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn",1);
-						EmitSoundToAll("items/flashlight1.wav", vehicle, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+						if (GetEntProp(vehicle,Prop_Data,"m_nSpeed") > 200)
+						{
+							if ((HasEntProp(vehicle,Prop_Data,"m_nBoostTimeLeft")) && (HasEntProp(vehicle,Prop_Data,"m_nSpeed")))
+							{
+								if ((GetEntProp(vehicle,Prop_Data,"m_nBoostTimeLeft") == 100) && (GetEntProp(vehicle,Prop_Data,"m_nHasBoost") > 0) && (GetEntProp(vehicle,Prop_Data,"m_nSpeed") > 20))
+								{
+									SetEntPropFloat(vehicle,Prop_Data,"m_controls.boost",1.0);
+								}
+							}
+						}
+					}
+					else
+					{
+						if (HasEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn"))
+						{
+							if (GetEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn")) SetEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn",0);
+							else SetEntProp(vehicle,Prop_Data,"m_bHeadlightIsOn",1);
+							EmitSoundToAll("items/flashlight1.wav", vehicle, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+						}
 					}
 				}
 			}
