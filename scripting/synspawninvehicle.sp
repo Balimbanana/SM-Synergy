@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.22"
+#define PLUGIN_VERSION "1.23"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synvehiclespawnupdater.txt"
 
 Handle spawnplayers = INVALID_HANDLE;
@@ -45,6 +45,7 @@ public void OnPluginStart()
 	CloseHandle(cvar);
 	spawnplayers = CreateArray(128);
 	RegConsoleCmd("stuck",stuckblck);
+	RegAdminCmd("fentervehicle",FEnterVehicle,ADMFLAG_ROOT,".");
 }
 
 public void OnMapStart()
@@ -412,36 +413,7 @@ public Action spawninvehicle(Handle timer, int i)
 										SetVariantString("!activator");
 										AcceptEntityInput(vehiclenext,"EnterVehicleImmediate",i);
 										SetEntPropEnt(i,Prop_Data,"m_hVehicle",vehiclenext);
-										SetEntPropEnt(i,Prop_Data,"m_hParent",vehiclenext);
-										SetEntPropEnt(i,Prop_Data,"m_pParent",vehiclenext);
-										SetEntPropEnt(i,Prop_Data,"m_hMoveParent",vehiclenext);
-										SetEntProp(i,Prop_Data,"m_iHideHUD",3328);
-										SetEntProp(i,Prop_Data,"m_fFlags",256);
-										SetEntProp(i,Prop_Data,"m_iEFlags",38016016);
-										SetEntProp(i,Prop_Data,"m_MoveType",8);
-										SetEntProp(i,Prop_Data,"m_bDrawViewmodel",0);
-										SetEntProp(i,Prop_Data,"m_CollisionGroup",11);
-										setupvehicle(vehiclenext,i,true);
-										float orgoverride[3];
-										if (StrEqual(vehicletype,"prop_vehicle_airboat"))
-										{
-											orgoverride[0] = -0.08;
-											orgoverride[1] = -10.99;
-											orgoverride[2] = 34.29;
-											SetEntProp(vehiclenext,Prop_Data,"m_iEFlags",9175056);
-											SetEntPropFloat(vehiclenext,Prop_Data,"m_maxThrottle",2.3);
-											SetEntPropFloat(vehiclenext,Prop_Data,"m_flMaxRevThrottle",-2.0);
-										}
-										else
-										{
-											orgoverride[0] = -9.42;
-											orgoverride[1] = -39.47;
-											orgoverride[2] = 29.76;
-										}
-										SetEntPropVector(i,Prop_Data,"m_vecOrigin",orgoverride);
-										int clweap = GetEntPropEnt(i,Prop_Data,"m_hActiveWeapon");
-										if (clweap != -1)
-											if (HasEntProp(clweap,Prop_Data,"m_fEffects")) SetEntProp(clweap,Prop_Data,"m_fEffects",161);
+										ClientCommand(i, "vehicleRole 0");
 										int find = FindValueInArray(spawnplayers,i);
 										if (find != -1)
 											RemoveFromArray(spawnplayers,find);
@@ -672,36 +644,7 @@ public Action vehiclespawn(const char[] output, int caller, int activator, float
 													ActivateEntity(vehicle);
 													TeleportEntity(i,vehicleorg,vehicleangs,NULL_VECTOR);
 													SetEntPropEnt(i,Prop_Data,"m_hVehicle",vehicle);
-													SetEntPropEnt(i,Prop_Data,"m_hParent",vehicle);
-													SetEntPropEnt(i,Prop_Data,"m_pParent",vehicle);
-													SetEntPropEnt(i,Prop_Data,"m_hMoveParent",vehicle);
-													SetEntProp(i,Prop_Data,"m_iHideHUD",3328);
-													SetEntProp(i,Prop_Data,"m_fFlags",256);
-													SetEntProp(i,Prop_Data,"m_iEFlags",38016016);
-													SetEntProp(i,Prop_Data,"m_MoveType",8);
-													SetEntProp(i,Prop_Data,"m_bDrawViewmodel",0);
-													SetEntProp(i,Prop_Data,"m_CollisionGroup",11);
-													setupvehicle(vehicle,i,true);
-													float orgoverride[3];
-													if (StrEqual(vehicletype,"prop_vehicle_airboat"))
-													{
-														orgoverride[0] = -0.08;
-														orgoverride[1] = -10.99;
-														orgoverride[2] = 34.29;
-														SetEntProp(vehicle,Prop_Data,"m_iEFlags",9175056);
-														SetEntPropFloat(vehicle,Prop_Data,"m_maxThrottle",2.3);
-														SetEntPropFloat(vehicle,Prop_Data,"m_flMaxRevThrottle",-2.0);
-													}
-													else
-													{
-														orgoverride[0] = -9.42;
-														orgoverride[1] = -39.47;
-														orgoverride[2] = 29.76;
-													}
-													SetEntPropVector(i,Prop_Data,"m_vecOrigin",orgoverride);
-													int clweap = GetEntPropEnt(i,Prop_Data,"m_hActiveWeapon");
-													if (clweap != -1)
-														if (HasEntProp(clweap,Prop_Data,"m_fEffects")) SetEntProp(clweap,Prop_Data,"m_fEffects",161);
+													ClientCommand(i, "vehicleRole 0");
 													vehicle = -1;
 												}
 											}
@@ -729,36 +672,7 @@ public Action vehiclespawn(const char[] output, int caller, int activator, float
 												DispatchSpawn(vehiclenext);
 												ActivateEntity(vehiclenext);
 												SetEntPropEnt(i,Prop_Data,"m_hVehicle",vehiclenext);
-												SetEntPropEnt(i,Prop_Data,"m_hParent",vehiclenext);
-												SetEntPropEnt(i,Prop_Data,"m_pParent",vehiclenext);
-												SetEntPropEnt(i,Prop_Data,"m_hMoveParent",vehiclenext);
-												SetEntProp(i,Prop_Data,"m_iHideHUD",3328);
-												SetEntProp(i,Prop_Data,"m_fFlags",256);
-												SetEntProp(i,Prop_Data,"m_iEFlags",38016016);
-												SetEntProp(i,Prop_Data,"m_MoveType",8);
-												SetEntProp(i,Prop_Data,"m_bDrawViewmodel",0);
-												SetEntProp(i,Prop_Data,"m_CollisionGroup",11);
-												setupvehicle(vehiclenext,i,true);
-												float orgoverride[3];
-												if (StrEqual(vehicletype,"prop_vehicle_airboat"))
-												{
-													orgoverride[0] = -0.08;
-													orgoverride[1] = -10.99;
-													orgoverride[2] = 34.29;
-													SetEntProp(vehiclenext,Prop_Data,"m_iEFlags",9175056);
-													SetEntPropFloat(vehiclenext,Prop_Data,"m_maxThrottle",2.3);
-													SetEntPropFloat(vehiclenext,Prop_Data,"m_flMaxRevThrottle",-2.0);
-												}
-												else
-												{
-													orgoverride[0] = -9.42;
-													orgoverride[1] = -39.47;
-													orgoverride[2] = 29.76;
-												}
-												SetEntPropVector(i,Prop_Data,"m_vecOrigin",orgoverride);
-												int clweap = GetEntPropEnt(i,Prop_Data,"m_hActiveWeapon");
-												if (clweap != -1)
-													if (HasEntProp(clweap,Prop_Data,"m_fEffects")) SetEntProp(clweap,Prop_Data,"m_fEffects",161);
+												ClientCommand(i, "vehicleRole 0");
 											}
 										}
 									}
@@ -771,6 +685,51 @@ public Action vehiclespawn(const char[] output, int caller, int activator, float
 		}
 	}
 	return Plugin_Continue;
+}
+
+public Action FEnterVehicle(int client, int args)
+{
+	if (args < 1) return Plugin_Handled;
+	char szCL[4];
+	GetCmdArg(1,szCL,sizeof(szCL));
+	int iCL = StringToInt(szCL);
+	if (!IsValidEntity(iCL) || (iCL == 0)) return Plugin_Handled;
+	int iVehicle = -1;
+	if (args > 1)
+	{
+		GetCmdArg(2,szCL,sizeof(szCL));
+		iVehicle = StringToInt(szCL);
+		if (!IsValidEntity(iVehicle) || (iVehicle == 0)) return Plugin_Handled;
+	}
+	else
+	{
+		iVehicle = GetClientAimTarget(client,false);
+		if (!IsValidEntity(iVehicle) || (iVehicle == 0)) return Plugin_Handled;
+	}
+	int vckent = GetEntPropEnt(iCL, Prop_Send, "m_hVehicle");
+	if (vckent != -1)
+	{
+		SetEntPropEnt(iCL,Prop_Data,"m_hMoveParent",-1);
+		SetEntPropEnt(iCL,Prop_Data,"m_hParent",-1);
+		SetEntPropEnt(iCL,Prop_Data,"m_pParent",-1);
+		SetEntProp(iCL,Prop_Data,"m_fFlags",257);
+		SetEntProp(iCL,Prop_Data,"m_iEFlags",38011920);
+		SetEntProp(iCL,Prop_Data,"m_MoveType",2);
+		SetEntProp(iCL,Prop_Data,"m_bDrawViewmodel",1);
+		SetEntProp(iCL,Prop_Data,"m_iHideHUD",2048);
+		setupvehicle(vckent,iCL,false);
+		int clweap = GetEntPropEnt(iCL,Prop_Data,"m_hActiveWeapon");
+		if (clweap != -1)
+			if (HasEntProp(clweap,Prop_Data,"m_fEffects")) SetEntProp(clweap,Prop_Data,"m_fEffects",161);
+		ChangeEdictState(iCL);
+	}
+	else
+	{
+		AcceptEntityInput(iVehicle,"EnterVehicleImmediate",iCL);
+		SetEntPropEnt(iCL,Prop_Data,"m_hVehicle",iVehicle);
+		ClientCommand(iCL, "vehicleRole 0");
+	}
+	return Plugin_Handled;
 }
 
 public Action exitspawnvehicle(const char[] output, int caller, int activator, float delay)

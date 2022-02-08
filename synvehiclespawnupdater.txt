@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.22"
-			"Previous"	"1.21"
+			"Latest"  	"1.23"
+			"Previous"	"1.22"
 		}
 		
-		"Notes"	"Fixed issue of first spawning vehicle on first connect not giving weapons. Fixed deletion protocol."
+		"Notes"	"Changed method to force player in to vehicle."
 	}
 	
 	"Files"
