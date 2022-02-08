@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.53"
+#define PLUGIN_VERSION "1.54"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -1108,25 +1108,28 @@ void setupdmfor(char[] gametype, bool bSetVars)
 	}
 	else
 	{
-		Handle cvarset = FindConVar("sv_glow_enable");
-		if (cvarset != INVALID_HANDLE)
+		if (bSetVars)
 		{
-			int flags = GetConVarFlags(cvarset);
-			SetConVarFlags(cvarset, flags & ~FCVAR_NOTIFY);
-			SetConVarInt(cvarset,0,false,false);
-			SetConVarFlags(cvarset, flags);
+			Handle cvarset = FindConVar("sv_glow_enable");
+			if (cvarset != INVALID_HANDLE)
+			{
+				int flags = GetConVarFlags(cvarset);
+				SetConVarFlags(cvarset, flags & ~FCVAR_NOTIFY);
+				SetConVarInt(cvarset,0,false,false);
+				SetConVarFlags(cvarset, flags);
+			}
+			cvarset = FindConVar("mp_friendlyfire");
+			if (cvarset != INVALID_HANDLE)
+			{
+				int flags = GetConVarFlags(cvarset);
+				SetConVarFlags(cvarset, flags & ~FCVAR_NOTIFY);
+				SetConVarInt(cvarset,1,false,false);
+				SetConVarFlags(cvarset, flags);
+			}
+			cvarset = FindConVar("sm_instspawn");
+			if (cvarset != INVALID_HANDLE) SetConVarInt(cvarset,1,false,false);
+			CloseHandle(cvarset);
 		}
-		cvarset = FindConVar("mp_friendlyfire");
-		if (cvarset != INVALID_HANDLE)
-		{
-			int flags = GetConVarFlags(cvarset);
-			SetConVarFlags(cvarset, flags & ~FCVAR_NOTIFY);
-			SetConVarInt(cvarset,1,false,false);
-			SetConVarFlags(cvarset, flags);
-		}
-		cvarset = FindConVar("sm_instspawn");
-		if (cvarset != INVALID_HANDLE) SetConVarInt(cvarset,1,false,false);
-		CloseHandle(cvarset);
 		if (teambalance) balanceteams();
 		Handle startround = CreateEvent("round_start");
 		SetEventFloat(startround,"timelimit",roundtime);

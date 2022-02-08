@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.53"
-			"Previous"	"1.52"
+			"Latest"  	"1.54"
+			"Previous"	"1.53"
 		}
 		
-		"Notes"	"Fix to help saysound."
+		"Notes"	"Additional check when to set CVars on change."
 	}
 	
 	"Files"
