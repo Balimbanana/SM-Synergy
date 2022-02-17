@@ -117,80 +117,209 @@ void squidthink(int entity)
 						if (seqmdl != seq)
 						{
 							SetEntProp(entmdl,Prop_Data,"m_nSequence",seq);
-							switch(seq)
+							if (StrEqual(mdl,"models/bullsquid.mdl",false))
 							{
-								case 1:
+								switch(seq)
 								{
-									SetVariantString("run");
-									AcceptEntityInput(entmdl,"SetAnimation");
+									case 0:
+									{
+										SetVariantString("walk");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 1:
+									{
+										SetVariantString("run");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 2:
+									{
+										SetVariantString("suprisedhop");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 3:
+									{
+										SetVariantString("flinchs");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 4:
+									{
+										SetVariantString("flinchb");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 5:
+									{
+										SetVariantString("turnleft");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 6:
+									{
+										SetVariantString("turnright");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 7:
+									{
+										SetVariantString("idle");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 8:
+									{
+										SetVariantString("whip");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 9:
+									{
+										SetVariantString("bite");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 10:
+									{
+										SetVariantString("range");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 11:
+									{
+										SetVariantString("look");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 12:
+									{
+										SetVariantString("seecrab");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 13:
+									{
+										SetVariantString("eat");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 14:
+									{
+										SetVariantString("inspectdown");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 15:
+									{
+										SetVariantString("sniff");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 16:
+									{
+										SetVariantString("die");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 17:
+									{
+										SetVariantString("die1");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 18:
+									{
+										SetVariantString("bulljump");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 19:
+									{
+										SetVariantString("draggruntidle");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 20:
+									{
+										SetVariantString("draggrunt");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 21:
+									{
+										SetVariantString("scare");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 22:
+									{
+										SetVariantString("squidfallidle");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 23:
+									{
+										SetVariantString("squidfall");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
 								}
-								case 2:
+							}
+							else
+							{
+								switch(seq)
 								{
-									SetVariantString("walk");
-									AcceptEntityInput(entmdl,"SetAnimation");
-								}
-								case 3:
-								{
-									SetVariantString("turnL");
-									AcceptEntityInput(entmdl,"SetAnimation");
-								}
-								case 4:
-								{
-									SetVariantString("turnR");
-									AcceptEntityInput(entmdl,"SetAnimation");
-								}
-								case 5:
-								{
-									SetVariantString("turn180");
-									AcceptEntityInput(entmdl,"SetAnimation");
-								}
-								case 6:
-								{
-									SetVariantString("idle");
-									AcceptEntityInput(entmdl,"SetAnimation");
-								}
-								case 7:
-								{
-									if (StrEqual(mdl,"models/bullsquid.mdl",false)) SetVariantString("idle");
-									else SetVariantString("idle2");
-									AcceptEntityInput(entmdl,"SetAnimation");
-								}
-								case 8:
-								{
-									if (StrEqual(mdl,"models/bullsquid.mdl",false)) SetVariantString("idle1");
-									else SetVariantString("idle3");
-									AcceptEntityInput(entmdl,"SetAnimation");
-								}
-								case 9:
-								{
-									SetVariantString("idle_combat");
-									AcceptEntityInput(entmdl,"SetAnimation");
-								}
-								case 10:
-								{
-									SetVariantString("eat");
-									AcceptEntityInput(entmdl,"SetAnimation");
-								}
-								case 11:
-								{
-									if (StrEqual(mdl,"models/bullsquid.mdl",false)) SetVariantString("whip");
-									else SetVariantString("spin_whip");
-									AcceptEntityInput(entmdl,"SetAnimation");
-								}
-								case 12:
-								{
-									SetVariantString("bite");
-									AcceptEntityInput(entmdl,"SetAnimation");
-								}
-								case 13:
-								{
-									SetVariantString("bite2");
-									AcceptEntityInput(entmdl,"SetAnimation");
-								}
-								case 14:
-								{
-									SetVariantString("range");
-									AcceptEntityInput(entmdl,"SetAnimation");
+									case 1:
+									{
+										SetVariantString("run");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 2:
+									{
+										SetVariantString("walk");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 3:
+									{
+										SetVariantString("turnL");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 4:
+									{
+										SetVariantString("turnR");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 5:
+									{
+										SetVariantString("turn180");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 6:
+									{
+										SetVariantString("idle");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 7:
+									{
+										if (StrEqual(mdl,"models/bullsquid.mdl",false)) SetVariantString("idle");
+										else SetVariantString("idle2");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 8:
+									{
+										if (StrEqual(mdl,"models/bullsquid.mdl",false)) SetVariantString("idle1");
+										else SetVariantString("idle3");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 9:
+									{
+										SetVariantString("idle_combat");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 10:
+									{
+										SetVariantString("eat");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 11:
+									{
+										if (StrEqual(mdl,"models/bullsquid.mdl",false)) SetVariantString("whip");
+										else SetVariantString("spin_whip");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 12:
+									{
+										SetVariantString("bite");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 13:
+									{
+										SetVariantString("bite2");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
+									case 14:
+									{
+										SetVariantString("range");
+										AcceptEntityInput(entmdl,"SetAnimation");
+									}
 								}
 							}
 						}

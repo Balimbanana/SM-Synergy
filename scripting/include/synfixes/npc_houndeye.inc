@@ -12,9 +12,13 @@ void setuphound(int entity)
 				{
 					if (!IsModelPrecached("models/_monsters/xen/houndeye.mdl")) PrecacheModel("models/_monsters/xen/houndeye.mdl",true);
 				}
-				else
+				else if (FileExists("models/xenians/houndeye.mdl", true, NULL_STRING))
 				{
 					if (!IsModelPrecached("models/xenians/houndeye.mdl")) PrecacheModel("models/xenians/houndeye.mdl",true);
+				}
+				else
+				{
+					if (!IsModelPrecached("models/houndeye.mdl")) PrecacheModel("models/houndeye.mdl",true);
 				}
 			}
 			else
@@ -88,7 +92,8 @@ void setuphound(int entity)
 				if (StrEqual(cls,"npc_houndeye",false))
 				{
 					if (FileExists("models/_monsters/xen/houndeye.mdl",true,NULL_STRING)) DispatchKeyValue(entmdl,"model","models/_monsters/xen/houndeye.mdl");
-					else DispatchKeyValue(entmdl,"model","models/xenians/houndeye.mdl");
+					else if (FileExists("models/xenians/houndeye.mdl",true,NULL_STRING)) DispatchKeyValue(entmdl,"model","models/xenians/houndeye.mdl");
+					else DispatchKeyValue(entmdl,"model","models/houndeye.mdl");
 				}
 				else
 				{
@@ -116,7 +121,8 @@ void setuphound(int entity)
 					if (StrEqual(cls,"npc_houndeye",false))
 					{
 						if (FileExists("models/_monsters/xen/houndeye.mdl",true,NULL_STRING)) DispatchKeyValue(boundbox,"model","models/_monsters/xen/houndeye.mdl");
-						else DispatchKeyValue(boundbox,"model","models/xenians/houndeye.mdl");
+						else if (FileExists("models/xenians/houndeye.mdl",true,NULL_STRING)) DispatchKeyValue(boundbox,"model","models/xenians/houndeye.mdl");
+						else DispatchKeyValue(boundbox,"model","models/houndeye.mdl");
 					}
 					else
 					{
@@ -178,7 +184,8 @@ void setuphound(int entity)
 				if (StrEqual(cls,"npc_houndeye",false))
 				{
 					if (FileExists("models/_monsters/xen/houndeye.mdl",true,NULL_STRING)) WritePackString(dp,"models/_monsters/xen/houndeye.mdl");
-					else WritePackString(dp,"models/xenians/houndeye.mdl");
+					else if (FileExists("models/xenians/houndeye.mdl",true,NULL_STRING)) WritePackString(dp,"models/xenians/houndeye.mdl");
+					else WritePackString(dp,"models/houndeye.mdl");
 				}
 				else
 				{

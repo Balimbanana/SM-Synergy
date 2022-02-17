@@ -66,6 +66,13 @@ void agruntthink(int entity)
 					meleerange+=25.0;
 					hornetminrange-=80.0;
 					jumprange = 1.0;
+					/*
+					float vecMins[3];
+					vecMins[0] = -13.0;
+					vecMins[1] = -13.0;
+					vecMins[2] = 30.0;
+					SetEntPropVector(entity, Prop_Data, "m_vecMins", vecMins);
+					*/
 				}
 				if ((chkdist <= meleerange) && ((seq == meleeanim) || (seq == meleeanim2)) && (withinradius))
 				{
@@ -103,6 +110,7 @@ void agruntthink(int entity)
 								float tmp;
 								tmp+=propshow;
 								centlastang[entity] = tmp;
+								SetEntPropEnt(entity, Prop_Data, "m_hEffectEntity", propshow);
 							}
 						}
 					}
@@ -163,6 +171,7 @@ void agruntthink(int entity)
 							float tmp;
 							tmp+=propshow;
 							centlastang[entity] = tmp;
+							SetEntPropEnt(entity, Prop_Data, "m_hEffectEntity", propshow);
 						}
 					}
 					centnextatk[entity] = Time+1.0;
@@ -192,9 +201,11 @@ void agruntthink(int entity)
 						TeleportEntity(attachfind,curorg,NULL_VECTOR,NULL_VECTOR);
 						SetVariantString("!activator");
 						AcceptEntityInput(attachfind,"SetParent",entity);
-						if (StrEqual(entmdl,"models/agrunt.mdl",false)) SetVariantString("0");
-						else SetVariantString("rightclaw");
-						AcceptEntityInput(attachfind,"SetParentAttachment");
+						if (!StrEqual(entmdl,"models/agrunt.mdl",false))
+						{
+							SetVariantString("rightclaw");
+							AcceptEntityInput(attachfind,"SetParentAttachment");
+						}
 						if (HasEntProp(attachfind,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(attachfind,Prop_Data,"m_vecAbsOrigin",curorg);
 						else if (HasEntProp(attachfind,Prop_Send,"m_vecOrigin")) GetEntPropVector(attachfind,Prop_Send,"m_vecOrigin",curorg);
 						AcceptEntityInput(attachfind,"kill");
@@ -254,6 +265,7 @@ void agruntthink(int entity)
 						int context = 19;
 						if (enorg[2] > curorg[2]+10.0) context = 18;
 						SetEntProp(entity,Prop_Data,"m_nSequence",context);
+						enorg[2]-=40.0;
 					}
 					else
 					{
@@ -289,7 +301,13 @@ void agruntthink(int entity)
 					if (spitball != -1)
 					{
 						//DispatchKeyValue(spitball,"model","models/props_junk/popcan01a.mdl");
-						if (StrEqual(entmdl,"models/agrunt.mdl",false)) DispatchKeyValue(spitball,"model","models/hornet.mdl");
+						if (StrEqual(entmdl,"models/agrunt.mdl",false))
+						{
+							DispatchKeyValue(spitball,"model","models/hornet.mdl");
+							loc[0] = (loc[0] + (55 * Cosine(DegToRad(angs[1]))));
+							loc[1] = (loc[1] + (55 * Sine(DegToRad(angs[1]))));
+							loc[2] += 40.0;
+						}
 						else DispatchKeyValue(spitball,"model","models/weapons/w_hornet.mdl");
 						DispatchKeyValue(spitball,"classname","npc_hornet");
 						TeleportEntity(spitball,loc,angs,NULL_VECTOR);
@@ -387,25 +405,25 @@ public Action StartTouchHornet(int entity, int other)
 						EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 					}
 				}
-			}
-			int effect = CreateEntityByName("info_particle_system");
-			if (effect != -1)
-			{
-				float curorg[3];
-				if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",curorg);
-				else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",curorg);
-				float angs[3];
-				if (HasEntProp(entity,Prop_Data,"m_angAbsRotation")) GetEntPropVector(entity,Prop_Data,"m_angAbsRotation",angs);
-				DispatchKeyValue(effect,"effect_name","grenade_hornet_detonate");
-				DispatchKeyValue(effect,"start_active","1");
-				TeleportEntity(effect,curorg,angs,NULL_VECTOR);
-				DispatchSpawn(effect);
-				ActivateEntity(effect);
-				AcceptEntityInput(effect,"Start");
-				Handle dp = CreateDataPack();
-				WritePackCell(dp,effect);
-				WritePackString(dp,"info_particle_system");
-				CreateTimer(0.5,cleanup,dp,TIMER_FLAG_NO_MAPCHANGE);
+				int effect = CreateEntityByName("info_particle_system");
+				if (effect != -1)
+				{
+					float curorg[3];
+					if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",curorg);
+					else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",curorg);
+					float angs[3];
+					if (HasEntProp(entity,Prop_Data,"m_angAbsRotation")) GetEntPropVector(entity,Prop_Data,"m_angAbsRotation",angs);
+					DispatchKeyValue(effect,"effect_name","grenade_hornet_detonate");
+					DispatchKeyValue(effect,"start_active","1");
+					TeleportEntity(effect,curorg,angs,NULL_VECTOR);
+					DispatchSpawn(effect);
+					ActivateEntity(effect);
+					AcceptEntityInput(effect,"Start");
+					Handle dp = CreateDataPack();
+					WritePackCell(dp,effect);
+					WritePackString(dp,"info_particle_system");
+					CreateTimer(0.5,cleanup,dp,TIMER_FLAG_NO_MAPCHANGE);
+				}
 			}
 		}
 		AcceptEntityInput(entity,"kill");
