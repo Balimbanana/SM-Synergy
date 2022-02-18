@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.204"
-			"Previous"	"2.203"
+			"Latest"  	"2.205"
+			"Previous"	"2.204"
 		}
 		
-		"Notes"	"Additional configurations and changes to loading persistent saves."
+		"Notes"	"Only allow reload current checkpoint by autosave, not map save."
 	}
 	
 	"Files"

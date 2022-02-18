@@ -76,7 +76,7 @@ char savedir[64];
 char szReloadSaveName[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.204"
+#define PLUGIN_VERSION "2.205"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -312,19 +312,12 @@ public Action votereload(int client, int args)
 	if (strlen(savedir) > 1)
 	{
 		char curmapchk[128];
-		Format(curmapchk,sizeof(curmapchk),"%s/%s.hl2",savedir,mapbuf);
+		//Format(curmapchk,sizeof(curmapchk),"%s/%s.hl2",savedir,mapbuf);
+		Format(curmapchk,sizeof(curmapchk),"%s/autosave.hl1",savedir);
 		if (FileExists(curmapchk))
 		{
-			bAddCur = true;
-		}
-		else
-		{
-			Format(curmapchk,sizeof(curmapchk),"%s/autosave.hl1",savedir);
-			if (FileExists(curmapchk))
-			{
-				if (FileSize(curmapchk) > 15)
-					bAddCur = true;
-			}
+			if (FileSize(curmapchk) > 15)
+				bAddCur = true;
 		}
 	}
 	else bAddCur = true;
@@ -3950,12 +3943,12 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 					bool bPasschk = false;
 					if (!g_hCVbTransitionMode.BoolValue)
 					{
-						if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1) || (StrContains(clsname,"item_",false) != -1) || (StrContains(clsname,"weapon_",false) != -1)) && (!StrEqual(clsname,"item_ammo_drop",false)) && (!StrEqual(clsname,"item_health_drop",false)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_barnacle_tongue_tip",false)) && (!StrEqual(clsname,"light_dynamic",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"predicted_viewmodel",false)))
+						if (((StrContains(clsname,"npc_",false) != -1) || (StrContains(clsname,"prop_",false) != -1) || (StrContains(clsname,"item_",false) != -1) || (StrContains(clsname,"weapon_",false) != -1)) && (!StrEqual(clsname,"item_ammo_drop",false)) && (!StrEqual(clsname,"item_ammo_pack",false)) && (!StrEqual(clsname,"item_health_drop",false)) && (!StrEqual(clsname,"npc_template_maker",false)) && (!StrEqual(clsname,"npc_barnacle_tongue_tip",false)) && (!StrEqual(clsname,"light_dynamic",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"predicted_viewmodel",false)))
 						{
 							bPasschk = true;
 						}
 					}
-					else if ((!StrEqual(clsname,"player_loadsaved",false)) && (!StrEqual(clsname,"path_track",false)) && (!StrEqual(clsname,"npc_template_maker",false)) && (StrContains(clsname,"rope",false) == -1) && (StrContains(clsname,"phys",false) != 0) && (!StrEqual(clsname,"item_ammo_drop",false)) && (!StrEqual(clsname,"item_health_drop",false)) && (!StrEqual(clsname,"beam",false)) && (!StrEqual(clsname,"npc_barnacle_tongue_tip",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"point_spotlight",false)) && (!StrEqual(clsname,"predicted_viewmodel",false)))
+					else if ((!StrEqual(clsname,"player_loadsaved",false)) && (!StrEqual(clsname,"path_track",false)) && (!StrEqual(clsname,"npc_template_maker",false)) && (StrContains(clsname,"rope",false) == -1) && (StrContains(clsname,"phys",false) != 0) && (!StrEqual(clsname,"item_ammo_drop",false)) && (!StrEqual(clsname,"item_ammo_pack",false)) && (!StrEqual(clsname,"item_health_drop",false)) && (!StrEqual(clsname,"beam",false)) && (!StrEqual(clsname,"npc_barnacle_tongue_tip",false)) && (!StrEqual(clsname,"info_particle_system",false)) && (!StrEqual(clsname,"npc_maker",false)) && (!StrEqual(clsname,"npc_antlion_template_maker",false)) && (!StrEqual(clsname,"npc_heli_avoidsphere",false)) && (StrContains(clsname,"env_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (!StrEqual(clsname,"info_landmark",false)) && (!StrEqual(clsname,"shadow_control",false)) && (!StrEqual(clsname,"player",false)) && (StrContains(clsname,"light_",false) == -1) && (!StrEqual(clsname,"point_spotlight",false)) && (!StrEqual(clsname,"predicted_viewmodel",false)))
 					{
 						bPasschk = true;
 					}
@@ -4917,6 +4910,8 @@ public void OnClientAuthorized(int client, const char[] szAuth)
 				}
 			}
 		}
+		
+		// Intro and van choreo vehicles break on ep1_citadel_00
 		if ((!bNoDelete) && (!StrEqual(mapbuf,"ep1_citadel_00",false)))
 		{
 			if ((logsv != -1) && (IsValidEntity(logsv)))
