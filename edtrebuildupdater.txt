@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.72"
-			"Previous"	"0.71"
+			"Latest"  	"0.73"
+			"Previous"	"0.72"
 		}
 		
-		"Notes"	"Fixed backwards compatibility with SM 1.7"
+		"Notes"	"Added functionality for edit targetname with wildcard selection"
 	}
 	
 	"Files"
