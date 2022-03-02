@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20002"
-			"Previous"	"1.20001"
+			"Latest"  	"1.20003"
+			"Previous"	"1.20002"
 		}
 		
-		"Notes"	"Fix to getting entity cache prefix. Added fix to enable boost on prop_vehicle_mp."
+		"Notes"	"Block use of fixalyx on d2_prison_08."
 	}
 	
 	"Files"
