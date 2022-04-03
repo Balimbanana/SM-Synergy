@@ -61,7 +61,7 @@ Handle dctimeoutarr = INVALID_HANDLE;
 Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
 Handle hTemplateData = INVALID_HANDLE;
-ConVar hWeaponRespawn, hBaseEquipmentSetup, hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeathTime;
+ConVar hWeaponRespawn, hBaseEquipmentSetup, hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeathTime, hCVSynEvents;
 ConVar g_hConVarRebuildEntities;
 float entrefresh = 0.0;
 float removertimer = 30.0;
@@ -116,7 +116,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0055"
+#define PLUGIN_VERSION "2.0056"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -369,6 +369,8 @@ public void OnPluginStart()
 	hCVDeathTime = FindConVar("mp_deathtime");
 	if (hCVDeathTime == INVALID_HANDLE) hCVDeathTime = CreateConVar("mp_deathtime", "3.0", "Remove player ragdolls after this time.", _, true, 0.0, true, 60.0);
 	SetConVarBounds(hCVDeathTime, ConVarBound_Lower, true, 0.0);
+	hCVSynEvents = FindConVar("synfixes_customkillfeed");
+	if (hCVSynEvents == INVALID_HANDLE) hCVSynEvents = CreateConVar("synfixes_customkillfeed", "1", "Sets whether or not to activate the kill feed for custom entities.", _, true, 0.0, true, 1.0);
 	cvar = FindConVar("synfixes_fixsoundscapes");
 	if (cvar != INVALID_HANDLE)
 	{
@@ -12634,74 +12636,80 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				EmitSoundToAll(snd, killed, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
 				viccol = -16732161;
 			}
-			if (((FindStringInArray(customentlist,clsname) != -1) || (CustEventSet)) && (!StrEqual(clsname,"monster_alien_grunt",false)) && (!StrEqual(clsname,"monster_gargantua",false)))
+			if (hCVSynEvents.BoolValue)
 			{
-				//-6921216 is blue -16083416 is green -16777041 is red -1052689 is white -3644216 is purple -16732161 is yellow
-				Handle entkilled = CreateEvent("synergy_entity_death");
-				SetEventInt(entkilled,"killercolor",-16083416);
-				SetEventInt(entkilled,"victimcolor",viccol);
-				char weap[24];
-				GetClientWeapon(attacker,weap,sizeof(weap));
-				if (StrContains(clsname2,"npc_",false) != -1)
+				if (((FindStringInArray(customentlist,clsname) != -1) || (CustEventSet)) && (StrContains(clsname, "monster_", false) == -1))
 				{
-					Format(weap,sizeof(weap),"%s",clsname2);
-					ReplaceString(weap,sizeof(weap),"npc_","",false);
-				}
-				else if ((StrEqual(clsname2,"prop_physics",false)) || (StrEqual(clsname2,"rpg_missile",false)))
-				{
-					Format(weap,sizeof(weap),"%s",clsname2);
-					ReplaceString(weap,sizeof(weap),"prop_","",false);
-				}
-				if (strlen(weap) < 1)
-					Format(weap,sizeof(weap),"hands");
-				else if (StrEqual(weap,"weapon_rpg",false))
-				{
-					Format(weap,sizeof(weap),"rpg_missile");
-				}
-				else
-				{
-					ReplaceString(weap,sizeof(weap),"weapon_","",false);
-				}
-				//PrintToServer("%i killed %s with weap %s atk %s cls2 %s",attacker,clsname,weap,atk,clsname2);
-				if ((StrEqual(weap,"player",false)) && (StrEqual(atk,"rpg_missile",false)))
-				{
-					Format(weap,sizeof(weap),"rpg_missile");
-				}
-				else if (StrEqual(atk,"npc_grenade_frag",false))
-				{
-					Format(weap,sizeof(weap),"grenade_frag");
-				}
-				if (StrEqual(weap,"crossbow",false)) Format(weap,sizeof(weap),"crossbow_bolt");
-				else if (StrEqual(weap,"glock",false)) Format(weap,sizeof(weap),"pistol");
-				else if (StrEqual(weap,"mp5",false)) Format(weap,sizeof(weap),"smg1");
-				SetEventString(entkilled,"weapon",weap);
-				SetEventInt(entkilled,"killerID",attacker);
-				SetEventInt(entkilled,"victimID",killed);
-				SetEventBool(entkilled,"suicide",false);
-				char tmpchar[96];
-				GetClientName(attacker,tmpchar,sizeof(tmpchar));
-				SetEventString(entkilled,"killername",tmpchar);
-				ReplaceString(clsname,sizeof(clsname),"npc_","",false);
-				ReplaceString(clsname,sizeof(clsname),"monster_","",false);
-				clsname[0] &= ~(1 << 5);
-				char rebuildupper[32][32];
-				ExplodeString(clsname,"_",rebuildupper,32,32);
-				clsname = "";
-				for (int i = 0;i<32;i++)
-				{
-					if (strlen(rebuildupper[i]) > 0)
+					//-6921216 is blue -16083416 is green -16777041 is red -1052689 is white -3644216 is purple -16732161 is yellow
+					Handle entkilled = CreateEvent("synergy_entity_death");
+					if (entkilled != INVALID_HANDLE)
 					{
-						rebuildupper[i][0] &= ~(1 << 5);
-						if (strlen(clsname) > 0)
-							Format(clsname,sizeof(clsname),"%s %s",clsname,rebuildupper[i]);
+						SetEventInt(entkilled,"killercolor",-16083416);
+						SetEventInt(entkilled,"victimcolor",viccol);
+						char weap[24];
+						GetClientWeapon(attacker,weap,sizeof(weap));
+						if (StrContains(clsname2,"npc_",false) != -1)
+						{
+							Format(weap,sizeof(weap),"%s",clsname2);
+							ReplaceString(weap,sizeof(weap),"npc_","",false);
+						}
+						else if ((StrEqual(clsname2,"prop_physics",false)) || (StrEqual(clsname2,"rpg_missile",false)))
+						{
+							Format(weap,sizeof(weap),"%s",clsname2);
+							ReplaceString(weap,sizeof(weap),"prop_","",false);
+						}
+						if (strlen(weap) < 1)
+							Format(weap,sizeof(weap),"hands");
+						else if (StrEqual(weap,"weapon_rpg",false))
+						{
+							Format(weap,sizeof(weap),"rpg_missile");
+						}
 						else
-							Format(clsname,sizeof(clsname),"%s",rebuildupper[i]);
+						{
+							ReplaceString(weap,sizeof(weap),"weapon_","",false);
+						}
+						//PrintToServer("%i killed %s with weap %s atk %s cls2 %s",attacker,clsname,weap,atk,clsname2);
+						if ((StrEqual(weap,"player",false)) && (StrEqual(atk,"rpg_missile",false)))
+						{
+							Format(weap,sizeof(weap),"rpg_missile");
+						}
+						else if (StrEqual(atk,"npc_grenade_frag",false))
+						{
+							Format(weap,sizeof(weap),"grenade_frag");
+						}
+						if (StrEqual(weap,"crossbow",false)) Format(weap,sizeof(weap),"crossbow_bolt");
+						else if (StrEqual(weap,"glock",false)) Format(weap,sizeof(weap),"pistol");
+						else if (StrEqual(weap,"mp5",false)) Format(weap,sizeof(weap),"smg1");
+						SetEventString(entkilled,"weapon",weap);
+						SetEventInt(entkilled,"killerID",attacker);
+						SetEventInt(entkilled,"victimID",killed);
+						SetEventBool(entkilled,"suicide",false);
+						char tmpchar[96];
+						GetClientName(attacker,tmpchar,sizeof(tmpchar));
+						SetEventString(entkilled,"killername",tmpchar);
+						ReplaceString(clsname,sizeof(clsname),"npc_","",false);
+						ReplaceString(clsname,sizeof(clsname),"monster_","",false);
+						clsname[0] &= ~(1 << 5);
+						char rebuildupper[32][32];
+						ExplodeString(clsname,"_",rebuildupper,32,32);
+						clsname = "";
+						for (int i = 0;i<32;i++)
+						{
+							if (strlen(rebuildupper[i]) > 0)
+							{
+								rebuildupper[i][0] &= ~(1 << 5);
+								if (strlen(clsname) > 0)
+									Format(clsname,sizeof(clsname),"%s %s",clsname,rebuildupper[i]);
+								else
+									Format(clsname,sizeof(clsname),"%s",rebuildupper[i]);
+							}
+							else break;
+						}
+						SetEventString(entkilled,"victimname",clsname);
+						SetEventInt(entkilled,"iconcolor",-1052689);
+						FireEvent(entkilled,false);
 					}
-					else break;
 				}
-				SetEventString(entkilled,"victimname",clsname);
-				SetEventInt(entkilled,"iconcolor",-1052689);
-				FireEvent(entkilled,false);
 			}
 		}
 	}
