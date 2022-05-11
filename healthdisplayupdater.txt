@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.995"
-			"Previous"	"1.994"
+			"Latest"  	"1.996"
+			"Previous"	"1.995"
 		}
 		
-		"Notes"	"Added names by IDs."
+		"Notes"	"Added Mirt and fixed some name fixups case sensitive on Linux. Added CVar healthdisplay_showplayers."
 	}
 	
 	"Files"

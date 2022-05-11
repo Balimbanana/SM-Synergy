@@ -13,7 +13,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.995"
+#define PLUGIN_VERSION "1.996"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/healthdisplayupdater.txt"
 
 public Plugin myinfo = 
@@ -29,6 +29,7 @@ Handle airelarr = INVALID_HANDLE;
 Handle htarr = INVALID_HANDLE;
 Handle liarr = INVALID_HANDLE;
 Handle globalsarr = INVALID_HANDLE;
+ConVar hCVShowPlayers;
 bool bugbaitpicked = false;
 bool ShowPlayers = false;
 bool SynModesAct = false;
@@ -52,8 +53,8 @@ public void OnPluginStart()
 	LoadTranslations("healthdisplay.phrases");
 	LoadTranslations("colors.phrases");
 	airelarr = CreateArray(64);
-	htarr = CreateArray(64);
-	liarr = CreateArray(64);
+	htarr = CreateArray(128);
+	liarr = CreateArray(128);
 	globalsarr = CreateArray(16);
 	char Err[100];
 	Handle_Database = SQLite_UseDatabase("sourcemod-local",Err,100-1);
@@ -87,6 +88,8 @@ public void OnPluginStart()
 	HookConVarChange(defmodeh, defaultmodech);
 	defaultmode = GetConVarInt(defmodeh);
 	CloseHandle(defmodeh);
+	hCVShowPlayers = CreateConVar("healthdisplay_showplayers", "0", "Sets whether or not to show players.", _, true, 0.0, true, 1.0);
+	HookConVarChange(hCVShowPlayers, ChangeShowPlayers);
 	//This is on a timer to call a function because when the function is called at this point,
 	//it can sometimes fail, so I found it was best to wait 1 second.
 	CreateTimer(1.0, reloadclientstime);
@@ -114,6 +117,7 @@ public void OnMapStart()
 	GetGameDescription(gamedescoriginal,sizeof(gamedescoriginal),false);
 	ReplaceString(gamedescoriginal,sizeof(gamedescoriginal),"synergy","",false);
 	ReplaceString(gamedescoriginal,sizeof(gamedescoriginal)," ","",false);
+	ShowPlayers = hCVShowPlayers.BoolValue;
 	if ((StrEqual(gamedescoriginal,"20.1",false)) || (StrEqual(gamedescoriginal,"20.3",false))) ShowPlayers = true;
 	bugbaitpicked = false;
 	HookEntityOutput("weapon_bugbait", "OnPlayerPickup", onbugbaitpickup);
@@ -202,7 +206,7 @@ public void OnLibraryAdded(const char[] name)
 	}
 }
 
-public int Updater_OnPluginUpdated()
+public void Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
@@ -419,9 +423,11 @@ public Action cleararr(Handle timer)
 	addht("npc_stalker");
 	addht("npc_sniper");
 	addht("npc_turret_floor");
+	addht("npc_xentree");
 	addht("npc_zombie");
 	addht("npc_zombie_torso");
 	addht("npc_zombie_worker");
+	addht("npc_zombie_hev");
 	addht("npc_zombine");
 	addht("npc_fastzombie");
 	addht("npc_fastzombie_torso");
@@ -433,6 +439,7 @@ public Action cleararr(Handle timer)
 	addht("npc_gargantua");
 	addht("npc_gonarch");
 	addht("npc_babycrab");
+	addht("npc_headcrab_baby");
 	addht("npc_hunter");
 	addht("npc_advisor");
 	addht("npc_antlion");
@@ -441,12 +448,27 @@ public Action cleararr(Handle timer)
 	addht("npc_zombie_scientist");
 	addht("npc_zombie_scientist_torso");
 	addht("npc_zombie_security");
+	addht("npc_zombie_grunt");
+	addht("npc_zombie_grunt_torso");
 	addht("npc_alien_slave");
+	addht("npc_alien_slave_dummy");
 	addht("npc_alien_grunt");
+	addht("npc_alien_grunt_unarmored");
+	addht("npc_alien_grunt_melee");
+	addht("npc_alien_grunt_elite");
+	addht("npc_xen_grunt");
+	addht("npc_xontroller");
+	addht("npc_alien_controller");
 	addht("npc_houndeye");
+	addht("npc_houndeye_suicide");
+	addht("npc_houndeye_knockback");
+	addht("npc_xenturret");
+	addht("npc_beneathticle");
 	addht("npc_tentacle");
+	addht("npc_xentacle");
 	addht("npc_snark");
 	addht("npc_bullsquid");
+	addht("npc_bullsquid_melee");
 	addht("npc_sentry_ground");
 	addht("npc_sentry_ceiling");
 	addht("npc_human_grunt");
@@ -455,7 +477,9 @@ public Action cleararr(Handle timer)
 	addht("npc_human_grenadier");
 	addht("npc_human_assassin");
 	addht("npc_abrams");
+	addht("npc_lav");
 	addht("npc_apache");
+	addht("npc_osprey");
 	addht("npc_ichthyosaur");
 	addht("npc_clawscanner");
 	addht("npc_doramn_window");
@@ -479,6 +503,7 @@ public Action cleararr(Handle timer)
 	addht("monster_human_grunt");
 	addht("monster_miniturret");
 	addht("monster_nihilanth");
+	addht("npc_nihilanth");
 	for (int i = 0;i<GetArraySize(airelarr);i++)
 	{
 		int rel = GetArrayCell(airelarr, i);
@@ -667,6 +692,10 @@ public Action ShowTimer(Handle timer)
 							if (targ != -1)
 								GetEntityClassname(targ,clsname,sizeof(clsname));
 						}
+						if (StrEqual(clsname,"npc_plantlight",false))
+						{
+							targ = -1;
+						}
 						if ((targ != -1) && (IsValidEntity(targ)) && ((targ > MaxClients) || (ShowPlayers)))
 						{
 							char targn[64];
@@ -824,8 +853,8 @@ public Action ShowTimer(Handle timer)
 											GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 											if (HasEntProp(targ,Prop_Data,"m_iName")) GetEntPropString(targ,Prop_Data,"m_iName",targn,sizeof(targn));
 											if (StrEqual(cmodel,"models/odessa.mdl",false)) Format(clsname,sizeof(clsname),"Odessa Cubbage");
-											else if (StrContains(cmodel,"models/humans/group03m/",false) == 0) Format(clsname,sizeof(clsname),"Rebel Medic");
 											else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
+											else if (StrContains(cmodel,"models/humans/group03m/",false) == 0) Format(clsname,sizeof(clsname),"Rebel Medic");
 											else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
 											else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Larry");
 											else if (StrContains(targn,"anne",false) != -1) Format(clsname,sizeof(clsname),"Anne");
@@ -854,6 +883,7 @@ public Action ShowTimer(Handle timer)
 											else if (StrEqual(targn,"Eloise",false)) Format(clsname,sizeof(clsname),"Eloise");
 											else if (StrEqual(targn,"Noah",false)) Format(clsname,sizeof(clsname),"Noah");
 											else if (StrEqual(targn,"Eve",false)) Format(clsname,sizeof(clsname),"Eve");
+											else if (StrEqual(targn,"mirt",false)) Format(clsname,sizeof(clsname),"Mirt");
 											else if ((StrEqual(targn,"Olivia",false)) || (StrEqual(targn,"actor_olivia",false))) Format(clsname,sizeof(clsname),"Olivia");
 											else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 											else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
@@ -965,8 +995,8 @@ public Action ShowTimer(Handle timer)
 										char cmodel[64];
 										GetEntPropString(targ,Prop_Data,"m_ModelName",cmodel,sizeof(cmodel));
 										if (StrEqual(cmodel,"models/odessa.mdl",false)) Format(clsname,sizeof(clsname),"Odessa Cubbage");
-										else if (StrContains(cmodel,"models/humans/group03m/",false) == 0) Format(clsname,sizeof(clsname),"Rebel Medic");
 										else if (StrEqual(targn,"griggs",false)) Format(clsname,sizeof(clsname),"Griggs");
+										else if (StrContains(cmodel,"models/humans/group03m/",false) == 0) Format(clsname,sizeof(clsname),"Rebel Medic");
 										else if (StrEqual(targn,"sheckley",false)) Format(clsname,sizeof(clsname),"Sheckley");
 										else if (StrContains(targn,"larry",false) != -1) Format(clsname,sizeof(clsname),"Larry");
 										else if (StrContains(targn,"anne",false) != -1) Format(clsname,sizeof(clsname),"Anne");
@@ -993,6 +1023,7 @@ public Action ShowTimer(Handle timer)
 										else if (StrEqual(targn,"Eloise",false)) Format(clsname,sizeof(clsname),"Eloise");
 										else if (StrEqual(targn,"Noah",false)) Format(clsname,sizeof(clsname),"Noah");
 										else if (StrEqual(targn,"Eve",false)) Format(clsname,sizeof(clsname),"Eve");
+										else if (StrEqual(targn,"mirt",false)) Format(clsname,sizeof(clsname),"Mirt");
 										else if ((StrEqual(targn,"Olivia",false)) || (StrEqual(targn,"actor_olivia",false))) Format(clsname,sizeof(clsname),"Olivia");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 2) Format(clsname,sizeof(clsname),"Refugee");
 										else if (GetEntProp(targ,Prop_Data,"m_Type") == 3) Format(clsname,sizeof(clsname),"Rebel");
@@ -1123,25 +1154,25 @@ public Action ShowTimer(Handle timer)
 public void PrintTheMsg(int client, int curh, int maxh, char clsname[64], bool friendly)
 {
 	char hudbuf[40];
-	if (StrEqual(clsname,"monk",false)) Format(clsname,sizeof(clsname),"Father Grigori");
-	else if (StrEqual(clsname,"kleiner",false)) Format(clsname,sizeof(clsname),"Isaac Kleiner");
-	else if (StrEqual(clsname,"mossman",false)) Format(clsname,sizeof(clsname),"Judith Mossman");
-	else if (StrEqual(clsname,"magnusson",false)) Format(clsname,sizeof(clsname),"Arne Magnusson");
-	else if (StrEqual(clsname,"breen",false)) Format(clsname,sizeof(clsname),"Dr Breen");
-	else if (StrEqual(clsname,"alyx",false)) Format(clsname,sizeof(clsname),"Alyx Vance");
-	else if (StrEqual(clsname,"eli",false)) Format(clsname,sizeof(clsname),"Eli Vance");
-	else if (StrEqual(clsname,"antlionworker",false)) Format(clsname,sizeof(clsname),"Antlion Worker");
-	else if (StrEqual(clsname,"cscanner",false)) Format(clsname,sizeof(clsname),"City Scanner");
-	else if (StrEqual(clsname,"turret_floor",false)) Format(clsname,sizeof(clsname),"Floor Turret");
-	else if (StrEqual(clsname,"combinegunship",false)) Format(clsname,sizeof(clsname),"Combine Gunship");
-	else if (StrEqual(clsname,"prop_vehicle_apc",false)) Format(clsname,sizeof(clsname),"Combine APC");
-	else if (StrEqual(clsname,"npc_fastzombie",false)) Format(clsname,sizeof(clsname),"Fast Zombie");
-	else if (StrEqual(clsname,"npc_fastzombie_torso",false)) Format(clsname,sizeof(clsname),"Fast Zombie Torso");
-	else if (StrEqual(clsname,"npc_headcrab_fast",false)) Format(clsname,sizeof(clsname),"Fast Headcrab");
-	else if (StrEqual(clsname,"npc_headcrab_poison",false)) Format(clsname,sizeof(clsname),"Poison Headcrab");
-	else if (StrEqual(clsname,"npc_headcrab_black",false)) Format(clsname,sizeof(clsname),"Black Headcrab");
-	else if (StrEqual(clsname,"npc_poisonzombie",false)) Format(clsname,sizeof(clsname),"Poison Zombie");
-	else if (StrEqual(clsname,"combinedropship",false)) Format(clsname,sizeof(clsname),"Combine Dropship");
+	if (StrEqual(clsname,"Monk",false)) Format(clsname,sizeof(clsname),"Father Grigori");
+	else if (StrEqual(clsname,"Kleiner",false)) Format(clsname,sizeof(clsname),"Isaac Kleiner");
+	else if (StrEqual(clsname,"Mossman",false)) Format(clsname,sizeof(clsname),"Judith Mossman");
+	else if (StrEqual(clsname,"Magnusson",false)) Format(clsname,sizeof(clsname),"Arne Magnusson");
+	else if (StrEqual(clsname,"Breen",false)) Format(clsname,sizeof(clsname),"Dr Breen");
+	else if (StrEqual(clsname,"Alyx",false)) Format(clsname,sizeof(clsname),"Alyx Vance");
+	else if (StrEqual(clsname,"Eli",false)) Format(clsname,sizeof(clsname),"Eli Vance");
+	else if (StrEqual(clsname,"Antlionworker",false)) Format(clsname,sizeof(clsname),"Antlion Worker");
+	else if (StrEqual(clsname,"Cscanner",false)) Format(clsname,sizeof(clsname),"City Scanner");
+	else if (StrEqual(clsname,"Turret_floor",false)) Format(clsname,sizeof(clsname),"Floor Turret");
+	else if (StrEqual(clsname,"Combinegunship",false)) Format(clsname,sizeof(clsname),"Combine Gunship");
+	else if (StrEqual(clsname,"Prop_vehicle_apc",false)) Format(clsname,sizeof(clsname),"Combine APC");
+	else if (StrEqual(clsname,"Fastzombie",false)) Format(clsname,sizeof(clsname),"Fast Zombie");
+	else if (StrEqual(clsname,"Fastzombie_torso",false)) Format(clsname,sizeof(clsname),"Fast Zombie Torso");
+	else if (StrEqual(clsname,"Headcrab_fast",false)) Format(clsname,sizeof(clsname),"Fast Headcrab");
+	else if (StrEqual(clsname,"Headcrab_poison",false)) Format(clsname,sizeof(clsname),"Poison Headcrab");
+	else if (StrEqual(clsname,"Headcrab_black",false)) Format(clsname,sizeof(clsname),"Black Headcrab");
+	else if (StrEqual(clsname,"Poisonzombie",false)) Format(clsname,sizeof(clsname),"Poison Zombie");
+	else if (StrEqual(clsname,"Combinedropship",false)) Format(clsname,sizeof(clsname),"Combine Dropship");
 	else if (StrContains(clsname,"_",false) != -1)
 	{
 		clsname[0] &= ~(1 << 5);
@@ -1251,6 +1282,7 @@ public void PrintTheMsgf(int client, int curh, int maxh, char clsname[64], int t
 		else if (StrEqual(targn,"Eloise",false)) Format(clsname,sizeof(clsname),"Friend: Eloise");
 		else if (StrEqual(targn,"Noah",false)) Format(clsname,sizeof(clsname),"Friend: Noah");
 		else if (StrEqual(targn,"Eve",false)) Format(clsname,sizeof(clsname),"Friend: Eve");
+		else if (StrEqual(targn,"mirt",false)) Format(clsname,sizeof(clsname),"Friend: Mirt");
 		else if ((StrEqual(targn,"Olivia",false)) || (StrEqual(targn,"actor_olivia",false))) Format(clsname,sizeof(clsname),"Friend: Olivia");
 		else if (StrEqual(clsname,"npc_citizen",false))
 		{
@@ -1483,7 +1515,7 @@ void initcl(int client)
 	bclcookie4f[client][1] = 255;
 	bclcookie4f[client][2] = 0;
 	bclcookie5x[client] = -1.0;
-	bclcookie5y[client] = 0.55;
+	bclcookie5y[client] = 0.65;
 }
 
 bool GetCopAlly()
@@ -1546,6 +1578,14 @@ bool GetNPCAlly(char[] clsname, int entchk)
 			int sf = GetEntProp(entchk,Prop_Data,"m_spawnflags");
 			if (sf & 1<<9) return true; //512
 		}
+		else if ((StrEqual(clsname,"npc_xort",false)) || (StrEqual(clsname,"npc_alien_slave",false)))
+		{
+			if (HasEntProp(entchk,Prop_Data,"m_nXortState"))
+			{
+				if (!GetEntProp(entchk,Prop_Data,"m_nXortState")) return true;
+				else return false;
+			}
+		}
 		else if (HasEntProp(entchk,Prop_Data,"m_bHackedByAlyx"))
 		{
 			int hck = GetEntProp(entchk,Prop_Data,"m_bHackedByAlyx");
@@ -1575,9 +1615,11 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_stalker");
 		addht("npc_sniper");
 		addht("npc_turret_floor");
+		addht("npc_xentree");
 		addht("npc_zombie");
 		addht("npc_zombie_torso");
 		addht("npc_zombie_worker");
+		addht("npc_zombie_hev");
 		addht("npc_zombine");
 		addht("npc_fastzombie");
 		addht("npc_fastzombie_torso");
@@ -1589,6 +1631,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_gargantua");
 		addht("npc_gonarch");
 		addht("npc_babycrab");
+		addht("npc_headcrab_baby");
 		addht("npc_hunter");
 		addht("npc_advisor");
 		addht("npc_antlion");
@@ -1597,12 +1640,27 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_zombie_scientist");
 		addht("npc_zombie_scientist_torso");
 		addht("npc_zombie_security");
+		addht("npc_zombie_grunt");
+		addht("npc_zombie_grunt_torso");
 		addht("npc_alien_slave");
+		addht("npc_alien_slave_dummy");
 		addht("npc_alien_grunt");
+		addht("npc_alien_grunt_unarmored");
+		addht("npc_alien_grunt_melee");
+		addht("npc_alien_grunt_elite");
+		addht("npc_xen_grunt");
+		addht("npc_xontroller");
+		addht("npc_alien_controller");
 		addht("npc_houndeye");
+		addht("npc_houndeye_suicide");
+		addht("npc_houndeye_knockback");
+		addht("npc_xenturret");
+		addht("npc_beneathticle");
 		addht("npc_tentacle");
+		addht("npc_xentacle");
 		addht("npc_snark");
 		addht("npc_bullsquid");
+		addht("npc_bullsquid_melee");
 		addht("npc_sentry_ground");
 		addht("npc_sentry_ceiling");
 		addht("npc_human_grunt");
@@ -1611,7 +1669,9 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("npc_human_grenadier");
 		addht("npc_human_assassin");
 		addht("npc_abrams");
+		addht("npc_lav");
 		addht("npc_apache");
+		addht("npc_osprey");
 		addht("npc_ichthyosaur");
 		addht("npc_clawscanner");
 		addht("npc_doramn_window");
@@ -1635,6 +1695,7 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		addht("monster_human_grunt");
 		addht("monster_miniturret");
 		addht("monster_nihilanth");
+		addht("npc_nihilanth");
 		for (int i = 0;i<GetArraySize(airelarr);i++)
 		{
 			int rel = GetArrayCell(airelarr, i);
@@ -1705,6 +1766,14 @@ bool GetNPCAlly(char[] clsname, int entchk)
 		{
 			int sf = GetEntProp(entchk,Prop_Data,"m_spawnflags");
 			if (sf & 1<<9) return true;
+		}
+		else if ((StrEqual(clsname,"npc_xort",false)) || (StrEqual(clsname,"npc_alien_slave",false)))
+		{
+			if (HasEntProp(entchk,Prop_Data,"m_nXortState"))
+			{
+				if (!GetEntProp(entchk,Prop_Data,"m_nXortState")) return true;
+				else return false;
+			}
 		}
 		else if (HasEntProp(entchk,Prop_Data,"m_bHackedByAlyx"))
 		{
@@ -2439,4 +2508,9 @@ public void targmodech(Handle convar, const char[] oldValue, const char[] newVal
 public void defaultmodech(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	defaultmode = StringToInt(newValue);
+}
+
+public void ChangeShowPlayers(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	ShowPlayers = convar.BoolValue;
 }
