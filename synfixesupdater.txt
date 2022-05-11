@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20003"
-			"Previous"	"1.20002"
+			"Latest"  	"1.20004"
+			"Previous"	"1.20003"
 		}
 		
-		"Notes"	"Block use of fixalyx on d2_prison_08."
+		"Notes"	"Added CVar synfixes_fixpropjump enables or disables fix for jumping off moving props and brushes."
 	}
 	
 	"Files"

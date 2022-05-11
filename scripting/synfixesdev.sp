@@ -63,6 +63,7 @@ Handle addedinputs = INVALID_HANDLE;
 Handle hTemplateData = INVALID_HANDLE;
 ConVar hWeaponRespawn, hBaseEquipmentSetup, hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeathTime, hCVSynEvents;
 ConVar g_hConVarRebuildEntities;
+ConVar g_hCVFixPropJump;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float fadingtime[128];
@@ -116,7 +117,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0056"
+#define PLUGIN_VERSION "2.0057"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -503,7 +504,9 @@ public void OnPluginStart()
 	HookConVarChange(noguidecv,noguidech);
 	CloseHandle(noguidecv);
 	AutoExecConfig(true, "synfixes");
-	g_hConVarRebuildEntities = CreateConVar("rebuildents","0","Set auto rebuild of custom entities, 1 is dynamic, 2 is static npc list.",_,true,0.0,true,2.0);
+	g_hConVarRebuildEntities = CreateConVar("rebuildents", "0", "Set auto rebuild of custom entities, 1 is dynamic, 2 is static npc list.", _, true, 0.0, true, 2.0);
+	g_hCVFixPropJump = CreateConVar("synfixes_fixpropjump", "1", "Attempts to fix jumping off props and moving brushes not allowing you to actually jump.", _, true, 0.0, true, 1.0);
+	
 	RegAdminCmd("sm_rebuildents",rebuildents,ADMFLAG_ROOT,".");
 	RegServerCmd("synfixes_listaddedhooks",listaddedhooks);
 	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
@@ -1649,7 +1652,9 @@ public void OnLibraryAdded(const char[] name)
 	}
 }
 
-public int Updater_OnPluginUpdated()
+// No more reload of plugin, this will be done on map change
+/*
+public void Updater_OnPluginUpdated()
 {
 	if (customents)
 	{
@@ -1661,7 +1666,7 @@ public int Updater_OnPluginUpdated()
 		ReloadPlugin(nullpl);
 	}
 }
-
+*/
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	RegPluginLibrary("SynFixes");
@@ -21447,6 +21452,26 @@ public void OnButtonPressJump(int client, int buttons)
 				TeleportEntity(client,orgs,NULL_VECTOR,shootvel);
 				EmitLongJumpSnd(client);
 			}
+		}
+	}
+	if (g_hCVFixPropJump.BoolValue)
+	{
+		int groundent = GetEntPropEnt(client,Prop_Data,"m_hGroundEntity");
+		if (groundent)
+		{
+			// Detach from ground
+			static float vecAdj[3];
+			if (HasEntProp(client, Prop_Data, "m_vecAbsOrigin")) GetEntPropVector(client, Prop_Data, "m_vecAbsOrigin", vecAdj);
+			else if (HasEntProp(client, Prop_Send, "m_vecOrigin")) GetEntPropVector(client, Prop_Send, "m_vecOrigin", vecAdj);
+			vecAdj[2]+=1.0;
+			
+			// Ensure original jump velocity is used
+			static float vecVel[3];
+			GetEntPropVector(client, Prop_Data, "m_vecAbsVelocity", vecVel);
+			vecVel[2] = 150.0;
+			
+			SetEntPropEnt(client, Prop_Data, "m_hGroundEntity", -1);
+			TeleportEntity(client, vecAdj, NULL_VECTOR, vecVel);
 		}
 	}
 }

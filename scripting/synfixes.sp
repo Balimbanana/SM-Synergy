@@ -30,6 +30,7 @@ Handle dctimeoutarr = INVALID_HANDLE;
 Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
 ConVar hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeathTime;
+ConVar g_hCVFixPropJump;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float centnextatk[2048];
@@ -66,7 +67,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20003"
+#define PLUGIN_VERSION "1.20004"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -247,6 +248,7 @@ public void OnPluginStart()
 	if (hCVRemoveRagdoll == INVALID_HANDLE) hCVRemoveRagdoll = CreateConVar("synfixes_remove_playerragdolls", "1", "Removes player ragdolls after mp_deathtime.", _, true, 0.0, true, 1.0);
 	hCVDeathTime = FindConVar("mp_deathtime");
 	if (hCVDeathTime == INVALID_HANDLE) hCVDeathTime = CreateConVar("mp_deathtime", "3.0", "Remove player ragdolls after this time.", _, true, 0.0, true, 60.0);
+	g_hCVFixPropJump = CreateConVar("synfixes_fixpropjump", "1", "Attempts to fix jumping off props and moving brushes not allowing you to actually jump.", _, true, 0.0, true, 1.0);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -616,7 +618,7 @@ public void OnLibraryAdded(const char[] name)
 	}
 }
 
-public int Updater_OnPluginUpdated()
+public void Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
@@ -4705,6 +4707,11 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			}
 		}
 	}
+	if (buttons & IN_JUMP) {
+		if ((!(g_LastButtons[client] & IN_JUMP)) && (vehicle == -1)) {
+			OnButtonPressJump(client,buttons);
+		}
+	}
 	g_LastButtons[client] = buttons;
 }
 
@@ -4831,6 +4838,30 @@ public void OnButtonPress(int client, int button)
 					}
 				}
 			}
+		}
+	}
+}
+
+public void OnButtonPressJump(int client, int buttons)
+{
+	if (g_hCVFixPropJump.BoolValue)
+	{
+		int groundent = GetEntPropEnt(client,Prop_Data,"m_hGroundEntity");
+		if (groundent)
+		{
+			// Detach from ground
+			static float vecAdj[3];
+			if (HasEntProp(client, Prop_Data, "m_vecAbsOrigin")) GetEntPropVector(client, Prop_Data, "m_vecAbsOrigin", vecAdj);
+			else if (HasEntProp(client, Prop_Send, "m_vecOrigin")) GetEntPropVector(client, Prop_Send, "m_vecOrigin", vecAdj);
+			vecAdj[2]+=1.0;
+			
+			// Ensure original jump velocity is used
+			static float vecVel[3];
+			GetEntPropVector(client, Prop_Data, "m_vecAbsVelocity", vecVel);
+			vecVel[2] = 150.0;
+			
+			SetEntPropEnt(client, Prop_Data, "m_hGroundEntity", -1);
+			TeleportEntity(client, vecAdj, NULL_VECTOR, vecVel);
 		}
 	}
 }
