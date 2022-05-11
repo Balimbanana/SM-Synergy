@@ -4847,7 +4847,7 @@ public void OnButtonPressJump(int client, int buttons)
 	if (g_hCVFixPropJump.BoolValue)
 	{
 		int groundent = GetEntPropEnt(client,Prop_Data,"m_hGroundEntity");
-		if (groundent)
+		if (groundent > MaxClients)
 		{
 			// Detach from ground
 			static float vecAdj[3];
