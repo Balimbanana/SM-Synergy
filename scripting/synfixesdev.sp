@@ -117,7 +117,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0057"
+#define PLUGIN_VERSION "2.0058"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -505,7 +505,7 @@ public void OnPluginStart()
 	CloseHandle(noguidecv);
 	AutoExecConfig(true, "synfixes");
 	g_hConVarRebuildEntities = CreateConVar("rebuildents", "0", "Set auto rebuild of custom entities, 1 is dynamic, 2 is static npc list.", _, true, 0.0, true, 2.0);
-	g_hCVFixPropJump = CreateConVar("synfixes_fixpropjump", "1", "Attempts to fix jumping off props and moving brushes not allowing you to actually jump.", _, true, 0.0, true, 1.0);
+	g_hCVFixPropJump = CreateConVar("synfixes_fixpropjump", "1", "Attempts to fix jumping off props and moving brushes where you normally would not actually jump.", _, true, 0.0, true, 1.0);
 	
 	RegAdminCmd("sm_rebuildents",rebuildents,ADMFLAG_ROOT,".");
 	RegServerCmd("synfixes_listaddedhooks",listaddedhooks);
@@ -4636,22 +4636,25 @@ public Action onxenspawn(const char[] output, int caller, int activator, float d
 			}
 			else
 			{
-				int dispent = CreateEntityByName("env_sprite");
-				if (dispent != -1)
+				if (FileExists("materials/effects/tele_exit.vmt", true, NULL_STRING))
 				{
-					float origin[3];
-					float angs[3];
-					if (HasEntProp(caller,Prop_Data,"m_angRotation")) GetEntPropVector(caller,Prop_Data,"m_angRotation",angs);
-					if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
-					else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
-					DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
-					DispatchKeyValue(dispent,"scale","0.4");
-					DispatchKeyValue(dispent,"rendermode","2");
-					origin[2]+=25.0;
-					TeleportEntity(dispent,origin,angs,NULL_VECTOR);
-					DispatchSpawn(dispent);
-					ActivateEntity(dispent);
-					CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+					int dispent = CreateEntityByName("env_sprite");
+					if (dispent != -1)
+					{
+						float origin[3];
+						float angs[3];
+						if (HasEntProp(caller,Prop_Data,"m_angRotation")) GetEntPropVector(caller,Prop_Data,"m_angRotation",angs);
+						if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+						else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
+						DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
+						DispatchKeyValue(dispent,"scale","0.4");
+						DispatchKeyValue(dispent,"rendermode","2");
+						origin[2]+=25.0;
+						TeleportEntity(dispent,origin,angs,NULL_VECTOR);
+						DispatchSpawn(dispent);
+						ActivateEntity(dispent);
+						CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+					}
 				}
 			}
 			if (IsValidEntity(activator))
@@ -5066,22 +5069,25 @@ void findpts(char[] targn, float delay)
 						}
 						else
 						{
-							int dispent = CreateEntityByName("env_sprite");
-							if (dispent != -1)
+							if (FileExists("materials/effects/tele_exit.vmt", true, NULL_STRING))
 							{
-								float origin[3];
-								float angs[3];
-								if (HasEntProp(templateent,Prop_Data,"m_angRotation")) GetEntPropVector(templateent,Prop_Data,"m_angRotation",angs);
-								if (HasEntProp(templateent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(templateent,Prop_Data,"m_vecAbsOrigin",origin);
-								else if (HasEntProp(templateent,Prop_Send,"m_vecOrigin")) GetEntPropVector(templateent,Prop_Send,"m_vecOrigin",origin);
-								DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
-								DispatchKeyValue(dispent,"scale","0.4");
-								DispatchKeyValue(dispent,"rendermode","2");
-								origin[2]+=25.0;
-								TeleportEntity(dispent,origin,angs,NULL_VECTOR);
-								DispatchSpawn(dispent);
-								ActivateEntity(dispent);
-								CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+								int dispent = CreateEntityByName("env_sprite");
+								if (dispent != -1)
+								{
+									float origin[3];
+									float angs[3];
+									if (HasEntProp(templateent,Prop_Data,"m_angRotation")) GetEntPropVector(templateent,Prop_Data,"m_angRotation",angs);
+									if (HasEntProp(templateent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(templateent,Prop_Data,"m_vecAbsOrigin",origin);
+									else if (HasEntProp(templateent,Prop_Send,"m_vecOrigin")) GetEntPropVector(templateent,Prop_Send,"m_vecOrigin",origin);
+									DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
+									DispatchKeyValue(dispent,"scale","0.4");
+									DispatchKeyValue(dispent,"rendermode","2");
+									origin[2]+=25.0;
+									TeleportEntity(dispent,origin,angs,NULL_VECTOR);
+									DispatchSpawn(dispent);
+									ActivateEntity(dispent);
+									CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+								}
 							}
 						}
 						int rand = GetRandomInt(1,3);
@@ -14655,22 +14661,25 @@ void findxenporttp(int ent, char[] cls, char[] targn, float delay)
 						}
 						else
 						{
-							int dispent = CreateEntityByName("env_sprite");
-							if (dispent != -1)
+							if (FileExists("materials/effects/tele_exit.vmt", true, NULL_STRING))
 							{
-								float origin[3];
-								float angs[3];
-								if (HasEntProp(thisent,Prop_Data,"m_angRotation")) GetEntPropVector(thisent,Prop_Data,"m_angRotation",angs);
-								if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",origin);
-								else if (HasEntProp(thisent,Prop_Send,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Send,"m_vecOrigin",origin);
-								DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
-								DispatchKeyValue(dispent,"scale","0.4");
-								DispatchKeyValue(dispent,"rendermode","2");
-								origin[2]+=25.0;
-								TeleportEntity(dispent,origin,angs,NULL_VECTOR);
-								DispatchSpawn(dispent);
-								ActivateEntity(dispent);
-								CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+								int dispent = CreateEntityByName("env_sprite");
+								if (dispent != -1)
+								{
+									float origin[3];
+									float angs[3];
+									if (HasEntProp(thisent,Prop_Data,"m_angRotation")) GetEntPropVector(thisent,Prop_Data,"m_angRotation",angs);
+									if (HasEntProp(thisent,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(thisent,Prop_Data,"m_vecAbsOrigin",origin);
+									else if (HasEntProp(thisent,Prop_Send,"m_vecOrigin")) GetEntPropVector(thisent,Prop_Send,"m_vecOrigin",origin);
+									DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
+									DispatchKeyValue(dispent,"scale","0.4");
+									DispatchKeyValue(dispent,"rendermode","2");
+									origin[2]+=25.0;
+									TeleportEntity(dispent,origin,angs,NULL_VECTOR);
+									DispatchSpawn(dispent);
+									ActivateEntity(dispent);
+									CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+								}
 							}
 						}
 						int rand = GetRandomInt(1,3);
@@ -14800,22 +14809,25 @@ public Action xenspawndelay(Handle timer, int entity)
 				}
 				else
 				{
-					int dispent = CreateEntityByName("env_sprite");
-					if (dispent != -1)
+					if (FileExists("materials/effects/tele_exit.vmt", true, NULL_STRING))
 					{
-						float origin[3];
-						float angs[3];
-						if (HasEntProp(entity,Prop_Data,"m_angRotation")) GetEntPropVector(entity,Prop_Data,"m_angRotation",angs);
-						if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",origin);
-						else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",origin);
-						DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
-						DispatchKeyValue(dispent,"scale","0.4");
-						DispatchKeyValue(dispent,"rendermode","2");
-						origin[2]+=25.0;
-						TeleportEntity(dispent,origin,angs,NULL_VECTOR);
-						DispatchSpawn(dispent);
-						ActivateEntity(dispent);
-						CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+						int dispent = CreateEntityByName("env_sprite");
+						if (dispent != -1)
+						{
+							float origin[3];
+							float angs[3];
+							if (HasEntProp(entity,Prop_Data,"m_angRotation")) GetEntPropVector(entity,Prop_Data,"m_angRotation",angs);
+							if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",origin);
+							else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",origin);
+							DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
+							DispatchKeyValue(dispent,"scale","0.4");
+							DispatchKeyValue(dispent,"rendermode","2");
+							origin[2]+=25.0;
+							TeleportEntity(dispent,origin,angs,NULL_VECTOR);
+							DispatchSpawn(dispent);
+							ActivateEntity(dispent);
+							CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+						}
 					}
 				}
 				int rand = GetRandomInt(1,3);
@@ -19643,17 +19655,20 @@ public Action waitclearspawner(Handle timer, Handle dppass)
 					}
 					else
 					{
-						int dispent = CreateEntityByName("env_sprite");
-						if (dispent != -1)
+						if (FileExists("materials/effects/tele_exit.vmt", true, NULL_STRING))
 						{
-							DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
-							DispatchKeyValue(dispent,"scale","0.4");
-							DispatchKeyValue(dispent,"rendermode","2");
-							spawnat[2]+=25.0;
-							TeleportEntity(dispent,spawnat,spawnang,NULL_VECTOR);
-							DispatchSpawn(dispent);
-							ActivateEntity(dispent);
-							CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+							int dispent = CreateEntityByName("env_sprite");
+							if (dispent != -1)
+							{
+								DispatchKeyValue(dispent,"model","materials/effects/tele_exit.vmt");
+								DispatchKeyValue(dispent,"scale","0.4");
+								DispatchKeyValue(dispent,"rendermode","2");
+								spawnat[2]+=25.0;
+								TeleportEntity(dispent,spawnat,spawnang,NULL_VECTOR);
+								DispatchSpawn(dispent);
+								ActivateEntity(dispent);
+								CreateTimer(0.1,reducescale,dispent,TIMER_FLAG_NO_MAPCHANGE);
+							}
 						}
 					}
 					int rand = GetRandomInt(1,3);
