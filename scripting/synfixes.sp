@@ -67,7 +67,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20004"
+#define PLUGIN_VERSION "1.20005"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -248,7 +248,7 @@ public void OnPluginStart()
 	if (hCVRemoveRagdoll == INVALID_HANDLE) hCVRemoveRagdoll = CreateConVar("synfixes_remove_playerragdolls", "1", "Removes player ragdolls after mp_deathtime.", _, true, 0.0, true, 1.0);
 	hCVDeathTime = FindConVar("mp_deathtime");
 	if (hCVDeathTime == INVALID_HANDLE) hCVDeathTime = CreateConVar("mp_deathtime", "3.0", "Remove player ragdolls after this time.", _, true, 0.0, true, 60.0);
-	g_hCVFixPropJump = CreateConVar("synfixes_fixpropjump", "1", "Attempts to fix jumping off props and moving brushes not allowing you to actually jump.", _, true, 0.0, true, 1.0);
+	g_hCVFixPropJump = CreateConVar("synfixes_fixpropjump", "1", "Attempts to fix jumping off props and moving brushes where you normally would not actually jump.", _, true, 0.0, true, 1.0);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -3972,9 +3972,14 @@ public void OnEntityCreated(int entity, const char[] classname)
 	}
 	if (StrEqual(classname,"logic_auto",false))
 	{
-		CreateTimer(1.0,rechk,entity,TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(1.0, rechk, entity, TIMER_FLAG_NO_MAPCHANGE);
 	}
-	if (StrEqual(classname,"npc_vortigaunt",false))
+	else if (StrEqual(classname,"env_sprite",false))
+	{
+		SDKHookEx(entity, SDKHook_Spawn, ValidateSprite);
+		CreateTimer(1.0, rechk, entity, TIMER_FLAG_NO_MAPCHANGE);
+	}
+	else if (StrEqual(classname,"npc_vortigaunt",false))
 	{
 		CreateTimer(1.0,rechkcol,entity,TIMER_FLAG_NO_MAPCHANGE);
 	}
@@ -4088,6 +4093,49 @@ public Action resetown(Handle timer, int entity)
 			}
 		}
 	}
+}
+
+public void ValidateSprite(int entity)
+{
+	SDKUnhook(entity, SDKHook_Spawn, ValidateSprite);
+	if (HasEntProp(entity, Prop_Data, "m_ModelName"))
+	{
+		static char mdl[64];
+		GetEntPropString(entity, Prop_Data, "m_ModelName", mdl, sizeof(mdl));
+		if (strlen(mdl) < 3)
+		{
+			AcceptEntityInput(entity, "kill");
+			PrintToServer("Sprite spawned with no model! '%s'", mdl);
+			return;
+		}
+		if ((StrContains(mdl, "materials", false) == -1) && (StrContains(mdl, "models", false) == -1))
+		{
+			Format(mdl, sizeof(mdl), "materials/%s", mdl);
+			if (!FileExists(mdl, true, NULL_STRING))
+			{
+				if (StrContains(mdl, ".spr", false) != -1)
+				{
+					ReplaceString(mdl, sizeof(mdl), ".spr", ".vtf", false);
+					if (!FileExists(mdl, true, NULL_STRING))
+					{
+						AcceptEntityInput(entity, "kill");
+						PrintToServer("Sprite spawned with invalid model: '%s'", mdl);
+					}
+				}
+				else
+				{
+					AcceptEntityInput(entity, "kill");
+					PrintToServer("Sprite spawned with invalid model: '%s'", mdl);
+				}
+			}
+		}
+		else if (!FileExists(mdl, true, NULL_STRING))
+		{
+			AcceptEntityInput(entity, "kill");
+			PrintToServer("Sprite spawned with invalid model: '%s'", mdl);
+		}
+	}
+	return;
 }
 
 public Action StartTouchRPG(int entity, int other)
@@ -4285,13 +4333,23 @@ public Action rechk(Handle timer, int logent)
 {
 	if (IsValidEntity(logent))
 	{
-		char entname[32];
-		if (HasEntProp(logent,Prop_Data,"m_iName")) GetEntPropString(logent,Prop_Data,"m_iName",entname,sizeof(entname));
-		if (!StrEqual(entname,"syn_logicauto",false))
+		static char clsname[32];
+		GetEntityClassname(logent, clsname, sizeof(clsname));
+		if (StrEqual(clsname, "logic_auto", false))
 		{
-			DispatchKeyValue(logent,"spawnflags","1");
-			SetVariantString("spawnflags 1");
-			AcceptEntityInput(logent,"AddOutput");
+			char entname[32];
+			if (HasEntProp(logent, Prop_Data, "m_iName")) GetEntPropString(logent, Prop_Data, "m_iName", entname, sizeof(entname));
+			if (!StrEqual(entname, "syn_logicauto", false))
+			{
+				DispatchKeyValue(logent, "spawnflags", "1");
+				SetVariantString("spawnflags 1");
+				AcceptEntityInput(logent, "AddOutput");
+			}
+		}
+		else if (StrEqual(clsname, "env_sprite", false))
+		{
+			float proxysize = GetEntPropFloat(logent, Prop_Data, "m_flGlowProxySize");
+			if (proxysize > 256.0) SetEntPropFloat(logent, Prop_Data, "m_flGlowProxySize", 256.0);
 		}
 	}
 }

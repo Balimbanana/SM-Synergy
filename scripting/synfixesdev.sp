@@ -117,7 +117,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0058"
+#define PLUGIN_VERSION "2.0059"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -15921,11 +15921,16 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		flEntCreateTime[entity] = GetGameTime();
 	}
-	if ((StrEqual(classname,"logic_auto",false)) || (StrEqual(classname,"env_sprite",false)) || (StrEqual(classname,"env_laser",false)))
+	if ((StrEqual(classname,"logic_auto",false)) || (StrEqual(classname,"env_laser",false)))
 	{
-		CreateTimer(1.0,rechk,entity,TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(1.0, rechk, entity, TIMER_FLAG_NO_MAPCHANGE);
 	}
-	if (StrEqual(classname,"npc_vortigaunt",false))
+	else if (StrEqual(classname,"env_sprite",false))
+	{
+		SDKHookEx(entity, SDKHook_Spawn, ValidateSprite);
+		CreateTimer(1.0, rechk, entity, TIMER_FLAG_NO_MAPCHANGE);
+	}
+	else if (StrEqual(classname,"npc_vortigaunt",false))
 	{
 		CreateTimer(1.0,rechkcol,entity,TIMER_FLAG_NO_MAPCHANGE);
 	}
@@ -15985,7 +15990,7 @@ public void OnEntityCreated(int entity, const char[] classname)
 	}
 	if (StrEqual(classname,"generic_actor",false))
 	{
-		SDKHookEx(entity,SDKHook_Spawn,chkgeneric);
+		SDKHookEx(entity, SDKHook_Spawn, chkgeneric);
 	}
 	if (StrEqual(classname,"rpg_missile",false))
 	{
@@ -19896,13 +19901,56 @@ public Action resetown(Handle timer, int entity)
 	}
 }
 
+public void ValidateSprite(int entity)
+{
+	SDKUnhook(entity, SDKHook_Spawn, ValidateSprite);
+	if (HasEntProp(entity, Prop_Data, "m_ModelName"))
+	{
+		static char mdl[64];
+		GetEntPropString(entity, Prop_Data, "m_ModelName", mdl, sizeof(mdl));
+		if (strlen(mdl) < 3)
+		{
+			AcceptEntityInput(entity, "kill");
+			PrintToServer("Sprite spawned with no model! '%s'", mdl);
+			return;
+		}
+		if ((StrContains(mdl, "materials", false) == -1) && (StrContains(mdl, "models", false) == -1))
+		{
+			Format(mdl, sizeof(mdl), "materials/%s", mdl);
+			if (!FileExists(mdl, true, NULL_STRING))
+			{
+				if (StrContains(mdl, ".spr", false) != -1)
+				{
+					ReplaceString(mdl, sizeof(mdl), ".spr", ".vtf", false);
+					if (!FileExists(mdl, true, NULL_STRING))
+					{
+						AcceptEntityInput(entity, "kill");
+						PrintToServer("Sprite spawned with invalid model: '%s'", mdl);
+					}
+				}
+				else
+				{
+					AcceptEntityInput(entity, "kill");
+					PrintToServer("Sprite spawned with invalid model: '%s'", mdl);
+				}
+			}
+		}
+		else if (!FileExists(mdl, true, NULL_STRING))
+		{
+			AcceptEntityInput(entity, "kill");
+			PrintToServer("Sprite spawned with invalid model: '%s'", mdl);
+		}
+	}
+	return;
+}
+
 public void chkgeneric(int entity)
 {
-	SDKUnhook(entity,SDKHook_Spawn,chkgeneric);
+	SDKUnhook(entity, SDKHook_Spawn, chkgeneric);
 	if (HasEntProp(entity,Prop_Data,"m_ModelName"))
 	{
-		char mdl[64];
-		char cls[64];
+		static char mdl[64];
+		static char cls[64];
 		GetEntPropString(entity,Prop_Data,"m_ModelName",mdl,sizeof(mdl));
 		GetEntityClassname(entity,cls,sizeof(cls));
 		bool CreateBySpawner = false;

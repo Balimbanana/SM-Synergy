@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0058"
-			"Previous"	"2.0057"
+			"Latest"  	"2.0059"
+			"Previous"	"2.0058"
 		}
 		
-		"Notes"	"Additional file exists checks for xen teleport effect."
+		"Notes"	"Added validation checks to env_sprite to remove if invalid model is supplied."
 	}
 	
 	"Files"
