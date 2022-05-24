@@ -63,7 +63,7 @@ Handle addedinputs = INVALID_HANDLE;
 Handle hTemplateData = INVALID_HANDLE;
 ConVar hWeaponRespawn, hBaseEquipmentSetup, hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeathTime, hCVSynEvents;
 ConVar g_hConVarRebuildEntities;
-ConVar g_hCVFixPropJump;
+ConVar g_hCVFixPropJump, g_hCVFixPhysBox;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float fadingtime[128];
@@ -117,7 +117,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0059"
+#define PLUGIN_VERSION "2.0060"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -506,6 +506,7 @@ public void OnPluginStart()
 	AutoExecConfig(true, "synfixes");
 	g_hConVarRebuildEntities = CreateConVar("rebuildents", "0", "Set auto rebuild of custom entities, 1 is dynamic, 2 is static npc list.", _, true, 0.0, true, 2.0);
 	g_hCVFixPropJump = CreateConVar("synfixes_fixpropjump", "1", "Attempts to fix jumping off props and moving brushes where you normally would not actually jump.", _, true, 0.0, true, 1.0);
+	g_hCVFixPhysBox = CreateConVar("synfixes_fixphysboxflags", "1", "Fixes spawnflags 4194304.", _, true, 0.0, true, 1.0);
 	
 	RegAdminCmd("sm_rebuildents",rebuildents,ADMFLAG_ROOT,".");
 	RegServerCmd("synfixes_listaddedhooks",listaddedhooks);
@@ -3583,6 +3584,17 @@ public Action changeleveldelay(Handle timer, Handle data)
 
 public Action physpunt(const char[] output, int caller, int activator, float delay)
 {
+	if (IsValidEntity(caller))
+	{
+		if (GetEntProp(caller, Prop_Data, "m_spawnflags") & 4194304)
+		{
+			int iFlagEffects = GetEntProp(caller, Prop_Data, "m_iEFlags");
+			if (!(iFlagEffects & 1<<30))
+			{
+				SetEntProp(caller, Prop_Data, "m_iEFlags", iFlagEffects+1073741824);
+			}
+		}
+	}
 	if (friendlyfire) return Plugin_Continue;
 	if (HasEntProp(caller,Prop_Data,"m_hParent"))
 	{
@@ -15930,6 +15942,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 		SDKHookEx(entity, SDKHook_Spawn, ValidateSprite);
 		CreateTimer(1.0, rechk, entity, TIMER_FLAG_NO_MAPCHANGE);
 	}
+	else if (StrEqual(classname, "func_physbox", false))
+	{
+		if (g_hCVFixPhysBox.BoolValue) SDKHookEx(entity, SDKHook_Spawn, FixPhysPunt);
+	}
 	else if (StrEqual(classname,"npc_vortigaunt",false))
 	{
 		CreateTimer(1.0,rechkcol,entity,TIMER_FLAG_NO_MAPCHANGE);
@@ -16477,13 +16493,14 @@ public void SetupLivingEnt(int entity)
 {
 	if (IsValidEntity(entity))
 	{
-		char entcls[128];
+		static char entcls[128];
+		static char cls[128];
+		GetEntityClassname(entity,entcls,sizeof(entcls));
 		if (HasEntProp(entity,Prop_Data,"m_usSolidFlags"))
 		{
 			int iusSolid = GetEntProp(entity,Prop_Data,"m_usSolidFlags");
 			if (iusSolid & (1<<2))
 			{
-				GetEntityClassname(entity,entcls,sizeof(entcls));
 				if ((StrContains(entcls,"prop",false) != -1) && (!StrEqual(entcls,"prop_dynamic",false)))
 				{
 					SetEntProp(entity,Prop_Data,"m_usSolidFlags",iusSolid & ~(1<<2));
@@ -16491,9 +16508,8 @@ public void SetupLivingEnt(int entity)
 			}
 		}
 		bool resetname = true;
-		char cls[128];
 		if (HasEntProp(entity,Prop_Data,"m_iName")) GetEntPropString(entity,Prop_Data,"m_iName",cls,sizeof(cls));
-		GetEntityClassname(entity,entcls,sizeof(entcls));
+		else cls = "";
 		//PrintToServer("SETUPENT \"%s\" \"%s\"",entcls,cls);
 		if (HasEntProp(entity, Prop_Data, "m_spawnEquipment"))
 		{
@@ -19939,6 +19955,71 @@ public void ValidateSprite(int entity)
 		{
 			AcceptEntityInput(entity, "kill");
 			PrintToServer("Sprite spawned with invalid model: '%s'", mdl);
+		}
+	}
+	return;
+}
+
+public void FixPhysPunt(int entity)
+{
+	SDKUnhook(entity, SDKHook_Spawn, FixPhysPunt);
+	if (IsValidEntity(entity))
+	{
+		if (GetEntProp(entity, Prop_Data, "m_spawnflags") & 4194304)
+		{
+			int iFlagEffects = GetEntProp(entity, Prop_Data, "m_iEFlags");
+			if (!(iFlagEffects & 1<<30))
+			{
+				SetEntProp(entity, Prop_Data, "m_iEFlags", iFlagEffects+1073741824);
+			}
+			
+			static char szName[64];
+			GetEntPropString(entity, Prop_Data, "m_iName", szName, sizeof(szName));
+			int iEnt = -1;
+			char szAttach1[64];
+			char szAttach2[64];
+			while ((iEnt = FindEntityByClassname(iEnt, "phys_constraint")) != -1)
+			{
+				if (IsValidEntity(iEnt))
+				{
+					if (HasEntProp(iEnt, Prop_Data, "m_nameAttach1"))
+					{
+						bool bFindEnt = false;
+						GetEntPropString(iEnt, Prop_Data, "m_nameAttach1", szAttach1, sizeof(szAttach1));
+						GetEntPropString(iEnt, Prop_Data, "m_nameAttach2", szAttach2, sizeof(szAttach2));
+						if (StrEqual(szName, szAttach1, false))
+						{
+							bFindEnt = true;
+						}
+						else if (StrEqual(szName, szAttach2, false))
+						{
+							Format(szAttach2, sizeof(szAttach2), "%s", szAttach1);
+							bFindEnt = true;
+						}
+						
+						if ((bFindEnt) && (strlen(szAttach2) > 0))
+						{
+							int iPropEnt = -1;
+							while((iPropEnt = FindEntityByClassname(iPropEnt,"prop_physics")) != INVALID_ENT_REFERENCE)
+							{
+								if (IsValidEntity(iPropEnt))
+								{
+									GetEntPropString(iPropEnt, Prop_Data, "m_iName", szName, sizeof(szName));
+									if (StrEqual(szName, szAttach2, false))
+									{
+										iFlagEffects = GetEntProp(iPropEnt, Prop_Data, "m_iEFlags");
+										if (!(iFlagEffects & 1<<30))
+										{
+											SetEntProp(iPropEnt, Prop_Data, "m_iEFlags", iFlagEffects+1073741824);
+										}
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 	return;

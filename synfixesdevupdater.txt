@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0059"
-			"Previous"	"2.0058"
+			"Latest"  	"2.0060"
+			"Previous"	"2.0059"
 		}
 		
-		"Notes"	"Added validation checks to env_sprite to remove if invalid model is supplied."
+		"Notes"	"Added CVar synfixes_fixphysboxflags, fixes spawnflags 4194304 for func_physbox."
 	}
 	
 	"Files"

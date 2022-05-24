@@ -30,7 +30,7 @@ Handle dctimeoutarr = INVALID_HANDLE;
 Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
 ConVar hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeathTime;
-ConVar g_hCVFixPropJump;
+ConVar g_hCVFixPropJump, g_hCVFixPhysBox;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float centnextatk[2048];
@@ -67,7 +67,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20005"
+#define PLUGIN_VERSION "1.20006"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -249,6 +249,7 @@ public void OnPluginStart()
 	hCVDeathTime = FindConVar("mp_deathtime");
 	if (hCVDeathTime == INVALID_HANDLE) hCVDeathTime = CreateConVar("mp_deathtime", "3.0", "Remove player ragdolls after this time.", _, true, 0.0, true, 60.0);
 	g_hCVFixPropJump = CreateConVar("synfixes_fixpropjump", "1", "Attempts to fix jumping off props and moving brushes where you normally would not actually jump.", _, true, 0.0, true, 1.0);
+	g_hCVFixPhysBox = CreateConVar("synfixes_fixphysboxflags", "1", "Fixes spawnflags 4194304.", _, true, 0.0, true, 1.0);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -3979,6 +3980,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 		SDKHookEx(entity, SDKHook_Spawn, ValidateSprite);
 		CreateTimer(1.0, rechk, entity, TIMER_FLAG_NO_MAPCHANGE);
 	}
+	else if (StrEqual(classname, "func_physbox", false))
+	{
+		if (g_hCVFixPhysBox.BoolValue) SDKHookEx(entity, SDKHook_Spawn, FixPhysPunt);
+	}
 	else if (StrEqual(classname,"npc_vortigaunt",false))
 	{
 		CreateTimer(1.0,rechkcol,entity,TIMER_FLAG_NO_MAPCHANGE);
@@ -4133,6 +4138,71 @@ public void ValidateSprite(int entity)
 		{
 			AcceptEntityInput(entity, "kill");
 			PrintToServer("Sprite spawned with invalid model: '%s'", mdl);
+		}
+	}
+	return;
+}
+
+public void FixPhysPunt(int entity)
+{
+	SDKUnhook(entity, SDKHook_Spawn, FixPhysPunt);
+	if (IsValidEntity(entity))
+	{
+		if (GetEntProp(entity, Prop_Data, "m_spawnflags") & 4194304)
+		{
+			int iFlagEffects = GetEntProp(entity, Prop_Data, "m_iEFlags");
+			if (!(iFlagEffects & 1<<30))
+			{
+				SetEntProp(entity, Prop_Data, "m_iEFlags", iFlagEffects+1073741824);
+			}
+			
+			static char szName[64];
+			GetEntPropString(entity, Prop_Data, "m_iName", szName, sizeof(szName));
+			int iEnt = -1;
+			char szAttach1[64];
+			char szAttach2[64];
+			while ((iEnt = FindEntityByClassname(iEnt, "phys_constraint")) != -1)
+			{
+				if (IsValidEntity(iEnt))
+				{
+					if (HasEntProp(iEnt, Prop_Data, "m_nameAttach1"))
+					{
+						bool bFindEnt = false;
+						GetEntPropString(iEnt, Prop_Data, "m_nameAttach1", szAttach1, sizeof(szAttach1));
+						GetEntPropString(iEnt, Prop_Data, "m_nameAttach2", szAttach2, sizeof(szAttach2));
+						if (StrEqual(szName, szAttach1, false))
+						{
+							bFindEnt = true;
+						}
+						else if (StrEqual(szName, szAttach2, false))
+						{
+							Format(szAttach2, sizeof(szAttach2), "%s", szAttach1);
+							bFindEnt = true;
+						}
+						
+						if ((bFindEnt) && (strlen(szAttach2) > 0))
+						{
+							int iPropEnt = -1;
+							while((iPropEnt = FindEntityByClassname(iPropEnt,"prop_physics")) != INVALID_ENT_REFERENCE)
+							{
+								if (IsValidEntity(iPropEnt))
+								{
+									GetEntPropString(iPropEnt, Prop_Data, "m_iName", szName, sizeof(szName));
+									if (StrEqual(szName, szAttach2, false))
+									{
+										iFlagEffects = GetEntProp(iPropEnt, Prop_Data, "m_iEFlags");
+										if (!(iFlagEffects & 1<<30))
+										{
+											SetEntProp(iPropEnt, Prop_Data, "m_iEFlags", iFlagEffects+1073741824);
+										}
+										break;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 	return;
