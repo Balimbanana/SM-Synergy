@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20005"
-			"Previous"	"1.20004"
+			"Latest"  	"1.20006"
+			"Previous"	"1.20005"
 		}
 		
 		"Notes"	"Added CVar synfixes_fixphysboxflags, fixes spawnflags 4194304 for func_physbox."
