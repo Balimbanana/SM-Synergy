@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.54"
-			"Previous"	"1.53"
+			"Latest"  	"1.55"
+			"Previous"	"1.54"
 		}
 		
-		"Notes"	"Additional check when to set CVars on change."
+		"Notes"	"Added player vo help lines."
 	}
 	
 	"Files"

@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.54"
+#define PLUGIN_VERSION "1.55"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -237,7 +237,7 @@ public void OnLibraryAdded(const char[] name)
 	}
 }
 
-public int Updater_OnPluginUpdated()
+public void Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
@@ -2881,9 +2881,29 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			else if ((StrContains(plymdl,"metropolice") != -1) || (StrContains(plymdl,"metrocop") != -1))
 				Format(randcat,sizeof(randcat),"npc\\metropolice\\vo\\officerneedshelp.wav");
 			else if (StrContains(plymdl,"female") != -1)
-				Format(randcat,sizeof(randcat),"vo\\npc\\female01\\help01.wav");
+			{
+				switch (GetRandomInt(1,3))
+				{
+					case 1:
+						Format(randcat,sizeof(randcat),"vo\\npc\\female01\\help01.wav");
+					case 2:
+						Format(randcat,sizeof(randcat),"vo\\player\\female01\\help02.wav");
+					case 3:
+						Format(randcat,sizeof(randcat),"vo\\player\\female01\\help03.wav");
+				}
+			}
 			else
-				Format(randcat,sizeof(randcat),"vo\\npc\\male01\\help01.wav");
+			{
+				switch (GetRandomInt(1,3))
+				{
+					case 1:
+						Format(randcat,sizeof(randcat),"vo\\npc\\male01\\help01.wav");
+					case 2:
+						Format(randcat,sizeof(randcat),"vo\\player\\male01\\help02.wav");
+					case 3:
+						Format(randcat,sizeof(randcat),"vo\\player\\male01\\help03.wav");
+				}
+			}
 			PrecacheSound(randcat,true);
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}
