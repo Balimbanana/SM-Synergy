@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0060"
-			"Previous"	"2.0059"
+			"Latest"  	"2.0061"
+			"Previous"	"2.0060"
 		}
 		
-		"Notes"	"Added CVar synfixes_fixphysboxflags, fixes spawnflags 4194304 for func_physbox."
+		"Notes"	"Additional validation in EmitSound paths."
 	}
 	
 	"Files"

@@ -117,7 +117,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0060"
+#define PLUGIN_VERSION "2.0061"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -4682,9 +4682,11 @@ public Action onxenspawn(const char[] output, int caller, int activator, float d
 				}
 			}
 			int rand = GetRandomInt(1,3);
-			char snd[64];
+			static char snd[64];
+			char sndpath[72];
 			Format(snd,sizeof(snd),"BMS_objects\\portal\\portal_In_0%i.wav",rand);
-			EmitSoundToAll(snd, caller, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+			Format(sndpath, sizeof(sndpath), "sound\\%s", snd);
+			if (FileExists(sndpath, true, NULL_STRING)) EmitSoundToAll(snd, caller, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
 			AcceptEntityInput(caller,"FireUser2");
 			trigtp("OnUser2",caller,caller,0.0);
 		}
@@ -5103,9 +5105,11 @@ void findpts(char[] targn, float delay)
 							}
 						}
 						int rand = GetRandomInt(1,3);
-						char snd[64];
+						static char snd[64];
+						char sndpath[72];
 						Format(snd,sizeof(snd),"BMS_objects\\portal\\portal_In_0%i.wav",rand);
-						EmitSoundToAll(snd, templateent, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+						Format(sndpath, sizeof(sndpath), "sound\\%s", snd);
+						if (FileExists(sndpath, true, NULL_STRING)) EmitSoundToAll(snd, templateent, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
 						AcceptEntityInput(templateent,"FireUser2");
 						trigtp("OnUser2",templateent,templateent,0.0);
 					}
@@ -14695,9 +14699,11 @@ void findxenporttp(int ent, char[] cls, char[] targn, float delay)
 							}
 						}
 						int rand = GetRandomInt(1,3);
-						char snd[64];
+						static char snd[64];
+						char sndpath[72];
 						Format(snd,sizeof(snd),"BMS_objects\\portal\\portal_In_0%i.wav",rand);
-						EmitSoundToAll(snd, thisent, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+						Format(sndpath, sizeof(sndpath), "sound\\%s", snd);
+						if (FileExists(sndpath, true, NULL_STRING)) EmitSoundToAll(snd, thisent, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
 						AcceptEntityInput(thisent,"FireUser2");
 						trigtp("OnUser2",thisent,thisent,0.0);
 					}
@@ -14843,9 +14849,11 @@ public Action xenspawndelay(Handle timer, int entity)
 					}
 				}
 				int rand = GetRandomInt(1,3);
-				char snd[64];
+				static char snd[64];
+				char sndpath[72];
 				Format(snd,sizeof(snd),"BMS_objects\\portal\\portal_In_0%i.wav",rand);
-				EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+				Format(sndpath, sizeof(sndpath), "sound\\%s", snd);
+				if (FileExists(sndpath, true, NULL_STRING)) EmitSoundToAll(snd, entity, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
 				AcceptEntityInput(entity,"FireUser2");
 				trigtp("OnUser2",entity,entity,0.0);
 			}
@@ -16419,7 +16427,7 @@ public Action StartTouchPushPad(int entity, int other)
 		AcceptEntityInput(entity,"SetAnimation");
 		centlasttouch[other] = Time + 1.0;
 		CreateTimer(0.3,resetatk,entity,TIMER_FLAG_NO_MAPCHANGE);
-		EmitSoundToAll("BMS_objects\\xenpushpad\\jumppad1.wav",entity,SNDCHAN_AUTO,SNDLEVEL_DISHWASHER);
+		if (FileExists("sound\\BMS_objects\\xenpushpad\\jumppad1.wav", true, NULL_STRING)) EmitSoundToAll("BMS_objects\\xenpushpad\\jumppad1.wav",entity,SNDCHAN_AUTO,SNDLEVEL_DISHWASHER);
 		centlastposchk[entity] = Time + 3.0;
 	}
 	else if ((other != 0) && (IsValidEntity(other)))
@@ -19693,9 +19701,11 @@ public Action waitclearspawner(Handle timer, Handle dppass)
 						}
 					}
 					int rand = GetRandomInt(1,3);
-					char snd[64];
+					static char snd[64];
+					char sndpath[72];
 					Format(snd,sizeof(snd),"BMS_objects\\portal\\portal_In_0%i.wav",rand);
-					EmitSoundToAll(snd, spawnonent, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
+					Format(sndpath, sizeof(sndpath), "sound\\%s", snd);
+					if (FileExists(sndpath, true, NULL_STRING)) EmitSoundToAll(snd, spawnonent, SNDCHAN_AUTO, SNDLEVEL_TRAIN);
 				}
 				CloseHandle(dppass);
 			}
