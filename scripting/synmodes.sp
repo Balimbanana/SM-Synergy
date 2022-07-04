@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.55"
+#define PLUGIN_VERSION "1.56"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -87,6 +87,8 @@ char activegamemode[64];
 int resetmode = 0;
 bool resetvehpass = false;
 bool aggro = false;
+
+ConVar g_CVarReplaceVoiceMenu;
 
 public void OnPluginStart()
 {
@@ -227,6 +229,7 @@ public void OnPluginStart()
 	else if (StrEqual(curgamemode,"survival",false)) setupdmfor("survival",true);
 	else setupdmfor("coop",true);
 	CloseHandle(mpcvar);
+	g_CVarReplaceVoiceMenu = CreateConVar("synmodes_replacevoicemenu", "1", "Replaces voice menu with custom one.", _, true, 0.0, true, 1.0);
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -1199,6 +1202,16 @@ public Action setupafk(int client, int args)
 		return Plugin_Handled;
 	}
 	antispamchk[client][1] = GetTickedTime()+1.0;
+	if (!clinspectate[client])
+	{
+		if (HasEntProp(client, Prop_Data, "m_iObserverMode"))
+		{
+			if (GetEntProp(client, Prop_Data, "m_iObserverMode") == 5)
+			{
+				clinspectate[client] = true;
+			}
+		}
+	}
 	if (!clinspectate[client])
 	{
 		clinspectate[client] = true;
@@ -2285,6 +2298,54 @@ public Action findglobals(int ent, char[] clsname)
 	return Plugin_Handled;
 }
 
+public Action OnClientCommand(int client, int args)
+{
+	if (g_CVarReplaceVoiceMenu.BoolValue)
+	{
+		char szCmd[64];
+		GetCmdArg(0, szCmd, sizeof(szCmd));
+		if ((StrEqual(szCmd, "voicemenu", false)) || ((StrEqual(szCmd, "menu", false)) && (args > 0)))
+		{
+			OpenVoiceMenu(client);
+			return Plugin_Handled;
+		}
+	}
+	return Plugin_Continue;
+}
+
+void OpenVoiceMenu(int client)
+{
+	Menu menu = new Menu(MenuHandlerVoiceMenu);
+	// No title
+	//menu.SetTitle("");
+	menu.AddItem("*help*", "Help", ITEMDRAW_CONTROL);
+	menu.AddItem("*enemy*", "Incoming", ITEMDRAW_CONTROL);
+	menu.AddItem("*enemy*", "Enemy", ITEMDRAW_CONTROL);
+	menu.AddItem("*followme*", "Follow", ITEMDRAW_CONTROL);
+	menu.AddItem("*letsgo*", "Let's Go", ITEMDRAW_CONTROL);
+	menu.AddItem("*leadon*", "Lead On", ITEMDRAW_CONTROL);
+	menu.ExitButton = true;
+	menu.Display(client, 5);
+}
+
+public MenuHandlerVoiceMenu(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_Select)
+	{
+		char info[128];
+		menu.GetItem(param2, info, sizeof(info));
+		OnClientSayCommand(param1, "", info);
+	}
+	else if (action == MenuAction_Cancel)
+	{
+		
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+}
+
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs)
 {
 	if ((!IsValidEntity(client)) || (client == 0)) return Plugin_Continue;
@@ -3351,6 +3412,40 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			}
 			else
 				Format(randcat,sizeof(randcat),"vo\\npc\\male01\\no0%i.wav",GetRandomInt(1,2));
+			PrecacheSound(randcat,true);
+			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
+		}
+		return Plugin_Handled;
+	}
+	else if (StrContains(sArgs, "*letsgo*", false) != -1)
+	{
+		float Time = GetTickedTime();
+		if (antispamchk[client][0] <= Time)
+		{
+			antispamchk[client][0] = Time + 2.0;
+			char plymdl[64];
+			char randcat[64];
+			GetClientModel(client, plymdl, sizeof(plymdl));
+			if (StrContains(plymdl,"barney",false) != -1)
+				Format(randcat,sizeof(randcat),"vo\\streetwar\\nexus\\ba_thenletsgo.wav");
+			else if (StrContains(plymdl,"female",false) != -1)
+				Format(randcat,sizeof(randcat),"vo\\npc\\female01\\letsgo0%i.wav",GetRandomInt(1,2));
+			else if ((StrContains(plymdl,"combine",false) != -1) || (StrContains(plymdl,"metrocop",false) != -1))
+			{
+				switch (GetRandomInt(0,3))
+				{
+					case 0:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\goactiveintercept.wav");
+					case 1:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\overwatchrequestreserveactivation.wav");
+					case 2:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\gosharpgosharp.wav");
+					case 3:
+						Format(randcat,sizeof(randcat),"npc\\combine_soldier\\vo\\overwatchrequestreinforcement.wav");
+				}
+			}
+			else
+				Format(randcat,sizeof(randcat),"vo\\npc\\male01\\letsgo0%i.wav",GetRandomInt(1,2));
 			PrecacheSound(randcat,true);
 			EmitSoundToAll(randcat, client, SNDCHAN_AUTO, SNDLEVEL_DISHWASHER);
 		}

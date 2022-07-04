@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.55"
-			"Previous"	"1.54"
+			"Latest"  	"1.56"
+			"Previous"	"1.55"
 		}
 		
-		"Notes"	"Added player vo help lines."
+		"Notes"	"Added CVar synmodes_replacevoicemenu default 1. Replaces voice menu for custom responses."
 	}
 	
 	"Files"
