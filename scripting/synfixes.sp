@@ -67,7 +67,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20006"
+#define PLUGIN_VERSION "1.20007"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1672,6 +1672,41 @@ public Action FallBackSuitOutputs(int entity, int other)
 			if (GetEntProp(other,Prop_Data,"m_bWearingSuit") > 0)
 			{
 				SetEntProp(other,Prop_Data,"m_bWearingSuit",0);
+			}
+		}
+	}
+}
+
+public Action SuitAdmireGlovesTouch(int entity, int other)
+{
+	if ((IsValidEntity(entity)) && (IsValidEntity(other)) && (other > 0) && (other < MaxClients+1))
+	{
+		if (HasEntProp(other, Prop_Data, "m_bWearingSuit"))
+		{
+			if (GetEntProp(other, Prop_Data, "m_bWearingSuit") < 1)
+			{
+				PlaySuitAdmireGloves(other);
+			}
+		}
+	}
+}
+
+void PlaySuitAdmireGloves(int client)
+{
+	if (IsValidEntity(client))
+	{
+		if (!IsValidEntity(GetEntPropEnt(client, Prop_Data, "m_hActiveWeapon")))
+		{
+			int iVM = GetEntPropEnt(client, Prop_Data, "m_hViewModel", 0);
+			if (IsValidEntity(iVM))
+			{
+				if (!IsModelPrecached("models/weapons/v_hands.mdl")) PrecacheModel("models/weapons/v_hands.mdl", true);
+				SetEntityModel(iVM, "models/weapons/v_hands.mdl");
+				SetEntPropFloat(iVM, Prop_Data, "m_flPlaybackRate", 1.0);
+				SetEntProp(iVM, Prop_Data, "m_nSequence", 1);
+				SetVariantString("OnUser3 !self:AddOutput:sequence 1:0:-1,0,-1");
+				AcceptEntityInput(iVM, "AddOutput");
+				AcceptEntityInput(iVM, "FireUser3");
 			}
 		}
 	}
@@ -3980,6 +4015,10 @@ public void OnEntityCreated(int entity, const char[] classname)
 		SDKHookEx(entity, SDKHook_Spawn, ValidateSprite);
 		CreateTimer(1.0, rechk, entity, TIMER_FLAG_NO_MAPCHANGE);
 	}
+	else if (StrEqual(classname,"item_suit",false))
+	{
+		CreateTimer(0.1, rechk, entity, TIMER_FLAG_NO_MAPCHANGE);
+	}
 	else if (StrEqual(classname, "func_physbox", false))
 	{
 		if (g_hCVFixPhysBox.BoolValue) SDKHookEx(entity, SDKHook_Spawn, FixPhysPunt);
@@ -4407,9 +4446,9 @@ public Action rechk(Handle timer, int logent)
 		GetEntityClassname(logent, clsname, sizeof(clsname));
 		if (StrEqual(clsname, "logic_auto", false))
 		{
-			char entname[32];
-			if (HasEntProp(logent, Prop_Data, "m_iName")) GetEntPropString(logent, Prop_Data, "m_iName", entname, sizeof(entname));
-			if (!StrEqual(entname, "syn_logicauto", false))
+			char szTargetname[32];
+			if (HasEntProp(logent, Prop_Data, "m_iName")) GetEntPropString(logent, Prop_Data, "m_iName", szTargetname, sizeof(szTargetname));
+			if (!StrEqual(szTargetname, "syn_logicauto", false))
 			{
 				DispatchKeyValue(logent, "spawnflags", "1");
 				SetVariantString("spawnflags 1");
@@ -4420,6 +4459,17 @@ public Action rechk(Handle timer, int logent)
 		{
 			float proxysize = GetEntPropFloat(logent, Prop_Data, "m_flGlowProxySize");
 			if (proxysize > 256.0) SetEntPropFloat(logent, Prop_Data, "m_flGlowProxySize", 256.0);
+		}
+		else if (StrEqual(clsname,"env_laser",false))
+		{
+			if (HasEntProp(logent,Prop_Data,"m_flDamage"))
+			{
+				if (GetEntPropFloat(logent, Prop_Data, "m_flDamage") > 999.0) SetEntPropFloat(logent, Prop_Data, "m_flDamage", 999.0);
+			}
+		}
+		else if (StrEqual(clsname, "item_suit", false))
+		{
+			SDKHook(logent, SDKHook_StartTouch, SuitAdmireGlovesTouch);
 		}
 	}
 }

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20006"
-			"Previous"	"1.20005"
+			"Latest"  	"1.20007"
+			"Previous"	"1.20006"
 		}
 		
-		"Notes"	"Added CVar synfixes_fixphysboxflags, fixes spawnflags 4194304 for func_physbox."
+		"Notes"	"Added AdmireGloves animation when picking up suit."
 	}
 	
 	"Files"
