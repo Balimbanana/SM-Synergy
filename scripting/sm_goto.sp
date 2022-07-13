@@ -15,7 +15,7 @@ public Plugin myinfo =
 	name = "Player-Teleport by Dr. HyperKiLLeR",
 	author = "Dr. HyperKiLLeR Edited by Balimbanana for Synergy",
 	description = "Go to a player or teleport a player to you",
-	version = "1.2.0.0",
+	version = "1.2.0.1",
 	url = ""
 };
 
@@ -265,6 +265,11 @@ void GoToPlayer(int Client, int Player)
 			//Teleport
 			TeleportEntity(Client, TeleportOrigin, tpang, NULL_VECTOR);
 			gotocd[Client] = Time + 20.0;
+			
+			if ((HasEntProp(Client, Prop_Data, "m_hCtrl")) && (HasEntProp(Player, Prop_Data, "m_hCtrl")))
+			{
+				SetEntPropEnt(Client, Prop_Data, "m_hCtrl", GetEntPropEnt(Player, Prop_Data, "m_hCtrl"));
+			}
 		}
 		else
 		{
