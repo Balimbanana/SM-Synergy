@@ -117,7 +117,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0062"
+#define PLUGIN_VERSION "2.0063"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -472,12 +472,15 @@ public void OnPluginStart()
 	RegConsoleCmd("stuck",stuckblck);
 	RegConsoleCmd("propaccuracy",setpropaccuracy);
 	RegConsoleCmd("con",enablecon);
-	RegConsoleCmd("whois",admblock);
-	RegConsoleCmd("npc_freeze",admblock);
-	RegConsoleCmd("npc_freeze_unselected",admblock);
+	
+	// Causes crash on reload plugin
+	//RegConsoleCmd("whois", admblock);
+	
 	RegConsoleCmd("mp_switchteams",admblock);
 	RegConsoleCmd("lightprobe",admblock);
 	RegConsoleCmd("buildcubemaps",admblock);
+	RegConsoleCmd("npc_freeze",admblock);
+	RegConsoleCmd("npc_freeze_unselected",admblock);
 	RegConsoleCmd("sv_benchmark_force_start",admblock);
 	RegConsoleCmd("perfvisualbenchmark",admblock);
 	RegConsoleCmd("ai_dump_hints",admblock);
@@ -1117,9 +1120,29 @@ public void OnMapStart()
 		}
 		if (FileExists("materials/sprites/merchant_buysyn.vmt",true,NULL_STRING)) AddFileToDownloadsTable("materials/sprites/merchant_buysyn.vmt");
 		if (FileExists("materials/sprites/merchant_buysyn.vtf",true,NULL_STRING)) AddFileToDownloadsTable("materials/sprites/merchant_buysyn.vtf");
-		HookEntityOutput("trigger_changelevel","OnChangeLevel",mapendchg);
+		HookEntityOutput("trigger_changelevel", "OnChangeLevel", Hook_OnChangeLevel);
 		HookEntityOutput("func_physbox","OnPhysGunPunt",physpunt);
 		HookEntityOutput("prop_vehicle_jeep","PlayerOn",vehicleseatadjust);
+		
+		int iEntity = -1;
+		char szNextMap[128];
+		char szTmp[128];
+		while ((iEntity = FindEntityByClassname(iEntity, "trigger_changelevel")) != -1)
+		{
+			if (IsValidEntity(iEntity))
+			{
+				GetEntPropString(iEntity, Prop_Data, "m_szMapName", szNextMap, sizeof(szNextMap));
+				
+				// Case-correct changelevel
+				Format(szTmp, sizeof(szTmp), "maps/%s.bsp", szNextMap);
+				if (FileExists(szTmp, true, NULL_STRING))
+				{
+					GetCaseSensitiveMapName(szNextMap, sizeof(szNextMap));
+					SetEntPropString(iEntity, Prop_Data, "m_szMapName", szNextMap);
+				}
+			}
+		}
+		
 		HookUserMessage(GetUserMessageId("Fade"),blockfade,true);
 		Format(mapbuf,sizeof(mapbuf),"_%s.ent2",mapbuf);
 		char contentdata[64];
@@ -3315,39 +3338,40 @@ public Action elevatorstartpost(Handle timer, int elev)
 	}
 }
 
-public Action mapendchg(const char[] output, int caller, int activator, float delay)
+public Action Hook_OnChangeLevel(const char[] output, int caller, int activator, float delay)
 {
 	if ((IsValidEntity(caller)) && (IsEntNetworkable(caller)))
 	{
-		char clschk[32];
-		GetEntityClassname(caller,clschk,sizeof(clschk));
-		if (StrEqual(clschk,"trigger_changelevel",false))
+		char szTmp[128];
+		GetEntityClassname(caller, szTmp, sizeof(szTmp));
+		if (StrEqual(szTmp, "trigger_changelevel", false))
 		{
-			char maptochange[64];
-			char curmapbuf[64];
-			GetCurrentMap(curmapbuf,sizeof(curmapbuf));
-			GetEntPropString(caller,Prop_Data,"m_szMapName",maptochange,sizeof(maptochange));
+			char szNextMap[64];
+			char szCurrentMap[64];
+			GetCurrentMap(szCurrentMap, sizeof(szCurrentMap));
+			GetEntPropString(caller, Prop_Data, "m_szMapName", szNextMap, sizeof(szNextMap));
+			
 			if (incfixer)
 			{
-				char findinc[128];
-				Format(findinc,sizeof(findinc),"maps/%s.inc",maptochange);
-				if (FileExists(findinc,true,NULL_STRING))
+				char szFindIncludes[128];
+				Format(szFindIncludes, sizeof(szFindIncludes), "maps/%s.inc", szNextMap);
+				if (FileExists(szFindIncludes,true,NULL_STRING))
 				{
-					char includes[32];
-					Handle incfile = OpenFile(findinc,"r",true,NULL_STRING);
-					if (incfile != INVALID_HANDLE)
+					char szIncludes[32];
+					Handle hIncludeFile = OpenFile(szFindIncludes, "r", true, NULL_STRING);
+					if (hIncludeFile != INVALID_HANDLE)
 					{
-						ReadFileLine(incfile,includes,sizeof(includes));
+						ReadFileLine(hIncludeFile, szIncludes, sizeof(szIncludes));
 					}
-					CloseHandle(incfile);
-					if (strlen(includes) > 0)
+					CloseHandle(hIncludeFile);
+					if (strlen(szIncludes) > 0)
 					{
-						TrimString(includes);
-						//ServerCommand("sv_content_optional \"%s\"",includes);
+						TrimString(szIncludes);
+						//ServerCommand("sv_content_optional \"%s\"", szIncludes);
 						Handle hCVar = FindConVar("sv_content_optional");
 						if (hCVar != INVALID_HANDLE)
 						{
-							SetConVarString(hCVar,includes,true,false);
+							SetConVarString(hCVar, szIncludes, true, false);
 						}
 						CloseHandle(hCVar);
 					}
@@ -3366,8 +3390,8 @@ public Action mapendchg(const char[] output, int caller, int activator, float de
 			if (rebuildnodes)
 			{
 				char findnode[128];
-				Format(findnode,sizeof(findnode),"maps\\graphs\\%s.ain",maptochange);
-				if (FileExists(findnode,false))
+				Format(findnode, sizeof(findnode), "maps\\graphs\\%s.ain", szNextMap);
+				if (FileExists(findnode, false))
 				{
 					DeleteFile(findnode);
 				}
@@ -3383,10 +3407,10 @@ public Action mapendchg(const char[] output, int caller, int activator, float de
 			}
 			CloseHandle(hCV);
 			Handle data = CreateDataPack();
-			WritePackString(data, maptochange);
-			WritePackString(data, curmapbuf);
-			if (bChangeImmediate) CreateTimer(0.1,changeleveldelay,data);
-			else CreateTimer(1.0,changeleveldelay,data);
+			WritePackString(data, szNextMap);
+			WritePackString(data, szCurrentMap);
+			if (bChangeImmediate) CreateTimer(0.1, changeleveldelay, data);
+			else CreateTimer(1.0, changeleveldelay, data);
 			mapchanging = true;
 		}
 	}
@@ -3537,28 +3561,9 @@ public Action changeleveldelay(Handle timer, Handle data)
 			norunagain = true;
 			if (StrContains(maptochange,".bsp",false) != -1) ReplaceString(maptochange,sizeof(maptochange),".bsp","",false);
 			if (debuglvl > 1) PrintToServer("Failed to change map to %s attempting to change manually.",maptochange);
-			Handle mdirlisting = OpenDirectory("maps",true,NULL_STRING);
-			if (mdirlisting != INVALID_HANDLE)
-			{
-				char buff[64];
-				while (ReadDirEntry(mdirlisting, buff, sizeof(buff)))
-				{
-					if ((!(mdirlisting == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
-					{
-						if (StrContains(buff,".bsp",false) != -1)
-						{
-							if (StrContains(maptochange,buff,false) != -1)
-							{
-								//case-sensitive map changes
-								ReplaceString(buff,sizeof(buff),".bsp","",false);
-								Format(maptochange,sizeof(maptochange),"%s",buff);
-								break;
-							}
-						}
-					}
-				}
-			}
-			CloseHandle(mdirlisting);
+			
+			GetCaseSensitiveMapName(maptochange, sizeof(maptochange));
+			
 			Handle cvar = FindConVar("content_metadata");
 			if (cvar != INVALID_HANDLE)
 			{
@@ -3580,6 +3585,36 @@ public Action changeleveldelay(Handle timer, Handle data)
 		}
 		else norunagain = false;
 	}
+}
+
+void GetCaseSensitiveMapName(char[] szMapName, int iSizeof)
+{
+	if (!strlen(szMapName)) return;
+	
+	Handle hDirectoryListing = OpenDirectory("maps", true, NULL_STRING);
+	if (hDirectoryListing != INVALID_HANDLE)
+	{
+		char szFileName[128];
+		while (ReadDirEntry(hDirectoryListing, szFileName, sizeof(szFileName)))
+		{
+			if ((hDirectoryListing != INVALID_HANDLE) && (!StrEqual(szFileName, ".")) && (!StrEqual(szFileName, "..")))
+			{
+				if (StrContains(szFileName,".bsp",false) != -1)
+				{
+					if (StrContains(szFileName, szMapName, false) == 0)
+					{
+						// Get exact case by file name
+						ReplaceString(szFileName,sizeof(szFileName),".bsp","",false);
+						Format(szMapName, iSizeof, "%s", szFileName);
+						break;
+					}
+				}
+			}
+		}
+	}
+	CloseHandle(hDirectoryListing);
+	
+	return;
 }
 
 public Action physpunt(const char[] output, int caller, int activator, float delay)

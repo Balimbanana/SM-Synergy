@@ -67,7 +67,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20007"
+#define PLUGIN_VERSION "1.20008"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -273,7 +273,7 @@ public void OnPluginStart()
 	RegConsoleCmd("stuck",stuckblck);
 	RegConsoleCmd("propaccuracy",setpropaccuracy);
 	RegConsoleCmd("con",enablecon);
-	RegConsoleCmd("whois",admblock);
+	//RegConsoleCmd("whois",admblock);
 	RegConsoleCmd("npc_freeze",admblock);
 	RegConsoleCmd("npc_freeze_unselected",admblock);
 	RegConsoleCmd("mp_switchteams",admblock);

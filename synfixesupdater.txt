@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20007"
-			"Previous"	"1.20006"
+			"Latest"  	"1.20008"
+			"Previous"	"1.20007"
 		}
 		
-		"Notes"	"Added AdmireGloves animation when picking up suit."
+		"Notes"	"Remove hook for whois as it causes crash on reload."
 	}
 	
 	"Files"
