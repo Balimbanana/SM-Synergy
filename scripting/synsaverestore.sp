@@ -27,7 +27,7 @@ bool bRebuildTransition = false; //Set by cvar sm_disabletransition
 bool bNoDelete = true; //Set by cvar sm_disabletransition 3
 bool bTransitionPlayers = false; //Set by cvar sm_disabletransition 2
 bool reloadaftersetup = false;
-bool BMActive = false;
+bool BMActive, bTFAct = false;
 bool SynLaterAct = false;
 bool bLinuxAct = false;
 int iWeaponListOffset = -1;
@@ -76,7 +76,7 @@ char savedir[64];
 char szReloadSaveName[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.205"
+#define PLUGIN_VERSION "2.206"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -190,6 +190,8 @@ public void OnPluginStart()
 	GetGameFolderName(gamename,sizeof(gamename));
 	if (StrEqual(gamename,"bms",false)) BMActive = true;
 	else BMActive = false;
+	if ((StrEqual(gamename,"tf",false)) || (StrEqual(gamename,"tf_coop_extended",false))) bTFAct = true;
+	else bTFAct = false;
 	if ((FileExists("../bin/engine_srv.so",false)) && (FileExists("bin/server_srv.so",false)) && (FileExists("addons/metamod/bin/server.so",false)))
 	{
 		bLinuxAct = true;
@@ -223,7 +225,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	MarkNativeAsOptional("SynFixesReadCache");
 }
 
-public int Updater_OnPluginUpdated()
+public void Updater_OnPluginUpdated()
 {
 	if (g_hTimeout == INVALID_HANDLE)
 	{
@@ -3625,19 +3627,43 @@ public Action onchangelevel(const char[] output, int caller, int activator, floa
 							if (tmpi != -1)
 							{
 								GetEntityClassname(tmpi,weapname,sizeof(weapname));
-								Format(weapnamepamm,sizeof(weapnamepamm),"%s %i",weapname,GetEntProp(tmpi,Prop_Data,"m_iClip1"));
+								if (HasEntProp(tmpi, Prop_Send, "m_Item")) Format(weapnamepamm,sizeof(weapnamepamm),"%s %i %i",weapname,GetEntProp(tmpi,Prop_Data,"m_iClip1"), GetEntProp(tmpi, Prop_Send, "m_Item"));
+								else Format(weapnamepamm,sizeof(weapnamepamm),"%s %i",weapname,GetEntProp(tmpi,Prop_Data,"m_iClip1"));
 								WritePackString(dp,weapnamepamm);
 							}
 						}
 					}
-					/*
-					if (HasEntProp(i,Prop_Send,"m_iClass"))
+					if (bTFAct)
 					{
-						char clsprop[64];
-						Format(clsprop,sizeof(clsprop),"propset m_iClass 1 %i",GetEntProp(i,Prop_Send,"m_iClass"));
-						WritePackString(dp,clsprop);
+						if (HasEntProp(i, Prop_Send, "m_iClass"))
+						{
+							char clsprop[64];
+							switch(GetEntProp(i, Prop_Send, "m_iClass"))
+							{
+								case 1:
+									Format(clsprop,sizeof(clsprop),"playerclass scout");
+								case 2:
+									Format(clsprop,sizeof(clsprop),"playerclass sniper");
+								case 3:
+									Format(clsprop,sizeof(clsprop),"playerclass soldier");
+								case 4:
+									Format(clsprop,sizeof(clsprop),"playerclass demoman");
+								case 5:
+									Format(clsprop,sizeof(clsprop),"playerclass medic");
+								case 6:
+									Format(clsprop,sizeof(clsprop),"playerclass heavyweapons");
+								case 7:
+									Format(clsprop,sizeof(clsprop),"playerclass pyro");
+								case 8:
+									Format(clsprop,sizeof(clsprop),"playerclass spy");
+								case 9:
+									Format(clsprop,sizeof(clsprop),"playerclass engineer");
+								default:
+									Format(clsprop,sizeof(clsprop),"playerclass none");
+							}
+							WritePackString(dp,clsprop);
+						}
 					}
-					*/
 					WritePackString(dp,"endofpack");
 					PushArrayCell(g_hTransitionDataPacks,dp);
 					if (g_hCVbDebugTransitions.BoolValue) LogMessage("Transition CL '%N' Transition info Health: %i Armor: %i Ducking: %i Offset %1.f %1.f %1.f",i,curh,cura,crouching,plyorigin[0],plyorigin[1],plyorigin[2]);
@@ -3870,7 +3896,8 @@ void findtouchingents(float mins[3], float maxs[3], bool remove)
 			{
 				if (IsPlayerAlive(i))
 				{
-					GetClientAbsOrigin(i,vecOrigin);
+					// ABS Origin is already accurate to CBaseEntity
+					//GetClientAbsOrigin(i,vecOrigin);
 					if (GetEntityRenderFx(i) == RENDERFX_DISTORT) alwaystransition = 1;
 				}
 			}
@@ -5037,19 +5064,20 @@ void saveresetveh(bool rmsave)
 
 public Action transitionspawn(Handle timer, any client)
 {
-	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && IsValidEntity(client) && !IsFakeClient(client))
+	if (IsClientConnected(client) && IsClientInGame(client) && (IsPlayerAlive(client) || bTFAct) && IsValidEntity(client) && !IsFakeClient(client))
 	{
-		CreateTimer(0.1, anotherdelay, client);
+		CreateTimer(0.1, anotherdelay, client, TIMER_FLAG_NO_MAPCHANGE);
 	}
 	else if ((IsClientConnected(client)) && (!IsFakeClient(client)))
 	{
-		CreateTimer(1.0, transitionspawn, client);
+		CreateTimer(1.0, transitionspawn, client, TIMER_FLAG_NO_MAPCHANGE);
 	}
+	return Plugin_Handled;
 }
 
 public Action anotherdelay(Handle timer, int client)
 {
-	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && IsValidEntity(client) && !IsFakeClient(client))
+	if (IsClientConnected(client) && IsClientInGame(client) && (IsPlayerAlive(client) || bTFAct) && IsValidEntity(client) && !IsFakeClient(client))
 	{
 		//Issue with no suit power, this will reset it
 		if (HasEntProp(client,Prop_Data,"m_bPlayerUnderwater")) SetEntProp(client,Prop_Data,"m_bPlayerUnderwater",1);
@@ -5212,16 +5240,25 @@ public Action anotherdelay(Handle timer, int client)
 							SetEntProp(client,Prop_Data,ammosetexp[1],StringToInt(ammosetexp[3]));
 						}
 					}
-					else if (StrContains(ammoset,"weapon_",false) == -1)
+					else if ((bTFAct) && (StrContains(ammoset, "playerclass ", false) == 0))
 					{
-						ExplodeString(ammoset," ",ammosetexp,2,32);
+						ReplaceStringEx(ammoset, sizeof(ammoset), "playerclass ", "", -1, -1, false);
+						if (!StrEqual(ammoset, "none", false))
+						{
+							ClientCommand(client, "join_class %s", ammoset);
+							ClientCommand(client, "hidepanel class_red");
+						}
+					}
+					else if (StrContains(ammoset, "weapon_", false) == -1)
+					{
+						ExplodeString(ammoset, " ", ammosetexp, 2, 32);
 						int ammindx = StringToInt(ammosetexp[0]);
 						int ammset = StringToInt(ammosetexp[1]);
-						SetEntProp(client,Prop_Send,"m_iAmmo",ammset,_,ammindx);
+						SetEntProp(client, Prop_Send, "m_iAmmo", ammset, _, ammindx);
 					}
-					else if (StrContains(ammoset,"weapon_",false) != -1)
+					else if (StrContains(ammoset, "weapon_", false) != -1)
 					{
-						int breakstr = StrContains(ammoset," ",false);
+						int breakstr = StrContains(ammoset, " ", false);
 						if (breakstr != -1)
 						{
 							Format(ammosettype,sizeof(ammosettype),"%s",ammoset);
@@ -5277,8 +5314,11 @@ public Action anotherdelay(Handle timer, int client)
 								weapindx = CreateEntityByName(basecls);
 								if (weapindx != -1)
 								{
-									float tmporgs[3];
-									GetClientAbsOrigin(client,tmporgs);
+									static float tmporgs[3];
+									if (HasEntProp(client, Prop_Data, "m_vecAbsOrigin")) GetEntPropVector(client, Prop_Data, "m_vecAbsOrigin", tmporgs);
+									else if (HasEntProp(client, Prop_Send, "m_vecOrigin")) GetEntPropVector(client, Prop_Send, "m_vecOrigin", tmporgs);
+									//GetClientAbsOrigin(client,tmporgs);
+									
 									tmporgs[2]+=20.0;
 									TeleportEntity(weapindx,tmporgs,angs,NULL_VECTOR);
 									DispatchKeyValue(weapindx,"classname",ammosettype);
@@ -5286,14 +5326,51 @@ public Action anotherdelay(Handle timer, int client)
 									ActivateEntity(weapindx);
 								}
 							}
-							if (!IsValidEntity(weapindx)) weapindx = GivePlayerItem(client,ammosettype);
+							if (!IsValidEntity(weapindx)) weapindx = GivePlayerItem(client, ammosettype);
+							
+							if ((!IsValidEntity(weapindx)) && (iWeaponListOffset != -1))
+							{
+								char szClassCheck[64];
+								for (int j; j<104; j += 4)
+								{
+									int hWeapon = GetEntDataEnt2(client, iWeaponListOffset + j);
+									if ((hWeapon != 0) && (IsValidEntity(hWeapon)))
+									{
+										GetEntityClassname(hWeapon, szClassCheck, sizeof(szClassCheck));
+										if (StrEqual(szClassCheck, ammosettype, false))
+										{
+											weapindx = hWeapon;
+											break;
+										}
+									}
+								}
+							}
+							
 							if (IsValidEntity(weapindx))
 							{
-								int weapamm = StringToInt(ammosetamm);
-								if (HasEntProp(weapindx,Prop_Data,"m_iClip1"))
+								TrimString(ammosetamm);
+								int iItemIndex = 0;
+								int iSpacePos = StrContains(ammosetamm," ",false);
+								if (iSpacePos != -1)
 								{
-									SetEntProp(weapindx,Prop_Data,"m_iClip1",weapamm);
+									char szItemIndex[64];
+									Format(szItemIndex, sizeof(szItemIndex), "%s", ammosetamm);
+									Format(ammosetamm, iSpacePos+1, "%s", ammosetamm);
+									TrimString(ammosetamm);
+									ReplaceStringEx(szItemIndex, sizeof(szItemIndex), ammosetamm, "", -1, -1, false);
+									TrimString(szItemIndex);
+									iItemIndex = StringToInt(szItemIndex);
 								}
+								int weapamm = StringToInt(ammosetamm);
+								if (HasEntProp(weapindx, Prop_Data, "m_iClip1"))
+								{
+									SetEntProp(weapindx, Prop_Data, "m_iClip1", weapamm);
+								}
+								if ((HasEntProp(weapindx, Prop_Send, "m_Item")) && (iItemIndex > 0))
+								{
+									SetEntProp(weapindx, Prop_Send, "m_Item", iItemIndex);
+								}
+								ChangeEdictState(weapindx, 0);
 							}
 						}
 					}
@@ -5312,7 +5389,7 @@ public Action anotherdelay(Handle timer, int client)
 					WritePackFloat(dpoffs,angs[0]);
 					WritePackFloat(dpoffs,angs[1]);
 					WritePackFloat(dpoffs,angs[2]);
-					if (BMActive) CreateTimer(1.1,tpcltooff,dpoffs,TIMER_FLAG_NO_MAPCHANGE);
+					if ((BMActive) || (bTFAct)) CreateTimer(1.1,tpcltooff,dpoffs,TIMER_FLAG_NO_MAPCHANGE);
 					else CreateTimer(0.1,tpcltooff,dpoffs,TIMER_FLAG_NO_MAPCHANGE);
 					TeleportEntity(client,plyorigin,angs,NULL_VECTOR);
 				}
@@ -5435,7 +5512,10 @@ public void EquipCustom(int equip, int client)
 	if ((IsValidEntity(equip)) && (IsValidEntity(client)))
 	{
 		float pos[3];
-		GetClientAbsOrigin(client, pos);
+		if (HasEntProp(client, Prop_Data, "m_vecAbsOrigin")) GetEntPropVector(client, Prop_Data, "m_vecAbsOrigin", pos);
+		else if (HasEntProp(client, Prop_Send, "m_vecOrigin")) GetEntPropVector(client, Prop_Send, "m_vecOrigin", pos);
+		//GetClientAbsOrigin(client, pos);
+		
 		pos[2]+=20.0;
 		float plyang[3];
 		GetClientEyeAngles(client, plyang);

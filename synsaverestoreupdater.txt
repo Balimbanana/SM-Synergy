@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.205"
-			"Previous"	"2.204"
+			"Latest"  	"2.206"
+			"Previous"	"2.205"
 		}
 		
-		"Notes"	"Only allow reload current checkpoint by autosave, not map save."
+		"Notes"	"Fix detection of weapons to set clip in some situations. Use AbsOrigin CBaseEntity property instead of GetClientAbsOrigin call."
 	}
 	
 	"Files"
