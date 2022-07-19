@@ -64,6 +64,7 @@ Handle hTemplateData = INVALID_HANDLE;
 ConVar hWeaponRespawn, hBaseEquipmentSetup, hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeathTime, hCVSynEvents;
 ConVar g_hConVarRebuildEntities;
 ConVar g_hCVFixPropJump, g_hCVFixPhysBox;
+ConVar g_hCVKillTrainBlockers;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float fadingtime[128];
@@ -117,7 +118,7 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0063"
+#define PLUGIN_VERSION "2.0064"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -510,6 +511,7 @@ public void OnPluginStart()
 	g_hConVarRebuildEntities = CreateConVar("rebuildents", "0", "Set auto rebuild of custom entities, 1 is dynamic, 2 is static npc list.", _, true, 0.0, true, 2.0);
 	g_hCVFixPropJump = CreateConVar("synfixes_fixpropjump", "1", "Attempts to fix jumping off props and moving brushes where you normally would not actually jump.", _, true, 0.0, true, 1.0);
 	g_hCVFixPhysBox = CreateConVar("synfixes_fixphysboxflags", "1", "Fixes spawnflags 4194304.", _, true, 0.0, true, 1.0);
+	g_hCVKillTrainBlockers = CreateConVar("synfixes_trainskillblockers", "1", "func_tracktrain will kill blocking players if no space is available to move them.", _, true, 0.0, true, 1.0);
 	
 	RegAdminCmd("sm_rebuildents",rebuildents,ADMFLAG_ROOT,".");
 	RegServerCmd("synfixes_listaddedhooks",listaddedhooks);
@@ -1003,7 +1005,7 @@ public void OnMapStart()
 			if ((StrContains(mapbuf,"r_map3",false) == -1) && (StrContains(mapbuf,"pxg_level_",false) == -1))
 			{
 				if (StrContains(mapbuf,"bm_c",false) == -1)
-					HookEntityOutput("func_tracktrain","OnStart",elevatorstart);
+					HookEntityOutput("func_tracktrain", "OnStart", elevatorstart);
 				HookEntityOutput("func_door","OnOpen",createelev);
 				HookEntityOutput("func_door","OnClose",createelev);
 			}
@@ -3256,8 +3258,8 @@ public Action elevatorstart(const char[] output, int caller, int activator, floa
 		{
 			if (FindValueInArray(ignoreelevators,caller) == -1)
 			{
-				CreateTimer(0.2,elevatorstartpost,caller,TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
-				PushArrayCell(ignoreelevators,caller);
+				CreateTimer(0.2, elevatorstartpost, caller, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
+				PushArrayCell(ignoreelevators, caller);
 			}
 			//CreateTimer(0.1,elevatorstartpost,caller,TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 			//Post check
@@ -3282,7 +3284,7 @@ public Action elevatorstartpost(Handle timer, int elev)
 		GetEntPropString(elev,Prop_Data,"m_iName",elevtargn,sizeof(elevtargn));
 		float espeed;
 		if (HasEntProp(elev,Prop_Data,"m_flSpeed")) espeed = GetEntPropFloat(elev,Prop_Data,"m_flSpeed");
-		if (espeed > 150.0)
+		if ((espeed > 150.0) || (espeed < -150.0))
 		{
 			for (int i = MaxClients+1; i<GetMaxEntities(); i++)
 			{
@@ -3320,6 +3322,26 @@ public Action elevatorstartpost(Handle timer, int elev)
 							}
 						}
 					}
+				}
+			}
+		}
+		else if ((espeed <= -50.0) && (HasEntProp(elev, Prop_Data, "m_pBlocker")) && (TrainBlockFix))
+		{
+			int pBlocker = GetEntPropEnt(elev, Prop_Data, "m_pBlocker");
+			if ((pBlocker > 0) && (pBlocker <= MaxClients))
+			{
+				static float vecOrigin[3];
+				GetEntPropVector(pBlocker, Prop_Data, "m_vecAbsOrigin", vecOrigin);
+				vecOrigin[2] += 68.0;
+				if (TR_PointOutsideWorld(vecOrigin))
+				{
+					if (g_hCVKillTrainBlockers.BoolValue) SDKHooks_TakeDamage(pBlocker, elev, elev, 10.0, DMG_CRUSH, -1, NULL_VECTOR, NULL_VECTOR);
+				}
+				else
+				{
+					vecOrigin[2] -= 65.0;
+					TeleportEntity(pBlocker, vecOrigin, NULL_VECTOR, NULL_VECTOR);
+					SetEntPropEnt(elev, Prop_Data, "m_pBlocker", -1);
 				}
 			}
 		}
