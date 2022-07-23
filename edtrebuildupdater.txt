@@ -8,7 +8,7 @@
 			"Previous"	"0.73"
 		}
 		
-		"Notes"	"Rollback partial"
+		"Notes"	"Fix to edit by targetname at origin."
 	}
 	
 	"Files"

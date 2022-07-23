@@ -1135,6 +1135,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 					Format(cls,sizeof(cls),"\"classname\" \"%s\"",cls);
 					finder = StrContains(szMapEntities,clsorg,false);
 					if (finder == -1) finder = StrContains(szMapEntities,targned,false);
+					//PrintToServer("Attempt to find edit %i for %s at %s", finder, targned, clsorg);
 					if (finder == -1)
 					{
 						float org[3];
@@ -1196,7 +1197,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 							while (!endofcache)
 							{
 								finderorg = StrContains(szMapEntitiesbuff,clsorg,false);
-								if ((finderorg != -1) && (StrContains(szMapEntitiesbuff,cls,false) != -1))
+								if ((finderorg != -1) && ((StrContains(szMapEntitiesbuff,cls,false) != -1) || (StrContains(szMapEntitiesbuff,targned,false) != -1)))
 								{
 									if (dbglvl == 4) PrintToServer("Edit %s\n%s",cls,szMapEntitiesbuff);
 									passedarr = GetArrayCell(g_EditClassOrgData,i);
@@ -1505,14 +1506,29 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 				int finder = -1;
 				int findend = -1;
 				int findstartpos = -1;
+				int iFindPartial = -1;
+				static int iNextEntPos = -1;
+				static char szPartial[128];
+				static bool bFindPartial = false;
 				Handle passedarr = INVALID_HANDLE;
 				for (int i = 0;i<GetArraySize(g_EditTargets);i++)
 				{
-					char edtclass[64];
-					char edtclassorg[64];
+					static char edtclass[64];
+					static char edtclassorg[64];
 					bool lastent = false;
+					bFindPartial = false;
 					GetArrayString(g_EditTargets,i,cls,sizeof(cls));
 					Format(cls,sizeof(cls),"\"targetname\" \"%s\"",cls);
+					
+					if (StrContains(cls, "*", false) != -1)
+					{
+						Format(szPartial, sizeof(szPartial), "%s", cls[StrContains(cls, "*", false)+1]);
+						ReplaceStringEx(cls, sizeof(cls), szPartial, "", -1, -1, false);
+						ReplaceString(cls, sizeof(cls), "*", "", false);
+						if (dbglvl >= 1) PrintToServer("Find targetname starting with:\n'%s' ending with '%s'", cls, szPartial);
+						bFindPartial = true;
+					}
+					
 					finder = StrContains(szMapEntities,cls,false);
 					if (finder != -1)
 					{
@@ -1524,15 +1540,17 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 						Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder--]);
 						findend = StrContains(szMapEntitiesbuff,"}",false);
 						if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s\n",szMapEntitiesbuff);
-						finder = StrContains(szMapEntitiesbuff,cls,false);
+						finder = StrContains(szMapEntitiesbuff, cls, false);
+						if (bFindPartial) iFindPartial = StrContains(szMapEntitiesbuff, szPartial, false);
+						else iFindPartial = finder+1;
 						if ((strlen(szMapEntitiesbuff) > 1) && (finder != -1))
 						{
 							bool endofcache = false;
+							passedarr = GetArrayCell(g_EditTargetsData,i);
 							while (!endofcache)
 							{
 								if (dbglvl == 4) PrintToServer("Edit %s\n%s",cls,szMapEntitiesbuff);
-								passedarr = GetArrayCell(g_EditTargetsData,i);
-								if (passedarr != INVALID_HANDLE)
+								if ((passedarr != INVALID_HANDLE) && (iFindPartial > finder))
 								{
 									for (int j = 0;j<GetArraySize(passedarr);j++)
 									{
@@ -1545,6 +1563,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										}
 										//Format(edtkey,sizeof(edtkey),"%s",tmpexpl[0]);
 										Format(edtval,sizeof(edtval),"%s",edtdata);
+										if (bFindPartial && (StrContains(edtval, "*", false) != -1)) continue;
 										ReplaceStringEx(edtval,sizeof(edtval),edtkey,"");
 										TrimString(edtval);
 										if (StrContains(edtkey,"\"",false) != -1) ReplaceString(edtkey,sizeof(edtkey),"\"","");
@@ -1789,7 +1808,11 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 												int maxrand = ExplodeString(edtval,",",szSplitRand,16,64);
 												Format(edtval,sizeof(edtval),"%s",szSplitRand[GetRandomInt(0,maxrand-1)]);
 											}
-											if (dbglvl >= 3) PrintToServer("Add KV to %s\n%s \"%s\"",cls,edtkey,edtval);
+											if (dbglvl >= 3)
+											{
+												if (bFindPartial) PrintToServer("Add KV to %s*%s\n%s \"%s\"", cls, szPartial, edtkey, edtval);
+												else PrintToServer("Add KV to %s\n%s \"%s\"",cls,edtkey,edtval);
+											}
 											Format(tmpbuf,sizeof(tmpbuf),"%s%s \"%s\"\n}\n",tmpbuf,edtkey,edtval);
 											ReplaceStringEx(szMapEntities,sizeof(szMapEntities),szMapEntitiesbuff,tmpbuf);
 											Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",tmpbuf);
@@ -1797,19 +1820,22 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 									}
 								}
 								findstartpos = StrContains(szMapEntities,szMapEntitiesbuff,false);
+								PrintToServer("Find starting position %i from search: \n%s", findstartpos, szMapEntitiesbuff);
 								if (findstartpos != -1)
 								{
 									findend = findstartpos+strlen(szMapEntitiesbuff);
-									Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[findend]);
+									iNextEntPos = findend;
+									Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[findend+1]);
 									finder = StrContains(szMapEntitiesbuff,cls,false);
-									//PrintToServer("Contain %s %i %i",cls,findend,finder);
+									PrintToServer("Contain %s %i %i %i", cls, findend, finder, lastent);
 									if ((finder != -1) && (!lastent))
 									{
 										finder+=findend;
-										Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder+1]);
+										Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[iNextEntPos+finder]);
+										if (StrContains(szMapEntitiesbuff,"{",false) == -1) lastent = true;
 										findend = StrContains(szMapEntitiesbuff,"}",false);
 										if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s\n",szMapEntitiesbuff);
-										if (StrContains(szMapEntitiesbuff,"{",false) == -1) lastent = true;
+										PrintToServer("next buffer setup \n%s", szMapEntitiesbuff);
 										while (StrContains(szMapEntitiesbuff,"{",false) != 0)
 										{
 											if (finder-1 != -1) Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder--]);
@@ -1819,8 +1845,63 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										findend = StrContains(szMapEntitiesbuff,"}",false);
 										if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s",szMapEntitiesbuff);
 										//PrintToServer("CheckNext %s",szMapEntitiesbuff);
+										if (bFindPartial)
+										{
+											findend = StrContains(szMapEntitiesbuff,cls,false);
+											if (findend != -1)
+											{
+												iFindPartial = StrContains(szMapEntitiesbuff[findend], szPartial, false);
+												PrintToServer("Search %i for %s inside %s", iFindPartial, szPartial, szMapEntitiesbuff[findend]);
+												if (iFindPartial != -1) iFindPartial+=iNextEntPos;
+											}
+											else iFindPartial = -1;
+										}
+										else iFindPartial = finder+1;
 									}
 									else endofcache = true;
+									/*
+									findend = iNextEntPos = findstartpos+strlen(szMapEntitiesbuff);
+									PrintToServer("Start %i partial %i %s MoveNextPos %i next %i", findstartpos, bFindPartial, szPartial, strlen(szMapEntitiesbuff), iNextEntPos);
+									Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[findend]);
+									finder = StrContains(szMapEntitiesbuff,cls,false);
+									//PrintToServer("Contain %s %i %i %i", cls, iNextEntPos, finder, lastent);
+									if ((finder != -1) && (!lastent))
+									{
+										finder+=findend;
+										Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder+1]);
+										PrintToServer("Moving to contain %i buff %s", finder, szMapEntitiesbuff);
+										if (StrContains(szMapEntitiesbuff,"{",false) == -1)
+										{
+											lastent = true;
+											findend = StrContains(szMapEntitiesbuff,"}",false);
+											if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s\n",szMapEntitiesbuff);
+										}
+										while (StrContains(szMapEntitiesbuff,"{",false) != 0)
+										{
+											if (finder-1 != -1) Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder--]);
+											else break;
+											//PrintToServer("Pos %i",StrContains(szMapEntitiesbuff,"{",false));
+										}
+										findend = StrContains(szMapEntitiesbuff,"}",false);
+										if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s",szMapEntitiesbuff);
+										
+										if (bFindPartial)
+										{
+											findend = StrContains(szMapEntitiesbuff,cls,false);
+											if (findend != -1)
+											{
+												iFindPartial = StrContains(szMapEntitiesbuff[findend], szPartial, false);
+												PrintToServer("Search %i for %s inside %s", iFindPartial, szPartial, szMapEntitiesbuff[findend]);
+												if (iFindPartial != -1) iFindPartial+=iNextEntPos;
+											}
+											else iFindPartial = -1;
+										}
+										else iFindPartial = finder+1;
+										PrintToServer("Find %i Partial %i\n\n%s", finder, iFindPartial, szMapEntitiesbuff);
+										//PrintToServer("CheckNext %s",szMapEntitiesbuff);
+									}
+									else endofcache = true;
+									*/
 								}
 								else endofcache = true;
 							}
@@ -2471,7 +2552,7 @@ void ClearArrayHandles(Handle array)
 	}
 }
 
-public int Updater_OnPluginUpdated()
+public void Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
@@ -2731,7 +2812,7 @@ void ReadEDT(char[] edtfile)
 						CloseHandle(tmp);
 					}
 				}
-				//PrintToServer("EDTLine %i %s %s %s %i\n",linenum,line,targn,cls,IncludeNextLines);
+				//PrintToServer("EDTLine num: %i full %s targ %s cls %s nextlines %i\n",linenum,line,targn,cls,IncludeNextLines);
 				if ((IncludeNextLines) && (strlen(line) < 2))
 				{
 					Format(LineSpanning,sizeof(LineSpanning),"%s\n\n",LineSpanning);
