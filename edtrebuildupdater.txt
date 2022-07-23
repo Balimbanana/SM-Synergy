@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.74"
-			"Previous"	"0.73"
+			"Latest"  	"0.75"
+			"Previous"	"0.74"
 		}
 		
 		"Notes"	"Fix to edit by targetname at origin."
