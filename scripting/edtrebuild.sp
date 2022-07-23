@@ -39,7 +39,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.74"
+#define PLUGIN_VERSION "0.75"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -1820,14 +1820,14 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 									}
 								}
 								findstartpos = StrContains(szMapEntities,szMapEntitiesbuff,false);
-								PrintToServer("Find starting position %i from search: \n%s", findstartpos, szMapEntitiesbuff);
+								//PrintToServer("Find starting position %i from search: \n%s", findstartpos, szMapEntitiesbuff);
 								if (findstartpos != -1)
 								{
 									findend = findstartpos+strlen(szMapEntitiesbuff);
 									iNextEntPos = findend;
 									Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[findend+1]);
 									finder = StrContains(szMapEntitiesbuff,cls,false);
-									PrintToServer("Contain %s %i %i %i", cls, findend, finder, lastent);
+									//PrintToServer("Contain %s %i %i %i", cls, findend, finder, lastent);
 									if ((finder != -1) && (!lastent))
 									{
 										finder+=findend;
@@ -1835,7 +1835,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 										if (StrContains(szMapEntitiesbuff,"{",false) == -1) lastent = true;
 										findend = StrContains(szMapEntitiesbuff,"}",false);
 										if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s\n",szMapEntitiesbuff);
-										PrintToServer("next buffer setup \n%s", szMapEntitiesbuff);
+										//PrintToServer("next buffer setup \n%s", szMapEntitiesbuff);
 										while (StrContains(szMapEntitiesbuff,"{",false) != 0)
 										{
 											if (finder-1 != -1) Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[finder--]);
