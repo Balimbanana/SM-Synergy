@@ -26,6 +26,7 @@ Handle g_EditTargetsData = INVALID_HANDLE;
 Handle g_CreateEnts = INVALID_HANDLE;
 Handle g_ModifyCase = INVALID_HANDLE;
 Handle hCVAlwaysApplyGlobal = INVALID_HANDLE;
+ConVar g_ConVarEditReplaceOutputs;
 
 char lastmap[72];
 char LineSpanning[1024];
@@ -39,7 +40,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.76"
+#define PLUGIN_VERSION "0.77"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -97,6 +98,8 @@ public void OnPluginStart()
 	CloseHandle(cvar);
 	hCVAlwaysApplyGlobal = FindConVar("edt_alwaysuse_global");
 	if (hCVAlwaysApplyGlobal == INVALID_HANDLE) hCVAlwaysApplyGlobal = CreateConVar("edt_alwaysuse_global", "0", "Always apply globaledt.edt otherwise only applies if there is a map.edt", _, true, 0.0, true, 1.0);
+	g_ConVarEditReplaceOutputs = FindConVar("edt_edits_replace_outputs");
+	if (g_ConVarEditReplaceOutputs == INVALID_HANDLE) g_ConVarEditReplaceOutputs = CreateConVar("edt_edits_replace_outputs", "0", "If enabled, edits that contain outputs will replace outputs of the same type already on entity.", _, true, 0.0, true, 1.0);
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -881,7 +884,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 												findedit = StrContains(szMapEntitiesbuff,"\"skin\"",false);
 											}
 											//if ((findedit != -1) && (strlen(edt_landmark) > 0) && (strlen(edt_map) > 0))
-											if ((findedit != -1) && (StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0) && (strlen(edtkey) > 1))
+											if ((findedit != -1) && (g_ConVarEditReplaceOutputs.BoolValue || ((StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0))) && (strlen(edtkey) > 1))
 											{
 												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
 												ExplodeString(tmpbuf,"\n",tmpexpl,4,64);
@@ -1372,7 +1375,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 												}
 											}
 											//if ((findedit != -1) && (strlen(edt_landmark) > 0) && (strlen(edt_map) > 0))
-											if ((findedit != -1) && (StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0) && (strlen(edtkey) > 1))
+											if ((findedit != -1) && (g_ConVarEditReplaceOutputs.BoolValue || ((StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0))) && (strlen(edtkey) > 1))
 											{
 												Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
 												ExplodeString(tmpbuf,"\n",tmpexpl,4,64);
@@ -1551,7 +1554,20 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 							passedarr = GetArrayCell(g_EditTargetsData,i);
 							while (!endofcache)
 							{
-								if (dbglvl == 4) PrintToServer("Edit %s\n%s",cls,szMapEntitiesbuff);
+								if (dbglvl == 4)
+								{
+									if (bFindPartial)
+									{
+										if (iFindPartial > finder)
+										{
+											PrintToServer("Edit %s\n%s",cls,szMapEntitiesbuff);
+										}
+									}
+									else
+									{
+										PrintToServer("Edit %s\n%s",cls,szMapEntitiesbuff);
+									}
+								}
 								if ((passedarr != INVALID_HANDLE) && (iFindPartial > finder))
 								{
 									for (int j = 0;j<GetArraySize(passedarr);j++)
@@ -1724,7 +1740,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 											}
 										}
 										//if ((findedit != -1) && (strlen(edt_landmark) > 0) && (strlen(edt_map) > 0))
-										if ((findedit != -1) && (StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0) && (strlen(edtkey) > 1))
+										if ((findedit != -1) && (g_ConVarEditReplaceOutputs.BoolValue || ((StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0))) && (strlen(edtkey) > 1))
 										{
 											Format(tmpbuf,sizeof(tmpbuf),"%s",szMapEntitiesbuff[findedit]);
 											ExplodeString(tmpbuf,"\n",tmpexpl,4,64);
@@ -1812,7 +1828,20 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 											}
 											if (dbglvl >= 3)
 											{
-												if (bFindPartial) PrintToServer("Add KV to %s*%s\n%s \"%s\"", cls, szPartial, edtkey, edtval);
+												if (bFindPartial)
+												{
+													int iFind = StrContains(szMapEntitiesbuff, "\"targetname\" ", false);
+													if (iFind != -1)
+													{
+														Format(tmpexpl[0], sizeof(tmpexpl[]), "%s", szMapEntitiesbuff[iFind]);
+														if (StrContains(tmpexpl[0], "\n", false) != -1)
+														{
+															Format(tmpexpl[0], StrContains(tmpexpl[0], "\n", false)+1, "%s", tmpexpl[0]);
+															ReplaceStringEx(tmpexpl[0], sizeof(tmpexpl[]), "\"targetname\" ", "", -1, -1, false);
+														}
+														PrintToServer("Add KV to partial match %s*%s found %s\n%s \"%s\"", cls, szPartial, tmpexpl[0], edtkey, edtval);
+													}
+												}
 												else PrintToServer("Add KV to %s\n%s \"%s\"",cls,edtkey,edtval);
 											}
 											Format(tmpbuf,sizeof(tmpbuf),"%s%s \"%s\"\n}\n",tmpbuf,edtkey,edtval);
@@ -2420,7 +2449,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 											findedit = StrContains(tmpline,"\"spawnflags\"",false);
 										}
 										//if ((findedit != -1) && (strlen(edt_landmark) > 0) && (strlen(edt_map) > 0))
-										if ((findedit != -1) && (StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0) && (strlen(edtkey) > 1))
+										if ((findedit != -1) && (g_ConVarEditReplaceOutputs.BoolValue || ((StrContains(edtkey,"\"On",false) != 0) && (StrContains(edtkey,"\"PlayerO",false) != 0) && (StrContains(edtkey,"\"Pressed",false) != 0) && (StrContains(edtkey,"\"Unpressed",false) != 0))) && (strlen(edtkey) > 1))
 										{
 											Format(buffadded,sizeof(buffadded),"%s",tmpline[findedit]);
 											ExplodeString(buffadded,"\"",tmpexpl,4,64);

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.76"
-			"Previous"	"0.75"
+			"Latest"  	"0.77"
+			"Previous"	"0.76"
 		}
 		
-		"Notes"	"Fix to edit by targetname at origin."
+		"Notes"	"Add CVar edt_edits_replace_outputs. Fix partial name match in edit by targetname."
 	}
 	
 	"Files"
