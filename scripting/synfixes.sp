@@ -68,7 +68,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20009"
+#define PLUGIN_VERSION "1.20010"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1740,9 +1740,15 @@ public Action clticks(Handle timer)
 	{
 		if ((IsValidEntity(i)) && (i != 0))
 		{
-			// This actually fixes some things and has no visual change in Synergy
-			if (HasEntProp(i,Prop_Data,"m_bGlowEnabled")) SetEntProp(i,Prop_Data,"m_bGlowEnabled",1);
-			if (HasEntProp(i,Prop_Send,"m_bGlowEnabled")) SetEntProp(i,Prop_Send,"m_bGlowEnabled",1);
+			if (IsClientConnected(i))
+			{
+				if (IsClientInGame(i))
+				{
+					// This actually fixes some things and has no visual change in Synergy
+					if (HasEntProp(i,Prop_Data,"m_bGlowEnabled")) SetEntProp(i,Prop_Data,"m_bGlowEnabled",1);
+					if (HasEntProp(i,Prop_Send,"m_bGlowEnabled")) SetEntProp(i,Prop_Send,"m_bGlowEnabled",1);
+				}
+			}
 		}
 	}
 }

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20009"
-			"Previous"	"1.20008"
+			"Latest"  	"1.20010"
+			"Previous"	"1.20009"
 		}
 		
-		"Notes"	"Added CVar synfixes_trainskillblockers default 1, kills players blocking trains."
+		"Notes"	"Additional validation on client disconnect where client is still valid but not in game."
 	}
 	
 	"Files"

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.206"
-			"Previous"	"2.205"
+			"Latest"  	"2.207"
+			"Previous"	"2.206"
 		}
 		
-		"Notes"	"Fix detection of weapons to set clip in some situations. Use AbsOrigin CBaseEntity property instead of GetClientAbsOrigin call."
+		"Notes"	"Potential fix to global transition timer becoming invalidated and not cleared correctly."
 	}
 	
 	"Files"

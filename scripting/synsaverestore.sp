@@ -76,7 +76,7 @@ char savedir[64];
 char szReloadSaveName[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.206"
+#define PLUGIN_VERSION "2.207"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1743,6 +1743,8 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 
 public void OnMapStart()
 {
+	g_hTimeout = INVALID_HANDLE;
+	
 	flMapStartTime = GetTickedTime()+2.0;
 	if (GetMapHistorySize() > -1)
 	{
@@ -3248,6 +3250,8 @@ public Action beginseqd(Handle timer, int ent)
 
 public void OnMapEnd()
 {
+	g_hTimeout = INVALID_HANDLE;
+	
 	if ((bRebuildTransition) && (reloadingmap))
 	{
 		if (IsValidEntity(logplyprox))

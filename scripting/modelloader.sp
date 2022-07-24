@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.72"
+#define PLUGIN_VERSION "1.73"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
 public Plugin myinfo = 
@@ -106,7 +106,7 @@ public void OnLibraryAdded(const char[] name)
 	}
 }
 
-public int Updater_OnPluginUpdated()
+public void Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
@@ -124,19 +124,22 @@ public void dlch(Handle convar, const char[] oldValue, const char[] newValue)
 
 public Action onsuitpickup(const char[] output, int caller, int activator, float delay)
 {
-	if (IsPlayerAlive(activator))
+	if ((activator > 0) && (activator <= MaxClients))
 	{
-		float Time = GetTickedTime();
-		if (antispamchk[activator] <= Time)
+		if (IsPlayerAlive(activator))
 		{
-			for (int client = 1; client<MaxClients+1 ;client++)
+			float Time = GetTickedTime();
+			if (antispamchk[activator] <= Time)
 			{
-				if (IsValidEntity(client))
+				for (int client = 1; client<MaxClients+1 ;client++)
 				{
-					if (IsClientConnected(client))
+					if (IsValidEntity(client))
 					{
-						CreateTimer(0.1, setmodeltimer, client);
-						antispamchk[activator] = Time + 3.0;
+						if (IsClientConnected(client))
+						{
+							CreateTimer(0.1, setmodeltimer, client);
+							antispamchk[activator] = Time + 3.0;
+						}
 					}
 				}
 			}
@@ -626,7 +629,7 @@ public Action cmodelmenu(int client, int args)
 			menu.AddItem("n7l", "N7Legion");
 	if (kudarray != INVALID_HANDLE)
 		if (GetArraySize(kudarray) > 0)
-			menu.AddItem("kud", "Kud?");
+			menu.AddItem("kud", "Kud♪");
 	if (cssarray != INVALID_HANDLE)
 		if (GetArraySize(cssarray) > 0)
 			menu.AddItem("css", "CSS");
