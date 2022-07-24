@@ -39,7 +39,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.75"
+#define PLUGIN_VERSION "0.76"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -1546,6 +1546,8 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 						if ((strlen(szMapEntitiesbuff) > 1) && (finder != -1))
 						{
 							bool endofcache = false;
+							int iBreakLoop = 0;
+							int iPosCheck = 0;
 							passedarr = GetArrayCell(g_EditTargetsData,i);
 							while (!endofcache)
 							{
@@ -1851,12 +1853,26 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 											if (findend != -1)
 											{
 												iFindPartial = StrContains(szMapEntitiesbuff[findend], szPartial, false);
-												PrintToServer("Search %i for %s inside %s", iFindPartial, szPartial, szMapEntitiesbuff[findend]);
+												//PrintToServer("Search %i for %s inside %s", iFindPartial, szPartial, szMapEntitiesbuff[findend]);
 												if (iFindPartial != -1) iFindPartial+=iNextEntPos;
 											}
 											else iFindPartial = -1;
 										}
 										else iFindPartial = finder+1;
+										if (iPosCheck == finder)
+										{
+											iBreakLoop++;
+											if (iBreakLoop >= 2)
+											{
+												iBreakLoop = 0;
+												endofcache = true;
+												continue;
+											}
+										}
+										else
+										{
+											iPosCheck = finder;
+										}
 									}
 									else endofcache = true;
 									/*
@@ -2784,7 +2800,7 @@ void ReadEDT(char[] edtfile)
 					if (gettn)
 					{
 						Handle tmp = CreateArray(32);
-						FormatKVs(tmp,line,"targetname");
+						FormatKVs(tmp, line, ""); //"targetname"
 						/*
 						Handle tmphndl = FormatKVs(tmp,line,"targetname");
 						tmp = CloneArray(tmphndl);
@@ -2792,20 +2808,27 @@ void ReadEDT(char[] edtfile)
 						*/
 						if (GetArraySize(tmp) > 0)
 						{
+							char tmparr[256];
 							for (int ikvs = 0;ikvs<GetArraySize(tmp);ikvs++)
 							{
-								char tmparr[256];
 								GetArrayString(tmp,ikvs,tmparr,sizeof(tmparr));
-								char kvs[64][64];
-								ExplodeString(tmparr," ",kvs,64,64);
-								Format(targn,sizeof(targn),"%s",kvs[0]);
-								if (StrEqual(kvs[2],"\"\"",false)) Format(targn,sizeof(targn),"%s %s",kvs[0],kvs[1]);
-								ReplaceString(targn,sizeof(targn),"\"","");
-								ReplaceString(targn,sizeof(targn),"}","");
-								if ((strlen(targn) > 0) && (!StrEqual(targn,"classname",false)))
+								if ((StrContains(tmparr, "targetname", false) == 0) || (StrContains(tmparr, "\"targetname\"", false) == 0))
 								{
-									TargnDefined = true;
-									break;
+									/*
+									char kvs[64][64];
+									ExplodeString(tmparr," ",kvs,64,64);
+									Format(targn,sizeof(targn),"%s",kvs[1]);
+									if (StrEqual(kvs[3],"\"\"",false)) Format(targn,sizeof(targn),"%s %s",kvs[1],kvs[2]);
+									*/
+									Format(targn, sizeof(targn), "%s", tmparr);
+									ReplaceStringEx(targn, sizeof(targn), "targetname ","", -1, -1, false);
+									ReplaceString(targn,sizeof(targn),"\"","");
+									ReplaceString(targn,sizeof(targn),"}","");
+									if ((strlen(targn) > 0) && (!StrEqual(targn,"classname",false)))
+									{
+										TargnDefined = true;
+										break;
+									}
 								}
 							}
 						}
@@ -3152,6 +3175,7 @@ void FormatKVs(Handle passedarr, char[] passchar, char[] cls)
 		}
 		for (int i = 0;i<runthrough;i++)
 		{
+			//PrintToServer("RunThrough %i '%s' %i '%s'", i, kvs[i], i+1, kvs[i+1]);
 			if (StrContains(kvs[i+1],"}",false) == 0)
 			{
 				break;
