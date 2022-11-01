@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.77"
-			"Previous"	"0.76"
+			"Latest"  	"0.78"
+			"Previous"	"0.77"
 		}
 		
-		"Notes"	"Add CVar edt_edits_replace_outputs. Fix partial name match in edit by targetname."
+		"Notes"	"Added DHooks detour for later versions of SourceMod with some fallbacks."
 	}
 	
 	"Files"

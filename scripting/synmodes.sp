@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.56"
+#define PLUGIN_VERSION "1.57"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -89,6 +89,7 @@ bool resetvehpass = false;
 bool aggro = false;
 
 ConVar g_CVarReplaceVoiceMenu;
+ConVar g_ConVarEquipmentManaged;
 
 public void OnPluginStart()
 {
@@ -229,7 +230,9 @@ public void OnPluginStart()
 	else if (StrEqual(curgamemode,"survival",false)) setupdmfor("survival",true);
 	else setupdmfor("coop",true);
 	CloseHandle(mpcvar);
+	
 	g_CVarReplaceVoiceMenu = CreateConVar("synmodes_replacevoicemenu", "1", "Replaces voice menu with custom one.", _, true, 0.0, true, 1.0);
+	g_ConVarEquipmentManaged = CreateConVar("synmodes_manageequipment", "1", "SynModes will handle equipping the player upon spawning them.", _, true, 0.0, true, 1.0);
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -1842,6 +1845,25 @@ public Action tpclspawnnew(Handle timer, int i)
 		}
 		else
 			pos[2] += 10.0;
+		
+		if (!g_ConVarEquipmentManaged.BoolValue)
+		{
+			Handle dp = CreateDataPack();
+			CreateDataTimer(0.1, TeleportPlayerDelay, dp, TIMER_FLAG_NO_MAPCHANGE);
+			WritePackCell(dp, i);
+			WritePackCell(dp, clused);
+			
+			if (EnterVehicle)
+			{
+				Handle dp2 = CreateDataPack();
+				CreateDataTimer(0.2, EnterVehicleDelay, dp2, TIMER_FLAG_NO_MAPCHANGE);
+				WritePackCell(dp2,i);
+				WritePackCell(dp2,vck);
+			}
+			
+			return Plugin_Handled;
+		}
+		
 		TeleportEntity(i, pos, plyang, NULL_VECTOR);
 		findent(MaxClients+1,"info_player_equip");
 		for (int j; j<GetArraySize(equiparr); j++)
@@ -1867,6 +1889,13 @@ public Action tpclspawnnew(Handle timer, int i)
 	}
 	else if ((clused == 0) && (IsClientInGame(i)))
 	{
+		if (!g_ConVarEquipmentManaged.BoolValue)
+		{
+			DispatchSpawn(i);
+			ActivateEntity(i);
+			
+			return Plugin_Handled;
+		}
 		findent(MaxClients+1,"info_player_equip");
 		if ((isvehiclemap) && (GetArraySize(equiparr) > 0))
 		{
@@ -1937,6 +1966,73 @@ public Action tpclspawnnew(Handle timer, int i)
 		MoveCLToSpawnpoint(i);
 	}
 	return Plugin_Handled;
+}
+
+public Action TeleportPlayerDelay(Handle timer, Handle dp)
+{
+	if (dp != INVALID_HANDLE)
+	{
+		ResetPack(dp);
+		int client = ReadPackCell(dp);
+		int iSpawnOnClient = ReadPackCell(dp);
+		
+		static float vecPosition[3];
+		static float vecAngles[3];
+		
+		if (IsValidEntity(client))
+		{
+			if (IsClientConnected(client))
+			{
+				if ((IsValidEntity(iSpawnOnClient)) && (iSpawnOnClient > 0))
+				{
+					if (IsClientConnected(iSpawnOnClient))
+					{
+						if (IsPlayerAlive(iSpawnOnClient))
+						{
+							if (HasWeapons(client, 2))
+							{
+								if (HasEntProp(iSpawnOnClient, Prop_Data, "m_vecAbsOrigin"))
+								{
+									GetEntPropVector(iSpawnOnClient, Prop_Data, "m_vecAbsOrigin", vecPosition);
+									if (HasEntProp(iSpawnOnClient, Prop_Data, "v_angle")) GetEntPropVector(iSpawnOnClient, Prop_Data, "v_angle", vecAngles);
+									else if (HasEntProp(iSpawnOnClient, Prop_Data, "m_angRotation")) GetEntPropVector(iSpawnOnClient, Prop_Data, "m_angRotation", vecAngles);
+									else GetClientEyeAngles(iSpawnOnClient, vecAngles);
+									
+									vecAngles[2] = 0.0;
+									
+									TeleportEntity(client, vecPosition, vecAngles, NULL_VECTOR);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+bool HasWeapons(int client, int iAmount)
+{
+	if ((!IsValidEntity(client)) || (client == 0) || (client > MaxClients)) return false;
+	
+	static int iWeapons = 0;
+	
+	if (WeapList == -1) WeapList = FindSendPropInfo("CBasePlayer", "m_hMyWeapons");
+	if (WeapList != -1)
+	{
+		for (int j; j<104; j += 4)
+		{
+			int tmpi = GetEntDataEnt2(client, WeapList + j);
+			if ((tmpi != 0) && (IsValidEntity(tmpi)))
+			{
+				iWeapons++;
+			}
+		}
+	}
+	
+	if (iWeapons >= iAmount) return true;
+	
+	return false;
 }
 
 void MoveCLToSpawnpoint(int i)

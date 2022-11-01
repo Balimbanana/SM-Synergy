@@ -1,0 +1,82 @@
+"Games"
+{
+	"#default"
+	{
+		"Keys"
+		{
+			"IServerGameDLL"
+			{
+				"windows"	"ServerGameDLL008"
+				"linux"		"ServerGameDLL008"
+			}
+		}
+
+		"Signatures"
+		{
+			"CreateServerInterface"
+			{
+				"library"		"server"
+				"windows"		"@CreateInterface"
+				"linux"			"@CreateInterface"
+			}
+		}
+
+		"Offsets"
+		{
+			"CServerGameDLL::LevelInit"
+			{
+				"windows"	"3"
+				"linux"		"3"
+			}
+		}
+
+		"Functions"
+		{
+			"CServerGameDLL::LevelInit"
+			{
+				"offset"	"CServerGameDLL::LevelInit"
+				"hooktype"	"raw"
+				"return"	"bool"
+				"this"		"ignore"
+				"arguments"
+				{
+					"pMapName"
+					{
+						"type"	"charptr"
+					}
+					"pMapEntities"
+					{
+						"type"	"charptr"
+					}
+					"pOldLevel"
+					{
+						"type"	"charptr"
+					}
+					"pLandmarkName"
+					{
+						"type"	"charptr"
+					}
+					"loadGame"
+					{
+						"type"	"bool"
+					}
+					"background"
+					{
+						"type"	"bool"
+					}
+				}
+			}
+		}
+	}
+	"bms"
+	{
+		"Keys"
+		{
+			"IServerGameDLL"
+			{
+				"windows"	"ServerGameDLL010"
+				"linux"		"ServerGameDLL010"
+			}
+		}
+	}
+}

@@ -6,6 +6,7 @@
 #undef REQUIRE_EXTENSIONS
 #tryinclude <SteamWorks>
 #tryinclude <updater>
+#tryinclude <dhooks>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 #pragma semicolon 1;
@@ -28,6 +29,9 @@ Handle g_ModifyCase = INVALID_HANDLE;
 Handle hCVAlwaysApplyGlobal = INVALID_HANDLE;
 ConVar g_ConVarEditReplaceOutputs;
 
+// DHooks
+DynamicHook g_hLevelInitHook;
+
 char lastmap[72];
 char LineSpanning[1024];
 char szEDTLog[256];
@@ -40,7 +44,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.77"
+#define PLUGIN_VERSION "0.78"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -57,7 +61,9 @@ public void OnPluginStart()
 	cvaroriginals = CreateArray(128);
 	//cvarmods = CreateArray(128);
 	BuildPath(Path_SM,szEDTLog,sizeof(szEDTLog),"logs");
-	Format(szEDTLog,sizeof(szEDTLog),"%s/EDT.log",szEDTLog);
+	char szTime[64];
+	FormatTime(szTime, sizeof(szTime), "%y%m%d");
+	Format(szEDTLog, sizeof(szEDTLog), "%s/EDT%s.log", szEDTLog, szTime);
 	Handle cvar = FindConVar("edtdbg");
 	if (cvar == INVALID_HANDLE) cvar = CreateConVar("edtdbg", "0", "Set debug level of EDT read.", _, true, 0.0, true, 4.0);
 	dbglvl = GetConVarInt(cvar);
@@ -100,22 +106,126 @@ public void OnPluginStart()
 	if (hCVAlwaysApplyGlobal == INVALID_HANDLE) hCVAlwaysApplyGlobal = CreateConVar("edt_alwaysuse_global", "0", "Always apply globaledt.edt otherwise only applies if there is a map.edt", _, true, 0.0, true, 1.0);
 	g_ConVarEditReplaceOutputs = FindConVar("edt_edits_replace_outputs");
 	if (g_ConVarEditReplaceOutputs == INVALID_HANDLE) g_ConVarEditReplaceOutputs = CreateConVar("edt_edits_replace_outputs", "0", "If enabled, edits that contain outputs will replace outputs of the same type already on entity.", _, true, 0.0, true, 1.0);
+	
+	LoadGameData();
+}
+
+void LoadGameData()
+{
+	char szPathToData[256];
+	BuildPath(Path_SM, szPathToData, sizeof(szPathToData), "gamedata");
+	Format(szPathToData, sizeof(szPathToData), "%s/edtrebuild.txt", szPathToData);
+	
+	if (FileExists(szPathToData, true, NULL_STRING))
+	{
+		if (GetExtensionFileStatus("dhooks.ext") >= 0)
+		{
+			Handle hGameData = LoadGameConfigFile("edtrebuild");
+			if (hGameData != INVALID_HANDLE)
+			{
+				StartPrepSDKCall(SDKCall_Static);
+				if (PrepSDKCall_SetFromConf(hGameData, SDKConf_Signature, "CreateServerInterface"))
+				{
+					PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
+					PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Pointer, VDECODE_FLAG_ALLOWNULL);
+					PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+					Handle hCreateServerInterface = EndPrepSDKCall();
+					if (hCreateServerInterface != INVALID_HANDLE)
+					{
+						int iOffset = GameConfGetOffset(hGameData, "CServerGameDLL::LevelInit");
+						if (iOffset != -1)
+						{
+							char szServerGameDLL[64];
+							GameConfGetKeyValue(hGameData, "IServerGameDLL", szServerGameDLL, sizeof(szServerGameDLL));
+							
+							Address ServerGameDLL = view_as<Address>(SDKCall(hCreateServerInterface, szServerGameDLL, 0));
+							
+							// Failsaves
+							if (view_as<int>(ServerGameDLL) == 0)
+							{
+								for (int i = 6; i < 12; i++)
+								{
+									if (i < 10) Format(szServerGameDLL, sizeof(szServerGameDLL), "ServerGameDLL00%i", i);
+									else Format(szServerGameDLL, sizeof(szServerGameDLL), "ServerGameDLL0%i", i);
+									ServerGameDLL = view_as<Address>(SDKCall(hCreateServerInterface, szServerGameDLL, 0));
+									
+									if (view_as<int>(ServerGameDLL) != 0) break;
+								}
+							}
+							
+							if (dbglvl > 0) PrintToServer("ServerGameDLL %s", szServerGameDLL);
+							
+							if (view_as<int>(ServerGameDLL) != 0)
+							{
+								iOffset = GameConfGetOffset(hGameData, "CServerGameDLL::LevelInit");
+								if (iOffset != -1)
+								{
+									g_hLevelInitHook = DynamicHook.FromConf(hGameData, "CServerGameDLL::LevelInit");
+									g_hLevelInitHook.HookRaw(Hook_Pre, ServerGameDLL, Hook_OnLevelInit);
+								}
+							}
+						}
+					}
+					CloseHandle(hCreateServerInterface);
+				}
+			}
+			CloseHandle(hGameData);
+		}
+	}
+	
+	return;
 }
 
 public void OnLibraryAdded(const char[] name)
 {
-    if (StrEqual(name,"updater",false))
-    {
-        Updater_AddPlugin(UPDATE_URL);
-    }
+	if (StrEqual(name,"updater",false))
+	{
+		Updater_AddPlugin(UPDATE_URL);
+	}
+	
+	return;
+}
+
+public MRESReturn Hook_OnLevelInit(DHookReturn hReturn, DHookParam hParams)
+{
+	char szMapName[256];
+	static char szMapEntities[2097152];
+	
+	hParams.GetString(1, szMapName, sizeof(szMapName));
+	hParams.GetString(2, szMapEntities, sizeof(szMapEntities));
+	
+	if (ApplyEdits(szMapName, szMapEntities))
+	{
+		hParams.SetString(2, szMapEntities);
+	}
+	
+	return MRES_Ignored;
 }
 
 public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 {
+	// DHooks handled
+	if (g_hLevelInitHook != INVALID_HANDLE) return Plugin_Continue;
+	
+	if (strlen(szMapEntities) > 4)
+	{
+		if (ApplyEdits(szMapName, szMapEntities))
+		{
+			return Plugin_Changed;
+		}
+	}
+	
+	return Plugin_Continue;
+}
+
+bool ApplyEdits(const char[] szMapName, char szMapEntities[2097152])
+{
 	if (strlen(szEDTLog) < 1)
 	{
 		BuildPath(Path_SM,szEDTLog,sizeof(szEDTLog),"logs");
-		Format(szEDTLog,sizeof(szEDTLog),"%s/EDT.log",szEDTLog);
+		char szTime[64];
+		FormatTime(szTime, sizeof(szTime), "%y%m%d");
+		Format(szEDTLog, sizeof(szEDTLog), "%s/EDT%s.log", szEDTLog, szTime);
 	}
 	g_DeleteClasses = CreateArray(128);
 	g_DeleteClassOrigin = CreateArray(128);
@@ -2550,7 +2660,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 		CloseHandle(writefile);
 		if (dbglvl > 0) PrintToServer("Finished EntCache Rebuild");
 		Format(lastmap,sizeof(lastmap),"%s",szMapName);
-		return Plugin_Changed;
+		return true;
 	}
 	else if (dbglvl > 0)
 	{
@@ -2576,7 +2686,7 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 	CloseHandle(g_EditClassOrgData);
 	CloseHandle(g_CreateEnts);
 	Format(lastmap,sizeof(lastmap),"%s",szMapName);
-	return Plugin_Continue;
+	return false;
 }
 
 void ClearArrayHandles(Handle array)
