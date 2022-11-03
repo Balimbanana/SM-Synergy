@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.57"
-			"Previous"	"1.56"
+			"Latest"  	"1.58"
+			"Previous"	"1.57"
 		}
 		
-		"Notes"	"Added CVar synmodes_manageequipment default 1. Manages equipment when spawning players."
+		"Notes"	"Changed CreateDataTimer to regular timer."
 	}
 	
 	"Files"

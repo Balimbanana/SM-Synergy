@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.57"
+#define PLUGIN_VERSION "1.58"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -1849,16 +1849,16 @@ public Action tpclspawnnew(Handle timer, int i)
 		if (!g_ConVarEquipmentManaged.BoolValue)
 		{
 			Handle dp = CreateDataPack();
-			CreateDataTimer(0.1, TeleportPlayerDelay, dp, TIMER_FLAG_NO_MAPCHANGE);
 			WritePackCell(dp, i);
 			WritePackCell(dp, clused);
+			CreateTimer(0.1, TeleportPlayerDelay, dp, TIMER_FLAG_NO_MAPCHANGE);
 			
 			if (EnterVehicle)
 			{
 				Handle dp2 = CreateDataPack();
-				CreateDataTimer(0.2, EnterVehicleDelay, dp2, TIMER_FLAG_NO_MAPCHANGE);
 				WritePackCell(dp2,i);
 				WritePackCell(dp2,vck);
+				CreateTimer(0.2, EnterVehicleDelay, dp2, TIMER_FLAG_NO_MAPCHANGE);
 			}
 			
 			return Plugin_Handled;
@@ -1975,6 +1975,8 @@ public Action TeleportPlayerDelay(Handle timer, Handle dp)
 		ResetPack(dp);
 		int client = ReadPackCell(dp);
 		int iSpawnOnClient = ReadPackCell(dp);
+		
+		CloseHandle(dp);
 		
 		static float vecPosition[3];
 		static float vecAngles[3];
