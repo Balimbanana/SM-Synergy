@@ -136,13 +136,20 @@ public void OnConfigsExecuted()
 	{
 		thishandle = OpenFile("mapcycle.txt","r");
 	}
-	char line[128];
-	while(!IsEndOfFile(thishandle)&&ReadFileLine(thishandle,line,sizeof(line)))
+	if (thishandle != INVALID_HANDLE)
 	{
-		TrimString(line);
-		PushArrayString(g_MapList, line);
+		char line[128];
+		while(!IsEndOfFile(thishandle)&&ReadFileLine(thishandle,line,sizeof(line)))
+		{
+			TrimString(line);
+			PushArrayString(g_MapList, line);
+		}
+		CloseHandle(thishandle);
 	}
-	CloseHandle(thishandle);
+	else
+	{
+		PrintToServer("Failed to get mapcycle or mapcyclecfg!");
+	}
 	
 	BuildMapMenu();
 }
@@ -650,12 +657,23 @@ void tmpmenu(int client, Handle tmparr, char[] menutitle)
 	}
 	Menu menu = new Menu(MenuHandler);
 	menu.SetTitle(menutitletmp);
+	
+	// Should probably make this better
+	bool bSkipSpace = true;
+	char gamedesc[32];
+	GetGameFolderName(gamedesc,sizeof(gamedesc));
+	if (StrEqual(gamedesc, "tf_coop_extended", false))
+	{
+		bSkipSpace = false;
+	}
+	
 	for (int k;k<GetArraySize(tmparr);k++)
 	{
 		char ktmp[128];
 		GetArrayString(tmparr, k, ktmp, sizeof(ktmp));
 		int status;
 		int pos = StrContains(ktmp," ",false);
+		if (!bSkipSpace) pos = -1;
 		g_mapTrie.GetValue(ktmp, status);
 		if (status & MAPSTATUS_EXCLUDE_CURRENT)
 		{
@@ -990,7 +1008,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Lost Coast");
 	}
-	else if ((StrContains(map, "d2_", false) == 0) || (StrContains(map, "d3_", false) == 0) || (StrContains(map, "hl2 ",false) == 0))
+	else if (((StrContains(map, "d2_", false) == 0) || (StrContains(map, "d3_", false) == 0) || (StrContains(map, "hl2 ",false) == 0)) && (StrContains(map, " gamemode ", false) == -1))
 	{
 		Format(modname, sizeof(modname), "Half-Life 2");
 	}
@@ -1257,6 +1275,18 @@ public Action GetMapTag(const char[] map)
 	else if ((StrContains(map,"amalgam ",false) == 0) || (StrEqual(map,"intro_1",false)) || (StrEqual(map,"sewers_1",false)) || (StrEqual(map,"coast_1",false)) || (StrEqual(map,"tunnel_1",false)) || (StrEqual(map,"beacon_1",false)))
 	{
 		Format(modname, sizeof(modname), "Amalgam");
+	}
+	else if ((StrContains(map,"koth_",false) == 0) || (StrContains(map,"gamemode koth",false) != -1))
+	{
+		Format(modname, sizeof(modname), "King of The Hill");
+	}
+	else if ((StrContains(map,"ctf_",false) == 0) || (StrContains(map,"gamemode ctf",false) != -1))
+	{
+		Format(modname, sizeof(modname), "Capture The Flag");
+	}
+	else if ((StrContains(map,"cp_",false) == 0) || (StrContains(map,"gamemode cp",false) != -1))
+	{
+		Format(modname, sizeof(modname), "Control Points");
 	}
 	else
 	{

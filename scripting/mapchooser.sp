@@ -71,6 +71,7 @@ ConVar g_Cvar_VoteDuration;
 ConVar g_Cvar_RunOff;
 ConVar g_Cvar_RunOffPercent;
 ConVar g_Cvar_CycleFile;
+ConVar g_Cvar_UseDialogs;
 
 Handle g_VoteTimer = INVALID_HANDLE;
 Handle g_RetryTimer = INVALID_HANDLE;
@@ -81,10 +82,11 @@ Handle g_NominateList = null;
 Handle g_NominateOwners = null;
 Handle g_OldMapList = null;
 Handle g_NextMapList = null;
+Handle g_ActiveVotesList = INVALID_HANDLE;
 Menu g_VoteMenu;
 
-new g_Extends;
-new g_TotalRounds;
+int g_Extends;
+int g_TotalRounds;
 bool g_HasVoteStarted;
 bool g_WaitingForVote;
 bool g_MapVoteCompleted;
@@ -92,7 +94,10 @@ bool g_ChangeMapAtRoundEnd;
 bool g_ChangeMapInProgress;
 //new g_mapFileSerial = -1;
 bool mapchangeinprogress = false;
+bool bSynAct = false;
+int g_VoteInts[12];
 char maptag[64];
+char gamename[64];
 
 new MapChange:g_ChangeTime;
 
@@ -101,7 +106,7 @@ Handle g_MapVoteStartedForward = null;
 
 /* Upper bound of how many team there could be */
 #define MAXTEAMS 10
-new g_winCount[MAXTEAMS];
+int g_winCount[MAXTEAMS];
 
 #define VOTE_EXTEND "##extend##"
 #define VOTE_DONTCHANGE "##dontchange##"
@@ -111,12 +116,16 @@ public OnPluginStart()
 	LoadTranslations("mapchooser.phrases");
 	LoadTranslations("common.phrases");
 	
+	GetGameFolderName(gamename,sizeof(gamename));
+	if (StrEqual(gamename,"synergy",false)) bSynAct = true;
+	
 	new arraySize = ByteCountToCells(PLATFORM_MAX_PATH);
 	g_MapList = CreateArray(arraySize);
 	g_NominateList = CreateArray(arraySize);
 	g_NominateOwners = CreateArray(1);
 	g_OldMapList = CreateArray(arraySize);
 	g_NextMapList = CreateArray(arraySize);
+	g_ActiveVotesList = CreateArray(12);
 	
 	g_Cvar_EndOfMapVote = CreateConVar("sm_mapvote_endvote", "1", "Specifies if MapChooser should run an end of map vote", _, true, 0.0, true, 1.0);
 
@@ -136,10 +145,13 @@ public OnPluginStart()
 	g_Cvar_RunOffPercent = CreateConVar("sm_mapvote_runoffpercent", "50", "If winning choice has less than this percent of votes, hold a runoff", _, true, 0.0, true, 100.0);
 	g_Cvar_CycleFile = FindConVar("sm_nominate_mapcyclefile");
 	if (g_Cvar_CycleFile == INVALID_HANDLE) g_Cvar_CycleFile = CreateConVar("sm_nominate_mapcyclefile", "mapcyclecfg", "Specifies the mapcycle file to use for nominations list", 0);
+	g_Cvar_UseDialogs = FindConVar("sm_nominate_usedialogs");
+	if (g_Cvar_UseDialogs == INVALID_HANDLE) g_Cvar_UseDialogs = CreateConVar("sm_nominate_usedialogs", "0", "Uses dialogs for nomination menu.", 0, true, 0.0, true, 1.0);
 	
 	RegAdminCmd("sm_mapvote", Command_Mapvote, ADMFLAG_CHANGEMAP, "sm_mapvote - Forces MapChooser to attempt to run a map vote now.");
 	RegAdminCmd("sm_setnextmap", Command_SetNextmap, ADMFLAG_CHANGEMAP, "sm_setnextmap <map>");
 	RegServerCmd("sm_generatemaplist", Command_GenerateMapList);
+	RegConsoleCmd("sm_mapchooservote", Command_VoteSpecificInt);
 
 	g_Cvar_Winlimit = FindConVar("mp_winlimit");
 	g_Cvar_Maxrounds = FindConVar("mp_maxrounds");
@@ -221,28 +233,40 @@ public OnConfigsExecuted()
 	*/
 	ClearArray(g_MapList);
 	char pathtomapcycle[128];
-	GetConVarString(g_Cvar_CycleFile,pathtomapcycle,sizeof(pathtomapcycle));
-	Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/%s.txt",pathtomapcycle);
+	GetConVarString(g_Cvar_CycleFile, pathtomapcycle, sizeof(pathtomapcycle));
+	Format(pathtomapcycle, sizeof(pathtomapcycle),"cfg/%s.txt", pathtomapcycle);
 	if (!FileExists(pathtomapcycle,false))
 	{
-		GetConVarString(g_Cvar_CycleFile,pathtomapcycle,sizeof(pathtomapcycle));
-		PrintToServer("Mapcycle config: cfg/%s does not exist.",pathtomapcycle);
-		Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/mapcyclecfg.txt");
+		GetConVarString(g_Cvar_CycleFile, pathtomapcycle, sizeof(pathtomapcycle));
+		PrintToServer("Mapcycle config: cfg/%s does not exist.", pathtomapcycle);
+		Format(pathtomapcycle, sizeof(pathtomapcycle), "cfg/mapcyclecfg.txt");
 	}
 	Handle thishandle = INVALID_HANDLE;
 	if (FileExists(pathtomapcycle))
 	{
-		thishandle = OpenFile(pathtomapcycle,"r");
+		thishandle = OpenFile(pathtomapcycle, "r");
 	}
 	else
 	{
-		thishandle = OpenFile("mapcycle.txt","r");
+		if (FileExists("mapcycle.txt", false))
+			thishandle = OpenFile("mapcycle.txt", "r");
+		else if (FileExists("cfg/mapcycle_default.txt", true, NULL_STRING))
+			thishandle = OpenFile("cfg/mapcycle_default.txt", "r");
 	}
+	
 	char line[128];
-	while(!IsEndOfFile(thishandle)&&ReadFileLine(thishandle,line,sizeof(line)))
+	while(!IsEndOfFile(thishandle) && ReadFileLine(thishandle, line, sizeof(line)))
 	{
 		TrimString(line);
-		PushArrayString(g_MapList, line);
+		if (StrContains(line, "//", false) != -1)
+		{
+			int commentpos = StrContains(line, "//", false);
+			if (commentpos != -1)
+			{
+				Format(line, commentpos+1, "%s", line);
+			}
+		}
+		if (strlen(line) > 0) PushArrayString(g_MapList, line);
 	}
 	CloseHandle(thishandle);
 	
@@ -504,6 +528,50 @@ public Action Command_GenerateMapList(int args)
 	}
 }
 
+public Action Command_VoteSpecificInt(int client, int args)
+{
+	if ((client == 0) || (!IsClientConnected(client))) return Plugin_Handled;
+	if (args > 0)
+	{
+		char szArg[16];
+		GetCmdArg(1,szArg,sizeof(szArg));
+		if (StrEqual(szArg,"nochange",false))
+		{
+			g_VoteInts[11]++;
+		}
+		else if (StrEqual(szArg,"extend",false))
+		{
+			g_VoteInts[10]++;
+		}
+		else if ((StringToInt(szArg) > 0) && (StringToInt(szArg) < 10))
+		{
+			g_VoteInts[StringToInt(szArg)]++;
+		}
+		int totalvotes = 0;
+		for (int i = 1;i<12;i++)
+		{
+			totalvotes+=g_VoteInts[i];
+		}
+		int clcount = 0;
+		for (int i = 1;i<MaxClients+1;i++)
+		{
+			if (IsClientConnected(i))
+			{
+				if (IsClientInGame(i))
+				{
+					if (!IsFakeClient(i))
+					{
+						clcount++;
+					}
+				}
+			}
+		}
+		if (clcount <= totalvotes)
+			CreateTimer(0.1,EndVoteDialogs,_,TIMER_FLAG_NO_MAPCHANGE);
+	}
+	return Plugin_Handled;
+}
+
 public OnMapTimeLeftChanged()
 {
 	if (GetArraySize(g_MapList))
@@ -758,9 +826,21 @@ InitiateVote(MapChange:when, Handle:inputlist=null)
 	g_WaitingForVote = false;
 		
 	g_HasVoteStarted = true;
-	g_VoteMenu = new Menu(Handler_MapVoteMenu, MenuAction:MENU_ACTIONS_ALL);
-	g_VoteMenu.SetTitle("Vote Nextmap");
-	g_VoteMenu.VoteResultCallback = Handler_MapVoteFinished;
+	Handle gKV = INVALID_HANDLE;
+	if (g_Cvar_UseDialogs.BoolValue)
+	{
+		gKV = CreateKeyValues("data");
+		KvSetString(gKV, "title", "Vote Nextmap");
+		KvSetNum(gKV, "level", 2);
+		KvSetColor(gKV, "color", 255, 255, 0, 255);
+		KvSetNum(gKV, "time", 20);
+	}
+	else
+	{
+		g_VoteMenu = new Menu(Handler_MapVoteMenu, MenuAction:MENU_ACTIONS_ALL);
+		g_VoteMenu.SetTitle("Vote Nextmap");
+		g_VoteMenu.VoteResultCallback = Handler_MapVoteFinished;
+	}
 
 	/* Call OnMapVoteStarted() Forward */
 	Call_StartForward(g_MapVoteStartedForward);
@@ -774,6 +854,9 @@ InitiateVote(MapChange:when, Handle:inputlist=null)
 	 */
 	 
 	char map[PLATFORM_MAX_PATH];
+	char szInt[4] = "0";
+	char szDesc[64];
+	ClearArray(g_ActiveVotesList);
 	
 	/* No input given - User our internal nominations and maplist */
 	if (inputlist == null)
@@ -784,14 +867,23 @@ InitiateVote(MapChange:when, Handle:inputlist=null)
 		/* Smaller of the two - It should be impossible for nominations to exceed the size though (cvar changed mid-map?) */
 		int nominationsToAdd = nominateCount >= voteSize ? voteSize : nominateCount;
 		
-		
 		for (new i=0; i<nominationsToAdd; i++)
 		{
 			GetArrayString(g_NominateList, i, map, sizeof(map));
 			GetMapTag(map);
 			char mapmod[128];
 			Format(mapmod,sizeof(mapmod),"%s (%s)",map,maptag);
-			g_VoteMenu.AddItem(map, mapmod);
+			if (g_Cvar_UseDialogs.BoolValue)
+			{
+				PushArrayString(g_ActiveVotesList,map);
+				Format(szInt,sizeof(szInt),"%i",i+1);
+				KvJumpToKey(gKV, szInt, true);
+				KvSetString(gKV, "msg", mapmod);
+				Format(szDesc,sizeof(szDesc),"sm_mapchooservote %i",i+1);
+				KvSetString(gKV, "command", szDesc);
+				KvRewind(gKV);
+			}
+			else g_VoteMenu.AddItem(map, mapmod);
 			RemoveStringFromArray(g_NextMapList, map);
 			
 			/* Notify Nominations that this map is now free */
@@ -835,7 +927,17 @@ InitiateVote(MapChange:when, Handle:inputlist=null)
 			GetMapTag(map);
 			char mapmod[128];
 			Format(mapmod,sizeof(mapmod),"%s (%s)",map,maptag);
-			g_VoteMenu.AddItem(map, mapmod);
+			if (g_Cvar_UseDialogs.BoolValue)
+			{
+				PushArrayString(g_ActiveVotesList,map);
+				Format(szInt,sizeof(szInt),"%i",StringToInt(szInt)+1);
+				KvJumpToKey(gKV, szInt, true);
+				KvSetString(gKV, "msg", mapmod);
+				Format(szDesc,sizeof(szDesc),"sm_mapchooservote %i",i+1);
+				KvSetString(gKV, "command", szDesc);
+				KvRewind(gKV);
+			}
+			else g_VoteMenu.AddItem(map, mapmod);
 			i++;
 		}
 		
@@ -846,7 +948,7 @@ InitiateVote(MapChange:when, Handle:inputlist=null)
 	else //We were given a list of maps to start the vote with
 	{
 		new size = GetArraySize(inputlist);
-		
+
 		for (new i=0; i<size; i++)
 		{
 			GetArrayString(inputlist, i, map, sizeof(map));
@@ -856,7 +958,17 @@ InitiateVote(MapChange:when, Handle:inputlist=null)
 			GetMapTag(map);
 			char mapmod[128];
 			Format(mapmod,sizeof(mapmod),"%s (%s)",map,maptag);
-			g_VoteMenu.AddItem(map, mapmod);
+			if (g_Cvar_UseDialogs.BoolValue)
+			{
+				PushArrayString(g_ActiveVotesList,map);
+				Format(szInt,sizeof(szInt),"%i",StringToInt(szInt)+1);
+				KvJumpToKey(gKV, szInt, true);
+				KvSetString(gKV, "msg", mapmod);
+				Format(szDesc,sizeof(szDesc),"sm_mapchooservote %i",i+1);
+				KvSetString(gKV, "command", szDesc);
+				KvRewind(gKV);
+			}
+			else g_VoteMenu.AddItem(map, mapmod);
 			//}	
 		}
 	}
@@ -864,29 +976,202 @@ InitiateVote(MapChange:when, Handle:inputlist=null)
 	/* Do we add any special items? */
 	if ((when == MapChange_Instant || when == MapChange_RoundEnd) && g_Cvar_DontChange.BoolValue)
 	{
-		g_VoteMenu.AddItem(VOTE_DONTCHANGE, "Don't Change");
+		if (g_Cvar_UseDialogs.BoolValue)
+		{
+			Format(szInt,sizeof(szInt),"%i",StringToInt(szInt)+1);
+			KvJumpToKey(gKV, szInt, true);
+			KvSetString(gKV, "msg", "Don't Change");
+			Format(szDesc,sizeof(szDesc),"sm_mapchooservote nochange");
+			KvSetString(gKV, "command", szDesc);
+			KvRewind(gKV);
+		}
+		else g_VoteMenu.AddItem(VOTE_DONTCHANGE, "Don't Change");
 	}
 	else if (g_Cvar_Extend.BoolValue && g_Extends < g_Cvar_Extend.IntValue)
 	{
-		g_VoteMenu.AddItem(VOTE_EXTEND, "Extend Map");
+		if (g_Cvar_UseDialogs.BoolValue)
+		{
+			Format(szInt,sizeof(szInt),"%i",StringToInt(szInt)+1);
+			KvJumpToKey(gKV, szInt, true);
+			KvSetString(gKV, "msg", "Extend Map");
+			Format(szDesc,sizeof(szDesc),"sm_mapchooservote extend");
+			KvSetString(gKV, "command", szDesc);
+			KvRewind(gKV);
+		}
+		else g_VoteMenu.AddItem(VOTE_EXTEND, "Extend Map");
 	}
 	
-	/* There are no maps we could vote for. Don't show anything. */
-	if (g_VoteMenu.ItemCount == 0)
+	if (!g_Cvar_UseDialogs.BoolValue)
 	{
-		g_HasVoteStarted = false;
-		delete g_VoteMenu;
-		g_VoteMenu = null;
-		return;
+		/* There are no maps we could vote for. Don't show anything. */
+		if (g_VoteMenu.ItemCount == 0)
+		{
+			g_HasVoteStarted = false;
+			delete g_VoteMenu;
+			g_VoteMenu = null;
+			return;
+		}
 	}
 	
 	int voteDuration = g_Cvar_VoteDuration.IntValue;
 
-	g_VoteMenu.ExitButton = false;
-	g_VoteMenu.DisplayVoteToAll(voteDuration);
+	if (g_Cvar_UseDialogs.BoolValue)
+	{
+		g_HasVoteStarted = true;
+		for (int i = 1;i<12;i++)
+		{
+			g_VoteInts[i] = 0;
+		}
+		for (int i = 1;i<MaxClients+1;i++)
+		{
+			if (IsClientConnected(i))
+			{
+				if (IsClientInGame(i))
+				{
+					if (!IsFakeClient(i))
+					{
+						CreateDialog(i, gKV, DialogType_Menu);
+					}
+				}
+			}
+		}
+		CreateTimer(g_Cvar_VoteDuration.FloatValue,EndVoteDialogs,_,TIMER_FLAG_NO_MAPCHANGE);
+	}
+	else
+	{
+		g_VoteMenu.ExitButton = false;
+		g_VoteMenu.DisplayVoteToAll(voteDuration);
+	}
+	CloseHandle(gKV);
 
 	LogAction(-1, -1, "Voting for next map has started.");
 	PrintToChatAll("[SM] %t", "Nextmap Voting Started");
+	if (g_Cvar_UseDialogs.BoolValue) PrintToChatAll("[SM] Press Esc to vote");
+}
+
+public Action EndVoteDialogs(Handle timer)
+{
+	if (!g_HasVoteStarted) return Plugin_Handled;
+	g_HasVoteStarted = false;
+	int iHighestVote = -1;
+	int totalvotes = 0;
+	for (int i = 1;i<12;i++)
+	{
+		if (g_VoteInts[i] > iHighestVote) iHighestVote = i;
+		totalvotes+=g_VoteInts[i];
+	}
+	if (iHighestVote < 1)
+	{
+		LogAction(-1, -1, "Vote ended with no votes.");
+		return Plugin_Handled;
+	}
+	if (iHighestVote == 10)
+	{
+		// Vote Extended
+		g_Extends++;
+		
+		int time;
+		if (GetMapTimeLimit(time))
+		{
+			if (time > 0)
+			{
+				ExtendMapTimeLimit(g_Cvar_ExtendTimeStep.IntValue * 60);						
+			}
+		}
+		
+		if (g_Cvar_Winlimit)
+		{
+			int winlimit = g_Cvar_Winlimit.IntValue;
+			if (winlimit)
+			{
+				g_Cvar_Winlimit.IntValue = winlimit + g_Cvar_ExtendRoundStep.IntValue;
+			}					
+		}
+		
+		if (g_Cvar_Maxrounds)
+		{
+			new maxrounds = g_Cvar_Maxrounds.IntValue;
+			if (maxrounds)
+			{
+				g_Cvar_Maxrounds.IntValue = maxrounds + g_Cvar_ExtendRoundStep.IntValue;
+			}
+		}
+		
+		if (g_Cvar_Fraglimit)
+		{
+			int fraglimit = g_Cvar_Fraglimit.IntValue;
+			if (fraglimit)
+			{
+				g_Cvar_Fraglimit.IntValue = fraglimit + g_Cvar_ExtendFragStep.IntValue;
+			}
+		}
+
+		PrintToChatAll("[SM] %t", "Current Map Extended", RoundToFloor(float(g_VoteInts[iHighestVote])/float(totalvotes)*100), totalvotes);
+		LogAction(-1, -1, "Voting for next map has finished. The current map has been extended.");
+		
+		// We extended, so we'll have to vote again.
+		g_HasVoteStarted = false;
+		CreateNextVote();
+		SetupTimeleftTimer();
+	}
+	else if (iHighestVote == 11)
+	{
+		// Vote Dont change
+		PrintToChatAll("[SM] %t", "Current Map Stays", RoundToFloor(float(g_VoteInts[iHighestVote])/float(totalvotes)*100), totalvotes);
+		LogAction(-1, -1, "Voting for next map has finished. 'No Change' was the winner");
+		char clsnam[32] = "trigger_changelevel";
+		char clsnami[16] = "info_landmark";
+		for (new i = 0;i<10240;i++)
+		{
+			if (IsValidEntity(i))
+			{
+				new thisent = FindEntityByClassname(i, clsnam);
+				new thatent = FindEntityByClassname(i, clsnami);
+				if (thisent > 0)
+				{
+					AcceptEntityInput(thisent, "enable");
+				}
+				if (thatent > 0)
+				{
+					AcceptEntityInput(thatent, "enable");
+				}
+			}
+		}
+		g_HasVoteStarted = false;
+		CreateNextVote();
+		SetupTimeleftTimer();
+	}
+	else if (iHighestVote-1 < GetArraySize(g_ActiveVotesList))
+	{
+		char map[PLATFORM_MAX_PATH];
+		GetArrayString(g_ActiveVotesList,iHighestVote-1,map,sizeof(map));
+		if (strlen(map) > 0)
+		{
+			if (g_ChangeTime == MapChange_MapEnd)
+			{
+				//SetNextMap(map);
+			}
+			else if (g_ChangeTime == MapChange_Instant)
+			{
+				Handle data;
+				CreateDataTimer(2.0, Timer_ChangeMap, data);
+				WritePackString(data, map);
+				g_ChangeMapInProgress = false;
+			}
+			else // MapChange_RoundEnd
+			{
+				//SetNextMap(map);
+				g_ChangeMapAtRoundEnd = true;
+			}
+			
+			g_HasVoteStarted = false;
+			g_MapVoteCompleted = true;
+			
+			PrintToChatAll("[SM] %t", "Nextmap Voting Finished", map, RoundToFloor(float(g_VoteInts[iHighestVote])/float(totalvotes)*100), totalvotes);
+			LogAction(-1, -1, "Voting for next map has finished. Nextmap: %s.", map);
+		}
+	}
+	return Plugin_Handled;
 }
 
 public Handler_VoteFinishedGeneric(Menu menu,
@@ -1102,7 +1387,7 @@ public Handler_MapVoteMenu(Menu menu, MenuAction action, int param1, int param2)
 				else if (strcmp(map, VOTE_DONTCHANGE, false) == 0)
 				{
 					Format(buffer, sizeof(buffer), "%T", "Dont Change", param1);
-					return RedrawMenuItem(buffer);					
+					return RedrawMenuItem(buffer);
 				}
 			}
 		}		
@@ -1174,11 +1459,27 @@ public Action Timer_ChangeMap(Handle hTimer, Handle dp)
 		return Plugin_Handled;
 	}
 	
+	if (StrContains(map, " gamemode ", false) != -1)
+	{
+		char tmpexpl[4][64];
+		ExplodeString(map, " gamemode ", tmpexpl, 2, 64);
+		Format(map, sizeof(map), "%s", tmpexpl[0]);
+		
+		TrimString(tmpexpl[1]);
+		if (strlen(tmpexpl[1]) > 0)
+		{
+			ConVar hCVar = FindConVar("edtprefix");
+			if (hCVar != INVALID_HANDLE)
+			{
+				hCVar.SetString(tmpexpl[1]);
+				CloseHandle(hCVar);
+			}
+		}
+	}
+	
 	char mapch[128];
 	ServerCommand("changelevel %s", map);
-	char gamename[64];
-	GetGameFolderName(gamename,sizeof(gamename));
-	if (StrEqual(gamename,"synergy",false))
+	if (bSynAct)
 	{
 		Format(mapch,sizeof(mapch),"Custom %s",map);
 		ServerCommand("changelevel %s", mapch);
@@ -1232,45 +1533,57 @@ CreateNextVote()
 	{
 		int b = GetRandomInt(0, GetArraySize(tempMaps) - 1);
 		GetArrayString(tempMaps, b, map, sizeof(map));
-		if (StrContains(map,"d1_town_0",false) == 0) Format(map,sizeof(map),"d1_town_01");
-		else if (StrContains(map,"d1_canals_",false) == 0) Format(map,sizeof(map),"d1_canals_01");
-		else if (StrContains(map,"d1_trainstation_06",false) == 0) Format(map,sizeof(map),"d1_trainstation_06");
-		else if (StrContains(map,"d1_trainstation_0",false) == 0) Format(map,sizeof(map),"d1_trainstation_01");
-		else if (StrContains(map,"d2_coast_0",false) == 0) Format(map,sizeof(map),"d2_coast_01");
-		else if (StrContains(map,"d2_prison_0",false) == 0) Format(map,sizeof(map),"d2_prison_01");
-		else if (StrContains(map,"d3_c17_",false) == 0) Format(map,sizeof(map),"d3_c17_01");
-		else if (StrContains(map,"bm_c",false) == 0) Format(map,sizeof(map),"bm_c0a0a");
-		else if (StrContains(map,"xen_c",false) == 0) Format(map,sizeof(map),"xen_c4a1");
-		else if (StrContains(map,"ravenholm",false) == 0) Format(map,sizeof(map),"Ravenholm00");
-		else if (StrContains(map,"cd",false) == 0) Format(map,sizeof(map),"cd0");
-		else if (StrContains(map,"ce_0",false) == 0) Format(map,sizeof(map),"ce_01");
-		else if (StrContains(map,"bonus_earlyprison_0",false) == 0) Format(map,sizeof(map),"bonus_earlyprison_01");
-		else if (StrContains(map,"leonHL2-",false) == 0) Format(map,sizeof(map),"leonHL2-2");
-		else if (StrContains(map,"lifelostprison_0",false) == 0) Format(map,sizeof(map),"lifelostprison_01");
-		else if (StrContains(map,"metastasis_",false) == 0) Format(map,sizeof(map),"metastasis_1");
-		else if (StrContains(map,"mimp",false) == 0) Format(map,sizeof(map),"mimp1");
-		else if ((StrContains(map,"mine_01_",false) == 0) || (StrContains(map,"mine01_",false) == 0)) Format(map,sizeof(map),"mine_01_00");
-		else if (StrContains(map,"mpr_0",false) == 0) Format(map,sizeof(map),"mpr_010_arrival");
-		else if (StrContains(map,"penetration0",false) == 0) Format(map,sizeof(map),"Penetration01");
-		else if (StrContains(map,"po_map",false) == 0) Format(map,sizeof(map),"po_map1");
-		else if (StrContains(map,"ptsd_festive_",false) == 0) Format(map,sizeof(map),"ptsd_festive_1");
-		else if (StrContains(map,"ptsd_",false) == 0) Format(map,sizeof(map),"ptsd_1");
-		else if (StrContains(map,"r_map",false) == 0) Format(map,sizeof(map),"r_map1");
-		else if (StrContains(map,"ra_c1l",false) == 0) Format(map,sizeof(map),"ra_c1l1");
-		else if (StrContains(map,"sh_alchemilla",false) == 0) Format(map,sizeof(map),"sh_alchemilla");
-		else if (StrContains(map,"slums_",false) == 0) Format(map,sizeof(map),"slums_1");
-		else if ((StrContains(map,"sn_level0",false) == 0) || (StrEqual(map,"sn_outro",false))) Format(map,sizeof(map),"sn_level01a");
-		else if (StrContains(map,"sp_c14_",false) == 0) Format(map,sizeof(map),"sp_c14_1");
-		else if (StrContains(map,"up_",false) == 0) Format(map,sizeof(map),"up_retreat_a");
-		else if (StrContains(map,"uw_",false) == 0) Format(map,sizeof(map),"uw_1");
-		else if (StrContains(map,"dw_ep1_",false) == 0) Format(map,sizeof(map),"dw_ep1_00");
-		else if (StrContains(map,"ep2_deepdown_",false) == 0) Format(map,sizeof(map),"ep2_deepdown_1");
-		else if (StrContains(map,"islandunderground",false) == 0) Format(map,sizeof(map),"islandunderground");
-		else if (StrContains(map,"islandplant",false) == 0) Format(map,sizeof(map),"islandplant");
-		else if (StrContains(map,"islandbuggy",false) == 0) Format(map,sizeof(map),"islandbuggy");
-		else if (StrContains(map,"islandcove",false) == 0) Format(map,sizeof(map),"islandcove");
-		else if (StrContains(map,"island",false) == 0) Format(map,sizeof(map),"islandescape");
-		else if ((StrContains(map,"dayhardpart",false) == 0) || (StrEqual(map,"redrum",false)) || (StrEqual(map,"breencave",false)) || (StrEqual(map,"Finale",false)) || (StrEqual(map,"voyage",false))) Format(map,sizeof(map),"dayhardpart1");
+		if (bSynAct)
+		{
+			if (StrContains(map,"d1_town_0",false) == 0) Format(map,sizeof(map),"d1_town_01");
+			else if (StrContains(map,"d1_canals_",false) == 0) Format(map,sizeof(map),"d1_canals_01");
+			else if (StrContains(map,"d1_trainstation_06",false) == 0) Format(map,sizeof(map),"d1_trainstation_06");
+			else if (StrContains(map,"d1_trainstation_0",false) == 0) Format(map,sizeof(map),"d1_trainstation_01");
+			else if (StrContains(map,"d2_coast_0",false) == 0) Format(map,sizeof(map),"d2_coast_01");
+			else if (StrContains(map,"d2_prison_0",false) == 0) Format(map,sizeof(map),"d2_prison_01");
+			else if (StrContains(map,"d3_c17_",false) == 0) Format(map,sizeof(map),"d3_c17_01");
+			else if (StrContains(map,"bm_c",false) != -1) Format(map,sizeof(map),"d1_town_01");
+			//else if (StrContains(map,"bm_c",false) == 0) Format(map,sizeof(map),"bm_c0a0a");
+			else if (StrContains(map,"xen_c",false) == 0) Format(map,sizeof(map),"d1_town_01");
+			//else if (StrContains(map,"xen_c",false) == 0) Format(map,sizeof(map),"xen_c4a1");
+			else if (StrContains(map,"ravenholm",false) == 0) Format(map,sizeof(map),"Ravenholm00");
+			else if (StrContains(map,"cd",false) == 0) Format(map,sizeof(map),"cd0");
+			else if (StrContains(map,"ce_0",false) == 0) Format(map,sizeof(map),"ce_01");
+			else if (StrContains(map,"bonus_earlyprison_0",false) == 0) Format(map,sizeof(map),"bonus_earlyprison_01");
+			else if (StrContains(map,"leonHL2-",false) == 0) Format(map,sizeof(map),"leonHL2-2");
+			else if (StrContains(map,"lifelostprison_0",false) == 0) Format(map,sizeof(map),"lifelostprison_01");
+			else if (StrContains(map,"metastasis_",false) == 0) Format(map,sizeof(map),"metastasis_1");
+			else if (StrContains(map,"mimp",false) == 0) Format(map,sizeof(map),"d2_coast_01");
+			//else if (StrContains(map,"mimp",false) == 0) Format(map,sizeof(map),"mimp1");
+			else if ((StrContains(map,"mine_01_",false) == 0) || (StrContains(map,"mine01_",false) == 0)) Format(map,sizeof(map),"d2_prison_01");
+			//else if ((StrContains(map,"mine_01_",false) == 0) || (StrContains(map,"mine01_",false) == 0)) Format(map,sizeof(map),"mine_01_00");
+			else if (StrContains(map,"mpr_0",false) == 0) Format(map,sizeof(map),"mpr_010_arrival");
+			else if (StrContains(map,"penetration0",false) == 0) Format(map,sizeof(map),"ep1_citadel_00");
+			//else if (StrContains(map,"penetration0",false) == 0) Format(map,sizeof(map),"Penetration01");
+			else if (StrContains(map,"po_map",false) == 0) Format(map,sizeof(map),"po_map1");
+			else if (StrContains(map,"ptsd_",false) == 0) Format(map,sizeof(map),"d2_coast_01");
+			//else if (StrContains(map,"ptsd_festive_",false) == 0) Format(map,sizeof(map),"ptsd_festive_1");
+			//else if (StrContains(map,"ptsd_",false) == 0) Format(map,sizeof(map),"ptsd_1");
+			else if (StrContains(map,"r_map",false) == 0) Format(map,sizeof(map),"r_map1");
+			else if (StrContains(map,"ra_c1l",false) == 0) Format(map,sizeof(map),"ra_c1l1");
+			else if (StrContains(map,"sh_alchemilla",false) == 0) Format(map,sizeof(map),"sh_alchemilla");
+			else if (StrContains(map,"slums_",false) == 0) Format(map,sizeof(map),"slums_1");
+			else if ((StrContains(map,"sn_level0",false) == 0) || (StrEqual(map,"sn_outro",false))) Format(map,sizeof(map),"sn_level01a");
+			else if (StrContains(map,"sp_c14_",false) == 0) Format(map,sizeof(map),"sp_c14_1");
+			else if (StrContains(map,"up_",false) == 0) Format(map,sizeof(map),"up_retreat_a");
+			else if (StrContains(map,"uw_",false) == 0) Format(map,sizeof(map),"uw_1");
+			else if (StrContains(map,"dw_ep1_",false) == 0) Format(map,sizeof(map),"dw_ep1_00");
+			else if (StrContains(map,"ep2_deepdown_",false) == 0) Format(map,sizeof(map),"ep2_deepdown_1");
+			else if (StrContains(map,"islandunderground",false) == 0) Format(map,sizeof(map),"islandunderground");
+			else if (StrContains(map,"islandplant",false) == 0) Format(map,sizeof(map),"islandplant");
+			else if (StrContains(map,"islandbuggy",false) == 0) Format(map,sizeof(map),"islandbuggy");
+			else if (StrContains(map,"islandcove",false) == 0) Format(map,sizeof(map),"islandcove");
+			else if (StrContains(map,"island",false) == 0) Format(map,sizeof(map),"islandescape");
+			else if (StrContains(map,"spymap_ep3",false) != -1) Format(map,sizeof(map),"ep2_outland_01");
+			else if (StrContains(map,"lwr",false) == 0) Format(map,sizeof(map),"ep1_citadel_00");
+			else if ((StrContains(map,"dayhardpart",false) == 0) || (StrEqual(map,"redrum",false)) || (StrEqual(map,"breencave",false)) || (StrEqual(map,"Finale",false)) || (StrEqual(map,"voyage",false))) Format(map,sizeof(map),"d1_trainstation_01");
+			//else if ((StrContains(map,"dayhardpart",false) == 0) || (StrEqual(map,"redrum",false)) || (StrEqual(map,"breencave",false)) || (StrEqual(map,"Finale",false)) || (StrEqual(map,"voyage",false))) Format(map,sizeof(map),"dayhardpart1");
+		}
 		PushArrayString(g_NextMapList, map);
 		RemoveFromArray(tempMaps, b);
 	}
@@ -1788,9 +2101,7 @@ public Action GetMapTag(const char[] map)
 	}
 	else
 	{
-		char gamename[64];
-		GetGameFolderName(gamename,sizeof(gamename));
-		if (StrEqual(gamename,"synergy",false)) Format(maptag, sizeof(maptag), "Syn");
+		if (bSynAct) Format(maptag, sizeof(maptag), "Syn");
 		else if (StrEqual(gamename,"tf",false)) Format(maptag, sizeof(maptag), "TF2");
 		else
 		{
