@@ -157,6 +157,7 @@ public void OnConfigsExecuted()
 	{
 		char line[128];
 		char szMapPath[128];
+		char szFirst[3][64];
 		while(!IsEndOfFile(thishandle) && ReadFileLine(thishandle, line, sizeof(line)))
 		{
 			TrimString(line);
@@ -172,14 +173,19 @@ public void OnConfigsExecuted()
 			{
 				if (!bSynAct)
 				{
-					Format(szMapPath, sizeof(szMapPath), "maps/%s.bsp", line);
+					Format(szFirst[0], sizeof(szFirst[]), "%s", line);
+					if (StrContains(line, " ", false) != -1)
+					{
+						ExplodeString(line, " ", szFirst, 3, 64, true);
+					}
+					Format(szMapPath, sizeof(szMapPath), "maps/%s.bsp", szFirst[0]);
 					if (FileExists(szMapPath, true, NULL_STRING))
 					{
 						PushArrayString(g_MapList, line);
 					}
 					else
 					{
-						PrintToServer("MapCycle has invalid map: '%s'", line);
+						PrintToServer("MapCycle has invalid map: '%s'", szFirst[0]);
 					}
 				}
 				else
