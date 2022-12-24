@@ -121,7 +121,7 @@ public void OnConfigsExecuted()
 	Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/%s.txt",pathtomapcycle);
 	if (!FileExists(pathtomapcycle,false))
 	{
-		PrintToServer("Mapcycle config: cfg/%s does not exist.",pathtomapcycle);
+		PrintToServer("Mapcycle config: %s does not exist.",pathtomapcycle);
 		Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/mapcyclecfg.txt");
 	}
 	Handle hostnamh = FindConVar("hostname");
