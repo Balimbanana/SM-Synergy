@@ -160,16 +160,13 @@ public OnPluginStart()
 	
 	if (g_Cvar_Winlimit || g_Cvar_Maxrounds)
 	{
-		char folder[64];
-		GetGameFolderName(folder, sizeof(folder));
-
-		if (strcmp(folder, "tf") == 0)
+		if (strcmp(gamename, "tf") == 0)
 		{
 			HookEvent("teamplay_win_panel", Event_TeamPlayWinPanel);
 			HookEvent("teamplay_restart_round", Event_TFRestartRound);
 			HookEvent("arena_win_panel", Event_TeamPlayWinPanel);
 		}
-		else if (strcmp(folder, "nucleardawn") == 0)
+		else if (strcmp(gamename, "nucleardawn") == 0)
 		{
 			HookEvent("round_win", Event_RoundEnd);
 		}
@@ -237,7 +234,6 @@ public OnConfigsExecuted()
 	Format(pathtomapcycle, sizeof(pathtomapcycle),"cfg/%s.txt", pathtomapcycle);
 	if (!FileExists(pathtomapcycle,false))
 	{
-		GetConVarString(g_Cvar_CycleFile, pathtomapcycle, sizeof(pathtomapcycle));
 		PrintToServer("Mapcycle config: cfg/%s does not exist.", pathtomapcycle);
 		Format(pathtomapcycle, sizeof(pathtomapcycle), "cfg/mapcyclecfg.txt");
 	}
@@ -254,21 +250,51 @@ public OnConfigsExecuted()
 			thishandle = OpenFile("cfg/mapcycle_default.txt", "r");
 	}
 	
-	char line[128];
-	while(!IsEndOfFile(thishandle) && ReadFileLine(thishandle, line, sizeof(line)))
+	if (thishandle == INVALID_HANDLE)
 	{
-		TrimString(line);
-		if (StrContains(line, "//", false) != -1)
+		if (FileExists("cfg/mapcyclecfg_default.txt", true, NULL_STRING))
 		{
-			int commentpos = StrContains(line, "//", false);
-			if (commentpos != -1)
+			thishandle = OpenFile("cfg/mapcyclecfg_default.txt", "r");
+		}
+	}
+	
+	if (thishandle != INVALID_HANDLE)
+	{
+		char line[128];
+		char szMapPath[128];
+		while(!IsEndOfFile(thishandle) && ReadFileLine(thishandle, line, sizeof(line)))
+		{
+			TrimString(line);
+			if (StrContains(line, "//", false) != -1)
 			{
-				Format(line, commentpos+1, "%s", line);
+				int commentpos = StrContains(line, "//", false);
+				if (commentpos != -1)
+				{
+					Format(line, commentpos+1, "%s", line);
+				}
+			}
+			if (strlen(line) > 0)
+			{
+				if (!bSynAct)
+				{
+					Format(szMapPath, sizeof(szMapPath), "maps/%s.bsp", line);
+					if (FileExists(szMapPath, true, NULL_STRING))
+					{
+						PushArrayString(g_MapList, line);
+					}
+					else
+					{
+						PrintToServer("MapCycle has invalid map: '%s'", line);
+					}
+				}
+				else
+				{
+					PushArrayString(g_MapList, line);
+				}
 			}
 		}
-		if (strlen(line) > 0) PushArrayString(g_MapList, line);
+		CloseHandle(thishandle);
 	}
-	CloseHandle(thishandle);
 	
 	CreateNextVote();
 	SetupTimeleftTimer();
@@ -296,6 +322,8 @@ public OnConfigsExecuted()
 			LogError("Warning - Bonus Round Time shorter than Vote Time. Votes during bonus round may not have time to complete");
 		}
 	}
+	
+	return;
 }
 
 public OnMapEnd()

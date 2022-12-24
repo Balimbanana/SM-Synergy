@@ -68,11 +68,17 @@ Handle modlist = INVALID_HANDLE;
 StringMap g_mapTrie = null;
 char maptag[128];
 
+bool bSynAct = false;
+char gamename[64];
+
 public void OnPluginStart()
 {
 	modlist = CreateArray(64);
 	LoadTranslations("common.phrases");
 	LoadTranslations("nominations.phrases");
+	
+	GetGameFolderName(gamename,sizeof(gamename));
+	if (StrEqual(gamename,"synergy",false)) bSynAct = true;
 	
 	int arraySize = ByteCountToCells(33);
 	g_MapList = CreateArray(arraySize);
@@ -115,7 +121,6 @@ public void OnConfigsExecuted()
 	Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/%s.txt",pathtomapcycle);
 	if (!FileExists(pathtomapcycle,false))
 	{
-		GetConVarString(g_Cvar_CycleFile,pathtomapcycle,sizeof(pathtomapcycle));
 		PrintToServer("Mapcycle config: cfg/%s does not exist.",pathtomapcycle);
 		Format(pathtomapcycle,sizeof(pathtomapcycle),"cfg/mapcyclecfg.txt");
 	}
@@ -134,15 +139,54 @@ public void OnConfigsExecuted()
 	}
 	else
 	{
-		thishandle = OpenFile("mapcycle.txt","r");
+		if (FileExists("mapcycle.txt", false))
+			thishandle = OpenFile("mapcycle.txt", "r");
+		else if (FileExists("cfg/mapcycle_default.txt", true, NULL_STRING))
+			thishandle = OpenFile("cfg/mapcycle_default.txt", "r");
 	}
+	
+	if (thishandle == INVALID_HANDLE)
+	{
+		if (FileExists("cfg/mapcyclecfg_default.txt", true, NULL_STRING))
+		{
+			thishandle = OpenFile("cfg/mapcyclecfg_default.txt", "r");
+		}
+	}
+	
 	if (thishandle != INVALID_HANDLE)
 	{
 		char line[128];
-		while(!IsEndOfFile(thishandle)&&ReadFileLine(thishandle,line,sizeof(line)))
+		char szMapPath[128];
+		while(!IsEndOfFile(thishandle) && ReadFileLine(thishandle, line, sizeof(line)))
 		{
 			TrimString(line);
-			PushArrayString(g_MapList, line);
+			if (StrContains(line, "//", false) != -1)
+			{
+				int commentpos = StrContains(line, "//", false);
+				if (commentpos != -1)
+				{
+					Format(line, commentpos+1, "%s", line);
+				}
+			}
+			if (strlen(line) > 0)
+			{
+				if (!bSynAct)
+				{
+					Format(szMapPath, sizeof(szMapPath), "maps/%s.bsp", line);
+					if (FileExists(szMapPath, true, NULL_STRING))
+					{
+						PushArrayString(g_MapList, line);
+					}
+					else
+					{
+						PrintToServer("MapCycle has invalid map: '%s'", line);
+					}
+				}
+				else
+				{
+					PushArrayString(g_MapList, line);
+				}
+			}
 		}
 		CloseHandle(thishandle);
 	}
@@ -484,8 +528,6 @@ public Action AttemptNominate(int client, int args)
 {
 	if (client == 0)
 		return Plugin_Handled;
-	char gamedesc[32];
-	GetGameFolderName(gamedesc,sizeof(gamedesc));
 	if (g_Cvar_UseDialogs.BoolValue)
 	{
 		char szDesc[256];
@@ -575,7 +617,7 @@ public Action AttemptNominate(int client, int args)
 		
 		return Plugin_Handled;
 	}
-	if ((StrEqual(gamedesc,"tf",false)) || (modsact == 1))
+	if ((StrEqual(gamename,"tf",false)) || (modsact == 1))
 	{
 		AttemptNominateAllMP(client);
 		return Plugin_Handled;
@@ -660,9 +702,7 @@ void tmpmenu(int client, Handle tmparr, char[] menutitle)
 	
 	// Should probably make this better
 	bool bSkipSpace = true;
-	char gamedesc[32];
-	GetGameFolderName(gamedesc,sizeof(gamedesc));
-	if (StrEqual(gamedesc, "tf_coop_extended", false))
+	if (StrEqual(gamename, "tf_coop_extended", false))
 	{
 		bSkipSpace = false;
 	}
@@ -1290,24 +1330,22 @@ public Action GetMapTag(const char[] map)
 	}
 	else
 	{
-		char gamedesc[32];
-		GetGameFolderName(gamedesc,sizeof(gamedesc));
-		if (StrEqual(gamedesc,"tf",false))
+		if (StrEqual(gamename,"tf",false))
 		{
 			Format(maptag, sizeof(maptag), "TF2");
 			Format(modname, sizeof(modname), "TF2");
 		}
-		else if (StrEqual(gamedesc,"synergy",false))
+		else if (StrEqual(gamename,"synergy",false))
 		{
 			Format(maptag, sizeof(maptag), "Syn");
 			Format(modname, sizeof(modname), "Syn");
 		}
 		else
 		{
-			gamedesc[0] &= ~(1 << 5);
-			ReplaceString(gamedesc,sizeof(gamedesc),"_"," ",false);
-			Format(maptag,sizeof(maptag),"%s",gamedesc);
-			Format(modname,sizeof(modname),"%s",gamedesc);
+			Format(maptag, sizeof(maptag), "%s", gamename);
+			maptag[0] &= ~(1 << 5);
+			ReplaceString(maptag,sizeof(maptag),"_"," ",false);
+			Format(modname,sizeof(modname),"%s",maptag);
 		}
 	}
 	if (strlen(modname) > 0)
