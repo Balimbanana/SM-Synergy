@@ -1046,7 +1046,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "Rock 24");
 	}
-	else if (StrContains(map, "d1_", false) == 0)
+	else if ((StrContains(map, "d1_", false) == 0) && (!StrEqual(map, "d1_trainstation_05_d_start_f", false)) && (!StrEqual(map, "d1_trainstation_06_d_ending_f", false)))
 	{
 		Format(modname, sizeof(modname), "Half-Life 2");
 	}
@@ -1090,7 +1090,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(modname, sizeof(modname), "The Citizen Returns");
 	}
-	else if ((StrContains(map, "shuter_st_f", false) == 0) || (StrContains(map, "st_michaels_", false) == 0) || (StrContains(map, "yonge_st_f", false) == 0) || (StrContains(map, "dundas_square_f", false) == 0) || (StrContains(map, "subway_system_f", false) == 0) || (StrContains(map, "mel_lastman_square_f", false) == 0))
+	else if ((StrEqual(map, "d1_trainstation_05_d_start_f", false)) || (StrEqual(map, "d1_trainstation_06_d_ending_f", false)) || (StrContains(map, "shuter_st_f", false) == 0) || (StrContains(map, "st_michaels_", false) == 0) || (StrContains(map, "yonge_st_f", false) == 0) || (StrContains(map, "dundas_square_f", false) == 0) || (StrContains(map, "subway_system_f", false) == 0) || (StrContains(map, "mel_lastman_square_f", false) == 0))
 	{
 		Format(modname, sizeof(modname), "City 7: Toronto Conflict");
 	}
@@ -1333,6 +1333,10 @@ public Action GetMapTag(const char[] map)
 	else if ((StrContains(map,"cp_",false) == 0) || (StrContains(map,"gamemode cp",false) != -1))
 	{
 		Format(modname, sizeof(modname), "Control Points");
+	}
+	else if ((StrContains(map,"pl_",false) == 0) || (StrContains(map,"gamemode pl",false) != -1))
+	{
+		Format(modname, sizeof(modname), "Payload");
 	}
 	else
 	{

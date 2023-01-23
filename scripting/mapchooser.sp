@@ -1857,7 +1857,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "Rock 24");
 	}
-	else if (StrContains(map, "d1_", false) == 0)
+	else if ((StrContains(map, "d1_", false) == 0) && (!StrEqual(map, "d1_trainstation_05_d_start_f", false)) && (!StrEqual(map, "d1_trainstation_06_d_ending_f", false)))
 	{
 		Format(maptag, sizeof(maptag), "Half-Life 2");
 	}
@@ -1901,7 +1901,7 @@ public Action GetMapTag(const char[] map)
 	{
 		Format(maptag, sizeof(maptag), "The Citizen Returns");
 	}
-	else if ((StrContains(map, "shuter_st_f", false) == 0) || (StrContains(map, "st_michaels_", false) == 0) || (StrContains(map, "yonge_st_f", false) == 0) || (StrContains(map, "dundas_square_f", false) == 0) || (StrContains(map, "subway_system_f", false) == 0) || (StrContains(map, "mel_lastman_square_f", false) == 0))
+	else if ((StrEqual(map, "d1_trainstation_05_d_start_f", false)) || (StrEqual(map, "d1_trainstation_06_d_ending_f", false)) || (StrContains(map, "shuter_st_f", false) == 0) || (StrContains(map, "st_michaels_", false) == 0) || (StrContains(map, "yonge_st_f", false) == 0) || (StrContains(map, "dundas_square_f", false) == 0) || (StrContains(map, "subway_system_f", false) == 0) || (StrContains(map, "mel_lastman_square_f", false) == 0))
 	{
 		Format(maptag, sizeof(maptag), "City 7: Toronto Conflict");
 	}
