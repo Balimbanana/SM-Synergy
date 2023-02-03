@@ -28,6 +28,7 @@ Handle g_CreateEnts = INVALID_HANDLE;
 Handle g_ModifyCase = INVALID_HANDLE;
 Handle hCVAlwaysApplyGlobal = INVALID_HANDLE;
 ConVar g_ConVarEditReplaceOutputs;
+ConVar g_ConVarAddAirNodes;
 
 // DHooks
 DynamicHook g_hLevelInitHook;
@@ -44,7 +45,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.78"
+#define PLUGIN_VERSION "0.79"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -106,6 +107,8 @@ public void OnPluginStart()
 	if (hCVAlwaysApplyGlobal == INVALID_HANDLE) hCVAlwaysApplyGlobal = CreateConVar("edt_alwaysuse_global", "0", "Always apply globaledt.edt otherwise only applies if there is a map.edt", _, true, 0.0, true, 1.0);
 	g_ConVarEditReplaceOutputs = FindConVar("edt_edits_replace_outputs");
 	if (g_ConVarEditReplaceOutputs == INVALID_HANDLE) g_ConVarEditReplaceOutputs = CreateConVar("edt_edits_replace_outputs", "0", "If enabled, edits that contain outputs will replace outputs of the same type already on entity.", _, true, 0.0, true, 1.0);
+	g_ConVarAddAirNodes = FindConVar("edt_add_airnodes");
+	if (g_ConVarAddAirNodes == INVALID_HANDLE) g_ConVarAddAirNodes = CreateConVar("edt_add_airnodes", "0", "Adds air nodes above all ground nodes.", _, true, 0.0, true, 1.0);
 	
 	LoadGameData();
 }
@@ -143,7 +146,7 @@ void LoadGameData()
 							// Failsaves
 							if (view_as<int>(ServerGameDLL) == 0)
 							{
-								for (int i = 6; i < 12; i++)
+								for (int i = 3; i < 12; i++)
 								{
 									if (i < 10) Format(szServerGameDLL, sizeof(szServerGameDLL), "ServerGameDLL00%i", i);
 									else Format(szServerGameDLL, sizeof(szServerGameDLL), "ServerGameDLL0%i", i);
@@ -194,6 +197,8 @@ public MRESReturn Hook_OnLevelInit(DHookReturn hReturn, DHookParam hParams)
 	hParams.GetString(1, szMapName, sizeof(szMapName));
 	hParams.GetString(2, szMapEntities, sizeof(szMapEntities));
 	
+	if (dbglvl) PrintToServer("DH OnLevelInit %s %i", szMapName, strlen(szMapEntities));
+	
 	if (ApplyEdits(szMapName, szMapEntities))
 	{
 		hParams.SetString(2, szMapEntities);
@@ -206,6 +211,8 @@ public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 {
 	// DHooks handled
 	if (g_hLevelInitHook != INVALID_HANDLE) return Plugin_Continue;
+	
+	if (dbglvl) PrintToServer("Normal OnLevelInit %s %i", szMapName, strlen(szMapEntities));
 	
 	if (strlen(szMapEntities) > 4)
 	{
@@ -313,6 +320,7 @@ bool ApplyEdits(const char[] szMapName, char szMapEntities[2097152])
 	{
 		if (dbglvl) PrintToServer("EDT %s exists",curmap);
 		if (!bSkipReadMapValidate) ReadEDT(curmap);
+		
 		if (method == 1)
 		{
 			char szMapEntitiesbuff[2097152];
@@ -329,6 +337,81 @@ bool ApplyEdits(const char[] szMapName, char szMapEntities[2097152])
 			char edtkey[128];
 			char edtval[128];
 			char szSplitRand[16][64];
+			
+			if (g_ConVarAddAirNodes.BoolValue)
+			{
+				int findpos = StrContains(szMapEntities, "\"classname\" \"info_node\"", false);
+				if (findpos != -1)
+				{
+					Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[findpos]);
+					
+					while (StrContains(szMapEntitiesbuff,"{",false) != 0)
+					{
+						Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[findpos--]);
+					}
+					
+					int findend = StrContains(szMapEntitiesbuff,"}",false);
+					if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s",szMapEntitiesbuff);
+					int findmdl = StrContains(szMapEntitiesbuff,"\"origin\"",false);
+					if (findmdl != -1)
+					{
+						Format(tmpbuf, sizeof(tmpbuf), "%s", szMapEntitiesbuff[findmdl]);
+						ReplaceString(tmpbuf, sizeof(tmpbuf), "\"origin\" ", "", false);
+						findend = StrContains(tmpbuf,"\n",false);
+						if (findend != -1) Format(tmpbuf,findend+2,"%s",tmpbuf);
+						ReplaceString(tmpbuf, sizeof(tmpbuf), "\"", "", false);
+						TrimString(tmpbuf);
+						ExplodeString(tmpbuf, " ", tmpexpl, 4, 64);
+						//PrintToServer("Node position first %s %s %s", tmpexpl[0], tmpexpl[1], tmpexpl[2]);
+						Format(tmpwriter, sizeof(tmpwriter), "\n{\n\"origin\" \"%s %s %1.1f\"\n\"classname\" \"info_node_air_hint\"\n\"hinttype\" \"904\"\n\"nodeFOV\" \"360\"\n}", tmpexpl[0], tmpexpl[1], StringToFloat(tmpexpl[2]) + 520.0);
+					}
+					
+					bool endofcache = false;
+					int iMapEntPos = StrContains(szMapEntities, szMapEntitiesbuff, false);
+					iMapEntPos += strlen(szMapEntitiesbuff);
+					Format(szMapEntitiesbuff, sizeof(szMapEntitiesbuff), "%s", szMapEntities[iMapEntPos]);
+					while (!endofcache)
+					{
+						findpos = StrContains(szMapEntitiesbuff, "\"classname\" \"info_node\"", false);
+						if (findpos != -1)
+						{
+							Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[iMapEntPos+findpos]);
+							
+							while (StrContains(szMapEntitiesbuff,"{",false) != 0)
+							{
+								findpos--;
+								Format(szMapEntitiesbuff,sizeof(szMapEntitiesbuff),"%s",szMapEntities[iMapEntPos+findpos]);
+							}
+							findend = StrContains(szMapEntitiesbuff,"}",false);
+							if (findend != -1) Format(szMapEntitiesbuff,findend+2,"%s",szMapEntitiesbuff);
+							findmdl = StrContains(szMapEntitiesbuff,"\"origin\"",false);
+							if (findmdl != -1)
+							{
+								Format(tmpbuf, sizeof(tmpbuf), "%s", szMapEntitiesbuff[findmdl]);
+								ReplaceString(tmpbuf, sizeof(tmpbuf), "\"origin\" ", "", false);
+								findend = StrContains(tmpbuf,"\n",false);
+								if (findend != -1) Format(tmpbuf,findend+2,"%s",tmpbuf);
+								ReplaceString(tmpbuf, sizeof(tmpbuf), "\"", "", false);
+								TrimString(tmpbuf);
+								ExplodeString(tmpbuf, " ", tmpexpl, 4, 64);
+								//PrintToServer("Node position %s %s %s", tmpexpl[0], tmpexpl[1], tmpexpl[2]);
+								iMapEntPos = StrContains(szMapEntities, szMapEntitiesbuff, false);
+								iMapEntPos += strlen(szMapEntitiesbuff);
+								Format(szMapEntitiesbuff, sizeof(szMapEntitiesbuff), "%s", szMapEntities[iMapEntPos]);
+								
+								Format(tmpwriter, sizeof(tmpwriter), "%s\n{\n\"origin\" \"%s %s %1.1f\"\n\"classname\" \"info_node_air_hint\"\n\"hinttype\" \"904\"\n\"nodeFOV\" \"360\"\n}", tmpwriter, tmpexpl[0], tmpexpl[1], StringToFloat(tmpexpl[2]) + 520.0);
+							}
+						}
+						else endofcache = true;
+					}
+				}
+				
+				if (strlen(tmpwriter) > 0)
+				{
+					StrCat(szMapEntities, sizeof(szMapEntities), tmpwriter);
+				}
+			}
+			
 			if (GetArraySize(g_ModifyCase) > 0)
 			{
 				for (int k = 0;k<GetArraySize(g_ModifyCase);k++)

@@ -68,6 +68,7 @@
 			}
 		}
 	}
+
 	"bms"
 	{
 		"Keys"
@@ -76,6 +77,27 @@
 			{
 				"windows"	"ServerGameDLL010"
 				"linux"		"ServerGameDLL010"
+			}
+		}
+	}
+	
+	"csgo"
+	{
+    		"Keys"
+		{
+			"IServerGameDLL"
+			{
+				"windows"	"ServerGameDLL005"
+				"linux"		"ServerGameDLL005"
+			}
+		}
+		
+		"Offsets"
+		{
+			"CServerGameDLL::LevelInit"
+			{
+				"windows"	"2"
+				"linux"		"2"
 			}
 		}
 	}

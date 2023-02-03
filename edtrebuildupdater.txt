@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.78"
-			"Previous"	"0.77"
+			"Latest"  	"0.79"
+			"Previous"	"0.78"
 		}
 		
-		"Notes"	"Added DHooks detour for later versions of SourceMod with some fallbacks."
+		"Notes"	"Added CSGO offsets and key. Increased range of CServerGameDLL interface checks."
 	}
 	
 	"Files"
