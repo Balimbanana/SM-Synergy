@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.207"
-			"Previous"	"2.206"
+			"Latest"  	"2.208"
+			"Previous"	"2.207"
 		}
 		
-		"Notes"	"Potential fix to global transition timer becoming invalidated and not cleared correctly."
+		"Notes"	"Anti spam of OnChangeLevel output saving multiple times. OOW ents now removed before creation."
 	}
 	
 	"Files"

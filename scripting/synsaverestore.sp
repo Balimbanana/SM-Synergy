@@ -40,6 +40,7 @@ int iRestoreProperty[128][2];
 float votetime = 0.0;
 float g_vecLandmarkOrigin[3];
 float flMapStartTime = 0.0;
+float g_flSpamOutputDetect = 0.0; // Prevents saving during spam of OnChangeLevel output (SourceMod issue)
 
 // Stores Steam IDs to be retrieved from the data packs array
 Handle g_hTransitionIDs = INVALID_HANDLE;
@@ -76,7 +77,7 @@ char savedir[64];
 char szReloadSaveName[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.207"
+#define PLUGIN_VERSION "2.208"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -1744,6 +1745,7 @@ public int Handler_VoteCallback(Menu menu, MenuAction action, int param1, int pa
 public void OnMapStart()
 {
 	g_hTimeout = INVALID_HANDLE;
+	g_flSpamOutputDetect = 0.0;
 	
 	flMapStartTime = GetTickedTime()+2.0;
 	if (GetMapHistorySize() > -1)
@@ -2142,7 +2144,7 @@ public void OnMapStart()
 		ClearArray(g_hIgnoredEntities);
 		bIsVehicleMap = findvmap(-1);
 		Format(szReloadSaveName,sizeof(szReloadSaveName),"");
-		HookEntityOutput("trigger_changelevel","OnChangeLevel",onchangelevel);
+		HookEntityOutput("trigger_changelevel", "OnChangeLevel", OnChangeLevel);
 		if (bRebuildTransition)
 		{
 			/*
@@ -2209,19 +2211,19 @@ public void OnMapStart()
 				if (g_hCVbDebugTransitions.BoolValue) LogMessage("%i entities to restore over map change.",GetArraySize(g_hTransitionEntities));
 				if (GetArraySize(g_hTransitionEntities) > 0)
 				{
-					for (int i = 0;i<GetArraySize(g_hTransitionEntities);i++)
+					for (int i = 0; i < GetArraySize(g_hTransitionEntities); i++)
 					{
-						Handle dp = GetArrayCell(g_hTransitionEntities,i);
+						Handle dp = GetArrayCell(g_hTransitionEntities, i);
 						ResetPack(dp);
 						char clsname[32];
 						char szTargetname[32];
 						char mdl[64];
 						bool editent = false;
-						ReadPackString(dp,clsname,sizeof(clsname));
-						ReadPackString(dp,szTargetname,sizeof(szTargetname));
-						ReadPackString(dp,mdl,sizeof(mdl));
-						if (!IsModelPrecached(mdl)) PrecacheModel(mdl,true);
-						if (StrContains(mdl,"*",false) != -1)
+						ReadPackString(dp, clsname, sizeof(clsname));
+						ReadPackString(dp, szTargetname, sizeof(szTargetname));
+						ReadPackString(dp, mdl, sizeof(mdl));
+						if (!IsModelPrecached(mdl)) PrecacheModel(mdl, true);
+						if (StrContains(mdl, "*", false) != -1)
 						{
 							editent = true;
 						}
@@ -2369,6 +2371,13 @@ public void OnMapStart()
 							skipoow = true;
 							if (OutOfWorldBounds(vecOrigin,2.0)) skipoow = false;
 						}
+						
+						if ((TR_PointOutsideWorld(vecOrigin)) && (!skipoow))
+						{
+							if (g_hCVbDebugTransitions.BoolValue) LogMessage("Delete Transition Ent (OutOfWorld) %s info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\"", clsname, mdl, szTargetname, StringToInt(solidity), StringToInt(spawnflags), mvtype);
+							continue;
+						}
+						
 						if (StrEqual(clsname,"prop_physics",false)) Format(clsname,sizeof(clsname),"prop_physics_override",false);
 						else if (StrEqual(clsname,"prop_dynamic",false)) Format(clsname,sizeof(clsname),"prop_dynamic_override",false);
 						else if (StrEqual(clsname,"prop_ragdoll",false))
@@ -2435,12 +2444,7 @@ public void OnMapStart()
 							else ent = CreateEntityByName(clsname);
 						}
 						CloseHandle(hReturnedArray);
-						if ((TR_PointOutsideWorld(vecOrigin)) && (!skipoow))
-						{
-							if (g_hCVbDebugTransitions.BoolValue) LogMessage("Delete Transition Ent (OutOfWorld) %s info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\"",clsname,mdl,szTargetname,StringToInt(solidity),StringToInt(spawnflags),mvtype);
-							if ((IsValidEntity(ent)) && (ent != 0)) AcceptEntityInput(ent, "kill");
-							ent = -1;
-						}
+						
 						if (ent != -1)
 						{
 							if (g_hCVbDebugTransitions.BoolValue) LogMessage("Restore Ent %s Transition info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\" to origin \"%1.f %1.f %1.f\"",clsname,mdl,szTargetname,StringToInt(solidity),StringToInt(spawnflags),mvtype,vecOrigin[0],vecOrigin[1],vecOrigin[2]);
@@ -3374,8 +3378,15 @@ public Action resettransition(int args)
 	return Plugin_Continue;
 }
 
-public Action onchangelevel(const char[] output, int caller, int activator, float delay)
+public Action OnChangeLevel(const char[] output, int caller, int activator, float delay)
 {
+	// SourceMod can bug out and spam OnChangeLevel, so this has to be blocked from saving multiple times
+	if (g_flSpamOutputDetect >= GetTickedTime())
+	{
+		return Plugin_Continue;
+	}
+	g_flSpamOutputDetect = GetTickedTime() + 1.0;
+	
 	bool validchange = false;
 	enterfromep1 = false;
 	if (bRebuildTransition)
