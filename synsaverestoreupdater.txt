@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.208"
-			"Previous"	"2.207"
+			"Latest"  	"2.209"
+			"Previous"	"2.208"
 		}
 		
-		"Notes"	"Anti spam of OnChangeLevel output saving multiple times. OOW ents now removed before creation."
+		"Notes"	"Prevent creation of transition entities if the index is above maxentities-sv_lowedict_threshold."
 	}
 	
 	"Files"

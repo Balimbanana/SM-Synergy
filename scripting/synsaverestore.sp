@@ -77,7 +77,7 @@ char savedir[64];
 char szReloadSaveName[32];
 char szMapEntitiesBuff[2097152];
 
-#define PLUGIN_VERSION "2.208"
+#define PLUGIN_VERSION "2.209"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synsaverestoreupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -2211,6 +2211,13 @@ public void OnMapStart()
 				if (g_hCVbDebugTransitions.BoolValue) LogMessage("%i entities to restore over map change.",GetArraySize(g_hTransitionEntities));
 				if (GetArraySize(g_hTransitionEntities) > 0)
 				{
+					ConVar sv_lowedict_threshold = FindConVar("sv_lowedict_threshold");
+					// This really shouldn't happen, but add it in case...
+					if (sv_lowedict_threshold == INVALID_HANDLE)
+					{
+						sv_lowedict_threshold = CreateConVar("sv_lowedict_threshold", "8", "When only this many edicts are free, take the action specified by sv_lowedict_action.");
+					}
+					
 					for (int i = 0; i < GetArraySize(g_hTransitionEntities); i++)
 					{
 						Handle dp = GetArrayCell(g_hTransitionEntities, i);
@@ -2266,14 +2273,16 @@ public void OnMapStart()
 						int mvtype = ReadPackCell(dp);
 						int gameend = ReadPackCell(dp);
 						char szGunEnable[4];
-						Format(szGunEnable,sizeof(szGunEnable),"%i",bGunEnable);
+						Format(szGunEnable, sizeof(szGunEnable), "%i", bGunEnable);
 						char defanim[32];
-						ReadPackString(dp,defanim,sizeof(defanim));
+						ReadPackString(dp, defanim, sizeof(defanim));
 						char response[64];
-						ReadPackString(dp,response,sizeof(response));
+						ReadPackString(dp, response, sizeof(response));
 						char scriptinf[1280];
-						ReadPackString(dp,scriptinf,sizeof(scriptinf));
+						ReadPackString(dp, scriptinf, sizeof(scriptinf));
 						CloseHandle(dp);
+						dp = INVALID_HANDLE;
+						
 						bool ragdoll = false;
 						if ((StrEqual(clsname,"npc_alyx",false)) && (StrEqual(szTargetname,"alyx",false)) && (StrEqual(mapbuf,"d2_prison_08",false)))
 						{
@@ -2447,7 +2456,20 @@ public void OnMapStart()
 						
 						if (ent != -1)
 						{
-							if (g_hCVbDebugTransitions.BoolValue) LogMessage("Restore Ent %s Transition info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\" to origin \"%1.f %1.f %1.f\"",clsname,mdl,szTargetname,StringToInt(solidity),StringToInt(spawnflags),mvtype,vecOrigin[0],vecOrigin[1],vecOrigin[2]);
+							if (ent >= GetMaxEntities()-sv_lowedict_threshold.IntValue)
+							{
+								LogMessage("Warning: too many entities to transition, prevented restore of entity: %s index %i due to max entities (%i) - threshold (%i).\n", clsname, ent, GetMaxEntities(), sv_lowedict_threshold.IntValue);
+								if (IsValidEntity(ent))
+									AcceptEntityInput(ent, "kill");
+								for (i = i+1; i < GetArraySize(g_hTransitionEntities); i++)
+								{
+									dp = GetArrayCell(g_hTransitionEntities, i);
+									if (dp != INVALID_HANDLE)
+										CloseHandle(dp);
+								}
+								break;
+							}
+							if (g_hCVbDebugTransitions.BoolValue) LogMessage("Restore Ent %s Transition info: Model \"%s\" TargetName \"%s\" Solid \"%i\" spawnflags \"%i\" movetype \"%i\" to origin \"%1.f %1.f %1.f\"", clsname, mdl, szTargetname, StringToInt(solidity), StringToInt(spawnflags), mvtype, vecOrigin[0], vecOrigin[1], vecOrigin[2]);
 							bool beginseq = false;
 							bool applypropafter = false;
 							if (StrEqual(clsname,"npc_alyx",false))
