@@ -10,7 +10,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "1.73"
+#define PLUGIN_VERSION "1.74"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/modelloaderupdater.txt"
 
 public Plugin myinfo = 
@@ -175,15 +175,16 @@ void LoadClient(int client)
 		QueryClientConVar(client,"cl_playermodel",plymdlchk);
 		return;
 	}
-	Format(Query,sizeof(Query),"SELECT mdl FROM modelloader WHERE SteamID = '%s';",szSteamIDbuf[client]);
-	Handle hQuery = SQL_Query(Handle_Database,Query);
+	Format(Query, sizeof(Query), "SELECT mdl FROM modelloader WHERE SteamID = '%s';", szSteamIDbuf[client]);
+	Handle hQuery = SQL_Query(Handle_Database, Query);
 	if (hQuery == INVALID_HANDLE)
 	{
 		char Err[100];
-		SQL_GetError(Handle_Database,Err,100);
-		LogError("SQLite error: %s with query %s",Err,Query);
+		SQL_GetError(Handle_Database, Err, 100);
+		LogError("SQLite error: %s with query %s", Err, Query);
 	}
-	SQL_FetchString(hQuery, 0, desmodel[client], sizeof(desmodel[]));
+	if (SQL_FetchRow(hQuery))
+		SQL_FetchString(hQuery, 0, desmodel[client], sizeof(desmodel[]));
 	CloseHandle(hQuery);
 	return;
 }
