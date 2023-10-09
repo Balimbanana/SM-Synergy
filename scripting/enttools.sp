@@ -10,7 +10,7 @@
 #pragma newdecls required;
 #pragma dynamic 2097152;
 
-#define PLUGIN_VERSION "1.43"
+#define PLUGIN_VERSION "1.44"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/enttoolsupdater.txt"
 
 public Plugin myinfo = 
@@ -22,80 +22,86 @@ public Plugin myinfo =
 	url = "https://github.com/Balimbanana/SM-Synergy"
 }
 
-int showallcreated = 0;
-int showalldeleted = 0;
-int showalldeaths = 0;
 int iMapChanges = -1;
-bool showallnormsounds = false;
-bool showallambsounds = false;
 bool bSynergyActive = false;
 
-char CLClsSet[128][32];
-Handle modelsarr = INVALID_HANDLE;
-ConVar hCVReplaceCMD;
-ConVar hCVShowAllCmds;
+ConVar sm_showall_created;
+ConVar sm_showall_deleted;
+ConVar sm_showall_deaths;
+ConVar sm_showall_normalsounds;
+ConVar sm_showall_ambientsounds;
+ConVar sm_replace_entcmd;
+ConVar sm_showall_commands;
+ConVar et_nodegenerate_min_distance;
+
+char CLClsSet[129][32];
+char szCLCurrentDir[129][256];
+//Handle modelsarr = INVALID_HANDLE;
+Handle hHookedTempEnts = INVALID_HANDLE;
+
+float vecDown[3] = {90.0, 0.0, 0.0};
+float vecLastNodePos[3];
+int iActiveNodeGenerator = -1;
+int iActiveNodeType = 0;
+int iActivePath = 0;
+Handle hNodeGenerator = INVALID_HANDLE;
+Handle hNodeGeneratorTimer = INVALID_HANDLE;
 
 public void OnPluginStart()
 {
-	RegAdminCmd("createhere",CreateStuff,ADMFLAG_BAN,"cc");
-	RegAdminCmd("createthere",CreateStuffThere,ADMFLAG_BAN,"cct");
-	RegAdminCmd("cc",CreateStuff,ADMFLAG_BAN,"cc");
-	RegAdminCmd("cct",CreateStuffThere,ADMFLAG_BAN,"cct");
-	RegAdminCmd("ccmenu",CreateModel,ADMFLAG_BAN,"cctmdl");
-	RegAdminCmd("setmdl",SetTargMdl,ADMFLAG_ROOT,".");
-	RegAdminCmd("cinp",cinp,ADMFLAG_BAN,"ent_fire");
-	RegAdminCmd("entinput",cinp,ADMFLAG_BAN,"ent_fire");
-	RegAdminCmd("changeclasses",changeclasses,ADMFLAG_BAN,"ChangeClasses");
-	RegConsoleCmd("gi",getinf);
-	RegAdminCmd("tn",sett,ADMFLAG_PASSWORD,"SetName");
-	RegAdminCmd("sm_sep",setprops,ADMFLAG_ROOT,".");
-	RegAdminCmd("listents",listents,ADMFLAG_KICK,".");
-	RegAdminCmd("findents",listents,ADMFLAG_KICK,".");
-	RegAdminCmd("listedicts",listedicts,ADMFLAG_GENERIC,".");
-	RegAdminCmd("moveent",moveentity,ADMFLAG_KICK,".");
-	RegAdminCmd("uptime",SrvUptime,ADMFLAG_BAN,"Prints server uptime.");
-	RegAdminCmd("entflags",GetSetEntFlags,ADMFLAG_BAN,"Get or set flags.");
-	RegAdminCmd("et_fireevent",FireThisEvent,ADMFLAG_ROOT,"Fire event.");
-	RegConsoleCmd("ent_create",EntCreateReplace);
+	RegAdminCmd("cc",			CreateStuff,		ADMFLAG_BAN,		"Create entity in front of you a little off the ground.");
+	RegAdminCmd("cct",			CreateStuffThere,	ADMFLAG_BAN,		"Create entity at crosshair end position.");
+	RegAdminCmd("createhere",	CreateStuff,		ADMFLAG_BAN,		"Same as cc");
+	RegAdminCmd("createthere",	CreateStuffThere,	ADMFLAG_BAN,		"Same as cct");
+	RegAdminCmd("ccmenu",		CreateModel,		ADMFLAG_BAN,		"Menu to create a prop_physics or prop_dynamic in a sorted list of all models.");
+	RegAdminCmd("cinp",			cinp,				ADMFLAG_BAN,		"ent_fire remake");
+	RegAdminCmd("entinput",		cinp,				ADMFLAG_BAN,		"ent_fire remake");
+	RegAdminCmd("changeclasses",changeclasses,		ADMFLAG_BAN,		"Changes the target classname in to the parameter classname. Additional parameters can be passed for more keys/values of the changed entity. This will not keep outputs, but it will keep most other information.");
+	RegAdminCmd("tn",			sett,				ADMFLAG_PASSWORD,	"Set targetname of the entity under your crosshair.");
+	RegAdminCmd("listents",		listents,			ADMFLAG_KICK,		"Similar to find_ent, accepts wild card * and if the last parameter is \"full\" it will show more information.");
+	RegAdminCmd("findents",		listents,			ADMFLAG_KICK,		"Same as listents.");
+	RegAdminCmd("listedicts",	listedicts,			ADMFLAG_GENERIC,	"Prints how many edicts are currently in use, and what the maximum is.");
+	RegAdminCmd("moveent",		moveentity,			ADMFLAG_KICK,		"Move target by either classname or targetname by origin and angles <x y z> <p y r>\n Accepts \"same\" as a parameter for no change, and +# or --# for add and subtract from current.");
+	RegAdminCmd("uptime",		SrvUptime,			ADMFLAG_BAN,		"Prints server uptime.");
+	RegAdminCmd("entflags",		GetSetEntFlags,		ADMFLAG_BAN,		"Get or set flags.");
+	RegAdminCmd("sm_sep",		setprops,			ADMFLAG_ROOT,		"Set properties and/or datamaps. Performs detection on types and arrays. Select by: entity index, targetname, or classname. Accepts wildcard * selection.");
+	RegAdminCmd("setmdl",		SetTargMdl,			ADMFLAG_ROOT,		"Set the model of a specific index or targetname.");
+	RegAdminCmd("et_fireevent",	FireThisEvent,		ADMFLAG_ROOT,		"Fire a game event.");
+	RegAdminCmd("et_hooktempent", HookTempEntByName, ADMFLAG_ROOT,		"Hook Tempent by name.");
+	RegAdminCmd("et_edt_walknodes", CreateEDTNodesMenu, ADMFLAG_ROOT,	"Create nodes for use in EDT by type in this menu.");
+	RegConsoleCmd("gi",			getinf); // Prints information of the entity under your crosshair
+	
+	// System to be able to replace the functionality of ent_create and ent_fire with EntTools versions if sm_replace_entcmd is set to 1
+	RegConsoleCmd("ent_create",	EntCreateReplace);
 	SetCommandFlags("ent_create",GetCommandFlags("ent_create")^FCVAR_CHEAT);
-	RegConsoleCmd("ent_fire",EntFireReplace);
-	SetCommandFlags("ent_fire",GetCommandFlags("ent_fire")^FCVAR_CHEAT);
-	Handle dbgcreate = CreateConVar("sm_showall_created", "0", "Shows all entities created in server console. 2 shows more info.", _, true, 0.0, true, 2.0);
-	HookConVarChange(dbgcreate, dbghch);
-	showallcreated = GetConVarInt(dbgcreate);
-	CloseHandle(dbgcreate);
-	dbgcreate = CreateConVar("sm_showall_deleted", "0", "Shows all entities deleted in server console.  2 shows more info.", _, true, 0.0, true, 2.0);
-	HookConVarChange(dbgcreate, dbgcrehch);
-	showalldeleted = GetConVarInt(dbgcreate);
-	CloseHandle(dbgcreate);
-	dbgcreate = CreateConVar("sm_showall_deaths", "0", "Shows all entities firing entity_death in server console.  2 shows more info.", _, true, 0.0, true, 2.0);
-	HookConVarChange(dbgcreate, dbgdeahch);
-	showalldeaths = GetConVarInt(dbgcreate);
-	CloseHandle(dbgcreate);
-	dbgcreate = CreateConVar("sm_showall_normsounds", "0", "Shows all normal sounds played in server console (skips stop flags).", _, true, 0.0, true, 1.0);
-	HookConVarChange(dbgcreate, dbgnormsch);
-	showallnormsounds = GetConVarBool(dbgcreate);
-	CloseHandle(dbgcreate);
-	dbgcreate = CreateConVar("sm_showall_ambientsounds", "0", "Shows all ambient sounds played in server console (skips stop flags).", _, true, 0.0, true, 1.0);
-	HookConVarChange(dbgcreate, dbgambsch);
-	showallambsounds = GetConVarBool(dbgcreate);
-	CloseHandle(dbgcreate);
-	hCVReplaceCMD = FindConVar("sm_replace_entcmd");
-	if (hCVReplaceCMD == INVALID_HANDLE) hCVReplaceCMD = CreateConVar("sm_replace_entcmd", "0", "Replaces ent_fire and ent_create with EntTools versions.", _, true, 0.0, true, 1.0);
-	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
-	hCVShowAllCmds = CreateConVar("sm_showall_commands", "0", "Shows all commands but not CON_COMMAND()s", _, true, 0.0, true, 1.0);
+	RegConsoleCmd("ent_fire",	EntFireReplace);
+	SetCommandFlags("ent_fire",	GetCommandFlags("ent_fire")^FCVAR_CHEAT);
+	
+	// ConVars
+	sm_showall_created = CreateConVar("sm_showall_created", "0", "Shows all entities created in server console. 2 shows more info.", _, true, 0.0, true, 2.0);
+	sm_showall_deleted = CreateConVar("sm_showall_deleted", "0", "Shows all entities deleted in server console.  2 shows more info.", _, true, 0.0, true, 2.0);
+	sm_showall_deaths = CreateConVar("sm_showall_deaths", "0", "Shows all entities firing entity_death in server console.  2 shows more info.", _, true, 0.0, true, 2.0);
+	sm_showall_normalsounds = CreateConVar("sm_showall_normalsounds", "0", "Shows all normal sounds played in server console (skips stop flags).", _, true, 0.0, true, 1.0);
+	sm_showall_ambientsounds = CreateConVar("sm_showall_ambientsounds", "0", "Shows all ambient sounds played in server console (skips stop flags).", _, true, 0.0, true, 1.0);
+	sm_replace_entcmd = CreateConVar("sm_replace_entcmd", "0", "Replaces ent_fire and ent_create with EntTools versions.", _, true, 0.0, true, 1.0);
+	sm_showall_commands = CreateConVar("sm_showall_commands", "0", "Shows all commands but not CON_COMMAND()s", _, true, 0.0, true, 1.0);
+	et_nodegenerate_min_distance = CreateConVar("et_nodegenerate_min_distance", "128.0", "Sets minimum distance to generate a new node while in node generator mode.", _, true, 1.0);
+	
+	HookEventEx("entity_killed", Event_EntityKilled, EventHookMode_Post);
 	AddNormalSoundHook(listnormsounds);
 	AddAmbientSoundHook(listambientsounds);
-	modelsarr = CreateArray(1024);
+	
+	//modelsarr = CreateArray(1024);
 	char szGameName[32];
-	GetGameFolderName(szGameName,sizeof(szGameName));
-	if (StrContains(szGameName,"synergy",false) != -1) bSynergyActive = true;
+	GetGameFolderName(szGameName, sizeof(szGameName));
+	if (StrContains(szGameName, "synergy", false) != -1) bSynergyActive = true;
 }
 
 public void OnPluginEnd()
 {
-	SetCommandFlags("ent_create",GetCommandFlags("ent_create")|FCVAR_CHEAT);
-	SetCommandFlags("ent_fire",GetCommandFlags("ent_fire")|FCVAR_CHEAT);
+	// Restore the cheat flags if this is unloaded
+	SetCommandFlags("ent_create", GetCommandFlags("ent_create")|FCVAR_CHEAT);
+	SetCommandFlags("ent_fire", GetCommandFlags("ent_fire")|FCVAR_CHEAT);
 }
 
 public void OnLibraryAdded(const char[] name)
@@ -108,7 +114,7 @@ public void OnLibraryAdded(const char[] name)
 
 public Action SrvUptime(int client, int args)
 {
-	PrintToConsole(client,"Time: %1.1f Days %1.1f Hours %1.1f Mins %1.f Seconds\nMap History: %i Map changes: %i",((GetTickedTime()/60)/60)/24,(GetTickedTime()/60)/60,GetTickedTime()/60,GetTickedTime(),GetMapHistorySize(),iMapChanges);
+	PrintToConsole(client, "Time: %1.1f Days %1.1f Hours %1.1f Mins %1.f Seconds\nMap History: %i Map changes: %i", ((GetTickedTime()/60)/60)/24, (GetTickedTime()/60)/60, GetTickedTime()/60, GetTickedTime(), GetMapHistorySize(), iMapChanges);
 	return Plugin_Handled;
 }
 
@@ -116,58 +122,78 @@ public void OnMapStart()
 {
 	iMapChanges++;
 	if (iMapChanges < GetMapHistorySize()) iMapChanges = GetMapHistorySize();
+	for (int i = 0; i < MaxClients+1; i++)
+	{
+		szCLCurrentDir[i] = "";
+	}
+	
+	iActiveNodeGenerator = -1;
+	iActiveNodeType = 0;
+	iActivePath = 0;
+	vecLastNodePos[0] = 0.0;
+	vecLastNodePos[1] = 0.0;
+	vecLastNodePos[2] = 0.0;
+}
+
+public void OnMapEnd()
+{
+	// If the map ends while an EDT node generate is active, dump what has been generated so far and reset the arrays
+	if (iActiveNodeGenerator > 0 && iActiveNodeGenerator <= MaxClients)
+	{
+		GenerateEDTNode_NoClient();
+	}
 }
 
 public Action GetSetEntFlags(int client, int args)
 {
 	if (args < 1)
 	{
-		PrintToConsole(client,"Usage entflags <entity> to get flags and entflags <entity> flag or entflags <entity> +-flag to add or remove flag");
+		PrintToConsole(client, "Usage entflags <entity> to get flags and entflags <entity> flag or entflags <entity> +-flag to add or remove flag");
 		return Plugin_Handled;
 	}
 	if (args < 2)
 	{
 		char szEnt[64];
-		GetCmdArg(1,szEnt,sizeof(szEnt));
+		GetCmdArg(1, szEnt, sizeof(szEnt));
 		Handle arr = CreateArray(64);
 		int iEnt = -1;
 		if (StringToInt(szEnt) > 0)
 		{
-			PushArrayCell(arr,StringToInt(szEnt));
+			PushArrayCell(arr, StringToInt(szEnt));
 		}
-		else if (StringToInt(szEnt) == 0) findentsarrtarg(arr,szEnt);
+		else if (StringToInt(szEnt) == 0) findentsarrtarg(arr, szEnt);
 		//Checks must be separate
 		if (arr == INVALID_HANDLE)
 		{
-			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",szEnt);
-			else PrintToConsole(client,"No entities found with either classname or targetname of %s",szEnt);
+			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s", szEnt);
+			else PrintToConsole(client,"No entities found with either classname or targetname of %s", szEnt);
 			CloseHandle(arr);
 			return Plugin_Handled;
 		}
 		else if (GetArraySize(arr) < 1)
 		{
-			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",szEnt);
-			else PrintToConsole(client,"No entities found with either classname or targetname of %s",szEnt);
+			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s", szEnt);
+			else PrintToConsole(client, "No entities found with either classname or targetname of %s", szEnt);
 			CloseHandle(arr);
 			return Plugin_Handled;
 		}
 		else
 		{
-			for (int i = 0;i<GetArraySize(arr);i++)
+			for (int i = 0; i < GetArraySize(arr); i++)
 			{
-				iEnt = GetArrayCell(arr,i);
+				iEnt = GetArrayCell(arr, i);
 				if (IsValidEntity(iEnt))
 				{
 					int iEFlags = GetEntityFlags(iEnt);
 					if (iEFlags == 0)
 					{
-						if (client == 0) PrintToServer("Entity %i %s has no flags set.",iEnt,szEnt);
-						else PrintToConsole(client,"Entity %i %s has no flags set.",iEnt,szEnt);
+						if (client == 0) PrintToServer("Entity %i %s has no flags set.", iEnt, szEnt);
+						else PrintToConsole(client, "Entity %i %s has no flags set.", iEnt, szEnt);
 					}
 					else
 					{
 						char szDesc[128];
-						Format(szDesc,sizeof(szDesc),"Entity %i has:\n",iEnt);
+						Format(szDesc,sizeof(szDesc),"Entity %i has:\n", iEnt);
 						if (iEFlags & FL_ONGROUND) StrCat(szDesc,sizeof(szDesc),"FL_ONGROUND ");
 						if (iEFlags & FL_DUCKING) StrCat(szDesc,sizeof(szDesc),"FL_DUCKING ");
 						if (iEFlags & FL_WATERJUMP) StrCat(szDesc,sizeof(szDesc),"FL_WATERJUMP ");
@@ -202,7 +228,7 @@ public Action GetSetEntFlags(int client, int args)
 						if (iEFlags & FL_UNBLOCKABLE_BY_PLAYER) StrCat(szDesc,sizeof(szDesc),"FL_UNBLOCKABLE_BY_PLAYER ");
 						if (iEFlags & FL_FREEZING) StrCat(szDesc,sizeof(szDesc),"FL_FREEZING ");
 						if (iEFlags & FL_EP2V_UNKNOWN1) StrCat(szDesc,sizeof(szDesc),"FL_EP2V_UNKNOWN1 ");
-						PrintToConsole(client,"%s",szDesc);
+						PrintToConsole(client, "%s", szDesc);
 					}
 				}
 			}
@@ -213,38 +239,38 @@ public Action GetSetEntFlags(int client, int args)
 	{
 		char szEnt[64];
 		char szFlag[128];
-		GetCmdArg(1,szEnt,sizeof(szEnt));
-		GetCmdArg(2,szFlag,sizeof(szFlag));
+		GetCmdArg(1, szEnt, sizeof(szEnt));
+		GetCmdArg(2, szFlag, sizeof(szFlag));
 		int iSetting = 2;
-		if (StrContains(szFlag,"+",false) == 0)
+		if (StrContains(szFlag, "+", false) == 0)
 		{
 			iSetting = 1;
-			ReplaceStringEx(szFlag,sizeof(szFlag),"+","");
+			ReplaceStringEx(szFlag, sizeof(szFlag), "+","");
 		}
-		else if (StrContains(szFlag,"-",false) == 0)
+		else if (StrContains(szFlag, "-", false) == 0)
 		{
 			iSetting = 0;
-			ReplaceStringEx(szFlag,sizeof(szFlag),"-","");
+			ReplaceStringEx(szFlag, sizeof(szFlag), "-", "");
 		}
 		Handle arr = CreateArray(64);
 		int iEnt = -1;
 		if (StringToInt(szEnt) > 0)
 		{
-			PushArrayCell(arr,StringToInt(szEnt));
+			PushArrayCell(arr, StringToInt(szEnt));
 		}
-		else if (StringToInt(szEnt) == 0) findentsarrtarg(arr,szEnt);
+		else if (StringToInt(szEnt) == 0) findentsarrtarg(arr, szEnt);
 		//Checks must be separate
 		if (arr == INVALID_HANDLE)
 		{
-			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",szEnt);
-			else PrintToConsole(client,"No entities found with either classname or targetname of %s",szEnt);
+			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s", szEnt);
+			else PrintToConsole(client, "No entities found with either classname or targetname of %s", szEnt);
 			CloseHandle(arr);
 			return Plugin_Handled;
 		}
 		else if (GetArraySize(arr) < 1)
 		{
-			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s",szEnt);
-			else PrintToConsole(client,"No entities found with either classname or targetname of %s",szEnt);
+			if (client == 0) PrintToServer("No entities found with either classname or targetname of %s", szEnt);
+			else PrintToConsole(client, "No entities found with either classname or targetname of %s", szEnt);
 			CloseHandle(arr);
 			return Plugin_Handled;
 		}
@@ -253,11 +279,11 @@ public Action GetSetEntFlags(int client, int args)
 			int iSetFlags = 0;
 			if (iSetting == 2)
 			{
-				if (StrContains(szFlag,"|",false) != -1)
+				if (StrContains(szFlag, "|", false) != -1)
 				{
 					char szFlagSplit[16][16];
-					int iExplMax = ExplodeString(szFlag,"|",szFlagSplit,16,16);
-					for (int i = 0;i<iExplMax;i++)
+					int iExplMax = ExplodeString(szFlag, "|", szFlagSplit, 16, 16);
+					for (int i = 0; i < iExplMax; i++)
 					{
 						if (StrEqual(szFlagSplit[i],"FL_ONGROUND",false)) iSetFlags |= FL_ONGROUND;
 						else if (StrEqual(szFlagSplit[i],"FL_DUCKING",false)) iSetFlags |= FL_DUCKING;
@@ -295,9 +321,9 @@ public Action GetSetEntFlags(int client, int args)
 					}
 				}
 			}
-			for (int i = 0;i<GetArraySize(arr);i++)
+			for (int i = 0; i < GetArraySize(arr); i++)
 			{
-				iEnt = GetArrayCell(arr,i);
+				iEnt = GetArrayCell(arr, i);
 				if (IsValidEntity(iEnt))
 				{
 					if (iSetting == 1)
@@ -397,7 +423,7 @@ public Action FireThisEvent(int client, int args)
 	if (args > 0)
 	{
 		char szEventName[64];
-		GetCmdArg(1,szEventName,sizeof(szEventName));
+		GetCmdArg(1, szEventName, sizeof(szEventName));
 		Handle hEvent = CreateEvent(szEventName);
 		if (hEvent != INVALID_HANDLE)
 		{
@@ -414,16 +440,508 @@ public Action FireThisEvent(int client, int args)
 					GetCmdArg(i, szKey, sizeof(szKey));
 					i++;
 					GetCmdArg(i, szValue, sizeof(szValue));
-					if (StrEqual(szType,"int",false)) SetEventInt(hEvent, szKey, StringToInt(szValue));
-					else if (StrEqual(szType,"float",false)) SetEventFloat(hEvent, szKey, StringToFloat(szValue));
-					else if (StrEqual(szType,"bool",false)) SetEventBool(hEvent, szKey, view_as<bool>(StringToInt(szValue)));
-					else if (StrEqual(szType,"string",false)) SetEventString(hEvent, szKey, szValue);
+					if (StrEqual(szType, "int", false)) SetEventInt(hEvent, szKey, StringToInt(szValue));
+					else if (StrEqual(szType, "float", false)) SetEventFloat(hEvent, szKey, StringToFloat(szValue));
+					else if (StrEqual(szType, "bool", false)) SetEventBool(hEvent, szKey, view_as<bool>(StringToInt(szValue)));
+					else if (StrEqual(szType, "string", false)) SetEventString(hEvent, szKey, szValue);
 				}
 			}
-			FireEvent(hEvent,false);
+			FireEvent(hEvent, false);
 		}
 	}
+	else
+	{
+		PrintToConsole(client, "Usage: et_fireevent <eventname> (OPTIONAL) <PropertyType> <Key> <Value> <PropertyType> <Key> <Value> ETC\nValid property types are: int float bool string");
+	}
 	return Plugin_Handled;
+}
+
+public Action HookTempEntByName(int client, int args)
+{
+	if (args > 0)
+	{
+		char szName[32];
+		GetCmdArg(1, szName, sizeof(szName));
+		
+		if (hHookedTempEnts == INVALID_HANDLE) hHookedTempEnts = CreateArray(32);
+		
+		if (FindStringInArray(hHookedTempEnts, szName) != -1)
+		{
+			RemoveFromArray(hHookedTempEnts, FindStringInArray(hHookedTempEnts, szName));
+			RemoveTempEntHook(szName, TEHookTest);
+			PrintToConsole(client, "Removed hook");
+		}
+		else
+		{
+			PushArrayString(hHookedTempEnts, szName);
+			AddTempEntHook(szName, TEHookTest);
+			PrintToConsole(client, "Added hook");
+		}
+	}
+	else
+	{
+		PrintToConsole(client, "Usage et_hooktempent <tempentname>");
+	}
+	
+	return Plugin_Handled;
+}
+
+public Action TEHookTest(const char[] te_name, const int[] Players, int numClients, float delay)
+{
+	PrintToServer("TempEntName '%s' send to %i client(s) after delay of %1.1f", te_name, numClients, delay);
+	
+	static char szBuff[512] = "";
+	static float vecTemp[3];
+	
+	if (TE_IsValidProp("m_nPlayer")) Format(szBuff, sizeof(szBuff), "m_nPlayer %i ", TE_ReadNum("m_nPlayer"));
+	if (TE_IsValidProp("m_hPlayer")) Format(szBuff, sizeof(szBuff), "%sm_hPlayer %i ", szBuff, TE_ReadNum("m_hPlayer"));
+	if (TE_IsValidProp("m_nEntity")) Format(szBuff, sizeof(szBuff), "%sm_nEntity %i ", szBuff, TE_ReadNum("m_nEntity"));
+	if (TE_IsValidProp("m_hOwner")) Format(szBuff, sizeof(szBuff), "%sm_hOwner %i ", szBuff, TE_ReadNum("m_hOwner"));
+	if (TE_IsValidProp("entindex")) Format(szBuff, sizeof(szBuff), "%sentindex %i ", szBuff, TE_ReadNum("entindex"));
+	
+	if (TE_IsValidProp("m_vecOrigin[0]")) Format(szBuff, sizeof(szBuff), "%sm_vecOrigin[0] %1.1f ", szBuff, TE_ReadFloat("m_vecOrigin[0]"));
+	if (TE_IsValidProp("m_vecOrigin[1]")) Format(szBuff, sizeof(szBuff), "%sm_vecOrigin[1] %1.1f ", szBuff, TE_ReadFloat("m_vecOrigin[1]"));
+	if (TE_IsValidProp("m_vecOrigin[2]")) Format(szBuff, sizeof(szBuff), "%sm_vecOrigin[2] %1.1f ", szBuff, TE_ReadFloat("m_vecOrigin[2]"));
+	if (TE_IsValidProp("m_vecOrigin"))
+	{
+		TE_ReadVector("m_vecOrigin", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%svecOrigin %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	if (TE_IsValidProp("m_vecPos"))
+	{
+		TE_ReadVector("m_vecPos", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecPos %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	
+	if (TE_IsValidProp("m_angRotation[0]")) Format(szBuff, sizeof(szBuff), "%sm_angRotation[0] %1.1f ", szBuff, TE_ReadFloat("m_angRotation[0]"));
+	if (TE_IsValidProp("m_angRotation[1]")) Format(szBuff, sizeof(szBuff), "%sm_angRotation[1] %1.1f ", szBuff, TE_ReadFloat("m_angRotation[1]"));
+	if (TE_IsValidProp("m_angRotation[2]")) Format(szBuff, sizeof(szBuff), "%sm_angRotation[2] %1.1f ", szBuff, TE_ReadFloat("m_angRotation[2]"));
+	if (TE_IsValidProp("m_vecAngles"))
+	{
+		TE_ReadVector("m_vecAngles", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecAngles %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	if (TE_IsValidProp("m_vAngles"))
+	{
+		TE_ReadVector("m_vAngles", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vAngles %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	
+	if (TE_IsValidProp("m_vecSize"))
+	{
+		TE_ReadVector("m_vecSize", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecSize %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	
+	if (TE_IsValidProp("m_vecNormal"))
+	{
+		TE_ReadVector("m_vecNormal", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecNormal %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	if (TE_IsValidProp("m_vNormal"))
+	{
+		TE_ReadVector("m_vNormal", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vNormal %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	
+	if (TE_IsValidProp("m_vecVelocity"))
+	{
+		TE_ReadVector("m_vecVelocity", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecVelocity %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	if (TE_IsValidProp("m_vecDirection"))
+	{
+		TE_ReadVector("m_vecDirection", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecDirection %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	if (TE_IsValidProp("m_vecDir"))
+	{
+		TE_ReadVector("m_vecDir", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecDir %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	
+	if (TE_IsValidProp("m_vecMins"))
+	{
+		TE_ReadVector("m_vecMins", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecMins %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	if (TE_IsValidProp("m_vecMaxs"))
+	{
+		TE_ReadVector("m_vecMaxs", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecMaxs %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	
+	if (TE_IsValidProp("m_vStart[0]")) Format(szBuff, sizeof(szBuff), "%sm_vStart[0] %1.1f ", szBuff, TE_ReadFloat("m_vStart[0]"));
+	if (TE_IsValidProp("m_vStart[1]")) Format(szBuff, sizeof(szBuff), "%sm_vStart[1] %1.1f ", szBuff, TE_ReadFloat("m_vStart[1]"));
+	if (TE_IsValidProp("m_vStart[2]")) Format(szBuff, sizeof(szBuff), "%sm_vStart[2] %1.1f ", szBuff, TE_ReadFloat("m_vStart[2]"));
+	if (TE_IsValidProp("m_vecStart"))
+	{
+		TE_ReadVector("m_vecStart", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecStart %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	if (TE_IsValidProp("m_vecStartPoint"))
+	{
+		TE_ReadVector("m_vecStartPoint", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecStartPoint %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	if (TE_IsValidProp("m_vecEnd"))
+	{
+		TE_ReadVector("m_vecEnd", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecEnd %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	if (TE_IsValidProp("m_vecEndPoint"))
+	{
+		TE_ReadVector("m_vecEndPoint", vecTemp);
+		Format(szBuff, sizeof(szBuff), "%sm_vecEndPoint %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+	}
+	
+	PrintToServer("GatheredInformation:\n%s", szBuff);
+	Format(szBuff, sizeof(szBuff), "");
+	
+	if (TE_IsValidProp("m_nModelIndex")) Format(szBuff, sizeof(szBuff), "%sm_nModelIndex %i ", szBuff, TE_ReadNum("m_nModelIndex"));
+	if (TE_IsValidProp("m_nIndex")) Format(szBuff, sizeof(szBuff), "%sm_nIndex %i ", szBuff, TE_ReadNum("m_nIndex"));
+	if (TE_IsValidProp("m_nFlags")) Format(szBuff, sizeof(szBuff), "%sm_nFlags %i ", szBuff, TE_ReadNum("m_nFlags"));
+	if (TE_IsValidProp("m_fFlags")) Format(szBuff, sizeof(szBuff), "%sm_fFlags %i ", szBuff, TE_ReadNum("m_fFlags"));
+	if (TE_IsValidProp("m_nSkin")) Format(szBuff, sizeof(szBuff), "%sm_nSkin %i ", szBuff, TE_ReadNum("m_nSkin"));
+	if (TE_IsValidProp("m_nEffects")) Format(szBuff, sizeof(szBuff), "%sm_nEffects %i ", szBuff, TE_ReadNum("m_nEffects"));
+	if (TE_IsValidProp("m_iEvent")) Format(szBuff, sizeof(szBuff), "%sm_iEvent %i ", szBuff, TE_ReadNum("m_iEvent"));
+	if (TE_IsValidProp("m_nData")) Format(szBuff, sizeof(szBuff), "%sm_nData %i ", szBuff, TE_ReadNum("m_nData"));
+	if (TE_IsValidProp("m_nHitbox")) Format(szBuff, sizeof(szBuff), "%sm_nHitbox %i ", szBuff, TE_ReadNum("m_nHitbox"));
+	
+	if (TE_IsValidProp("m_flWaterZ")) Format(szBuff, sizeof(szBuff), "%sm_flWaterZ %1.1f ", szBuff, TE_ReadFloat("m_flWaterZ"));
+	if (TE_IsValidProp("m_fHeight")) Format(szBuff, sizeof(szBuff), "%sm_fHeight %1.1f ", szBuff, TE_ReadFloat("m_fHeight"));
+	if (TE_IsValidProp("m_flSize")) Format(szBuff, sizeof(szBuff), "%sm_flSize %1.1f ", szBuff, TE_ReadFloat("m_flSize"));
+	if (TE_IsValidProp("m_nSize")) Format(szBuff, sizeof(szBuff), "%sm_nSize %i ", szBuff, TE_ReadNum("m_nSize"));
+	if (TE_IsValidProp("m_flScale")) Format(szBuff, sizeof(szBuff), "%sm_flScale %1.1f ", szBuff, TE_ReadFloat("m_flScale"));
+	if (TE_IsValidProp("m_fScale")) Format(szBuff, sizeof(szBuff), "%sm_fScale %1.1f ", szBuff, TE_ReadFloat("m_fScale"));
+	if (TE_IsValidProp("m_flRadius")) Format(szBuff, sizeof(szBuff), "%sm_flRadius %1.1f ", szBuff, TE_ReadFloat("m_flRadius"));
+	if (TE_IsValidProp("m_nRadius")) Format(szBuff, sizeof(szBuff), "%sm_nRadius %i ", szBuff, TE_ReadNum("m_nRadius"));
+	if (TE_IsValidProp("m_fLife")) Format(szBuff, sizeof(szBuff), "%sm_fLife %1.1f ", szBuff, TE_ReadFloat("m_fLife"));
+	if (TE_IsValidProp("m_nLifeTime")) Format(szBuff, sizeof(szBuff), "%sm_nLifeTime %1.1f ", szBuff, TE_ReadNum("m_nLifeTime"));
+	if (TE_IsValidProp("m_fTime")) Format(szBuff, sizeof(szBuff), "%sm_fTime %1.1f ", szBuff, TE_ReadFloat("m_fTime"));
+	if (TE_IsValidProp("m_flSpeed")) Format(szBuff, sizeof(szBuff), "%sm_flSpeed %1.1f ", szBuff, TE_ReadFloat("m_flSpeed"));
+	if (TE_IsValidProp("m_fSpeed")) Format(szBuff, sizeof(szBuff), "%sm_fSpeed %1.1f ", szBuff, TE_ReadFloat("m_fSpeed"));
+	if (TE_IsValidProp("m_nType")) Format(szBuff, sizeof(szBuff), "%sm_nType %i ", szBuff, TE_ReadNum("m_nType"));
+	if (TE_IsValidProp("m_iType")) Format(szBuff, sizeof(szBuff), "%sm_iType %i ", szBuff, TE_ReadNum("m_iType"));
+	if (TE_IsValidProp("m_nBrightness")) Format(szBuff, sizeof(szBuff), "%sm_nBrightness %i ", szBuff, TE_ReadNum("m_nBrightness"));
+	if (TE_IsValidProp("m_flMagnitude")) Format(szBuff, sizeof(szBuff), "%sm_flMagnitude %1.1f ", szBuff, TE_ReadFloat("m_flMagnitude"));
+	if (TE_IsValidProp("m_nMagnitude")) Format(szBuff, sizeof(szBuff), "%sm_nMagnitude %i ", szBuff, TE_ReadNum("m_nMagnitude"));
+	
+	if (TE_IsValidProp("m_bBlockedSpawner")) Format(szBuff, sizeof(szBuff), "%sm_bBlockedSpawner %i ", szBuff, TE_ReadNum("m_bBlockedSpawner"));
+	if (TE_IsValidProp("m_nRandomization")) Format(szBuff, sizeof(szBuff), "%sm_nRandomization %i ", szBuff, TE_ReadNum("m_nRandomization"));
+	if (TE_IsValidProp("m_nCount")) Format(szBuff, sizeof(szBuff), "%sm_nCount %i ", szBuff, TE_ReadNum("m_nCount"));
+	if (TE_IsValidProp("m_nAmount")) Format(szBuff, sizeof(szBuff), "%sm_nAmount %i ", szBuff, TE_ReadNum("m_nAmount"));
+	
+	if (TE_IsValidProp("m_iAmmoID")) Format(szBuff, sizeof(szBuff), "%sm_iAmmoID %i ", szBuff, TE_ReadNum("m_iAmmoID"));
+	if (TE_IsValidProp("m_iSeed")) Format(szBuff, sizeof(szBuff), "%sm_iSeed %i ", szBuff, TE_ReadNum("m_iSeed"));
+	if (TE_IsValidProp("m_iShots")) Format(szBuff, sizeof(szBuff), "%sm_iShots %i ", szBuff, TE_ReadNum("m_iShots"));
+	if (TE_IsValidProp("m_flSpread")) Format(szBuff, sizeof(szBuff), "%sm_flSpread %1.1f ", szBuff, TE_ReadFloat("m_flSpread"));
+	if (TE_IsValidProp("m_bDoImpacts")) Format(szBuff, sizeof(szBuff), "%sm_bDoImpacts %i ", szBuff, TE_ReadNum("m_bDoImpacts"));
+	if (TE_IsValidProp("m_bDoTracers")) Format(szBuff, sizeof(szBuff), "%sm_bDoTracers %i ", szBuff, TE_ReadNum("m_bDoTracers"));
+	
+	if (TE_IsValidProp("m_nSprayModel")) Format(szBuff, sizeof(szBuff), "%sm_nSprayModel %i ", szBuff, TE_ReadNum("m_nSprayModel"));
+	if (TE_IsValidProp("m_nDropModel")) Format(szBuff, sizeof(szBuff), "%sm_nDropModel %i ", szBuff, TE_ReadNum("m_nDropModel"));
+	if (TE_IsValidProp("m_nAttachmentIndex")) Format(szBuff, sizeof(szBuff), "%sm_nAttachmentIndex %i ", szBuff, TE_ReadNum("m_nAttachmentIndex"));
+	if (TE_IsValidProp("m_nSurfaceProp")) Format(szBuff, sizeof(szBuff), "%sm_nSurfaceProp %i ", szBuff, TE_ReadNum("m_nSurfaceProp"));
+	if (TE_IsValidProp("m_iEffectName")) Format(szBuff, sizeof(szBuff), "%sm_iEffectName %i ", szBuff, TE_ReadNum("m_iEffectName"));
+	if (TE_IsValidProp("m_nMaterial")) Format(szBuff, sizeof(szBuff), "%sm_nMaterial %i ", szBuff, TE_ReadNum("m_nMaterial"));
+	if (TE_IsValidProp("m_nDamageType")) Format(szBuff, sizeof(szBuff), "%sm_nDamageType %i ", szBuff, TE_ReadNum("m_nDamageType"));
+	if (TE_IsValidProp("m_nColor")) Format(szBuff, sizeof(szBuff), "%sm_nColor %i ", szBuff, TE_ReadNum("m_nColor"));
+	if (TE_IsValidProp("m_bCustomColors"))
+	{
+		Format(szBuff, sizeof(szBuff), "%sm_bCustomColors %i ", szBuff, TE_ReadNum("m_bCustomColors"));
+		
+		if (TE_ReadNum("m_bCustomColors") != 0)
+		{
+			if (TE_IsValidProp("m_CustomColors.m_vecColor1"))
+			{
+				TE_ReadVector("m_CustomColors.m_vecColor1", vecTemp);
+				Format(szBuff, sizeof(szBuff), "%sm_CustomColors.m_vecColor1 %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+			}
+			if (TE_IsValidProp("m_CustomColors.m_vecColor2"))
+			{
+				TE_ReadVector("m_CustomColors.m_vecColor2", vecTemp);
+				Format(szBuff, sizeof(szBuff), "%sm_CustomColors.m_vecColor2 %1.1f %1.1f %1.1f ", szBuff, vecTemp[0], vecTemp[1], vecTemp[2]);
+			}
+		}
+	}
+	
+	if (TE_IsValidProp("m_ControlPoint1.m_eParticleAttachment")) Format(szBuff, sizeof(szBuff), "%sm_ControlPoint1.m_eParticleAttachment %i ", szBuff, TE_ReadNum("m_ControlPoint1.m_eParticleAttachment"));
+	if (TE_IsValidProp("m_bControlPoint1"))
+	{
+		Format(szBuff, sizeof(szBuff), "%sm_bControlPoint1 %i ", szBuff, TE_ReadNum("m_bControlPoint1"));
+		
+		if (TE_ReadNum("m_bControlPoint1") != 0)
+		{
+			if (TE_IsValidProp("m_ControlPoint1.m_vecOffset[0]")) Format(szBuff, sizeof(szBuff), "%sm_ControlPoint1.m_vecOffset[0] %1.1f ", szBuff, TE_ReadFloat("m_ControlPoint1.m_vecOffset[0]"));
+			if (TE_IsValidProp("m_ControlPoint1.m_vecOffset[1]")) Format(szBuff, sizeof(szBuff), "%sm_ControlPoint1.m_vecOffset[1] %1.1f ", szBuff, TE_ReadFloat("m_ControlPoint1.m_vecOffset[1]"));
+			if (TE_IsValidProp("m_ControlPoint1.m_vecOffset[2]")) Format(szBuff, sizeof(szBuff), "%sm_ControlPoint1.m_vecOffset[2] %1.1f ", szBuff, TE_ReadFloat("m_ControlPoint1.m_vecOffset[2]"));
+		}
+	}
+	
+	if (TE_IsValidProp("r")) Format(szBuff, sizeof(szBuff), "%sr %i ", szBuff, TE_ReadNum("r"));
+	if (TE_IsValidProp("g")) Format(szBuff, sizeof(szBuff), "%sg %i ", szBuff, TE_ReadNum("g"));
+	if (TE_IsValidProp("b")) Format(szBuff, sizeof(szBuff), "%sb %i ", szBuff, TE_ReadNum("b"));
+	if (TE_IsValidProp("a")) Format(szBuff, sizeof(szBuff), "%sa %i ", szBuff, TE_ReadNum("a"));
+	
+	PrintToServer("%s\n", szBuff);
+	
+	return Plugin_Continue;
+}
+
+public Action CreateEDTNodesMenu(int client, int args)
+{
+	if (client == 0)
+	{
+		if ((IsValidEntity(1)) && (!IsDedicatedServer())) client = 1;
+		else return Plugin_Handled;
+	}
+	
+	if (iActiveNodeGenerator == client)
+	{
+		GenerateEDTNode(client, true);
+		return Plugin_Handled;
+	}
+	else if (IsValidEntity(iActiveNodeGenerator) && iActiveNodeGenerator != client && iActiveNodeGenerator > 0)
+	{
+		PrintToChat(client, "There is already someone else generating nodes.");
+		return Plugin_Handled;
+	}
+	
+	Menu menu = new Menu(MenuHandlerCreateNodes);
+	menu.SetTitle("Create As");
+	menu.AddItem("groundnode", "Create ground nodes");
+	menu.AddItem("air", "Create air nodes (manhacks, scanners, etc) eye position");
+	menu.AddItem("strider", "Create strider walking nodes (traces down to ground, then up 520)");
+	menu.AddItem("stridercrouched", "Create strider crouching nodes (traces down to ground, then up 260)");
+	menu.AddItem("groundhint", "Create ground hint node (used for scripted paths and hunters)");
+	menu.ExitButton = true;
+	menu.Display(client, 120);
+	return Plugin_Handled;
+}
+
+public int MenuHandlerCreateNodes(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_Select)
+	{
+		if (hNodeGenerator == INVALID_HANDLE)
+		{
+			hNodeGenerator = CreateArray(1024);
+		}
+		if (hNodeGeneratorTimer == INVALID_HANDLE)
+			hNodeGeneratorTimer = CreateTimer(0.1, Timer_NodeGenerator, _, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+		
+		char szSelection[128];
+		menu.GetItem(param2, szSelection, sizeof(szSelection));
+		if (StrEqual(szSelection, "groundnode", false))
+		{
+			iActiveNodeGenerator = param1;
+			iActiveNodeType = 1;
+		}
+		else if (StrEqual(szSelection, "air", false))
+		{
+			iActiveNodeGenerator = param1;
+			iActiveNodeType = 2;
+		}
+		else if (StrEqual(szSelection, "strider", false))
+		{
+			iActiveNodeGenerator = param1;
+			iActiveNodeType = 3;
+		}
+		else if (StrEqual(szSelection, "stridercrouched", false))
+		{
+			iActiveNodeGenerator = param1;
+			iActiveNodeType = 4;
+		}
+		else if (StrEqual(szSelection, "groundhint", false))
+		{
+			iActiveNodeGenerator = param1;
+			iActiveNodeType = 5;
+		}
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+	return 0;
+}
+
+public Action Timer_NodeGenerator(Handle timer)
+{
+	if (IsValidEntity(iActiveNodeGenerator) && iActiveNodeType > 0)
+	{
+		static float vecOrigin[3];
+		GetEntPropVector(iActiveNodeGenerator, Prop_Data, "m_vecAbsOrigin", vecOrigin);
+		if (GetVectorDistance(vecOrigin, vecLastNodePos) > et_nodegenerate_min_distance.FloatValue)
+		{
+			vecLastNodePos = vecOrigin;
+			GenerateEDTNode(iActiveNodeGenerator, false);
+		}
+	}
+}
+
+void GenerateEDTNode(int client, bool bLast)
+{
+	if (!IsValidEntity(client)) return;
+	
+	if (HasEntProp(client, Prop_Data, "m_vecAbsOrigin"))
+	{
+		float vecOrigin[3];
+		float vecAngles[3];
+		if (iActiveNodeType == 2)
+			GetClientEyePosition(client, vecOrigin);
+		else
+			GetEntPropVector(client, Prop_Data, "m_vecAbsOrigin", vecOrigin);
+		
+		if (HasEntProp(client, Prop_Data, "m_angRotation"))
+			GetEntPropVector(client, Prop_Data, "m_angRotation", vecAngles);
+		else if (HasEntProp(client, Prop_Data, "v_angle"))
+			GetEntPropVector(client, Prop_Data, "v_angle", vecAngles);
+		
+		// Only take in to account roll and pitch on air nodes
+		if (iActiveNodeType != 2)
+		{
+			vecAngles[0] = 0.0;
+			vecAngles[2] = 0.0;
+		}
+		
+		char szGeneratedNode[512] = "";
+		char szNodeType[32] = "";
+		switch (iActiveNodeType)
+		{
+			case 1:
+			{
+				TR_TraceRayFilter(vecOrigin, vecDown, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+				TR_GetEndPosition(vecOrigin);
+				Format(szGeneratedNode, sizeof(szGeneratedNode), "		create {classname \"info_node\" origin \"%1.1f %1.1f %1.1f\" values {angles \"%1.1f %1.1f %1.1f\"} }", vecOrigin[0], vecOrigin[1], vecOrigin[2] + 1.0, vecAngles[0], vecAngles[1], vecAngles[2]);
+				Format(szNodeType, sizeof(szNodeType), "ground");
+			}
+			case 2:
+			{
+				Format(szGeneratedNode, sizeof(szGeneratedNode), "		create {classname \"info_node_air\" origin \"%1.1f %1.1f %1.1f\" values {angles \"%1.1f %1.1f %1.1f\"} }", vecOrigin[0], vecOrigin[1], vecOrigin[2], vecAngles[0], vecAngles[1], vecAngles[2]);
+				Format(szNodeType, sizeof(szNodeType), "air");
+			}
+			case 3:
+			{
+				TR_TraceRayFilter(vecOrigin, vecDown, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+				TR_GetEndPosition(vecOrigin);
+				Format(szGeneratedNode, sizeof(szGeneratedNode), "		create {classname \"info_node_air_hint\" origin \"%1.1f %1.1f %1.1f\" values {hinttype \"904\" nodeFOV \"360\" angles \"%1.1f %1.1f %1.1f\"} }", vecOrigin[0], vecOrigin[1], vecOrigin[2] + 520.0, vecAngles[0], vecAngles[1], vecAngles[2]);
+				Format(szNodeType, sizeof(szNodeType), "strider");
+			}
+			case 4:
+			{
+				TR_TraceRayFilter(vecOrigin, vecDown, MASK_SHOT, RayType_Infinite, TraceEntityFilter, client);
+				TR_GetEndPosition(vecOrigin);
+				Format(szGeneratedNode, sizeof(szGeneratedNode), "		create {classname \"info_node_air_hint\" origin \"%1.1f %1.1f %1.1f\" values {hinttype \"904\" nodeFOV \"360\" angles \"%1.1f %1.1f %1.1f\"} }", vecOrigin[0], vecOrigin[1], vecOrigin[2] + 260.0, vecAngles[0], vecAngles[1], vecAngles[2]);
+				Format(szNodeType, sizeof(szNodeType), "strider crouched");
+			}
+			case 5:
+			{
+				if (bLast) Format(szGeneratedNode, sizeof(szGeneratedNode), "		create {classname \"info_node_hint\" origin \"%1.1f %1.1f %1.1f\" values {targetname \"hintpath_%i\" nodeFOV \"360\" angles \"%1.1f %1.1f %1.1f\"} }", vecOrigin[0], vecOrigin[1], vecOrigin[2] + 260.0, iActivePath, vecAngles[0], vecAngles[1], vecAngles[2]);
+				else Format(szGeneratedNode, sizeof(szGeneratedNode), "		create {classname \"info_node_hint\" origin \"%1.1f %1.1f %1.1f\" values {targetname \"hintpath_%i\" target \"hintpath_%i\" nodeFOV \"360\" angles \"%1.1f %1.1f %1.1f\"} }", vecOrigin[0], vecOrigin[1], vecOrigin[2] + 260.0, iActivePath, iActivePath + 1, vecAngles[0], vecAngles[1], vecAngles[2]);
+				Format(szNodeType, sizeof(szNodeType), "ground hint");
+				iActivePath++;
+			}
+		}
+		
+		PushArrayString(hNodeGenerator, szGeneratedNode);
+		
+		if (bLast)
+		{
+			iActiveNodeGenerator = -1;
+			iActiveNodeType = 0;
+			if (hNodeGeneratorTimer != INVALID_HANDLE) KillTimer(hNodeGeneratorTimer);
+			hNodeGeneratorTimer = INVALID_HANDLE;
+			vecLastNodePos[0] = 0.0;
+			vecLastNodePos[1] = 0.0;
+			vecLastNodePos[2] = 0.0;
+			
+			char szMapNameAdjust[128] = "";
+			GetCurrentMap(szMapNameAdjust, sizeof(szMapNameAdjust));
+			Format(szMapNameAdjust, sizeof(szMapNameAdjust), "maps/EDTNodes_%s.edt", szMapNameAdjust);
+			
+			PrintToChat(client, "Generated LAST %s node at: %1.1f %1.1f %1.1f saving to: %s", szNodeType, vecOrigin[0], vecOrigin[1], vecOrigin[2], szMapNameAdjust);
+			
+			Handle hWriteFile = OpenFile(szMapNameAdjust, "a+", true, NULL_STRING);
+			if (hWriteFile != INVALID_HANDLE)
+			{
+				WriteFileLine(hWriteFile, "		// New generate from EntTools:");
+				
+				for (int i = 0; i < GetArraySize(hNodeGenerator); i++)
+				{
+					GetArrayString(hNodeGenerator, i, szGeneratedNode, sizeof(szGeneratedNode));
+					WriteFileLine(hWriteFile, szGeneratedNode);
+				}
+			}
+			CloseHandle(hWriteFile);
+			
+			CloseHandle(hNodeGenerator);
+			hNodeGenerator = INVALID_HANDLE;
+		}
+		else
+		{
+			PrintToChat(client, "Generated %s node at: %1.1f %1.1f %1.1f", szNodeType, vecOrigin[0], vecOrigin[1], vecOrigin[2]);
+		}
+	}
+	return;
+}
+
+void GenerateEDTNode_NoClient()
+{
+	if (hNodeGenerator != INVALID_HANDLE)
+	{
+		if (hNodeGeneratorTimer != INVALID_HANDLE) KillTimer(hNodeGeneratorTimer);
+		hNodeGeneratorTimer = INVALID_HANDLE;
+		iActiveNodeGenerator = -1;
+		iActiveNodeType = 0;
+		vecLastNodePos[0] = 0.0;
+		vecLastNodePos[1] = 0.0;
+		vecLastNodePos[2] = 0.0;
+		
+		if (GetArraySize(hNodeGenerator) > 0)
+		{
+			char szMapNameAdjust[128] = "";
+			GetCurrentMap(szMapNameAdjust, sizeof(szMapNameAdjust));
+			Format(szMapNameAdjust, sizeof(szMapNameAdjust), "maps/EDTNodes_%s.edt", szMapNameAdjust);
+			
+			Handle hWriteFile = OpenFile(szMapNameAdjust, "a+", true, NULL_STRING);
+			if (hWriteFile != INVALID_HANDLE)
+			{
+				WriteFileLine(hWriteFile, "		// New generate from EntTools:");
+				
+				char szGeneratedNode[512] = "";
+				for (int i = 0; i < GetArraySize(hNodeGenerator); i++)
+				{
+					GetArrayString(hNodeGenerator, i, szGeneratedNode, sizeof(szGeneratedNode));
+					WriteFileLine(hWriteFile, szGeneratedNode);
+				}
+			}
+			CloseHandle(hWriteFile);
+			
+			CloseHandle(hNodeGenerator);
+			hNodeGenerator = INVALID_HANDLE;
+		}
+	}
+}
+
+public bool TraceEntityFilter(int entity, int mask, any data)
+{
+	if ((entity != -1) && (IsValidEntity(entity)))
+	{
+		if (IsValidEntity(data))
+		{
+			if (HasEntProp(data,Prop_Data,"m_hParent"))
+			{
+				int parent = GetEntPropEnt(data, Prop_Data, "m_hParent");
+				if (entity == parent) return false;
+			}
+		}
+		char szClassname[32];
+		GetEntityClassname(entity, szClassname, sizeof(szClassname));
+		if ((StrEqual(szClassname, "func_vehicleclip", false)) || (StrEqual(szClassname, "npc_sentry_ceiling", false)) || (entity == data))
+			return false;
+	}
+	return true;
 }
 
 public Action CreateStuff(int client, int args)
@@ -833,7 +1351,7 @@ public Action CreateStuff(int client, int args)
 			Handle dp = CreateDataPack();
 			WritePackCell(dp,stuff);
 			WritePackCell(dp,passedarrprops);
-			CreateTimer(0.1,PostSpawnSetProp,dp,TIMER_FLAG_NO_MAPCHANGE);
+			CreateTimer(0.1, PostSpawnSetProp, dp, TIMER_FLAG_NO_MAPCHANGE);
 		}
 		else CloseHandle(passedarrprops);
 		if ((ownerset != -1) && (ownerset != 0))
@@ -841,7 +1359,7 @@ public Action CreateStuff(int client, int args)
 			Handle dp = CreateDataPack();
 			WritePackCell(dp,ownerset);
 			WritePackCell(dp,stuff);
-			CreateTimer(0.1,ApplyOwner,dp);
+			CreateTimer(0.1, ApplyOwner, dp);
 		}
 		if (strlen(setparent) > 0)
 		{
@@ -1252,11 +1770,17 @@ public Action CreateModel(int client, int args)
 	return Plugin_Handled;
 }
 
-void DisplayModelLists(int client)
+void DisplayModelLists(int client, char[] szDirectory)
 {
-	if (GetArraySize(modelsarr) < 1)
+	Handle hCurModelsArr = CreateArray(1024);
+	// Show directories first, then models
+	Handle hCurDirectoriesArr = CreateArray(128);
+	//if (GetArraySize(modelsarr) < 1)
 	{
-		Handle hOpendir = OpenDirectory("models",true,NULL_STRING);
+		char szSubDirectory[512] = "";
+		if (strlen(szDirectory) > 0) Format(szSubDirectory, sizeof(szSubDirectory), "%s", szDirectory);
+		else Format(szSubDirectory, sizeof(szSubDirectory), "models");
+		Handle hOpendir = OpenDirectory(szSubDirectory, true, NULL_STRING);
 		if (hOpendir != INVALID_HANDLE)
 		{
 			char buff[128];
@@ -1264,14 +1788,16 @@ void DisplayModelLists(int client)
 			{
 				if ((!(hOpendir == INVALID_HANDLE)) && (!(StrEqual(buff, "."))) && (!(StrEqual(buff, ".."))))
 				{
-					Format(buff,sizeof(buff),"models/%s",buff);
+					Format(buff,sizeof(buff),"%s/%s", szSubDirectory, buff);
 					if (StrContains(buff,".mdl",false) != -1)
 					{
-						PushArrayString(modelsarr,buff);
+						//PushArrayString(modelsarr,buff);
+						PushArrayString(hCurModelsArr, buff);
 					}
 					else if (StrContains(buff,".",false) == -1)
 					{
-						recursion(buff);
+						//recursion(buff);
+						PushArrayString(hCurDirectoriesArr, buff);
 					}
 				}
 			}
@@ -1280,20 +1806,31 @@ void DisplayModelLists(int client)
 	}
 	Menu menu = new Menu(MenuHandlerCreateSub);
 	menu.SetTitle("Models:");
-	if (GetArraySize(modelsarr) > 0)
+	char mdlpaths[256];
+	if (GetArraySize(hCurDirectoriesArr) > 0)
 	{
-		char mdlpaths[256];
-		for (int i = 0;i<GetArraySize(modelsarr);i++)
+		for (int i = GetArraySize(hCurDirectoriesArr)-1; i >= 0; i--)
 		{
-			GetArrayString(modelsarr,i,mdlpaths,sizeof(mdlpaths));
-			menu.AddItem(mdlpaths,mdlpaths);
+			GetArrayString(hCurDirectoriesArr, i, mdlpaths, sizeof(mdlpaths));
+			menu.AddItem(mdlpaths, mdlpaths);
 		}
 	}
+	if (GetArraySize(hCurModelsArr) > 0)
+	{
+		for (int i = 0; i < GetArraySize(hCurModelsArr); i++)
+		{
+			GetArrayString(hCurModelsArr, i, mdlpaths, sizeof(mdlpaths));
+			menu.AddItem(mdlpaths, mdlpaths);
+		}
+	}
+	CloseHandle(hCurDirectoriesArr);
+	CloseHandle(hCurModelsArr);
+	menu.ExitBackButton = true;
 	menu.ExitButton = true;
 	menu.Display(client, 300);
 	return;
 }
-
+/*
 void recursion(char[] startpath)
 {
 	if (DirExists(startpath,true,NULL_STRING))
@@ -1322,6 +1859,7 @@ void recursion(char[] startpath)
 	}
 	return;
 }
+*/
 
 public int MenuHandlerCreateTop(Menu menu, MenuAction action, int param1, int param2)
 {
@@ -1330,7 +1868,7 @@ public int MenuHandlerCreateTop(Menu menu, MenuAction action, int param1, int pa
 		char info[128];
 		menu.GetItem(param2, info, sizeof(info));
 		Format(CLClsSet[param1],sizeof(CLClsSet[]),"%s",info);
-		DisplayModelLists(param1);
+		DisplayModelLists(param1, "");
 	}
 	else if (action == MenuAction_End)
 	{
@@ -1345,30 +1883,56 @@ public int MenuHandlerCreateSub(Menu menu, MenuAction action, int param1, int pa
 	{
 		char info[256];
 		menu.GetItem(param2, info, sizeof(info));
-		int mdlcreate = CreateEntityByName(CLClsSet[param1]);
-		if (mdlcreate != -1)
+		// Directory
+		if (StrContains(info, ".mdl", false) == -1)
 		{
-			float Location[3];
-			float fhitpos[3];
-			float clangles[3];
-			GetClientEyeAngles(param1, clangles);
-			GetClientEyePosition(param1, Location);
-			Location[0] = (Location[0] + (10 * Cosine(DegToRad(clangles[1]))));
-			Location[1] = (Location[1] + (10 * Sine(DegToRad(clangles[1]))));
-			Location[2] = (Location[2] + 10);
-			Handle hhitpos = INVALID_HANDLE;
-			TR_TraceRay(Location,clangles,MASK_SHOT,RayType_Infinite);
-			TR_GetEndPosition(fhitpos,hhitpos);
-			//To ensure it spawns above the ground
-			fhitpos[2]+=15.0;
-			CloseHandle(hhitpos);
-			DispatchKeyValue(mdlcreate,"solid","6");
-			DispatchKeyValue(mdlcreate,"model",info);
-			TeleportEntity(mdlcreate, fhitpos, NULL_VECTOR, NULL_VECTOR);
-			DispatchSpawn(mdlcreate);
-			ActivateEntity(mdlcreate);
+			Format(szCLCurrentDir[param1], sizeof(szCLCurrentDir[]), "%s", info);
+			DisplayModelLists(param1, info);
 		}
-		PrintToChat(param1,"Create %s %s",CLClsSet[param1],info);
+		else
+		{
+			int mdlcreate = CreateEntityByName(CLClsSet[param1]);
+			if (mdlcreate != -1)
+			{
+				float Location[3];
+				float fhitpos[3];
+				float clangles[3];
+				GetClientEyeAngles(param1, clangles);
+				GetClientEyePosition(param1, Location);
+				Location[0] = (Location[0] + (10 * Cosine(DegToRad(clangles[1]))));
+				Location[1] = (Location[1] + (10 * Sine(DegToRad(clangles[1]))));
+				Location[2] = (Location[2] + 10);
+				Handle hhitpos = INVALID_HANDLE;
+				TR_TraceRay(Location,clangles,MASK_SHOT,RayType_Infinite);
+				TR_GetEndPosition(fhitpos,hhitpos);
+				//To ensure it spawns above the ground
+				fhitpos[2]+=15.0;
+				CloseHandle(hhitpos);
+				DispatchKeyValue(mdlcreate,"solid","6");
+				DispatchKeyValue(mdlcreate,"model",info);
+				TeleportEntity(mdlcreate, fhitpos, NULL_VECTOR, NULL_VECTOR);
+				DispatchSpawn(mdlcreate);
+				ActivateEntity(mdlcreate);
+			}
+			PrintToChat(param1,"Create %s %s",CLClsSet[param1],info);
+		}
+	}
+	else if (action == MenuAction_Cancel)
+	{
+		if (param2 == -6)
+		{
+			if (StrContains(szCLCurrentDir[param1], "/", false) != -1)
+			{
+				char tmpexpl[6][64];
+				int iLastBlock = ExplodeString(szCLCurrentDir[param1], "/", tmpexpl, 6, 64);
+				Format(szCLCurrentDir[param1], sizeof(szCLCurrentDir[]), "%s", tmpexpl[0]);
+				for (int i = 1; i < iLastBlock-1; i++)
+				{
+					Format(szCLCurrentDir[param1], sizeof(szCLCurrentDir[]), "%s/%s", szCLCurrentDir[param1], tmpexpl[i]);
+				}
+			}
+			DisplayModelLists(param1, szCLCurrentDir[param1]);
+		}
 	}
 	else if (action == MenuAction_End)
 	{
@@ -2659,7 +3223,7 @@ public Action moveentity(int client, int args)
 public Action EntCreateReplace(int client, int args)
 {
 	if (!IsValidEntity(client)) return Plugin_Handled;
-	if (hCVReplaceCMD.BoolValue)
+	if (sm_replace_entcmd.BoolValue)
 	{
 		bool bPassChk = false;
 		if (client == 0)
@@ -2990,7 +3554,7 @@ public Action EntCreateReplace(int client, int args)
 public Action EntFireReplace(int client, int args)
 {
 	if (!IsValidEntity(client)) return Plugin_Handled;
-	if (hCVReplaceCMD.BoolValue)
+	if (sm_replace_entcmd.BoolValue)
 	{
 		bool bPassChk = false;
 		if (client == 0)
@@ -4194,8 +4758,8 @@ public Action setprops(int client, int args)
 							if (usearr == -1)
 							{
 								SetEntPropEnt(targ,Prop_Send,propname,secondint);
-								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
-								else PrintToConsole(client,"Set %i's %s to %i",targ,propname,secondint);
+								if (client == 0) PrintToServer("PSend Set %i's %s to %i",targ,propname,secondint);
+								else PrintToConsole(client,"PSend Set %i's %s to %i",targ,propname,secondint);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
@@ -4220,8 +4784,8 @@ public Action setprops(int client, int args)
 							if (usearr == -1)
 							{
 								SetEntPropEnt(targ,Prop_Data,propname,secondint);
-								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
-								else PrintToConsole(client,"Set %i's %s to %i",targ,propname,secondint);
+								if (client == 0) PrintToServer("PData Set %i's %s to %i",targ,propname,secondint);
+								else PrintToConsole(client,"PData Set %i's %s to %i",targ,propname,secondint);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
@@ -4375,8 +4939,8 @@ public Action setprops(int client, int args)
 							if (usearr == -1)
 							{
 								SetEntProp(targ,Prop_Send,propname,secondint);
-								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
-								else PrintToConsole(client,"Set %i's %s to %i",targ,propname,secondint);
+								if (client == 0) PrintToServer("PSend Set %i's %s to %i",targ,propname,secondint);
+								else PrintToConsole(client,"PSend Set %i's %s to %i",targ,propname,secondint);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
@@ -4404,8 +4968,8 @@ public Action setprops(int client, int args)
 							if (usearr == -1)
 							{
 								SetEntProp(targ,Prop_Data,propname,secondint);
-								if (client == 0) PrintToServer("Set %i's %s to %i",targ,propname,secondint);
-								else PrintToConsole(client,"Set %i's %s to %i",targ,propname,secondint);
+								if (client == 0) PrintToServer("PData Set %i's %s to %i",targ,propname,secondint);
+								else PrintToConsole(client,"PData Set %i's %s to %i",targ,propname,secondint);
 								if (targ > -1) ChangeEdictState(targ);
 							}
 							else
@@ -4437,10 +5001,10 @@ public Action setprops(int client, int args)
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
-	if (showallcreated)
+	if (sm_showall_created.IntValue)
 	{
 		PrintToServer("Create %i %s",entity,classname);
-		if (showallcreated > 1)
+		if (sm_showall_created.IntValue > 1)
 		{
 			CreateTimer(0.1,CreateDebugSpawn,entity,TIMER_FLAG_NO_MAPCHANGE);
 		}
@@ -4454,14 +5018,14 @@ public Action CreateDebugSpawn(Handle timer, int entity)
 
 public void OnEntityDestroyed(int entity)
 {
-	if (showalldeleted)
+	if (sm_showall_deleted.IntValue)
 	{
 		if (IsValidEntity(entity))
 		{
 			char cls[32];
 			GetEntityClassname(entity,cls,sizeof(cls));
 			PrintToServer("Delete %i %s",entity,cls);
-			if (showalldeleted > 1)
+			if (sm_showall_deleted.IntValue > 1)
 			{
 				PrintEntInfoFor(entity);
 			}
@@ -4984,7 +5548,7 @@ void PrintEntInfoFor(int targ)
 
 public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast)
 {
-	if (showalldeaths)
+	if (sm_showall_deaths.IntValue)
 	{
 		char clsnamekilled[64];
 		char clsnameatk[64];
@@ -5008,7 +5572,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 			Format(clsnameinf,sizeof(clsnameinf)," %s",clsnameinf);
 		}
 		PrintToServer("EntDeath killed: %i%s attacker: %i%s inflictor: %i%s",killed,clsnamekilled,attacker,clsnameatk,inflictor,clsnameinf);
-		if (showalldeaths > 1)
+		if (sm_showall_deaths.IntValue > 1)
 		{
 			PrintEntInfoFor(killed);
 		}
@@ -5017,7 +5581,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 
 public Action listnormsounds(int clients[64], int& numClients, char sample[PLATFORM_MAX_PATH], int& entity, int& channel, float& volume, int& level, int& pitch, int& flags)
 {
-	if ((showallnormsounds) && (flags != SND_STOP) && (flags != SND_STOPLOOPING))
+	if ((sm_showall_normalsounds.BoolValue) && (flags != SND_STOP) && (flags != SND_STOPLOOPING))
 	{
 		if ((StrContains(sample,"ambient/energy/zap",false) == -1) && (StrContains(sample,"shotgun_fire",false) == -1) && (StrContains(sample,"smg1_fire1.wav",false) == -1) && (!StrEqual(sample,"common/null.wav",false)))
 		{
@@ -5030,7 +5594,7 @@ public Action listnormsounds(int clients[64], int& numClients, char sample[PLATF
 
 public Action listambientsounds(char sample[PLATFORM_MAX_PATH], int& entity, float& volume, int& level, int& pitch, float pos[3], int& flags, float& delay)
 {
-	if ((showallambsounds) && (flags != SND_STOP) && (flags != SND_STOPLOOPING))
+	if ((sm_showall_ambientsounds.BoolValue) && (flags != SND_STOP) && (flags != SND_STOPLOOPING))
 	{
 		char cls[32];
 		if (IsValidEntity(entity)) GetEntityClassname(entity,cls,sizeof(cls));
@@ -5040,7 +5604,7 @@ public Action listambientsounds(char sample[PLATFORM_MAX_PATH], int& entity, flo
 
 public Action OnClientCommand(int client, int args)
 {
-	if (hCVShowAllCmds.BoolValue)
+	if (sm_showall_commands.BoolValue)
 	{
 		char szCmd[32];
 		char szArgString[128];
@@ -5049,33 +5613,6 @@ public Action OnClientCommand(int client, int args)
 		PrintToServer("ClientCommand '%i' '%N' '%s' '%s'", client, client, szCmd, szArgString);
 	}
 	return Plugin_Continue;
-}
-
-public void dbghch(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	showallcreated = StringToInt(newValue);
-}
-
-public void dbgcrehch(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	showalldeleted = StringToInt(newValue);
-}
-
-public void dbgdeahch(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	showalldeaths = StringToInt(newValue);
-}
-
-public void dbgnormsch(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if (StringToInt(newValue) == 1) showallnormsounds = true;
-	else showallnormsounds = false;
-}
-
-public void dbgambsch(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if (StringToInt(newValue) == 1) showallambsounds = true;
-	else showallambsounds = false;
 }
 
 public bool TraceEntityFilterPly(int entity, int mask, any data){

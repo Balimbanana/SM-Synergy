@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.43"
-			"Previous"	"1.42"
+			"Latest"  	"1.44"
+			"Previous"	"1.43"
 		}
 		
-		"Notes"	"Fix to moveent + or - of multiple entities."
+		"Notes"	"Some cleanup and changes to layout. Added a few new commands and subdirectories for ccmenu."
 	}
 	
 	"Files"
