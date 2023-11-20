@@ -276,7 +276,7 @@ public void OnMapStart()
 		}
 		iEnteredFrom = 0;
 		char origQuery[256];
-		Format(origQuery,256,"SELECT * FROM srvcm WHERE srvname = '%s';",srvname);
+		Format(origQuery,256,"SELECT * FROM srvcm WHERE srvname = \"%s\";",srvname);
 		Handle hQuery = SQL_Query(Handle_Database,origQuery);
 		if (hQuery == INVALID_HANDLE)
 		{
@@ -301,7 +301,7 @@ public void OnMapStart()
 				if (strlen(fixuptmp[2]) > 0) Format(CurrentMap,sizeof(CurrentMap),"%s %s",fixuptmp[2],CurrentMap);
 			}
 			CloseHandle(cvar);
-			Format(thistemp,sizeof(thistemp),"'%s','%s',0);",srvname,CurrentMap);
+			Format(thistemp,sizeof(thistemp),"\"%s\",'%s',0);",srvname,CurrentMap);
 			StrCat(Query,256,thistemp);
 			SQL_FastQuery(Handle_Database,Query);
 			hQuery = SQL_Query(Handle_Database,origQuery);
@@ -320,13 +320,14 @@ public void OnMapStart()
 		char CurrentMap[128];
 		GetCurrentMap(CurrentMap, sizeof(CurrentMap));
 		char origQuery[256];
-		Format(origQuery,256,"SELECT * FROM srvcm WHERE srvname = '%s';",srvname);
+		Format(origQuery,256,"SELECT * FROM srvcm WHERE srvname = \"%s\";",srvname);
 		Handle hQuery = SQL_Query(Handle_Database,origQuery);
 		if (hQuery == INVALID_HANDLE)
 		{
 			char Err[100];
 			SQL_GetError(Handle_Database,Err,100);
 			LogError("SQLite error: %s with query %s",Err,origQuery);
+			return;
 		}
 		else if (!SQL_FetchRow(hQuery))
 		{
@@ -344,7 +345,7 @@ public void OnMapStart()
 				if (strlen(fixuptmp[2]) > 0) Format(CurrentMap,sizeof(CurrentMap),"%s %s",fixuptmp[2],CurrentMap);
 			}
 			CloseHandle(cvar);
-			Format(thistemp,sizeof(thistemp),"'%s','%s',0);",srvname,CurrentMap);
+			Format(thistemp,sizeof(thistemp),"\"%s\",'%s',0);",srvname,CurrentMap);
 			StrCat(Query,256,thistemp);
 			SQL_FastQuery(Handle_Database,Query);
 			PrintToServer(Query);
@@ -353,6 +354,9 @@ public void OnMapStart()
 		Recovered = true;
 		char MapToLoad[256];
 		int restarts;
+		if (hQuery == INVALID_HANDLE || !SQL_FetchRow(hQuery))
+			return;
+		
 		SQL_FetchString(hQuery,1,MapToLoad,sizeof(MapToLoad));
 		restarts = SQL_FetchInt(hQuery,2);
 		//if (StrEqual(MapToLoad,CurrentMap,false));
