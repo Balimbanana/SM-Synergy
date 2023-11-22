@@ -15,7 +15,7 @@ public Plugin myinfo =
 	name = "Player-Teleport by Dr. HyperKiLLeR",
 	author = "Dr. HyperKiLLeR Edited by Balimbanana for Synergy",
 	description = "Go to a player or teleport a player to you",
-	version = "1.2.0.1",
+	version = "1.2.0.2",
 	url = ""
 };
 
@@ -115,9 +115,27 @@ public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 	return 0;
 }
 
+public int MenuHandlerBring(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_Select)
+	{
+		char szCL[4];
+		menu.GetItem(param2, szCL, sizeof(szCL));
+		int Player = StringToInt(szCL);
+		BringPlayer(param1, Player);
+	}
+	else if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+	return 0;
+}
+
 public Action Command_Goto(int Client, int args)
 {
-	if(args < 1)
+	if (!Client) return Plugin_Handled;
+	
+	if (args < 1)
 	{
 		if (GetClientCount(true) > 1)
 		{
@@ -286,23 +304,51 @@ void GoToPlayer(int Client, int Player)
 
 public Action Command_Bring(int Client, int args)
 {
-    //Error:
-	if(args < 1)
+	if (!Client) return Plugin_Handled;
+	
+	if (args < 1)
 	{
-
+		/*
 		//Print:
 		PrintToConsole(Client, "Usage: sm_bring <name>");
 		PrintToChat(Client, "Usage:\x04 sm_bring <name>");
 
 		//Return:
 		return Plugin_Handled;
+		*/
+		
+		if (GetClientCount(true) > 1)
+		{
+			Menu menu = new Menu(MenuHandlerBring);
+			menu.SetTitle("Bring Player:");
+			char indx[4];
+			char szName[64];
+			for (int i = 1;i<MaxClients+1;i++)
+			{
+				if (IsValidEntity(i))
+				{
+					if ((IsClientConnected(i)) && (i != Client))
+					{
+						Format(indx,sizeof(indx),"%i",i);
+						GetClientName(i,szName,sizeof(szName));
+						menu.AddItem(indx,szName);
+					}
+				}
+			}
+			menu.ExitButton = true;
+			menu.Display(Client, 120);
+		}
+		else
+		{
+			PrintToConsole(Client, "Usage: sm_bring <name>");
+			PrintToChat(Client, "Usage:\x04 sm_bring <name>");
+		}
+		return Plugin_Handled;
 	}
 	
 	//Declare:
 	int Player;
 	char PlayerName[32];
-	float TeleportOrigin[3];
-	float PlayerOrigin[3];
 	char Name[32];
 	
 	//Initialize:
@@ -334,19 +380,42 @@ public Action Command_Bring(int Client, int args)
 		return Plugin_Handled;
 	}
 	
-	//Initialize
-	GetClientName(Player, Name, sizeof(Name));
-	GetCollisionPoint(Client, PlayerOrigin);
-	
-	//Math
-	TeleportOrigin[0] = PlayerOrigin[0];
-	TeleportOrigin[1] = PlayerOrigin[1];
-	TeleportOrigin[2] = (PlayerOrigin[2] + 4);
-	
-	//Teleport
-	TeleportEntity(Player, TeleportOrigin, NULL_VECTOR, NULL_VECTOR);
+	BringPlayer(Client, Player);
 	
 	return Plugin_Handled;
+}
+
+void BringPlayer(int Client, int Player)
+{
+	if (IsValidEntity(Client) && IsValidEntity(Player))
+	{
+		if (IsPlayerAlive(Player))
+		{
+			float TeleportOrigin[3];
+			float PlayerOrigin[3];
+			
+			//Initialize
+			GetCollisionPoint(Client, PlayerOrigin);
+			
+			//Math
+			TeleportOrigin[0] = PlayerOrigin[0];
+			TeleportOrigin[1] = PlayerOrigin[1];
+			TeleportOrigin[2] = (PlayerOrigin[2] + 4);
+			
+			//Teleport
+			TeleportEntity(Player, TeleportOrigin, NULL_VECTOR, NULL_VECTOR);
+		}
+		else
+		{
+			if (Client == 0) PrintToConsole(Client,"Client %N is not alive.",Player);
+			else
+			{
+				PrintToChat(Client,"Client %N is not alive.",Player);
+				PrintToConsole(Client,"Client %N is not alive.",Player);
+			}
+		}
+	}
+	return;
 }
 
 // Trace
