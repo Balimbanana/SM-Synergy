@@ -97,19 +97,26 @@ public void OnPluginStart()
 							{
 								PrintToServer("New registration '%s' with baseclass '%s' succeeded", szEntityClass, szTemp);
 							}
+							else
+							{
+								PrintToServer("Class '%s' is already registered. The entity properties will still be applied.", szEntityClass);
+							}
 							
 							KvGetString(hKV, "model", szTemp, sizeof(szTemp), "");
 							char szMaxHealth[64];
+							char szSkin[32];
+							char szBody[32];
+							
 							KvGetString(hKV, "maxhealth", szMaxHealth, sizeof(szMaxHealth), "8");
-							int nSkin = KvGetNum(hKV, "skin", 0);
-							int nBody = KvGetNum(hKV, "body", 0);
+							KvGetString(hKV, "skin", szSkin, sizeof(szSkin));
+							KvGetString(hKV, "body", szBody, sizeof(szBody));
 							
 							Handle dp = CreateDataPack();
 							WritePackString(dp, szTemp);
 							// Stored as a string so you can use CVars potentially
 							WritePackString(dp, szMaxHealth);
-							WritePackCell(dp, nSkin);
-							WritePackCell(dp, nBody);
+							WritePackString(dp, szSkin);
+							WritePackString(dp, szBody);
 							
 							PushArrayString(hCustomClasses, szEntityClass);
 							PushArrayCell(hCustomClassInfo, dp);
