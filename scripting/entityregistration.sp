@@ -260,9 +260,15 @@ void ApplyEntityProperties(int entity, int iFindInArr)
 			if (!IsModelPrecached(szModel)) PrecacheModel(szModel);
 			
 			if (HasEntProp(entity, Prop_Data, "m_ModelName"))
-				SetEntPropString(entity, Prop_Data, "m_ModelName", szModel);
-			
-			SetEntityModel(entity, szModel);
+			{
+				char szCurrentModel[128];
+				GetEntPropString(entity, Prop_Data, "m_ModelName", szCurrentModel, sizeof(szCurrentModel));
+				if (!StrEqual(szCurrentModel, szModel, false))
+				{
+					SetEntityModel(entity, szModel);
+					SetEntPropString(entity, Prop_Data, "m_ModelName", szModel);
+				}
+			}
 		}
 		
 		if (HasEntProp(entity, Prop_Data, "m_nSkin"))
@@ -279,6 +285,8 @@ void ApplyEntityProperties(int entity, int iFindInArr)
 				DispatchKeyValue(entity, "max_health", szMaxHealth);
 				if (HasEntProp(entity, Prop_Data, "m_iMaxHealth"))
 					SetEntProp(entity, Prop_Data, "m_iMaxHealth", GetConVarInt(cv));
+				if (HasEntProp(entity, Prop_Data, "m_iHealth"))
+					SetEntProp(entity, Prop_Data, "m_iHealth", GetConVarInt(cv));
 			}
 			CloseHandle(cv);
 		}
@@ -287,6 +295,8 @@ void ApplyEntityProperties(int entity, int iFindInArr)
 			DispatchKeyValue(entity, "max_health", szMaxHealth);
 			if (HasEntProp(entity, Prop_Data, "m_iMaxHealth"))
 				SetEntProp(entity, Prop_Data, "m_iMaxHealth", StringToInt(szMaxHealth));
+			if (HasEntProp(entity, Prop_Data, "m_iHealth"))
+				SetEntProp(entity, Prop_Data, "m_iHealth", StringToInt(szMaxHealth));
 		}
 	}
 }
