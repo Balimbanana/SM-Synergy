@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.58"
+#define PLUGIN_VERSION "1.59"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -3587,8 +3587,8 @@ public Action tenfour(Handle timer, int entity)
 
 public Action saysoundslist(int client, int args)
 {
-	if (client == 0) PrintToServer("*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese* *hacks* *givemedkit* *nice*");
-	else PrintToChat(client,"*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese* *hacks* *givemedkit* *nice*");
+	if (client == 0) PrintToServer("*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese* *hacks* *givemedkit* *nice* *no* *letsgo*");
+	else PrintToChat(client,"*moan* *pain* *dead* *strider* *run* *help* *helpbro* *scream* *vort* *gunship* *dropship* *cheer* *follow* *lead* *enemy* *cheese* *hacks* *givemedkit* *nice* *no* *letsgo*");
 	return Plugin_Handled;
 }
 

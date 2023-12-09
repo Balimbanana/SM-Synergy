@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.58"
-			"Previous"	"1.57"
+			"Latest"  	"1.59"
+			"Previous"	"1.58"
 		}
 		
-		"Notes"	"Changed CreateDataTimer to regular timer."
+		"Notes"	"Added 2 missing entries in /saysounds."
 	}
 	
 	"Files"
