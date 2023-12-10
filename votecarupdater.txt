@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.17"
-			"Previous"	"1.16"
+			"Latest"  	"1.18"
+			"Previous"	"1.17"
 		}
 		
-		"Notes"	"Added setup for airboatski."
+		"Notes"	"Added ConVar sm_votecar_votetime to set timeout of votecar vote."
 	}
 	
 	"Files"

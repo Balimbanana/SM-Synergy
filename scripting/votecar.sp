@@ -46,6 +46,8 @@ int usejal = 0;
 int useski = 0;
 //int collisiongroup = -1;
 
+ConVar hVoteTime;
+
 Menu g_hVoteMenu = null;
 #define VOTE_NO "###no###"
 #define VOTE_YES "###yes###"
@@ -57,7 +59,7 @@ enum voteType
 
 voteType g_voteType = question;
 
-#define PLUGIN_VERSION "1.17"
+#define PLUGIN_VERSION "1.18"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/votecarupdater.txt"
 
 public Plugin myinfo = 
@@ -115,6 +117,7 @@ public void OnPluginStart()
 	carwalldist = GetConVarInt(vcarrmresh);
 	HookConVarChange(vcarrmresh, restrictvehdistch);
 	CloseHandle(vcarrmresh);
+	hVoteTime = CreateConVar("sm_votecar_votetime", "10", "Vote timeout for if not all players vote.", _, true, 1.0, false);
 	HookEntityOutput("prop_vehicle_jeep","PlayerOn",playeron);
 	HookEntityOutput("prop_vehicle_jeep_episodic","PlayerOn",playeron);
 	HookEntityOutput("prop_vehicle_airboat","PlayerOn",playeron);
@@ -137,7 +140,6 @@ public void OnMapStart()
 	useski = FileExists("models/airboatski.mdl",true,NULL_STRING);
 	if (restrictbyvehon)
 		plyhasenteredvehicle = false;
-	//PrintToServer("APC: %i, Jalopy %i",useapc,usejal);
 	//Override no apc use
 	useapc = false;
 	ClearArray(vehiclecustomdir);
@@ -159,7 +161,7 @@ public void OnLibraryAdded(const char[] name)
 	}
 }
 
-public int Updater_OnPluginUpdated()
+public void Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
@@ -326,14 +328,14 @@ public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 				g_hVoteMenu.AddItem(VOTE_YES, "Yes");
 				g_hVoteMenu.AddItem(VOTE_NO, "No");
 				g_hVoteMenu.ExitButton = false;
-				g_hVoteMenu.DisplayVoteToAll(20);
+				g_hVoteMenu.DisplayVoteToAll(hVoteTime.IntValue);
 				votetime[param1] = Time + delaylimit;
 			}
 		}
 	}
 	else if (action == MenuAction_Cancel)
 	{
-		
+		return 0;
 	}
 	else if (action == MenuAction_End)
 	{
@@ -346,10 +348,6 @@ public int MenuHandler(Menu menu, MenuAction action, int param1, int param2)
 	else if (votetime[param1] > Time)
 	{
 		PrintToChat(param1,"%T","delaytovote",param1,RoundFloat(votetime[param1])-RoundFloat(Time));
-	}
-	else
-	{
-		
 	}
 	return 0;
 }
