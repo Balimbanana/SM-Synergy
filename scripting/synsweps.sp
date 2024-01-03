@@ -11,16 +11,14 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.997"
+#define PLUGIN_VERSION "0.998"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
-bool tauknockback = false;
 bool customcvarsset = false;
 bool loweredsprint = false;
 bool InChargeUp[2048];
 bool InIronSights[128];
-bool dbgmdlsetup = false;
 bool bCSS = false;
 int g_LastButtons[128];
 int difficulty = 1;
@@ -84,6 +82,8 @@ Handle weapaniminf = INVALID_HANDLE; //Contains info read from other weap.
 Handle hBaseWeapons = INVALID_HANDLE; //Automated list of base game weapons to ignore sweps functions
 Handle precachedarr = INVALID_HANDLE;
 
+ConVar hCVDbgSetup;
+ConVar hCVTauKnockback;
 ConVar hMolotovRadius;
 ConVar hMaxMolotov;
 
@@ -106,102 +106,41 @@ public void OnPluginStart()
 	hBaseWeapons = CreateArray(64);
 	precachedarr = CreateArray(48);
 	HookEvent("player_spawn",OnPlayerSpawn,EventHookMode_Post);
-	Handle cvar = FindConVar("synswepsdbg");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("synswepsdbg", "0", "SynSwepsdbg of setup.", _, true, 0.0, true, 1.0);
-	HookConVarChange(cvar, swepssetupch);
-	dbgmdlsetup = GetConVarBool(cvar);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_flaregun_ignighttime");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_flaregun_ignighttime", "10", "Time to ignight for.", _, true, 1.0, true, 99.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_immolator_ignighttime");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_immolator_ignighttime", "10", "Time to ignight for.", _, true, 1.0, true, 99.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_max_flaregun");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_max_flaregun", "20", "Maximum ammo for the flaregun.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_max_manhackgun");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_max_manhackgun", "3", "Maximum ammo for the manhack gun.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_max_energy");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_max_energy", "100", "Maximum ammo for the gluon and tau cannon.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_max_hivehand");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_max_hivehand", "100", "Maximum ammo for the hivehand.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_gluon");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_gluon", "30.0", "Damage per tick for the gluon gun.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_sl8");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_sl8", "8.0", "Damage for the SL8 weapon.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_oicw");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_oicw", "15.0", "Damage for the OICW.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_tau");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_tau", "20.0", "Damage for the Tau cannon.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_axe");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_axe", "20.0", "Damage for the FireAxe.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_m4");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_m4", "9.0", "Damage for the M4.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_g36c");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_g36c", "11.0", "Damage for the M4.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_tripmine_radius");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_tripmine_radius", "200", "Explosion radius of player tripmines.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_tripmine");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_tripmine", "150", "Explosion damage of player tripmines.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_satchel_radius");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_satchel_radius", "150", "Explosion radius of player satchels.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_satchel");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_satchel", "150", "Explosion damage of player satchels.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_glock");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_glock", "8", "Damage for the glock.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_sniperrifle");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_sniperrifle", "80", "Damage for the sniper rifle.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_uzi");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_uzi", "8", "Damage for the uzi.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_smg3");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_smg3", "14", "Damage for the smg3.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_smg4");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_smg4", "10", "Damage for the smg4.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_pistol1");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_pistol1", "50", "Damage for the Pistol1.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_pistol2");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_pistol2", "10", "Damage for the Pistol2.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_p911");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_p911", "18", "Damage for the P911.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_rifle1");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_rifle1", "10", "Damage for the Rifle1.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("sk_plr_dmg_vc32sniperrifle");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("sk_plr_dmg_vc32sniperrifle", "150", "Damage for the Rifle1.", _, true, 1.0, true, 999.0);
-	CloseHandle(cvar);
-	cvar = FindConVar("syn_tauknockback");
-	if (cvar == INVALID_HANDLE) cvar = CreateConVar("syn_tauknockback", "1", "Enables knock back effect for players from Tau cannon charged shots.", _, true, 0.0, true, 1.0);
-	tauknockback = GetConVarBool(cvar);
-	HookConVarChange(cvar, tauknockch);
-	CloseHandle(cvar);
-	hMolotovRadius = FindConVar("sk_molotov_radius");
-	if (hMolotovRadius == INVALID_HANDLE) hMolotovRadius = CreateConVar("sk_molotov_radius", "140.0", "Molotov explode radius.", _, true, 1.0, false);
-	hMaxMolotov = FindConVar("sk_max_molotov");
-	if (hMaxMolotov == INVALID_HANDLE) hMaxMolotov = CreateConVar("sk_max_molotov", "10", "Maximum amount of molotovs held.", _, true, 1.0, false);
-	cvar = FindConVar("sk_npc_head");
+	hCVDbgSetup = CreateConVar("synswepsdbg", "0", "SynSwepsdbg of setup.", _, true, 0.0, true, 1.0);
+	
+	CreateConVar("sk_flaregun_ignighttime", "10", "Time to ignight for.", _, true, 1.0, true, 99.0);
+	CreateConVar("sk_immolator_ignighttime", "10", "Time to ignight for.", _, true, 1.0, true, 99.0);
+	CreateConVar("sk_max_flaregun", "20", "Maximum ammo for the flaregun.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_max_manhackgun", "3", "Maximum ammo for the manhack gun.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_max_energy", "100", "Maximum ammo for the gluon and tau cannon.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_max_hivehand", "100", "Maximum ammo for the hivehand.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_gluon", "30.0", "Damage per tick for the gluon gun.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_sl8", "8.0", "Damage for the SL8 weapon.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_oicw", "15.0", "Damage for the OICW.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_tau", "20.0", "Damage for the Tau cannon.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_axe", "20.0", "Damage for the FireAxe.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_m4", "9.0", "Damage for the M4.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_g36c", "11.0", "Damage for the M4.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_tripmine_radius", "200", "Explosion radius of player tripmines.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_tripmine", "150", "Explosion damage of player tripmines.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_satchel_radius", "150", "Explosion radius of player satchels.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_satchel", "150", "Explosion damage of player satchels.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_glock", "8", "Damage for the glock.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_sniperrifle", "80", "Damage for the sniper rifle.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_uzi", "8", "Damage for the uzi.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_smg3", "14", "Damage for the smg3.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_smg4", "10", "Damage for the smg4.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_pistol1", "50", "Damage for the Pistol1.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_pistol2", "10", "Damage for the Pistol2.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_p911", "18", "Damage for the P911.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_rifle1", "10", "Damage for the Rifle1.", _, true, 1.0, true, 999.0);
+	CreateConVar("sk_plr_dmg_vc32sniperrifle", "150", "Damage for the Rifle1.", _, true, 1.0, true, 999.0);
+	
+	hCVTauKnockback = CreateConVar("syn_tauknockback", "1", "Enables knock back effect for players from Tau cannon charged shots.", _, true, 0.0, true, 1.0);
+	hMolotovRadius = CreateConVar("sk_molotov_radius", "140.0", "Molotov explode radius.", _, true, 1.0, false);
+	hMaxMolotov = CreateConVar("sk_max_molotov", "10", "Maximum amount of molotovs held.", _, true, 1.0, false);
+	
+	Handle cvar = FindConVar("sk_npc_head");
 	if (cvar != INVALID_HANDLE)
 	{
 		headgroup = GetConVarInt(cvar);
@@ -480,7 +419,6 @@ public Action sweplistanim(int client, int args)
 		int arrindx = FindStringInArray(weapanimcls,szWeapCls);
 		if (arrindx == -1)
 		{
-			Handle dp = CreateDataPack();
 			char filepath[128];
 			Format(filepath,sizeof(filepath),"scripts/%s.txt",szWeapCls);
 			char weapmdl[128];
@@ -534,7 +472,7 @@ public Action sweplistanim(int client, int args)
 									if (StrContains(tmp,"ACT",false) != -1)
 									{
 										Format(push,sizeof(push),"%s %s",push,tmp);
-										if (dbgmdlsetup) PrintToServer("ActMap %s %s",szWeapCls,push);
+										if (hCVDbgSetup.BoolValue) PrintToServer("ActMap %s %s",szWeapCls,push);
 										PushArrayString(actmap,push);
 										PrintToConsole(client,"%s",push);
 										push = "";
@@ -548,6 +486,7 @@ public Action sweplistanim(int client, int args)
 							CloseHandle(filehandlemdl);
 							if (GetArraySize(actmap) > 0)
 							{
+								Handle dp = CreateDataPack();
 								GetSequencesFromAnim(dp,actmap,weapmdl,false);
 							}
 							CloseHandle(actmap);
@@ -783,18 +722,6 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	}
 }
 
-public void swepssetupch(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if (StringToInt(newValue) == 1) dbgmdlsetup = true;
-	else dbgmdlsetup = false;
-}
-
-public void tauknockch(Handle convar, const char[] oldValue, const char[] newValue)
-{
-	if (StringToInt(newValue) == 1) tauknockback = true;
-	else tauknockback = false;
-}
-
 public void headgrpch(Handle convar, const char[] oldValue, const char[] newValue)
 {
 	headgroup = StringToInt(newValue);
@@ -858,7 +785,7 @@ public void OnLibraryAdded(const char[] name)
 	}
 }
 
-public int Updater_OnPluginUpdated()
+public void Updater_OnPluginUpdated()
 {
 	Handle nullpl = INVALID_HANDLE;
 	ReloadPlugin(nullpl);
@@ -1218,22 +1145,25 @@ public Action useweap(Handle timer, Handle dp)
 
 public Action dropcustweap(int client, int args)
 {
-	int weapdrop = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
-	if ((weapdrop != 0) && (IsValidEntity(weapdrop)))
+	if (IsValidEntity(client))
 	{
-		char szWeapCls[64];
-		GetEntityClassname(weapdrop,szWeapCls,sizeof(szWeapCls));
-		if (FindStringInArray(sweps,szWeapCls) != -1)
+		int weapdrop = GetEntPropEnt(client,Prop_Data,"m_hActiveWeapon");
+		if ((weapdrop != 0) && (IsValidEntity(weapdrop)))
 		{
-			if (HasEntProp(weapdrop,Prop_Data,"m_fEffects")) SetEntProp(weapdrop,Prop_Data,"m_fEffects",128);
-			if (HasEntProp(weapdrop,Prop_Send,"m_fEffects")) SetEntProp(weapdrop,Prop_Send,"m_fEffects",128);
-			if (HasEntProp(weapdrop,Prop_Data,"m_fFlags")) SetEntProp(weapdrop,Prop_Data,"m_fFlags",0);
-			if (HasEntProp(weapdrop,Prop_Send,"m_fFlags")) SetEntProp(weapdrop,Prop_Send,"m_fFlags",0);
-			if (HasEntProp(weapdrop,Prop_Data,"m_nViewModelIndex")) SetEntProp(weapdrop,Prop_Data,"m_nViewModelIndex",0);
-			if (HasEntProp(weapdrop,Prop_Data,"m_usSolidFlags")) SetEntProp(weapdrop,Prop_Data,"m_usSolidFlags",136);
-			SetEntityMoveType(weapdrop,MOVETYPE_VPHYSICS);
-			ChangeEdictState(weapdrop);
-			AcceptEntityInput(weapdrop,"ClearParent");
+			char szWeapCls[64];
+			GetEntityClassname(weapdrop,szWeapCls,sizeof(szWeapCls));
+			if (FindStringInArray(sweps,szWeapCls) != -1)
+			{
+				if (HasEntProp(weapdrop,Prop_Data,"m_fEffects")) SetEntProp(weapdrop,Prop_Data,"m_fEffects",128);
+				if (HasEntProp(weapdrop,Prop_Send,"m_fEffects")) SetEntProp(weapdrop,Prop_Send,"m_fEffects",128);
+				if (HasEntProp(weapdrop,Prop_Data,"m_fFlags")) SetEntProp(weapdrop,Prop_Data,"m_fFlags",0);
+				if (HasEntProp(weapdrop,Prop_Send,"m_fFlags")) SetEntProp(weapdrop,Prop_Send,"m_fFlags",0);
+				if (HasEntProp(weapdrop,Prop_Data,"m_nViewModelIndex")) SetEntProp(weapdrop,Prop_Data,"m_nViewModelIndex",0);
+				if (HasEntProp(weapdrop,Prop_Data,"m_usSolidFlags")) SetEntProp(weapdrop,Prop_Data,"m_usSolidFlags",136);
+				SetEntityMoveType(weapdrop,MOVETYPE_VPHYSICS);
+				ChangeEdictState(weapdrop);
+				AcceptEntityInput(weapdrop,"ClearParent");
+			}
 		}
 	}
 	return Plugin_Continue;
@@ -2303,7 +2233,6 @@ int GetWepAnim(char[] szWeapCls, int seq, char[] ACTVM)
 		int arrindx = FindStringInArray(weapanimcls,szWeapCls);
 		if (arrindx == -1)
 		{
-			Handle dp = CreateDataPack();
 			char filepath[128];
 			Format(filepath,sizeof(filepath),"scripts/%s.txt",szWeapCls);
 			char weapmdl[128];
@@ -2357,7 +2286,7 @@ int GetWepAnim(char[] szWeapCls, int seq, char[] ACTVM)
 									if (StrContains(tmp,"ACT",false) != -1)
 									{
 										Format(push,sizeof(push),"%s %s",push,tmp);
-										if (dbgmdlsetup) PrintToServer("ActMap %s %s",szWeapCls,push);
+										if (hCVDbgSetup.BoolValue) PrintToServer("ActMap %s %s",szWeapCls,push);
 										PushArrayString(actmap,push);
 										push = "";
 									}
@@ -2370,6 +2299,7 @@ int GetWepAnim(char[] szWeapCls, int seq, char[] ACTVM)
 							CloseHandle(filehandlemdl);
 							if (GetArraySize(actmap) > 0)
 							{
+								Handle dp = CreateDataPack();
 								GetSequencesFromAnim(dp,actmap,weapmdl,false);
 							}
 							CloseHandle(actmap);
@@ -2421,7 +2351,6 @@ int GetWepAnim(char[] szWeapCls, int seq, char[] ACTVM)
 			else
 			{
 				// Script was not found, add to ignore list
-				CloseHandle(dp);
 				if (FindStringInArray(hBaseWeapons,szWeapCls) == -1)
 				{
 					PushArrayString(hBaseWeapons,szWeapCls);
@@ -2502,14 +2431,14 @@ void GetSequencesFromAnim(Handle dp, Handle actmap, char[] mdl, bool custweap)
 					{
 						Format(acts,sizeof(acts),"%i %s",j,prevanim);
 						WritePackString(dp,acts);
-						if (dbgmdlsetup) PrintToServer("PushVMActsub %s",acts);
+						if (hCVDbgSetup.BoolValue) PrintToServer("PushVMActsub %s",acts);
 					}
 				}
 				Format(acts,sizeof(acts),"%i %s",seq,split[1]);
 				prevseq = seq;
 				Format(prevanim,sizeof(prevanim),"%s",split[1]);
 				WritePackString(dp,acts);
-				if (dbgmdlsetup) PrintToServer("PushVMAct %s",acts);
+				if (hCVDbgSetup.BoolValue) PrintToServer("PushVMAct %s",acts);
 			}
 			AcceptEntityInput(propset,"kill");
 		}
@@ -6019,7 +5948,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									AcceptEntityInput(effect,"FireUser4");
 								}
 							}
-							if (tauknockback)
+							if (hCVTauKnockback.BoolValue)
 							{
 								float launch[3];
 								GetAngleVectors(plyang, launch, NULL_VECTOR, NULL_VECTOR);
