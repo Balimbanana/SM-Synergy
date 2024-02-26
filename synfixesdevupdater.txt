@@ -14,6 +14,7 @@
 	"Files"
 	{
 		"Plugin"	"Path_SM/plugins/synfixesdev.smx"
+		"Plugin"	"Path_SM/gamedata/synfixes.txt"
 		"Source"	"Path_SM/scripting/synfixesdev.sp"
     		"Source"	"Path_SM/scripting/include/synfixesglobals.inc"
 	}
