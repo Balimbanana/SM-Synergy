@@ -125,7 +125,7 @@ Handle g_hSDKPhysConstraintDeactivate;
 // DHooks
 Handle g_dhUpdateOnRemove;
 
-#define PLUGIN_VERSION "2.0066"
+#define PLUGIN_VERSION "2.0067"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -647,6 +647,9 @@ public Action bmcvars(Handle timer)
 
 void LoadOffsets()
 {
+	if (GetExtensionFileStatus("dhooks.ext") < 0)
+		return;
+	
 	char szPath[256];
 	BuildPath(Path_SM, szPath, sizeof(szPath), "gamedata");
 	Format(szPath, sizeof(szPath), "%s/synfixes.txt", szPath);
@@ -1766,7 +1769,7 @@ public void OnLibraryAdded(const char[] name)
 	{
 		Updater_AddPlugin(UPDATE_URL);
 	}
-	if (StrEqual(name,"mapchooser",false))
+	else if (StrEqual(name,"mapchooser",false))
 	{
 		mapchoosercheck = true;
 	}
