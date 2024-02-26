@@ -29,6 +29,7 @@ Handle ignoreelevators = INVALID_HANDLE;
 Handle dctimeoutarr = INVALID_HANDLE;
 Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
+Handle inputclasshooks = INVALID_HANDLE;
 ConVar hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeathTime;
 ConVar g_hCVFixPropJump, g_hCVFixPhysBox;
 ConVar g_hCVKillTrainBlockers;
@@ -68,7 +69,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20010"
+#define PLUGIN_VERSION "1.20011"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -319,6 +320,19 @@ public void OnMapStart()
 			centnextatk[i] = 0.0;
 			flEntCreateTime[i] = 0.0;
 		}
+		
+		// Clear old hooks
+		UnhookEntityOutput("scripted_sequence", "OnBeginSequence", trigout);
+		UnhookEntityOutput("scripted_scene", "OnStart", trigout);
+		UnhookEntityOutput("logic_choreographed_scene", "OnStart", trigout);
+		UnhookEntityOutput("instanced_scripted_scene", "OnStart", trigout);
+		UnhookEntityOutput("func_tracktrain", "OnStart", elevatorstart);
+		UnhookEntityOutput("func_door", "OnOpen", createelev);
+		UnhookEntityOutput("func_door", "OnClose", createelev);
+		UnhookEntityOutput("trigger_changelevel", "OnChangeLevel", mapendchg);
+		UnhookEntityOutput("npc_citizen", "OnDeath", entdeath);
+		UnhookEntityOutput("func_physbox", "OnPhysGunPunt", physpunt);
+		
 		int rellogsv = CreateEntityByName("logic_auto");
 		if ((rellogsv != -1) && (IsValidEntity(rellogsv)))
 		{
@@ -326,7 +340,9 @@ public void OnMapStart()
 			DispatchKeyValue(rellogsv,"spawnflags","0");
 			DispatchSpawn(rellogsv);
 			ActivateEntity(rellogsv);
-			HookEntityOutput("logic_auto","OnMapSpawn",onreload);
+			// Clear old hook if there is one
+			UnhookEntityOutput("logic_auto", "OnMapSpawn", onreload);
+			HookEntityOutput("logic_auto", "OnMapSpawn", onreload);
 		}
 		hasread = false;
 		playerteleports = false;
@@ -570,6 +586,38 @@ public void OnMapStart()
 		CreateTimer(0.1,RecheckChangeLevels,_,TIMER_FLAG_NO_MAPCHANGE);
 		PrecacheSound("npc\\roller\\code2.wav",true);
 	}
+}
+
+// This is not very accurate and doesn't always get called correctly...
+public void OnMapEnd()
+{
+	ClearHookOutputs();
+}
+
+void ClearHookOutputs()
+{
+	if (inputclasshooks == INVALID_HANDLE)
+		inputclasshooks = CreateArray(128);
+	
+	if (GetArraySize(inputclasshooks) > 0)
+	{
+		char szSplitOutputs[32][32];
+		for (int i = 0;i<GetArraySize(inputclasshooks);i++)
+		{
+			char tmp[128];
+			GetArrayString(inputclasshooks,i,tmp,sizeof(tmp));
+			int iExplode = ExplodeString(tmp, " ", szSplitOutputs, 64, 64, true);
+			if (iExplode > 1)
+			{
+				if (debuglvl > 1)
+					PrintToServer("Clearing hook for %s %s", szSplitOutputs[0], szSplitOutputs[1]);
+				UnhookEntityOutput(szSplitOutputs[0], szSplitOutputs[1], trigpicker);
+				UnhookEntityOutput(szSplitOutputs[0], szSplitOutputs[1], trigtp);
+			}
+		}
+	}
+	
+	ClearArray(inputclasshooks);
 }
 
 public Action RecheckChangeLevels(Handle timer)
@@ -2771,7 +2819,16 @@ void readoutputsforinputs()
 	if (hasread) return;
 	if (debuglvl > 1) PrintToServer("Read outputs for inputs");
 	hasread = true;
-	Handle inputclasshooks = CreateArray(64);
+	//Handle inputclasshooks = CreateArray(64);
+	if (inputclasshooks == INVALID_HANDLE)
+		inputclasshooks = CreateArray(128);
+	
+	if (GetArraySize(inputclasshooks) > 0)
+	{
+		if (debuglvl > 0) PrintToServer("Warning output hooks were not cleared, OnMapEnd() did not run!");
+		ClearHookOutputs();
+	}
+	
 	Handle filehandle = OpenFile(mapbuf,"r",true,NULL_STRING);
 	if (filehandle != INVALID_HANDLE)
 	{
@@ -3055,7 +3112,7 @@ void readoutputsforinputs()
 		}
 	}
 	CloseHandle(filehandle);
-	CloseHandle(inputclasshooks);
+	//CloseHandle(inputclasshooks);
 	return;
 }
 
@@ -4133,6 +4190,31 @@ public void OnEntityDestroyed(int entity)
 			centnextsndtime[entity] = 0.0;
 			isattacking[entity] = 0;
 			flEntCreateTime[entity] = 0.0;
+			
+			UnhookSingleEntityOutput(entity, "OnStartTouch", autostrigout);
+			UnhookSingleEntityOutput(entity, "OnUser1", trigtp);
+			UnhookSingleEntityOutput(entity, "OnUser1", trigtp);
+			UnhookSingleEntityOutput(entity, "OnUser2", trigtp);
+			UnhookSingleEntityOutput(entity, "OnUser3", trigtp);
+			UnhookSingleEntityOutput(entity, "OnUser4", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger", trigtp);
+			UnhookSingleEntityOutput(entity, "OnCase01", trigtp);
+			UnhookSingleEntityOutput(entity, "OnCase02", trigtp);
+			UnhookSingleEntityOutput(entity, "OnCase03", trigtp);
+			UnhookSingleEntityOutput(entity, "OnCase04", trigtp);
+			UnhookSingleEntityOutput(entity, "OnStartTouch", trigtp);
+			UnhookSingleEntityOutput(entity, "OnOpen", trigtp);
+			UnhookSingleEntityOutput(entity, "OnFullyOpen", trigtp);
+			UnhookSingleEntityOutput(entity, "OnClose", trigtp);
+			UnhookSingleEntityOutput(entity, "OnFullyClosed", trigtp);
+			UnhookSingleEntityOutput(entity, "OnBeginSequence",trigout);
+			UnhookSingleEntityOutput(entity, "OnStart", trigout);
+			UnhookSingleEntityOutput(entity, "OnStart", elevatorstart);
+			UnhookSingleEntityOutput(entity, "OnOpen", createelev);
+			UnhookSingleEntityOutput(entity, "OnClose", createelev);
+			UnhookSingleEntityOutput(entity, "OnChangeLevel", mapendchg);
+			UnhookSingleEntityOutput(entity, "OnDeath", entdeath);
+			UnhookSingleEntityOutput(entity, "OnPhysGunPunt", physpunt);
 		}
 	}
 }

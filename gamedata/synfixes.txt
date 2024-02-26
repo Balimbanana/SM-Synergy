@@ -1,0 +1,71 @@
+"Games"
+{
+	"#default"
+	{
+		"Offsets"
+		{
+			"CBaseEntity::AcceptInput" // CBaseEntity::AcceptInput(char const*, CBaseEntity*, CBaseEntity*, variant_t, int)
+			{
+				"windows"	"37"
+				"linux"		"38"
+			}
+			
+			"CBaseEntity::UpdateOnRemove" // void CBaseEntity::UpdateOnRemove()
+			{
+				"windows"	"105"
+				"linux"		"106"
+			}
+			
+			"CPhysConstraint::Deactivate"
+			{
+				"windows"	"187"
+				"linux"		"188"
+			}
+		}
+		
+		"Functions"
+		{
+			"CBaseEntity::AcceptInput"
+			{
+				"offset"	"CBaseEntity::AcceptInput"
+				"hooktype"	"entity"
+				"return"	"bool"
+				"this"		"entity"
+				"arguments"
+				{
+					"szInputName"
+					{
+						"type"	"charptr"
+					}
+					"pActivator"
+					{
+						"type"	"cbaseentity"
+					}
+					"pCaller"
+					{
+						"type"	"cbaseentity"
+					}
+					"Value"
+					{
+						"type"	"object"
+						"size"	"20"
+						"flags"	"byval odtor octor oassignop"
+					}
+					"outputID"
+					{
+						"type"	"int"
+					}
+				}
+			}
+
+			"CBaseEntity::UpdateOnRemove"
+			{
+				"offset"	"CBaseEntity::UpdateOnRemove"
+				"hooktype"	"entity"
+				"callconv"	"thiscall"
+				"return"	"bool"
+				"this"		"entity"
+			}
+		}
+	}
+}

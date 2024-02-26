@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20010"
-			"Previous"	"1.20009"
+			"Latest"  	"1.20011"
+			"Previous"	"1.20010"
 		}
 		
-		"Notes"	"Additional validation on client disconnect where client is still valid but not in game."
+		"Notes"	"Prevention of output hook leaks."
 	}
 	
 	"Files"

@@ -32,6 +32,7 @@
 #tryinclude <SteamWorks>
 #tryinclude <updater>
 #tryinclude <mapchooser>
+#tryinclude <dhooks>
 #define REQUIRE_PLUGIN
 #define REQUIRE_EXTENSIONS
 #pragma semicolon 1;
@@ -61,6 +62,7 @@ Handle dctimeoutarr = INVALID_HANDLE;
 Handle SFEntInputHook = INVALID_HANDLE;
 Handle addedinputs = INVALID_HANDLE;
 Handle hTemplateData = INVALID_HANDLE;
+Handle inputclasshooks = INVALID_HANDLE;
 ConVar hWeaponRespawn, hBaseEquipmentSetup, hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeathTime, hCVSynEvents;
 ConVar g_hConVarRebuildEntities;
 ConVar g_hCVFixPropJump, g_hCVFixPhysBox;
@@ -118,7 +120,12 @@ bool BlockTripMineDamage = true;
 bool bFixSoundScapes = true;
 bool bPortalParticleAvailable = false;
 
-#define PLUGIN_VERSION "2.0065"
+// SDKCalls
+Handle g_hSDKPhysConstraintDeactivate;
+// DHooks
+Handle g_dhUpdateOnRemove;
+
+#define PLUGIN_VERSION "2.0066"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -522,6 +529,8 @@ public void OnPluginStart()
 	AddAmbientSoundHook(customsoundchecks);
 	AddNormalSoundHook(customsoundchecksnorm);
 	SFEntInputHook = CreateGlobalForward("SFHookEntityInput", ET_Ignore, Param_String, Param_Cell, Param_String, Param_String, Param_Float);
+	
+	LoadOffsets();
 }
 
 public Action bmcvars(Handle timer)
@@ -636,6 +645,36 @@ public Action bmcvars(Handle timer)
 	return Plugin_Handled;
 }
 
+void LoadOffsets()
+{
+	char szPath[256];
+	BuildPath(Path_SM, szPath, sizeof(szPath), "gamedata");
+	Format(szPath, sizeof(szPath), "%s/synfixes.txt", szPath);
+	if (FileExists(szPath, true, NULL_STRING))
+	{
+		Handle hGameData = LoadGameConfigFile("synfixes");
+		if (hGameData != INVALID_HANDLE)
+		{
+			int iOffset = GameConfGetOffset(hGameData, "CBaseEntity::UpdateOnRemove");
+			if (iOffset != -1)
+			{
+				g_dhUpdateOnRemove = DynamicDetour.FromConf(hGameData, "CBaseEntity::UpdateOnRemove");
+				if (g_dhUpdateOnRemove == INVALID_HANDLE) PrintToServer("Failed to get CBaseEntity::UpdateOnRemove");
+			}
+			
+			StartPrepSDKCall(SDKCall_Entity);
+			if (PrepSDKCall_SetFromConf(hGameData, SDKConf_Virtual, "CPhysConstraint::Deactivate"))
+			{
+				PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+				g_hSDKPhysConstraintDeactivate = EndPrepSDKCall();
+				if (g_hSDKPhysConstraintDeactivate == INVALID_HANDLE) PrintToServer("Failed to get CPhysConstraint::Deactivate");
+			}
+			
+			CloseHandle(hGameData);
+		}
+	}
+}
+
 public Action OnLevelInit(const char[] szMapName, char szMapEntities[2097152])
 {
 	Format(szMapEntitiesBuff,sizeof(szMapEntitiesBuff),"%s",szMapEntities);
@@ -657,8 +696,28 @@ public void OnMapStart()
 	if (GetMapHistorySize() > -1)
 	{
 		norunagain = false;
+		
+		// Clear old hooks
+		UnhookEntityOutput("scripted_sequence", "OnBeginSequence", trigout);
+		UnhookEntityOutput("scripted_scene", "OnStart", trigout);
+		UnhookEntityOutput("logic_choreographed_scene", "OnStart", trigout);
+		UnhookEntityOutput("instanced_scripted_scene", "OnStart", trigout);
+		UnhookEntityOutput("func_tracktrain", "OnStart", elevatorstart);
+		UnhookEntityOutput("func_door", "OnOpen", createelev);
+		UnhookEntityOutput("func_door", "OnClose", createelev);
+		UnhookEntityOutput("npc_rollermine", "OnPhysGunPickup", Ep1RollermineFallback);
+		UnhookEntityOutput("trigger_changelevel", "OnChangeLevel", Hook_OnChangeLevel);
+		UnhookEntityOutput("func_physbox", "OnPhysGunPunt", physpunt);
+		UnhookEntityOutput("prop_vehicle_jeep", "PlayerOn", vehicleseatadjust);
+		UnhookEntityOutput("scripted_sequence", "OnCancelSequence", custentend);
+		UnhookEntityOutput("npc_maker", "OnSpawnNPC", onxenspawn);
+		UnhookEntityOutput("env_xen_portal", "OnSpawnNPC", onxenspawn);
+		UnhookEntityOutput("env_xen_portal_template", "OnSpawnNPC", onxenspawn);
+		UnhookEntityOutput("npc_human_security", "OnFoundEnemy", SecFoundEnemy);
+		UnhookEntityOutput("env_entity_maker", "OnEntitySpawned", ptadditionalspawn);
+		
 		GetCurrentMap(mapbuf,sizeof(mapbuf));
-		if (AutoFixEp2Req)
+		if ((AutoFixEp2Req) && (!RestartedMap))
 		{
 			char mdl[64];
 			Handle ep2ents = CreateArray(32);
@@ -706,8 +765,9 @@ public void OnMapStart()
 				CloseHandle(srvcvar);
 				ServerCommand("changelevel %s",mapbuf);
 			}
-			else RestartedMap = false;
 		}
+		else RestartedMap = false;
+		
 		int rellogsv = CreateEntityByName("logic_auto");
 		if ((rellogsv != -1) && (IsValidEntity(rellogsv)))
 		{
@@ -715,6 +775,8 @@ public void OnMapStart()
 			DispatchKeyValue(rellogsv,"spawnflags","0");
 			DispatchSpawn(rellogsv);
 			ActivateEntity(rellogsv);
+			// Clear old hook if there is one
+			UnhookEntityOutput("logic_auto", "OnMapSpawn", onreload);
 			HookEntityOutput("logic_auto","OnMapSpawn",onreload);
 		}
 		if (hBaseEquipmentSetup.BoolValue)
@@ -1572,6 +1634,38 @@ public void OnMapStart()
 		
 		g_hConVarRebuildEntities.SetInt(0);
 	}
+}
+
+// This is not very accurate and doesn't always get called correctly...
+public void OnMapEnd()
+{
+	ClearHookOutputs();
+}
+
+void ClearHookOutputs()
+{
+	if (inputclasshooks == INVALID_HANDLE)
+		inputclasshooks = CreateArray(128);
+	
+	if (GetArraySize(inputclasshooks) > 0)
+	{
+		char szSplitOutputs[32][32];
+		for (int i = 0;i<GetArraySize(inputclasshooks);i++)
+		{
+			char tmp[128];
+			GetArrayString(inputclasshooks,i,tmp,sizeof(tmp));
+			int iExplode = ExplodeString(tmp, " ", szSplitOutputs, 64, 64, true);
+			if (iExplode > 1)
+			{
+				if (debuglvl > 1)
+					PrintToServer("Clearing hook for %s %s", szSplitOutputs[0], szSplitOutputs[1]);
+				UnhookEntityOutput(szSplitOutputs[0], szSplitOutputs[1], trigpicker);
+				UnhookEntityOutput(szSplitOutputs[0], szSplitOutputs[1], trigtp);
+			}
+		}
+	}
+	
+	ClearArray(inputclasshooks);
 }
 
 void CreatePlayerEquip(char[] szClass, char[] szStartDisabled)
@@ -13630,7 +13724,16 @@ void readoutputsforinputs()
 	if (hasread) return;
 	if (debuglvl > 1) PrintToServer("Read outputs for inputs from %s",mapbuf);
 	hasread = true;
-	Handle inputclasshooks = CreateArray(64);
+	//Handle inputclasshooks = CreateArray(64);
+	if (inputclasshooks == INVALID_HANDLE)
+		inputclasshooks = CreateArray(128);
+	
+	if (GetArraySize(inputclasshooks) > 0)
+	{
+		if (debuglvl > 0) PrintToServer("Warning output hooks were not cleared, OnMapEnd() did not run!");
+		ClearHookOutputs();
+	}
+	
 	Handle filehandle = OpenFile(mapbuf,"r",true,NULL_STRING);
 	if (filehandle != INVALID_HANDLE)
 	{
@@ -13953,7 +14056,7 @@ void readoutputsforinputs()
 		}
 	}
 	CloseHandle(filehandle);
-	CloseHandle(inputclasshooks);
+	//CloseHandle(inputclasshooks);
 	return;
 }
 
@@ -16051,6 +16154,13 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		if (g_hCVFixPhysBox.BoolValue) SDKHookEx(entity, SDKHook_Spawn, FixPhysPunt);
 	}
+	else if ((StrEqual(classname, "phys_hinge", false)) || ((StrContains(classname, "phys_", false) == 0) && (StrContains(classname, "constraint", false) != -1) && (!StrEqual(classname, "phys_constraintsystem", false))) || (StrEqual(classname, "phys_ballsocket", false)))
+	{
+		if (g_dhUpdateOnRemove != INVALID_HANDLE && g_hSDKPhysConstraintDeactivate != INVALID_HANDLE)
+		{
+			DHookEntity(g_dhUpdateOnRemove, false, entity, _, Hook_PhysConstraintSystem_OnRemove);
+		}
+	}
 	else if (StrEqual(classname,"npc_vortigaunt",false))
 	{
 		CreateTimer(1.0,rechkcol,entity,TIMER_FLAG_NO_MAPCHANGE);
@@ -16228,6 +16338,73 @@ public void OnEntityDestroyed(int entity)
 				clrocket[i] = -1;
 				break;
 			}
+		}
+		
+		// Attempt to prevent leak in SDK_Tools
+		if (IsValidEntity(entity))
+		{
+			UnhookSingleEntityOutput(entity, "OnDeath", OnCDeath);
+			UnhookSingleEntityOutput(entity, "OnFoundEnemy", OnIchyFoundPlayer);
+			UnhookSingleEntityOutput(entity, "OnUser1", LogMerchPurchased);
+			UnhookSingleEntityOutput(entity, "OnUser1", MerchantUse);
+			UnhookSingleEntityOutput(entity, "OnUser2", LogMerchNotEnough);
+			UnhookSingleEntityOutput(entity, "OnUser3", LogMerchCashReduced);
+			UnhookSingleEntityOutput(entity, "OnUser4", LogMerchDisabled);
+			UnhookSingleEntityOutput(entity, "PressedMoveLeft", env_mortarcontroller);
+			UnhookSingleEntityOutput(entity, "PressedMoveRight", env_mortarcontroller);
+			UnhookSingleEntityOutput(entity, "PressedForward", env_mortarcontroller);
+			UnhookSingleEntityOutput(entity, "PressedBack", env_mortarcontroller);
+			UnhookSingleEntityOutput(entity, "PressedAttack", env_mortarcontroller);
+			UnhookSingleEntityOutput(entity, "UnpressedMoveLeft", env_mortarcontroller);
+			UnhookSingleEntityOutput(entity, "UnpressedMoveRight", env_mortarcontroller);
+			UnhookSingleEntityOutput(entity, "UnpressedForward", env_mortarcontroller);
+			UnhookSingleEntityOutput(entity, "UnpressedBack", env_mortarcontroller);
+			UnhookSingleEntityOutput(entity, "PlayerOff", env_mortarcontroller);
+			UnhookSingleEntityOutput(entity, "OnBreak", MortarExplodeByBreak);
+			UnhookSingleEntityOutput(entity, "OnStartTouch", MineFieldTouch);
+			UnhookSingleEntityOutput(entity, "OnTouchedByEntity", TripMineExpl);
+			UnhookSingleEntityOutput(entity, "OnEndSequence", gonarchdead);
+			UnhookSingleEntityOutput(entity, "OnCancelSequence", gonarchdead);
+			UnhookSingleEntityOutput(entity, "OnBreak", GonarchSpitByBreak);
+			UnhookSingleEntityOutput(entity, "OnBreak", centcratebreak);
+			UnhookSingleEntityOutput(entity, "OnCancelSequence", custentend);
+			UnhookSingleEntityOutput(entity, "OnSpawnNPC", onxenspawn);
+			UnhookSingleEntityOutput(entity, "OnSpawnNPC", onxenspawn);
+			UnhookSingleEntityOutput(entity, "OnSpawnNPC", onxenspawn);
+			UnhookSingleEntityOutput(entity, "OnFoundEnemy", SecFoundEnemy);
+			UnhookSingleEntityOutput(entity, "OnEntitySpawned", ptadditionalspawn);
+			UnhookSingleEntityOutput(entity, "OnStartTouch", autostrigout);
+			UnhookSingleEntityOutput(entity, "OnUser1", trigtp);
+			UnhookSingleEntityOutput(entity, "OnUser1", trigtp);
+			UnhookSingleEntityOutput(entity, "OnUser2", trigtp);
+			UnhookSingleEntityOutput(entity, "OnUser3", trigtp);
+			UnhookSingleEntityOutput(entity, "OnUser4", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger1", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger2", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger3", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger4", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger5", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger6", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger7", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger8", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger9", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger10", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger11", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger12", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger13", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger14", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger15", trigtp);
+			UnhookSingleEntityOutput(entity, "OnTrigger16", trigtp);
+			UnhookSingleEntityOutput(entity, "OnStartTouch", trigtp);
+			UnhookSingleEntityOutput(entity, "OnOpen", trigtp);
+			UnhookSingleEntityOutput(entity, "OnFullyOpen", trigtp);
+			UnhookSingleEntityOutput(entity, "OnClose", trigtp);
+			UnhookSingleEntityOutput(entity, "OnFullyClosed", trigtp);
+			UnhookSingleEntityOutput(entity, "OnBeginSequence",trigout);
+			UnhookSingleEntityOutput(entity, "OnStart", trigout);
+			UnhookSingleEntityOutput(entity, "OnStart", elevatorstart);
+			UnhookSingleEntityOutput(entity, "OnPhysGunPunt", physpunt);
 		}
 	}
 	int find = FindValueInArray(hounds,entity);
@@ -20132,6 +20309,13 @@ public void FixPhysPunt(int entity)
 	return;
 }
 
+public MRESReturn Hook_PhysConstraintSystem_OnRemove(int pThis, Handle hReturn, Handle hParams)
+{
+	SDKCall(g_hSDKPhysConstraintDeactivate, pThis);
+	
+	return MRES_Ignored;
+}
+
 public void chkgeneric(int entity)
 {
 	SDKUnhook(entity, SDKHook_Spawn, chkgeneric);
@@ -21841,6 +22025,7 @@ public void OnButtonPressUse(int client)
 			if ((StrEqual(cls,"npc_merchant",false)) && (chkdist < 100.0))
 			{
 				AcceptEntityInput(targ,"FireUser1",client);
+				MerchantUse("DirectCall", targ, client, 0.0);
 				MerchSpeakRef(targ,client,0);
 			}
 			if (npcstate != 5)//4 is scripting
@@ -21887,9 +22072,9 @@ public void OnButtonPressUse(int client)
 									if (!(sf & 1048576))
 									{
 										SetVariantString("spawnflags 1048576");
-										AcceptEntityInput(targ,"AddOutput");
-										AcceptEntityInput(targ,"RemoveFromPlayerSquad");
-										SetEntProp(targ,Prop_Data,"m_spawnflags",1048576);
+										AcceptEntityInput(targ, "AddOutput");
+										AcceptEntityInput(targ, "RemoveFromPlayerSquad");
+										SetEntProp(targ, Prop_Data, "m_spawnflags", 1048576);
 										if (StrEqual(cls,"npc_human_security",false))
 										{
 											if (HasEntProp(targ,Prop_Data,"m_bShouldPatrol")) SetEntProp(targ,Prop_Data,"m_bShouldPatrol",1);
@@ -21936,11 +22121,11 @@ public void OnButtonPressUse(int client)
 									else
 									{
 										char varinp[32];
-										Format(varinp,sizeof(varinp),"spawnflags %i",sf-1048576);
+										Format(varinp,sizeof(varinp), "spawnflags %i", sf-1048576);
 										SetVariantString(varinp);
-										AcceptEntityInput(targ,"AddOutput");
-										AcceptEntityInput(targ,"SetCommandable");
-										SetEntProp(targ,Prop_Data,"m_spawnflags",sf-1048576);
+										AcceptEntityInput(targ, "AddOutput");
+										AcceptEntityInput(targ, "SetCommandable");
+										SetEntProp(targ, Prop_Data, "m_spawnflags", sf-1048576);
 										if (StrEqual(cls,"npc_human_security",false))
 										{
 											if (HasEntProp(targ,Prop_Data,"m_bShouldPatrol")) SetEntProp(targ,Prop_Data,"m_bShouldPatrol",0);
@@ -22594,16 +22779,19 @@ public void spawneramtresch(Handle convar, const char[] oldValue, const char[] n
 			for (int i = 0;i<GetArraySize(entlist);i++)
 			{
 				int entl = GetArrayCell(entlist,i);
-				char clsname[32];
-				GetEntityClassname(entl,clsname,sizeof(clsname));
-				if ((StrEqual(clsname,"npc_template_maker",false)) || (StrEqual(clsname,"npc_maker",false)))
+				if (IsValidEntity(entl))
 				{
-					int maxnpc = GetEntProp(entl,Prop_Data,"m_nMaxNumNPCs");
-					if (maxnpc > spawneramt)
+					char clsname[32];
+					GetEntityClassname(entl,clsname,sizeof(clsname));
+					if ((StrEqual(clsname,"npc_template_maker",false)) || (StrEqual(clsname,"npc_maker",false)))
 					{
-						if (debuglvl == 1) PrintToServer("%i has %i max npcs resetting to %i",entl,maxnpc,spawneramt);
-						SetVariantInt(spawneramt);
-						AcceptEntityInput(entl,"SetMaxChildren");
+						int maxnpc = GetEntProp(entl,Prop_Data,"m_nMaxNumNPCs");
+						if (maxnpc > spawneramt)
+						{
+							if (debuglvl == 1) PrintToServer("%i has %i max npcs resetting to %i",entl,maxnpc,spawneramt);
+							SetVariantInt(spawneramt);
+							AcceptEntityInput(entl,"SetMaxChildren");
+						}
 					}
 				}
 			}
