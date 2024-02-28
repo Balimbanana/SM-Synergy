@@ -4,6 +4,7 @@ void agruntthink(int entity)
 	{
 		if (HasEntProp(entity,Prop_Data,"m_hEnemy"))
 		{
+			if (GetEntProp(entity, Prop_Data, "m_iHealth") < 1) return;
 			int targ = GetEntPropEnt(entity,Prop_Data,"m_hEnemy");
 			float Time = GetTickedTime();
 			int seq = GetEntProp(entity,Prop_Data,"m_nSequence");

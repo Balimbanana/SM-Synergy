@@ -11,7 +11,7 @@
 #pragma semicolon 1;
 #pragma newdecls required;
 
-#define PLUGIN_VERSION "0.998"
+#define PLUGIN_VERSION "0.999"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synswepsupdater.txt"
 
 bool friendlyfire = false;
@@ -86,6 +86,7 @@ ConVar hCVDbgSetup;
 ConVar hCVTauKnockback;
 ConVar hMolotovRadius;
 ConVar hMaxMolotov;
+ConVar hEnableImpact;
 
 public Plugin myinfo =
 {
@@ -139,6 +140,7 @@ public void OnPluginStart()
 	hCVTauKnockback = CreateConVar("syn_tauknockback", "1", "Enables knock back effect for players from Tau cannon charged shots.", _, true, 0.0, true, 1.0);
 	hMolotovRadius = CreateConVar("sk_molotov_radius", "140.0", "Molotov explode radius.", _, true, 1.0, false);
 	hMaxMolotov = CreateConVar("sk_max_molotov", "10", "Maximum amount of molotovs held.", _, true, 1.0, false);
+	hEnableImpact = CreateConVar("sweps_impacteffects", "1", "Enable or disable impact effects for sweps.", _, true, 0.0, true, 1.0);
 	
 	Handle cvar = FindConVar("sk_npc_head");
 	if (cvar != INVALID_HANDLE)
@@ -718,6 +720,118 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 	int killed = GetEventInt(event, "entindex_killed");
 	if ((killed > 0) && (killed < MaxClients+1))
 	{
+		if (IsValidEntity(EndTarg[killed]) && EndTarg[killed] > MaxClients)
+		{
+			int beam = GetEntPropEnt(EndTarg[killed], Prop_Data, "m_hEffectEntity");
+			if ((beam != 0) && (IsValidEntity(beam)))
+			{
+				int beam2 = GetEntPropEnt(beam,Prop_Data,"m_hEffectEntity");
+				if ((beam2 != 0) && (IsValidEntity(beam2))) AcceptEntityInput(beam2,"kill");
+				AcceptEntityInput(beam, "kill");
+			}
+			AcceptEntityInput(EndTarg[killed], "kill");
+		}
+		if (IsValidEntity(HandAttach[killed]) && HandAttach[killed] > MaxClients)
+		{
+			int sprite = GetEntPropEnt(HandAttach[killed], Prop_Data, "m_hEffectEntity");
+			if ((sprite != 0) && (IsValidEntity(sprite)))
+			{
+				AcceptEntityInput(sprite, "kill");
+			}
+			AcceptEntityInput(HandAttach[killed], "kill");
+		}
+		if (FindEntityByClassname(-1,"weapon_tau") > 0)
+		{
+			int iFindTau = -1;
+			while((iFindTau = FindEntityByClassname(iFindTau,"weapon_tau")) != INVALID_ENT_REFERENCE)
+			{
+				if (IsValidEntity(iFindTau))
+				{
+					if (HasEntProp(iFindTau, Prop_Data, "m_hOwner"))
+					{
+						int hOwner = GetEntPropEnt(iFindTau, Prop_Data, "m_hOwner");
+						if (hOwner <= 0 || hOwner == killed)
+						{
+							if (FileExists("sound/weapons/tau/gauss_spinup.wav", true, NULL_STRING))
+								StopSound(iFindTau, SNDCHAN_WEAPON, "weapons\\tau\\gauss_spinup.wav");
+							if (FileExists("sound/ambience/pulsemachine.wav", true, NULL_STRING))
+								StopSound(iFindTau, SNDCHAN_WEAPON, "ambience\\pulsemachine.wav");
+							if (FileExists("sound/weapons/gauss/chargeloop.wav", true, NULL_STRING))
+								StopSound(iFindTau, SNDCHAN_WEAPON, "weapons\\gauss\\chargeloop.wav");
+						}
+					}
+				}
+			}
+			iFindTau = -1;
+			while((iFindTau = FindEntityByClassname(iFindTau,"weapon_gauss")) != INVALID_ENT_REFERENCE)
+			{
+				if (IsValidEntity(iFindTau))
+				{
+					if (HasEntProp(iFindTau, Prop_Data, "m_hOwner"))
+					{
+						int hOwner = GetEntPropEnt(iFindTau, Prop_Data, "m_hOwner");
+						if (hOwner <= 0 || hOwner == killed)
+						{
+							if (FileExists("sound/weapons/tau/gauss_spinup.wav", true, NULL_STRING))
+								StopSound(iFindTau, SNDCHAN_WEAPON, "weapons\\tau\\gauss_spinup.wav");
+							if (FileExists("sound/ambience/pulsemachine.wav", true, NULL_STRING))
+								StopSound(iFindTau, SNDCHAN_WEAPON, "ambience\\pulsemachine.wav");
+							if (FileExists("sound/weapons/gauss/chargeloop.wav", true, NULL_STRING))
+								StopSound(iFindTau, SNDCHAN_WEAPON, "weapons\\gauss\\chargeloop.wav");
+						}
+					}
+				}
+			}
+		}
+		if (EnergyAmm[killed] > 0 && WeapAttackSpeed[killed] > 0.0)
+		{
+			int iFindGluon = -1;
+			while((iFindGluon = FindEntityByClassname(iFindGluon,"weapon_gluon")) != INVALID_ENT_REFERENCE)
+			{
+				if (IsValidEntity(iFindGluon))
+				{
+					if (HasEntProp(iFindGluon, Prop_Data, "m_hOwner"))
+					{
+						int hOwner = GetEntPropEnt(iFindGluon, Prop_Data, "m_hOwner");
+						if (hOwner <= 0 || hOwner == killed)
+						{
+							float orgs[3];
+							if (HasEntProp(iFindGluon,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(iFindGluon,Prop_Data,"m_vecAbsOrigin",orgs);
+							else if (HasEntProp(iFindGluon,Prop_Send,"m_vecOrigin")) GetEntPropVector(iFindGluon,Prop_Send,"m_vecOrigin",orgs);
+							
+							if (FileExists("sound/weapons/gluon/special1.wav", true, NULL_STRING))
+								EmitAmbientSound("weapons\\gluon\\special1.wav", orgs, iFindGluon, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+							if (FileExists("sound/weapons/gluon/special2.wav", true, NULL_STRING))
+								EmitAmbientSound("weapons\\gluon\\special2.wav", orgs, iFindGluon, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+						}
+					}
+				}
+			}
+			iFindGluon = -1;
+			while((iFindGluon = FindEntityByClassname(iFindGluon,"weapon_goop")) != INVALID_ENT_REFERENCE)
+			{
+				if (IsValidEntity(iFindGluon))
+				{
+					if (HasEntProp(iFindGluon, Prop_Data, "m_hOwner"))
+					{
+						int hOwner = GetEntPropEnt(iFindGluon, Prop_Data, "m_hOwner");
+						if (hOwner <= 0 || hOwner == killed)
+						{
+							if (FileExists("sound/physics/goop/goop_loop.wav", true, NULL_STRING))
+							{
+								float orgs[3];
+								if (HasEntProp(iFindGluon,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(iFindGluon,Prop_Data,"m_vecAbsOrigin",orgs);
+								else if (HasEntProp(iFindGluon,Prop_Send,"m_vecOrigin")) GetEntPropVector(iFindGluon,Prop_Send,"m_vecOrigin",orgs);
+								
+								StopSound(iFindGluon, SNDCHAN_WEAPON, "physics/goop/goop_loop.wav");
+								EmitAmbientSound("physics/goop/goop_loop.wav", orgs, iFindGluon, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
+							}
+						}
+					}
+				}
+			}
+		}
+		
 		FindStrayWeaps(-1,killed);
 	}
 }
@@ -863,6 +977,69 @@ public void OnEntityDestroyed(int entity)
 		flWeapReloadTime[entity] = 0.0;
 		Format(custammtype[entity],sizeof(custammtype[]),"");
 		Format(custammtype2[entity],sizeof(custammtype2[]),"");
+		
+		for (int i = 1; i < MaxClients+1; i++)
+		{
+			if (HandAttach[i] == entity)
+			{
+				int beam = GetEntPropEnt(entity, Prop_Data, "m_hEffectEntity");
+				if ((beam != 0) && (IsValidEntity(beam)))
+				{
+					int beam2 = GetEntPropEnt(beam,Prop_Data,"m_hEffectEntity");
+					if ((beam2 != 0) && (IsValidEntity(beam2))) AcceptEntityInput(beam2,"kill");
+					AcceptEntityInput(beam, "kill");
+				}
+				HandAttach[i] = -1;
+			}
+			if (EndTarg[i] == entity)
+			{
+				int beam = GetEntPropEnt(entity, Prop_Data, "m_hEffectEntity");
+				if ((beam != 0) && (IsValidEntity(beam)))
+				{
+					int beam2 = GetEntPropEnt(beam,Prop_Data,"m_hEffectEntity");
+					if ((beam2 != 0) && (IsValidEntity(beam2))) AcceptEntityInput(beam2,"kill");
+					AcceptEntityInput(beam, "kill");
+				}
+				EndTarg[i] = -1;
+			}
+			if (CLManhack[i] == entity)
+				CLManhack[i] = -1;
+			if (clsummontarg[i] == entity)
+				clsummontarg[i] = -1;
+		}
+		
+		char szClassname[64];
+		GetEntityClassname(entity, szClassname, sizeof(szClassname));
+		if (StrEqual(szClassname, "weapon_tau", false) || StrEqual(szClassname, "weapon_gauss", false))
+		{
+			if (FileExists("sound/weapons/tau/gauss_spinup.wav", true, NULL_STRING))
+				StopSound(entity, SNDCHAN_WEAPON, "weapons\\tau\\gauss_spinup.wav");
+			if (FileExists("sound/ambience/pulsemachine.wav", true, NULL_STRING))
+				StopSound(entity, SNDCHAN_WEAPON, "ambience\\pulsemachine.wav");
+			if (FileExists("sound/weapons/gauss/chargeloop.wav", true, NULL_STRING))
+				StopSound(entity, SNDCHAN_WEAPON, "weapons\\gauss\\chargeloop.wav");
+		}
+		else if (StrEqual(szClassname, "weapon_gluon", false) || StrEqual(szClassname, "weapon_goop", false))
+		{
+			if (FileExists("sound/physics/goop/goop_loop.wav", true, NULL_STRING))
+				StopSound(entity, SNDCHAN_WEAPON, "physics/goop/goop_loop.wav");
+			if (FileExists("sound/weapons/gluon/special1.wav", true, NULL_STRING))
+				StopSound(entity, SNDCHAN_WEAPON, "weapons\\gluon\\special1.wav");
+			if (FileExists("sound/weapons/gluon/special2.wav", true, NULL_STRING))
+				StopSound(entity, SNDCHAN_WEAPON, "weapons\\gluon\\special2.wav");
+		}
+		if (FindStringInArray(sweps, szClassname) != -1)
+		{
+			UnhookSingleEntityOutput(entity, "OnCacheInteraction", SweapCacheInteraction);
+		}
+		else if (StrEqual(szClassname, "env_beam", false) || StrEqual(szClassname, "beam", false))
+		{
+			UnhookSingleEntityOutput(entity, "OnTouchedByEntity", TripMineExpl);
+		}
+		else if (StrEqual(szClassname, "trigger_multiple", false))
+		{
+			UnhookSingleEntityOutput(entity, "OnTrigger", StartTouchFlare);
+		}
 	}
 }
 
@@ -2978,7 +3155,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 											SetEntPropEnt(flare,Prop_Data,"m_hEffectEntity",client);
 										}
 									}
-									if (FileExists("sound/weapons/flaregun/fire.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\flaregun\\fire.wav", weap, SNDCHAN_AUTO, SNDLEVEL_GUNFIRE);
+									if (FileExists("sound/weapons/flaregun/fire.wav",true,NULL_STRING)) EmitSoundToAll("weapons\\flaregun\\fire.wav", weap, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
 								}
 							}
 							WeapAttackSpeed[client] = Time+1.0;
@@ -3131,7 +3308,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									Format(snd,sizeof(snd),"physics/goop/goop_loop.wav");
 									StopSound(weap,SNDCHAN_WEAPON,snd);
 									if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
-									EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+									EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_NORMAL);
 								}
 								else
 								{
@@ -3139,7 +3316,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									StopSound(weap,SNDCHAN_WEAPON,snd);
 									if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
 									Format(snd,sizeof(snd),"weapons\\gluon\\special2.wav");
-									EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+									EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_NORMAL);
 								}
 								CreateTimer(0.2,resetviewmdl,viewmdl);
 								WeapSnd[client] = 0.0;
@@ -3481,7 +3658,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 											char snd[64];
 											if (StrEqual(curweap,"weapon_goop",false)) Format(snd,sizeof(snd),"physics/goop/goop_loop.wav");
 											else Format(snd,sizeof(snd),"weapons\\gluon\\hit%i.wav",GetRandomInt(1,4));
-											EmitSoundToAll(snd, targ, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+											EmitSoundToAll(snd, targ, SNDCHAN_WEAPON, SNDLEVEL_NORMAL);
 											char clsname[32];
 											GetEntityClassname(targ,clsname,sizeof(clsname));
 											float damage = 1.0;
@@ -3590,7 +3767,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								}
 								if (HasEntProp(weap,Prop_Data,"m_iClip1")) SetEntProp(weap,Prop_Data,"m_iClip1",EnergyAmm[client]);
 								if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",EnergyAmm[client]);
-								EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+								EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_NORMAL);
 								CreateTimer(0.2,resetviewmdl,viewmdl);
 								WeapAttackSpeed[client] = Time+0.3;
 								SetEntPropFloat(weap,Prop_Data,"m_flTimeWeaponIdle",0.0);
@@ -4158,15 +4335,15 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									}
 								}
 								EmitSoundToAll(snd, client, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
-								WeapAttackSpeed[client] = Time+0.1;
+								WeapAttackSpeed[client] = Time+0.08;
 								SetEntProp(weap,Prop_Data,"m_iClip1",amm-1);
 								int shotsfired = GetEntProp(weap,Prop_Data,"m_nShotsFired");
-								if (shotsfired < 10) SetEntProp(weap,Prop_Data,"m_nShotsFired",shotsfired+1);
+								if (shotsfired < 6) SetEntProp(weap,Prop_Data,"m_nShotsFired",shotsfired+1);
 								float orgs[3];
 								float angs[3];
 								GetClientEyePosition(client,orgs);
 								GetClientEyeAngles(client,angs);
-								ShootBullet(client,weap,1,curweap,orgs,angs,0,(3.5*shotsfired/8));
+								ShootBullet(client,weap,1,curweap,orgs,angs,0,(3.0*shotsfired/8));
 							}
 						}
 						else if (inreload)
@@ -4366,7 +4543,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 									GetClientEyePosition(client,orgs);
 									if (HasEntProp(weap,Prop_Send,"m_iClip1")) SetEntProp(weap,Prop_Send,"m_iClip1",amm-1);
 									float maxspread = 0.5+(shotsfired/2);
-									if (maxspread > 2.0) maxspread = 2.0;
+									if (maxspread > 1.5) maxspread = 1.5;
 									int sideoffs = 2;
 									ShootBullet(client,weap,0,curweap,orgs,angs,sideoffs,maxspread);
 								}
@@ -4474,7 +4651,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								SetEntProp(weap,Prop_Data,"m_nShotsFired",shotsfired+1);
 								int sideoffs = 5;
 								float maxspread = 0.5+(shotsfired/2);
-								if (maxspread > 2.0) maxspread = 2.0;
+								if (maxspread > 1.8) maxspread = 1.8;
 								ShootBullet(client,weap,0,curweap,orgs,angs,sideoffs,maxspread);
 							}
 						}
@@ -5450,7 +5627,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								StopSound(weap,SNDCHAN_WEAPON,snd);
 								if (WeapSnd[client] > 0.0) EmitAmbientSound(snd, orgs, weap, SNDLEVEL_NORMAL, SND_STOPLOOPING, SNDVOL_NORMAL, SNDPITCH_NORMAL, 1.5);
 								Format(snd,sizeof(snd),"weapons\\gluon\\special2.wav");
-								EmitSoundToAll(snd, weap, SNDCHAN_AUTO, SNDLEVEL_NORMAL);
+								EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_NORMAL);
 							}
 							CreateTimer(0.2,resetviewmdl,viewmdl,TIMER_FLAG_NO_MAPCHANGE);
 							WeapSnd[client] = 0.0;
@@ -5813,7 +5990,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							char sndpathchk[128];
 							Format(sndpathchk,sizeof(sndpathchk),"sound\\%s",snd);
 							if (!FileExists(sndpathchk,true,NULL_STRING)) Format(snd,sizeof(snd),"weapons\\gauss\\fire1.wav");
-							EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_GUNFIRE);
+							EmitSoundToAll(snd, weap, SNDCHAN_WEAPON, SNDLEVEL_NORMAL);
 							float endpos[3];
 							float plyfirepos[3];
 							float plyang[3];
@@ -8968,6 +9145,11 @@ void ShootBullet(int client, int weap, int atktype, char[] curweap, float orgs[3
 			{
 				ScaleVector(shootvel,2.0);
 				SDKHooks_TakeDamage(targ,client,client,damage,DMG_BULLET,-1,shootvel,orgs);
+				
+				if (StrContains(clsname, "npc_", false) == 0 || StrContains(clsname, "monster_", false) == 0)
+				{
+					CreateImpactParticle(targ, endpos, angs);
+				}
 			}
 			else if ((StrContains(clsname,"prop_",false) != -1) || (StrEqual(clsname,"func_breakable",false)) || (StrContains(clsname,"item_",false) == 0))
 			{
@@ -8985,6 +9167,55 @@ void ShootBullet(int client, int weap, int atktype, char[] curweap, float orgs[3
 			}
 		}
 	}
+}
+
+void CreateImpactParticle(int iEntity, float vecOrigin[3], float vecAngles[3])
+{
+	if (!hEnableImpact.BoolValue)
+		return;
+	
+	static char szImpactName[32];
+	
+	Format(szImpactName, sizeof(szImpactName), "blood_impact_red_0%i", GetRandomInt(1,2));
+	if (HasEntProp(iEntity, Prop_Data, "m_bloodColor"))
+	{
+		int iBloodColor = GetEntProp(iEntity, Prop_Data, "m_bloodColor");
+		if (iBloodColor < 0) return;
+		switch (iBloodColor)
+		{
+			//headcrab,hound,slave,xort 2; squid 1; human,zombie 0; abrams -1
+			case 0:
+				Format(szImpactName, sizeof(szImpactName), "blood_impact_red_0%i", GetRandomInt(1,2));
+			case 1:
+				Format(szImpactName, sizeof(szImpactName), "blood_impact_yellow_01");
+			case 2:
+				Format(szImpactName, sizeof(szImpactName), "blood_impact_green_01");
+			case 3:
+				Format(szImpactName, sizeof(szImpactName), "blood_impact_synth_01");
+			case 4:
+				Format(szImpactName, sizeof(szImpactName), "blood_impact_antlion_01");
+			case 5:
+				Format(szImpactName, sizeof(szImpactName), "blood_impact_antlion_01");
+			case 6:
+				Format(szImpactName, sizeof(szImpactName), "blood_impact_antlion_worker_01");
+		}
+	}
+	
+	int iParticle = CreateEntityByName("info_particle_system");
+	if (IsValidEntity(iParticle))
+	{
+		TeleportEntity(iParticle, vecOrigin, vecAngles, NULL_VECTOR);
+		
+		DispatchKeyValue(iParticle, "OnUser1", "!self,kill,,0.1,-1");
+		DispatchKeyValue(iParticle, "start_active", "1");
+		DispatchKeyValue(iParticle, "effect_name", szImpactName);
+		DispatchSpawn(iParticle);
+		ActivateEntity(iParticle);
+		
+		AcceptEntityInput(iParticle, "FireUser1");
+	}
+	
+	return;
 }
 
 void ReleaseFire(int client, int atktype, float orgs[3], float angs[3], int sideoffs, float maxspread, char[] weapworldmdl, int dmgpass)

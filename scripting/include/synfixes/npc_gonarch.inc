@@ -10,27 +10,32 @@ void gonarchthink(int entity)
 		{
 			if (!bCheckedMdl[entity])
 			{
+				char szModel[64];
+				GetEntPropString(entity, Prop_Data, "m_ModelName", szModel, sizeof(szModel));
+				if (StrContains(szModel, "zombie", false) != -1)
+				{
+					if (FileExists("models/xenians/gonarch.mdl",true,NULL_STRING))
+					{
+						if (!IsModelPrecached("models/xenians/gonarch.mdl")) PrecacheModel("models/xenians/gonarch.mdl",true);
+						SetEntityModel(entity,"models/xenians/gonarch.mdl");
+					}
+					else
+					{
+						if (!IsModelPrecached("models/gonarch.mdl")) PrecacheModel("models/gonarch.mdl",true);
+						SetEntityModel(entity,"models/gonarch.mdl");
+					}
+					float vMins[3];
+					float vMaxs[3];
+					vMins[0] = -30.0;
+					vMins[1] = -30.0;
+					vMins[2] = 0.0;
+					vMaxs[0] = 30.0;
+					vMaxs[1] = 30.0;
+					vMaxs[2] = 72.0;
+					SetEntPropVector(entity,Prop_Data,"m_vecMins",vMins);
+					SetEntPropVector(entity,Prop_Data,"m_vecMaxs",vMaxs);
+				}
 				bCheckedMdl[entity] = true;
-				if (FileExists("models/xenians/gonarch.mdl",true,NULL_STRING))
-				{
-					if (!IsModelPrecached("models/xenians/gonarch.mdl")) PrecacheModel("models/xenians/gonarch.mdl",true);
-					SetEntityModel(entity,"models/xenians/gonarch.mdl");
-				}
-				else
-				{
-					if (!IsModelPrecached("models/gonarch.mdl")) PrecacheModel("models/gonarch.mdl",true);
-					SetEntityModel(entity,"models/gonarch.mdl");
-				}
-				float vMins[3];
-				float vMaxs[3];
-				vMins[0] = -30.0;
-				vMins[1] = -30.0;
-				vMins[2] = 0.0;
-				vMaxs[0] = 30.0;
-				vMaxs[1] = 30.0;
-				vMaxs[2] = 72.0;
-				SetEntPropVector(entity,Prop_Data,"m_vecMins",vMins);
-				SetEntPropVector(entity,Prop_Data,"m_vecMaxs",vMaxs);
 			}
 		}
 		if ((scripting == -1) && (curh > 1))
@@ -52,6 +57,26 @@ void gonarchthink(int entity)
 				else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",curorg);
 				GetEntPropVector(entity,Prop_Data,"m_angRotation",angs);
 				float targpos[3];
+				
+				// Always push all players away if too close
+				float shootvel[3];
+				for (int i = 0; i < MaxClients+1; i++)
+				{
+					if (IsValidEntity(i))
+					{
+						if (HasEntProp(i, Prop_Data, "m_vecAbsOrigin")) GetEntPropVector(i, Prop_Data, "m_vecAbsOrigin", targpos);
+						else if (HasEntProp(i, Prop_Send, "m_vecOrigin")) GetEntPropVector(i, Prop_Send, "m_vecOrigin", targpos);
+						if (GetVectorDistance(curorg,targpos,false) < 100.0)
+						{
+							// Only lateral
+							targpos[2] = curorg[2];
+							MakeVectorFromPoints(curorg,targpos,shootvel);
+							ScaleVector(shootvel, 5.0);
+							TeleportEntity(i,NULL_VECTOR,NULL_VECTOR,shootvel);
+						}
+					}
+				}
+				
 				if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",targpos);
 				else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",targpos);
 				float chkdist = GetVectorDistance(curorg,targpos,false);
@@ -68,8 +93,12 @@ void gonarchthink(int entity)
 						dmgset = GetConVarFloat(dmgcvar);
 					}
 					CloseHandle(dmgcvar);
-					targpos[2]+=0.2;
-					TeleportEntity(targ,targpos,NULL_VECTOR,NULL_VECTOR);
+					targpos[2]+=1.0;
+					shootvel[0] = (curorg[0] + (400 * Cosine(DegToRad(angs[1]))));
+					shootvel[1] = (curorg[1] + (400 * Sine(DegToRad(angs[1]))));
+					shootvel[2] = (curorg[2] + 100);
+					MakeVectorFromPoints(curorg,shootvel,shootvel);
+					TeleportEntity(targ,targpos,NULL_VECTOR,shootvel);
 					SDKHooks_TakeDamage(targ,entity,entity,dmgset,DMG_CLUB,-1,damageForce,curorg);
 					char snd[64];
 					Format(snd,sizeof(snd),"gonarch\\gon_attack%i.wav",GetRandomInt(1,3));
@@ -174,7 +203,6 @@ void gonarchthink(int entity)
 					if (spitball != -1)
 					{
 						DispatchKeyValue(spitball,"classname","prop_physics");
-						float shootvel[3];
 						float toang[3];
 						targpos[2]-=50.0;
 						MakeVectorFromPoints(curorg,targpos,shootvel);
@@ -328,18 +356,18 @@ public Action gonarchtkdmg(int victim, int& attacker, int& inflictor, float& dam
 						Format(entname,sizeof(entname),"gonarch%i",victim);
 						SetEntPropString(victim,Prop_Data,"m_iName",entname);
 					}
-					DispatchKeyValue(scriptseq,"spawnflags","80");
-					DispatchKeyValue(scriptseq,"m_iszEntity",entname);
-					DispatchKeyValue(scriptseq,"m_iszPlay","falldeath");
-					DispatchKeyValue(scriptseq,"m_fMoveTo","0");
-					DispatchKeyValue(scriptseq,"m_flRadius","0");
-					TeleportEntity(scriptseq,curorg,angs,NULL_VECTOR);
+					DispatchKeyValue(scriptseq,"spawnflags", "80");
+					DispatchKeyValue(scriptseq,"m_iszEntity", entname);
+					DispatchKeyValue(scriptseq,"m_iszPlay", "falldeath");
+					DispatchKeyValue(scriptseq,"m_fMoveTo", "0");
+					DispatchKeyValue(scriptseq,"m_flRadius", "0");
+					TeleportEntity(scriptseq, curorg, angs, NULL_VECTOR);
 					DispatchSpawn(scriptseq);
 					ActivateEntity(scriptseq);
-					SetEntPropEnt(scriptseq,Prop_Data,"m_hEffectEntity",victim);
-					AcceptEntityInput(scriptseq,"BeginSequence");
-					HookSingleEntityOutput(scriptseq,"OnEndSequence",EntityOutput:gonarchdead);
-					HookSingleEntityOutput(scriptseq,"OnCancelSequence",EntityOutput:gonarchdead);
+					SetEntPropEnt(scriptseq, Prop_Data, "m_hEffectEntity", victim);
+					AcceptEntityInput(scriptseq, "BeginSequence");
+					HookSingleEntityOutput(scriptseq, "OnEndSequence", gonarchdead);
+					HookSingleEntityOutput(scriptseq, "OnCancelSequence", gonarchdead);
 				}
 				return Plugin_Changed;
 			}

@@ -36,7 +36,7 @@ void bmsgargthink(int entity)
 							Format(targn,sizeof(targn),"%s%i",clsres,entity);
 							SetEntPropString(entity,Prop_Data,"m_iName",targn);
 						}
-						Format(boundbtarg,sizeof(boundbtarg),"%sbb",targn);
+						Format(boundbtarg,sizeof(boundbtarg),"%sbbgarg",targn);
 						DispatchKeyValue(mdlset,"model","models/xenians/garg.mdl");
 						DispatchKeyValue(mdlset,"solid","0");
 						DispatchKeyValue(mdlset,"DefaultAnim","idle");
@@ -50,26 +50,33 @@ void bmsgargthink(int entity)
 						SetEntPropEnt(entity,Prop_Data,"m_hEffectEntity",mdlset);
 						SetEntProp(entity,Prop_Data,"m_nRenderMode",10);
 						SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
-						if (HasEntProp(entity,Prop_Data,"m_bloodColor")) SetEntProp(entity,Prop_Data,"m_bloodColor",2);
+						if (HasEntProp(entity, Prop_Data, "m_bloodColor")) SetEntProp(entity, Prop_Data, "m_bloodColor", 2);
 						int garghitbox = CreateEntityByName("generic_actor");
 						if (garghitbox != -1)
 						{
-							DispatchKeyValue(garghitbox,"model","models/xenians/garg.mdl");
-							DispatchKeyValue(garghitbox,"targetname",boundbtarg);
-							DispatchKeyValue(garghitbox,"RenderMode","10");
-							DispatchKeyValue(garghitbox,"RenderFX","6");
-							DispatchKeyValue(garghitbox,"shadowcastdist","0");
-							DispatchKeyValue(garghitbox,"DisableShadows","1");
-							TeleportEntity(garghitbox,entpos,entangs,NULL_VECTOR);
+							DispatchKeyValue(garghitbox, "model", "models/xenians/garg.mdl");
+							DispatchKeyValue(garghitbox, "targetname", boundbtarg);
+							//DispatchKeyValue(garghitbox, "RenderMode", "10");
+							DispatchKeyValue(garghitbox, "RenderFX", "6");
+							DispatchKeyValue(garghitbox, "shadowcastdist", "0");
+							DispatchKeyValue(garghitbox, "DisableShadows", "1");
+							TeleportEntity(garghitbox, entpos, entangs, NULL_VECTOR);
 							DispatchSpawn(garghitbox);
 							ActivateEntity(garghitbox);
 							SetVariantString("!activator");
-							AcceptEntityInput(garghitbox,"SetParent",entity);
-							if (!IsModelPrecached("models/xenians/garg.mdl")) PrecacheModel("models/xenians/garg.mdl",true);
-							SetEntityModel(garghitbox,"models/xenians/garg.mdl");
-							SetEntPropEnt(garghitbox,Prop_Data,"m_hEffectEntity",entity);
-							SDKHookEx(garghitbox,SDKHook_OnTakeDamage,bmsgargtkdmg);
-							if (HasEntProp(garghitbox,Prop_Data,"m_bloodColor")) SetEntProp(garghitbox,Prop_Data,"m_bloodColor",2);
+							AcceptEntityInput(garghitbox, "SetParent", entity);
+							if (!IsModelPrecached("models/xenians/garg.mdl")) PrecacheModel("models/xenians/garg.mdl", true);
+							SetEntityModel(garghitbox, "models/xenians/garg.mdl");
+							
+							Handle dp = CreateDataPack();
+							WritePackString(dp, "models/xenians/garg.mdl");
+							WritePackCell(dp, garghitbox);
+							WritePackString(dp, "generic_actor");
+							CreateTimer(0.1, resetmdl, dp, TIMER_FLAG_NO_MAPCHANGE);
+							
+							SetEntPropEnt(garghitbox, Prop_Data, "m_hEffectEntity", entity);
+							SDKHookEx(garghitbox, SDKHook_OnTakeDamage, bmsgargtkdmg);
+							if (HasEntProp(garghitbox, Prop_Data, "m_bloodColor")) SetEntProp(garghitbox, Prop_Data, "m_bloodColor", 2);
 							float vMins[3];
 							float vMaxs[3];
 							vMins[0] = -30.0;
@@ -77,41 +84,42 @@ void bmsgargthink(int entity)
 							vMaxs[0] = 30.0;
 							vMaxs[1] = 30.0;
 							vMaxs[2] = 238.0;
-							SetEntPropVector(garghitbox,Prop_Data,"m_vecMins",vMins);
-							SetEntPropVector(garghitbox,Prop_Data,"m_vecMaxs",vMaxs);
-							SetEntProp(garghitbox,Prop_Data,"m_iHealth",999);
-							SetEntProp(garghitbox,Prop_Data,"m_iMaxHealth",999);
+							SetEntPropVector(garghitbox, Prop_Data, "m_vecMins", vMins);
+							SetEntPropVector(garghitbox, Prop_Data, "m_vecMaxs", vMaxs);
+							SetEntProp(garghitbox, Prop_Data, "m_iHealth", 999);
+							SetEntProp(garghitbox, Prop_Data, "m_iMaxHealth", 999);
+							SetEntPropEnt(mdlset, Prop_Data, "m_hEffectEntity", garghitbox);
 						}
 						/*
 						float vMins[3];
 						float vMaxs[3];
-						GetEntPropVector(mdlset,Prop_Data,"m_vecMins",vMins);
-						GetEntPropVector(mdlset,Prop_Data,"m_vecMaxs",vMaxs);
-						SetEntPropVector(entity,Prop_Data,"m_vecMins",vMins);
-						SetEntPropVector(entity,Prop_Data,"m_vecMaxs",vMaxs);
+						GetEntPropVector(mdlset, Prop_Data, "m_vecMins", vMins);
+						GetEntPropVector(mdlset, Prop_Data, "m_vecMaxs", vMaxs);
+						SetEntPropVector(entity, Prop_Data, "m_vecMins", vMins);
+						SetEntPropVector(entity, Prop_Data, "m_vecMaxs", vMaxs);
 						*/
 						int sprite = CreateEntityByName("env_sprite");
 						if (sprite != -1)
 						{
-							DispatchKeyValue(sprite,"spawnflags","1");
-							DispatchKeyValue(sprite,"GlowProxySize","1");
-							DispatchKeyValue(sprite,"HDRColorScale","1");
-							DispatchKeyValue(sprite,"model","sprites/glow01.spr");
-							DispatchKeyValue(sprite,"framerate","1");
-							DispatchKeyValue(sprite,"RenderMode","9");
-							DispatchKeyValue(sprite,"scale","0.8");
-							DispatchKeyValue(sprite,"rendercolor","255 128 0");
+							DispatchKeyValue(sprite, "spawnflags", "1");
+							DispatchKeyValue(sprite, "GlowProxySize", "1");
+							DispatchKeyValue(sprite, "HDRColorScale", "1");
+							DispatchKeyValue(sprite, "model", "sprites/glow01.spr");
+							DispatchKeyValue(sprite, "framerate", "1");
+							DispatchKeyValue(sprite, "RenderMode", "9");
+							DispatchKeyValue(sprite, "scale", "0.8");
+							DispatchKeyValue(sprite, "rendercolor", "255 128 0");
 							DispatchSpawn(sprite);
 							ActivateEntity(sprite);
 							SetVariantString("!activator");
-							AcceptEntityInput(sprite,"SetParent",mdlset);
+							AcceptEntityInput(sprite, "SetParent", mdlset);
 							SetVariantString("eyes");
-							AcceptEntityInput(sprite,"SetParentAttachment");
+							AcceptEntityInput(sprite, "SetParentAttachment");
 							float offs[3];
 							offs[0] = -3.0;
 							offs[1] = 6.0;
-							SetEntPropVector(sprite,Prop_Data,"m_vecOrigin",offs);
-							SetEntPropEnt(mdlset,Prop_Data,"m_hEffectEntity",sprite);
+							SetEntPropVector(sprite, Prop_Data, "m_vecOrigin", offs);
+							//SetEntPropEnt(mdlset, Prop_Data, "m_hEffectEntity", sprite);
 						}
 						Handle dp = CreateDataPack();
 						WritePackString(dp,targn);
@@ -120,8 +128,20 @@ void bmsgargthink(int entity)
 						setuprelations("npc_bmsgargantua");
 					}
 				}
-				int seq = GetEntProp(entity,Prop_Data,"m_nSequence");
-				int mdlseq = GetEntProp(mdlset,Prop_Data,"m_nSequence");
+				
+				int gargbb = GetEntPropEnt(mdlset, Prop_Data, "m_hEffectEntity");
+				if (IsValidEntity(gargbb))
+				{
+					// Keep at no offset, certain triggers and brushes are pushing this off
+					float vecNoOffset[3];
+					if (HasEntProp(gargbb, Prop_Data, "m_vecOrigin"))
+						SetEntPropVector(gargbb, Prop_Data, "m_vecOrigin", vecNoOffset);
+					if (HasEntProp(gargbb, Prop_Send, "m_vecOrigin"))
+						SetEntPropVector(gargbb, Prop_Send, "m_vecOrigin", vecNoOffset);
+				}
+				
+				int seq = GetEntProp(entity, Prop_Data, "m_nSequence");
+				int mdlseq = GetEntProp(mdlset, Prop_Data, "m_nSequence");
 				if (mdlseq != seq)
 				{
 					char sequencename[64];
@@ -265,22 +285,22 @@ void bmsgargthink(int entity)
 					lastseen[entity] = Time+GetRandomFloat(3.0,6.0);
 					targreset = true;
 				}
-				if (HasEntProp(entity,Prop_Data,"m_hTargetEnt"))
+				if (HasEntProp(entity, Prop_Data, "m_hTargetEnt"))
 				{
-					int scrent = GetEntPropEnt(entity,Prop_Data,"m_hTargetEnt");
+					int scrent = GetEntPropEnt(entity, Prop_Data, "m_hTargetEnt");
 					if (IsValidEntity(scrent))
 					{
-						if (HasEntProp(scrent,Prop_Data,"m_iName"))
+						if (HasEntProp(scrent, Prop_Data, "m_iName"))
 						{
-							char namechk[4];
-							GetEntPropString(scrent,Prop_Data,"m_iName",namechk,sizeof(namechk));
+							char namechk[9];
+							GetEntPropString(scrent, Prop_Data, "m_iName", namechk, sizeof(namechk));
 							if (strlen(namechk) > 0) return;
 						}
 					}
 				}
-				if (HasEntProp(entity,Prop_Data,"m_SleepState"))
+				if (HasEntProp(entity, Prop_Data, "m_SleepState"))
 				{
-					int sleepstate = GetEntProp(entity,Prop_Data,"m_SleepState");
+					int sleepstate = GetEntProp(entity, Prop_Data, "m_SleepState");
 					if (sleepstate != 0) return;
 				}
 				if (centnextatk[mdlset] <= Time)
@@ -350,11 +370,31 @@ void bmsgargthink(int entity)
 					float enorg[3];
 					float orgs[3];
 					float angs[3];
-					if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",enorg);
-					else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",enorg);
 					if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",orgs);
 					else if (HasEntProp(entity,Prop_Send,"m_vecOrigin")) GetEntPropVector(entity,Prop_Send,"m_vecOrigin",orgs);
-					else if (HasEntProp(mdlset,Prop_Data,"m_angAbsRotation")) GetEntPropVector(mdlset,Prop_Data,"m_angAbsRotation",entangs);
+					
+					// Always push all players away if too close
+					float shootvel[3];
+					for (int i = 0; i < MaxClients+1; i++)
+					{
+						if (IsValidEntity(i))
+						{
+							if (HasEntProp(i, Prop_Data, "m_vecAbsOrigin")) GetEntPropVector(i, Prop_Data, "m_vecAbsOrigin", enorg);
+							else if (HasEntProp(i, Prop_Send, "m_vecOrigin")) GetEntPropVector(i, Prop_Send, "m_vecOrigin", enorg);
+							if (GetVectorDistance(orgs, enorg, false) < 100.0)
+							{
+								// Only lateral
+								enorg[2] = orgs[2];
+								MakeVectorFromPoints(orgs, enorg, shootvel);
+								ScaleVector(shootvel, 5.0);
+								TeleportEntity(i, NULL_VECTOR, NULL_VECTOR, shootvel);
+							}
+						}
+					}
+					
+					if (HasEntProp(targ,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(targ,Prop_Data,"m_vecAbsOrigin",enorg);
+					else if (HasEntProp(targ,Prop_Send,"m_vecOrigin")) GetEntPropVector(targ,Prop_Send,"m_vecOrigin",enorg);
+					//if (HasEntProp(mdlset,Prop_Data,"m_angAbsRotation")) GetEntPropVector(mdlset,Prop_Data,"m_angAbsRotation",entangs);
 					int attachfind = CreateEntityByName("prop_dynamic");
 					if (attachfind != -1)
 					{
@@ -384,7 +424,6 @@ void bmsgargthink(int entity)
 					loc[0] = (orgs[0]);
 					loc[1] = (orgs[1]);
 					loc[2] = (orgs[2] + 60);
-					float shootvel[3];
 					enorg[2]-=10.0;
 					if (HasEntProp(targ,Prop_Data,"m_bDucked"))
 					{
@@ -532,6 +571,7 @@ void bmsgargthink(int entity)
 								TeleportEntity(entity,NULL_VECTOR,faceang,NULL_VECTOR);
 								withinradius = true;
 							}
+							
 							if ((chkdist < 250.0) && (withinradius))
 							{
 								if (isattacking[mdlset] == 1)
@@ -716,16 +756,16 @@ void bmsgargthink(int entity)
 					}
 					timesattacked[mdlset]++;
 					ChangeEdictState(mdlset);
+					float oowchk[3];
+					float aimdown[3];
+					aimdown[0] = 90.0;
 					if ((isattacking[mdlset] == 0) && (chkdist < 2048) && (centnextatk[entity] < Time))
 					{
-						float oowchk[3];
 						oowchk[0] = (enorg[0] - (75 * Cosine(DegToRad(toang[1]))));
 						oowchk[1] = (enorg[1] - (75 * Sine(DegToRad(toang[1]))));
 						oowchk[2] = enorg[2]+10.0;
 						if (!TR_PointOutsideWorld(oowchk))
 						{
-							float aimdown[3];
-							aimdown[0] = 90.0;
 							Handle hhitpos = TR_TraceRayFilterEx(oowchk,aimdown,MASK_SHOT,RayType_Infinite,TraceEntityFilter,mdlset);
 							TR_GetEndPosition(oowchk,hhitpos);
 							CloseHandle(hhitpos);
@@ -734,7 +774,8 @@ void bmsgargthink(int entity)
 							{
 								centnextatk[entity] = Time+1.0;
 								oowchk[2]-=245.0;
-								RunSeq(entity,oowchk,toang,"idle","",2,false);
+								if (!TR_PointOutsideWorld(oowchk))
+									RunSeq(entity,oowchk,toang,"idle","",2,false);
 							}
 							else
 							{
@@ -743,7 +784,7 @@ void bmsgargthink(int entity)
 								oowchk[2] = entpos[2]+10.0;
 								if (!TR_PointOutsideWorld(oowchk))
 								{
-									hhitpos = TR_TraceRayFilterEx(oowchk,aimdown,MASK_SHOT,RayType_Infinite,TraceEntityFilter,mdlset);
+									hhitpos = TR_TraceRayFilterEx(oowchk, aimdown, MASK_SHOT, RayType_Infinite, TraceEntityFilterPly, mdlset);
 									TR_GetEndPosition(oowchk,hhitpos);
 									CloseHandle(hhitpos);
 									oowchk[2]+=250.0;
@@ -751,9 +792,27 @@ void bmsgargthink(int entity)
 									{
 										oowchk[2]-=245.0;
 										centnextatk[entity] = Time+1.0;
-										RunSeq(entity,oowchk,toang,"idle","",2,false);
+										if (!TR_PointOutsideWorld(oowchk))
+											RunSeq(entity,oowchk,toang,"idle","",2,false);
 									}
 								}
+							}
+						}
+					}
+					else
+					{
+						oowchk[0] = orgs[0];
+						oowchk[1] = orgs[1];
+						oowchk[2] = orgs[2] + 250.0;
+						if (!TR_PointOutsideWorld(oowchk))
+						{
+							Handle hhitpos = TR_TraceRayFilterEx(oowchk, aimdown, MASK_SHOT, RayType_Infinite, TraceEntityFilterPly, entity);
+							TR_GetEndPosition(oowchk,hhitpos);
+							int hTargetEnt = TR_GetEntityIndex(hhitpos);
+							CloseHandle(hhitpos);
+							if (hTargetEnt <= 0 && (oowchk[2] > (orgs[2] + 10.0)) && (oowchk[2] < (orgs[2] + 200.0)) && (!TR_PointOutsideWorld(oowchk)))
+							{
+								TeleportEntity(entity, oowchk, NULL_VECTOR, NULL_VECTOR);
 							}
 						}
 					}
@@ -791,7 +850,7 @@ void bmsgargthink(int entity)
 							{
 								char cls[64];
 								GetEntityClassname(i,cls,sizeof(cls));
-								if ((!StrEqual(cls,"npc_bmsgargantua",false)) && (!StrEqual(cls,"npc_enemyfinder",false)) && (!StrEqual(cls,"npc_gargantua",false)) && (!StrEqual(cls,"npc_bullseye",false)) && (!StrEqual(cls,"npc_maker",false)) && (!StrEqual(cls,"npc_template_maker",false)) && (!StrEqual(cls,"env_xen_portal",false)) && (!StrEqual(cls,"env_xen_portal_template",false)))
+								if ((!StrEqual(cls,"npc_bmsgargantua",false)) && (StrContains(cls,"weapon_",false) == -1) && (StrContains(cls,"item_",false) == -1) && (!StrEqual(cls,"npc_enemyfinder",false)) && (!StrEqual(cls,"npc_gargantua",false)) && (!StrEqual(cls,"npc_bullseye",false)) && (!StrEqual(cls,"npc_maker",false)) && (!StrEqual(cls,"npc_template_maker",false)) && (!StrEqual(cls,"env_xen_portal",false)) && (!StrEqual(cls,"env_xen_portal_template",false)) && (StrContains(cls,"npc_barnacle",false) == -1))
 								{
 									if (StrEqual(cls,"generic_actor",false))
 									{
@@ -880,7 +939,7 @@ void GargStopFire(int entity, int mdlset, float orgs[3], float angs[3])
 		}
 	}
 	isattacking[mdlset] = 0;
-	RunSeq(entity,orgs,angs,"idle","",0,false);
+	RunSeq(entity, orgs, angs, "idle", "", 0, false);
 }
 
 public Action bmsgargtkdmg(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
@@ -914,8 +973,11 @@ public Action bmsgargtkdmg(int victim, int& attacker, int& inflictor, float& dam
 			}
 			int health = GetEntProp(dmgvic,Prop_Data,"m_iHealth");
 			if ((health > 0) && ((damagetype == 64) || (AllowDmg)))
-				SDKHooks_TakeDamage(dmgvic,attacker,inflictor,damage,damagetype,-1,atkorg,atkorg);
+			{
+				SDKHooks_TakeDamage(dmgvic, attacker, inflictor, damage, damagetype, -1, atkorg, atkorg);
+			}
 		}
+		SetEntProp(victim, Prop_Data, "m_iHealth", GetEntProp(victim, Prop_Data, "m_iMaxHealth"));
 		damage = 0.0;
 		return Plugin_Changed;
 	}
@@ -929,7 +991,7 @@ public Action bmsgargtkdmg(int victim, int& attacker, int& inflictor, float& dam
 				isattacking[victim] = attacker;
 			}
 		}
-		int health = GetEntProp(victim,Prop_Data,"m_iHealth");
+		int health = GetEntProp(victim, Prop_Data, "m_iHealth");
 		if ((health-damage <= 0) || (health < 1))
 		{
 			float orgs[3];
@@ -947,15 +1009,31 @@ public Action bmsgargtkdmg(int victim, int& attacker, int& inflictor, float& dam
 					gargfiretarg[victim][i] = 0;
 				}
 			}
-			int mdlset = GetEntPropEnt(victim,Prop_Data,"m_hEffectEntity");
+			if (HasEntProp(victim, Prop_Data, "m_hTargetEnt"))
+			{
+				int scrent = GetEntPropEnt(victim, Prop_Data, "m_hTargetEnt");
+				if (IsValidEntity(scrent))
+				{
+					AcceptEntityInput(scrent, "CancelSequence");
+				}
+			}
+			int mdlset = GetEntPropEnt(victim, Prop_Data, "m_hEffectEntity");
 			if (IsValidEntity(mdlset))
 			{
 				isattacking[mdlset] = 5;
+				SetEntProp(mdlset, Prop_Data, "m_nRenderFX", 0);
+				SetEntProp(mdlset, Prop_Data, "m_nRenderMode", 0);
+				//SetEntProp(victim, Prop_Data, "m_nRenderFX", 6);
+				AcceptEntityInput(mdlset, "ClearParent");
+				SetVariantString("powerup_electrocute");
+				AcceptEntityInput(mdlset, "SetAnimation");
+				if (HasEntProp(mdlset, Prop_Data, "m_iszDefaultAnim"))
+					SetEntPropString(mdlset, Prop_Data, "m_iszDefaultAnim", "powerup_electrocute");
 			}
-			RunSeq(victim,orgs,angs,"powerup_electrocute","",0,false);
-			CreateTimer(7.2,DissolveGarg,victim,TIMER_FLAG_NO_MAPCHANGE);
-			SetEntProp(victim,Prop_Data,"m_iHealth",0);
-			damage = 0.0;
+			RunSeq(victim, orgs, angs, "powerup_electrocute", "", 0, false, true);
+			CreateTimer(7.2,DissolveGarg, victim, TIMER_FLAG_NO_MAPCHANGE);
+			SetEntProp(victim, Prop_Data, "m_iHealth", 5);
+			damage = 10.0;
 			return Plugin_Changed;
 		}
 	}

@@ -746,7 +746,7 @@ void tentaclethink(int entity)
 							isattacking[entmdl] = seq;
 						}
 					}
-					else if ((IsValidEntity(targ)) && (targ != 0) && (IsValidEntity(sndtarg)))
+					if ((IsValidEntity(targ)) && (targ != 0) && (IsValidEntity(sndtarg)))
 					{
 						float enorg[3];
 						float tiporg[3];
@@ -811,6 +811,7 @@ void tentaclethink(int entity)
 						if (withinradius)
 						{
 							TeleportEntity(entmdl,NULL_VECTOR,angs,NULL_VECTOR);
+							
 							if (centnextatk[targ] < Time)
 							{
 								float chkdist = GetVectorDistance(tiporg,enorg,false);

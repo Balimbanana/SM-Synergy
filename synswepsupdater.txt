@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.998"
-			"Previous"	"0.997"
+			"Latest"  	"0.999"
+			"Previous"	"0.998"
 		}
 		
-		"Notes"	"Additional checks in weapon scripts."
+		"Notes"	"Custom weapon bullet impact effects. Adjustments to MP5."
 	}
 	
 	"Files"

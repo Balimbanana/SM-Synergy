@@ -12,7 +12,20 @@ void controllerthink(int entity)
 			if (HasEntProp(entity,Prop_Data,"m_MoveType"))
 			{
 				int mvtype = GetEntProp(entity,Prop_Data,"m_MoveType");
-				if (mvtype != 4) SetEntProp(entity,Prop_Data,"m_MoveType",4);
+				if (mvtype != 4)
+				{
+					SetEntProp(entity,Prop_Data,"m_MoveType",4);
+					if (HasEntProp(entity, Prop_Data, "m_ModelName"))
+					{
+						char mdlchk[64];
+						GetEntPropString(entity, Prop_Data, "m_ModelName", mdlchk, sizeof(mdlchk));
+						if (!StrEqual(mdlchk, "models/xenians/controller.mdl", false))
+						{
+							if (!IsModelPrecached("models/xenians/controller.mdl")) PrecacheModel("models/xenians/controller.mdl",true);
+							SetEntityModel(entity, "models/xenians/controller.mdl");
+						}
+					}
+				}
 			}
 			int targ = isattacking[entity];
 			if ((targ != 0) && (IsValidEntity(targ)))
@@ -28,19 +41,19 @@ void controllerthink(int entity)
 				GetVectorAngles(shootvel,toang);
 				if (angs[1] > toang[1])
 				{
-					if (angs[1]-toang[1] > 180) angs[1]+=3.0;
-					else if (toang[1]-angs[1] < -180) angs[1]+=3.0;
-					else angs[1]-=3.0;
+					if (angs[1]-toang[1] > 180) angs[1]+=5.0;
+					else if (toang[1]-angs[1] < -180) angs[1]+=5.0;
+					else angs[1]-=5.0;
 				}
 				else if (toang[1] > angs[1])
 				{
-					if (toang[1]-angs[1] > 180) angs[1]-=3.0;
-					else if (angs[1]-toang[1] < -180) angs[1]-=3.0;
-					else angs[1]+=3.0;
+					if (toang[1]-angs[1] > 180) angs[1]-=5.0;
+					else if (angs[1]-toang[1] < -180) angs[1]-=5.0;
+					else angs[1]+=5.0;
 				}
 				if (angs[1] < 0.0) angs[1]+=360.0;
 				if (angs[1] > 360) angs[1]-=360.0;
-				if ((toang[1]-angs[1] > 4.0) || (angs[1]-toang[1] > 4.0))
+				if ((toang[1]-angs[1] > 6.0) || (angs[1]-toang[1] > 6.0))
 				{
 					TeleportEntity(entity,NULL_VECTOR,angs,NULL_VECTOR);
 				}

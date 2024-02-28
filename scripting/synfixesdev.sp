@@ -123,9 +123,11 @@ bool bPortalParticleAvailable = false;
 // SDKCalls
 Handle g_hSDKPhysConstraintDeactivate;
 // DHooks
+Handle g_dhAcceptInput;
 Handle g_dhUpdateOnRemove;
+Handle g_dhGetClawAttackRange;
 
-#define PLUGIN_VERSION "2.0067"
+#define PLUGIN_VERSION "2.0068"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -522,6 +524,7 @@ public void OnPluginStart()
 	
 	RegAdminCmd("sm_rebuildents",rebuildents,ADMFLAG_ROOT,".");
 	RegServerCmd("synfixes_listaddedhooks",listaddedhooks);
+	RegServerCmd("synfixes_setlongjump", SetLongJumpActive);
 	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
 	CreateTimer(0.5,resetclanim,_,TIMER_REPEAT);
 	CreateTimer(0.1,clticks,_,TIMER_REPEAT);
@@ -665,6 +668,20 @@ void LoadOffsets()
 				if (g_dhUpdateOnRemove == INVALID_HANDLE) PrintToServer("Failed to get CBaseEntity::UpdateOnRemove");
 			}
 			
+			iOffset = GameConfGetOffset(hGameData, "CBaseEntity::AcceptInput");
+			if (iOffset != -1)
+			{
+				g_dhAcceptInput = DynamicDetour.FromConf(hGameData, "CBaseEntity::AcceptInput");
+				if (g_dhAcceptInput == INVALID_HANDLE) PrintToServer("Failed to get CBaseEntity::AcceptInput");
+			}
+			
+			iOffset = GameConfGetOffset(hGameData, "CNPC_BaseZombie::GetClawAttackRange");
+			if (iOffset != -1)
+			{
+				g_dhGetClawAttackRange = DynamicDetour.FromConf(hGameData, "CNPC_BaseZombie::GetClawAttackRange");
+				if (g_dhGetClawAttackRange == INVALID_HANDLE) PrintToServer("Failed to get CNPC_BaseZombie::GetClawAttackRange");
+			}
+			
 			StartPrepSDKCall(SDKCall_Entity);
 			if (PrepSDKCall_SetFromConf(hGameData, SDKConf_Virtual, "CPhysConstraint::Deactivate"))
 			{
@@ -718,6 +735,7 @@ public void OnMapStart()
 		UnhookEntityOutput("env_xen_portal_template", "OnSpawnNPC", onxenspawn);
 		UnhookEntityOutput("npc_human_security", "OnFoundEnemy", SecFoundEnemy);
 		UnhookEntityOutput("env_entity_maker", "OnEntitySpawned", ptadditionalspawn);
+		UnhookEntityOutput("npc_template_maker", "OnSpawnNPC", OnNPCTemplateSpawn);
 		
 		GetCurrentMap(mapbuf,sizeof(mapbuf));
 		if ((AutoFixEp2Req) && (!RestartedMap))
@@ -1627,6 +1645,7 @@ public void OnMapStart()
 			HookEntityOutput("env_xen_portal_template","OnSpawnNPC",onxenspawn);
 			HookEntityOutput("npc_human_security","OnFoundEnemy",SecFoundEnemy);
 			HookEntityOutput("env_entity_maker","OnEntitySpawned",ptadditionalspawn);
+			HookEntityOutput("npc_template_maker", "OnSpawnNPC", OnNPCTemplateSpawn);
 		}
 		CreateTimer(0.1,RecheckChangeLevels,_,TIMER_FLAG_NO_MAPCHANGE);
 		PrecacheSound("npc\\roller\\code2.wav",true);
@@ -3250,11 +3269,11 @@ public Action resetrot(Handle timer)
 			GetEntityClassname(i,clsname,sizeof(clsname));
 			if (StrContains(clsname,"rotating",false) != -1)
 			{
-				if (HasEntProp(i,Prop_Data,"m_angRotation"))
+				if ((HasEntProp(i,Prop_Data,"m_angRotation")) && (StrContains(mapbuf, "xen_c4a1a", false) == -1))
 				{
 					float angs[3];
 					GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
-					if (((angs[0] > 400.0) || (angs[1] > 400.0) || (angs[2] > 400.0)) || ((angs[0] < -400.0) || (angs[1] < -400.0) || (angs[2] < -400.0)))
+					if (((angs[0] > 800.0) || (angs[1] > 800.0) || (angs[2] > 800.0)) || ((angs[0] < -800.0) || (angs[1] < -800.0) || (angs[2] < -800.0)))
 					{
 						if (HasEntProp(i,Prop_Data,"m_angStart"))
 						{
@@ -5401,92 +5420,94 @@ public Action trigout(const char[] output, int caller, int activator, float dela
 	if (seqenablecheck)
 	{
 		scenes = "";
-		char targn[128];
-		if (HasEntProp(caller,Prop_Data,"m_iszEntity"))
-			GetEntPropString(caller,Prop_Data,"m_iszEntity",targn,sizeof(targn));
+		char szEntity[128];
+		if (HasEntProp(caller, Prop_Data, "m_iszEntity"))
+		{
+			GetEntPropString(caller, Prop_Data, "m_iszEntity", szEntity, sizeof(szEntity));
+		}
 		else
 		{
-			if (HasEntProp(caller,Prop_Data,"m_iszSceneFile"))
-				GetEntPropString(caller,Prop_Data,"m_iszSceneFile",scenes,sizeof(scenes));
-			if ((StrContains(scenes,"alyx",false) != -1) || (StrContains(scenes,"/al_",false) != -1))
-				Format(targn,sizeof(targn),"alyx");
-			else if ((StrContains(scenes,"barn",false) != -1) || (StrContains(scenes,"/ba_",false) != -1))
-				Format(targn,sizeof(targn),"barney");
-			else if ((StrContains(scenes,"eli",false) != -1) || (StrContains(scenes,"/eli_",false) != -1))
-				Format(targn,sizeof(targn),"eli");
-			else if ((StrContains(scenes,"mag",false) != -1) || (StrContains(scenes,"/ma_",false) != -1))
-				Format(targn,sizeof(targn),"magnusson");
-			else if ((StrContains(scenes,"breen",false) != -1) || (StrContains(scenes,"/br_",false) != -1))
-				Format(targn,sizeof(targn),"breen");
+			if (HasEntProp(caller, Prop_Data, "m_iszSceneFile"))
+				GetEntPropString(caller, Prop_Data, "m_iszSceneFile", scenes, sizeof(scenes));
+			if ((StrContains(scenes, "alyx", false) != -1) || (StrContains(scenes, "/al_", false) != -1))
+				Format(szEntity, sizeof(szEntity), "alyx");
+			else if ((StrContains(scenes, "barn", false) != -1) || (StrContains(scenes, "/ba_", false) != -1))
+				Format(szEntity, sizeof(szEntity), "barney");
+			else if ((StrContains(scenes, "eli", false) != -1) || (StrContains(scenes, "/eli_", false) != -1))
+				Format(szEntity,sizeof(szEntity),"eli");
+			else if ((StrContains(scenes,"mag",false) != -1) || (StrContains(scenes, "/ma_", false) != -1))
+				Format(szEntity, sizeof(szEntity), "magnusson");
+			else if ((StrContains(scenes, "breen", false) != -1) || (StrContains(scenes, "/br_", false) != -1))
+				Format(szEntity, sizeof(szEntity), "breen");
 		}
 		float origin[3];
-		GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+		GetEntPropVector(caller, Prop_Data, "m_vecAbsOrigin", origin);
 		char sname[128];
-		GetEntPropString(caller,Prop_Data,"m_iName",sname,sizeof(sname));
-		if (strlen(targn) < 1)
-			GetEntPropString(caller,Prop_Data,"m_target",targn,sizeof(targn));
-		if (strlen(targn) < 1)
+		GetEntPropString(caller, Prop_Data, "m_iName", sname, sizeof(sname));
+		if (strlen(szEntity) < 1)
+			GetEntPropString(caller, Prop_Data, "m_target", szEntity, sizeof(szEntity));
+		if (strlen(szEntity) < 1)
 		{
 			int targent;
-			if (HasEntProp(caller,Prop_Data,"m_hTargetEnt")) targent = GetEntPropEnt(caller,Prop_Data,"m_hTargetEnt");
+			if (HasEntProp(caller, Prop_Data, "m_hTargetEnt")) targent = GetEntPropEnt(caller, Prop_Data, "m_hTargetEnt");
 			if ((targent != 0) && (IsValidEntity(targent)))
 			{
-				if (HasEntProp(targent,Prop_Data,"m_iName")) GetEntPropString(targent,Prop_Data,"m_iName",targn,sizeof(targn));
+				if (HasEntProp(targent, Prop_Data, "m_iName")) GetEntPropString(targent, Prop_Data, "m_iName", szEntity, sizeof(szEntity));
 			}
 		}
-		if (strlen(targn) < 1)
+		if (strlen(szEntity) < 1)
 		{
 			int targent;
 			for (int i = 1;i<9;i++)
 			{
 				char targstr[32];
-				Format(targstr,sizeof(targstr),"m_hTarget%i",i);
+				Format(targstr, sizeof(targstr), "m_hTarget%i", i);
 				char targstr2[32];
-				Format(targstr2,sizeof(targstr2),"m_iszTarget%i",i);
+				Format(targstr2, sizeof(targstr2), "m_iszTarget%i", i);
 				char targ2[32];
-				if (HasEntProp(caller,Prop_Data,targstr)) targent = GetEntPropEnt(caller,Prop_Data,targstr);
-				if (HasEntProp(caller,Prop_Data,targstr2)) GetEntPropString(caller,Prop_Data,targstr2,targ2,sizeof(targ2));
+				if (HasEntProp(caller, Prop_Data, targstr)) targent = GetEntPropEnt(caller, Prop_Data, targstr);
+				if (HasEntProp(caller, Prop_Data, targstr2)) GetEntPropString(caller, Prop_Data, targstr2, targ2, sizeof(targ2));
 				if ((targent != 0) && (IsValidEntity(targent)))
 				{
 					if (HasEntProp(targent,Prop_Data,"m_iName"))
 					{
-						GetEntPropString(targent,Prop_Data,"m_iName",targn,sizeof(targn));
+						GetEntPropString(targent, Prop_Data, "m_iName", szEntity, sizeof(szEntity));
 						break;
 					}
 				}
 				else if (strlen(targ2) > 0)
 				{
-					Format(targn,sizeof(targn),"%s",targ2);
+					Format(szEntity, sizeof(szEntity), "%s", targ2);
 					break;
 				}
 			}
 		}
-		if (FindStringInArray(entnames,targn) != -1) return Plugin_Continue;
+		if (FindStringInArray(entnames, szEntity) != -1) return Plugin_Continue;
 		if (strlen(scenes) < 1)
 		{
-			if (HasEntProp(caller,Prop_Data,"m_iszPlay")) GetEntPropString(caller,Prop_Data,"m_iszPlay",scenes,sizeof(scenes));
+			if (HasEntProp(caller, Prop_Data, "m_iszPlay")) GetEntPropString(caller, Prop_Data, "m_iszPlay", scenes, sizeof(scenes));
 		}
-		if ((StrContains(sname,"al_vort",false) != -1) && ((!StrEqual(targn,"alyx")) || (!StrEqual(targn,"vort"))))
+		if ((StrContains(sname, "al_vort", false) != -1) && ((!StrEqual(szEntity, "alyx")) || (!StrEqual(szEntity, "vort"))))
 		{
 			if (!findtargn("alyx"))
-				readoutputs(caller,"alyx");
-			findgfollow(-1,"alyx");
+				readoutputs(caller, "alyx");
+			findgfollow(-1, "alyx");
 			if (!findtargn("vort"))
-				readoutputs(caller,"vort");
-			findgfollow(-1,"vort");
+				readoutputs(caller, "vort");
+			findgfollow(-1, "vort");
 		}
 		else
 		{
 			if (StrContains(scenes,"ep1_intro_alyx",false) == -1)
 			{
-				if ((!findtargn(targn)) && (strlen(targn) > 0))
+				if ((!findtargn(szEntity)) && (strlen(szEntity) > 0))
 				{
-					if (debuglvl > 0) PrintToServer("Could not find actor with name %s",targn);
-					readoutputs(caller,targn);
+					if (debuglvl > 0) PrintToServer("Could not find actor with name %s", szEntity);
+					readoutputs(caller, szEntity);
 				}
 			}
 		}
-		if (debuglvl == 3) PrintToServer("Sequence ent %i with name %s started with %s target\nPlaying %s\nAt: %1.f %1.f %1.f",caller,sname,targn,scenes,origin[0],origin[1],origin[2]);
+		if (debuglvl == 3) PrintToServer("Sequence ent %i with name %s started with %s target\nPlaying %s\nAt: %1.f %1.f %1.f", caller, sname, szEntity, scenes, origin[0], origin[1], origin[2]);
 	}
 	return Plugin_Continue;
 }
@@ -5627,6 +5648,26 @@ public Action listaddedhooks(int args)
 				}
 			}
 		}
+	}
+	return Plugin_Handled;
+}
+
+public Action SetLongJumpActive(int args)
+{
+	if (args < 1)
+	{
+		PrintToServer("Usage synfixes_setlongjump <0 or 1>");
+		return Plugin_Handled;
+	}
+	char szActive[4];
+	GetCmdArg(1, szActive, sizeof(szActive));
+	if (StringToInt(szActive) == 1)
+	{
+		longjumpactive = true;
+	}
+	else
+	{
+		longjumpactive = false;
 	}
 	return Plugin_Handled;
 }
@@ -9164,7 +9205,8 @@ public Action ReCreateTemplateMakers(Handle timer)
 					else DispatchKeyValue(iTemplateMaker,szTmp,szTmp2);
 				}
 				DispatchSpawn(iTemplateMaker);
-				HookSingleEntityOutput(iTemplateMaker,"OnSpawnNPC",OnNPCTemplateSpawn,false);
+				// Now in OnMapStart
+				//HookSingleEntityOutput(iTemplateMaker,"OnSpawnNPC",OnNPCTemplateSpawn,false);
 			}
 		}
 		CloseHandle(hTemplateSet);
@@ -11838,100 +11880,114 @@ public Action resetmdl(Handle timer, Handle dp)
 			char clsname[32];
 			GetEntityClassname(ent,clsname,sizeof(clsname));
 			if (!StrEqual(clsname,clschk,false)) return Plugin_Handled;
-			if (!IsModelPrecached(mdl)) PrecacheModel(mdl,true);
+			if (!IsModelPrecached(mdl)) PrecacheModel(mdl, true);
 			char chkName[128];
-			if (HasEntProp(ent,Prop_Data,"m_iName"))
+			if (HasEntProp(ent, Prop_Data, "m_iName"))
 			{
-				GetEntPropString(ent,Prop_Data,"m_iName",chkName,sizeof(chkName));
-				if (StrContains(chkName,"npc_alien_slave",false) == 0)
+				GetEntPropString(ent, Prop_Data, "m_iName", chkName, sizeof(chkName));
+				if (StrContains(chkName, "npc_alien_slave", false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"npc_alien_slave","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName), "npc_alien_slave", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
 				}
-				else if (StrContains(chkName,"npc_human_grunt",false) == 0)
+				else if (StrContains(chkName, "npc_human_grunt", false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"npc_human_grunt","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName), "npc_human_grunt", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
 				}
-				else if (StrContains(chkName,"npc_human_commander",false) == 0)
+				else if (StrContains(chkName, "npc_human_commander", false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"npc_human_commander","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName), "npc_human_commander", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
 				}
-				else if (StrContains(chkName,"npc_human_grenadier",false) == 0)
+				else if (StrContains(chkName, "npc_human_grenadier", false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"npc_human_grenadier","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName), "npc_human_grenadier", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
 				}
-				else if (StrContains(chkName,"npc_zombie_security_torso",false) == 0)
+				else if (StrContains(chkName, "npc_zombie_security_torso", false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"npc_zombie_security_torso","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName), "npc_zombie_security_torso", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
 				}
-				else if (StrContains(chkName,"npc_zombie_security",false) == 0)
+				else if (StrContains(chkName, "npc_zombie_security", false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"npc_zombie_security","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName), "npc_zombie_security", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
 				}
-				else if (StrContains(chkName,"npc_zombie_scientist_torso",false) == 0)
+				else if (StrContains(chkName, "npc_zombie_scientist_torso", false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"npc_zombie_scientist_torso","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName), "npc_zombie_scientist_torso", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
 				}
-				else if (StrContains(chkName,"npc_zombie_scientist",false) == 0)
+				else if (StrContains(chkName, "npc_zombie_scientist", false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"npc_zombie_security","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName), "npc_zombie_security", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
 				}
-				else if (StrContains(chkName,"npc_houndeye",false) == 0)
+				else if (StrContains(chkName, "npc_houndeye", false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"npc_houndeye","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName), "npc_houndeye", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
 				}
-				else if (StrContains(chkName,"npc_bullsquid",false) == 0)
+				else if (StrContains(chkName, "npc_bullsquid", false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"npc_bullsquid","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName),"npc_bullsquid", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
 				}
 				else if (StrContains(chkName,"npc_snark",false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"npc_snark","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName), "npc_snark", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
 				}
 				else if (StrContains(chkName,"npc_babycrab",false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"npc_babycrab","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName), "npc_babycrab", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
 				}
-				else if (StrContains(chkName,"monster_alien_grunt",false) == 0)
+				else if (StrContains(chkName, "monster_alien_grunt", false) == 0)
 				{
-					ReplaceString(chkName,sizeof(chkName),"monster_alien_grunt","",false);
-					SetEntPropString(ent,Prop_Data,"m_iName",chkName);
+					ReplaceString(chkName, sizeof(chkName), "monster_alien_grunt", "", false);
+					SetEntPropString(ent, Prop_Data, "m_iName", chkName);
+					return Plugin_Handled;
+				}
+				else if (StrContains(chkName, "bbgarg", false) != -1)
+				{
+					SetEntityModel(ent, mdl);
+					float vMins[3];
+					float vMaxs[3];
+					vMins[0] = -30.0;
+					vMins[1] = -30.0;
+					vMaxs[0] = 30.0;
+					vMaxs[1] = 30.0;
+					vMaxs[2] = 238.0;
+					SetEntPropVector(ent, Prop_Data, "m_vecMins", vMins);
+					SetEntPropVector(ent, Prop_Data, "m_vecMaxs", vMaxs);
 					return Plugin_Handled;
 				}
 			}
 			char szChkMdl[128];
-			GetEntPropString(ent,Prop_Data,"m_ModelName",szChkMdl,sizeof(szChkMdl));
-			if (StrEqual(szChkMdl,mdl,false)) return Plugin_Handled;
-			SetEntPropString(ent,Prop_Data,"m_ModelName",mdl);
-			DispatchKeyValue(ent,"model",mdl);
-			if (StrEqual(mdl,"models/zombies/zombie_sci.mdl",false))
+			GetEntPropString(ent, Prop_Data, "m_ModelName", szChkMdl, sizeof(szChkMdl));
+			if (StrEqual(szChkMdl, mdl, false)) return Plugin_Handled;
+			SetEntPropString(ent, Prop_Data, "m_ModelName", mdl);
+			DispatchKeyValue(ent, "model", mdl);
+			if (StrEqual(mdl, "models/zombies/zombie_sci.mdl", false))
 			{
 				SetVariantString("headcrab1");
-				AcceptEntityInput(ent,"SetBodyGroup");
+				AcceptEntityInput(ent, "SetBodyGroup");
 			}
-			else if (StrEqual(mdl,"models/zombies/zombie_sci_torso.mdl",false))
+			else if (StrEqual(mdl, "models/zombies/zombie_sci_torso.mdl", false))
 			{
 				SetVariantString("body");
-				AcceptEntityInput(ent,"SetBodyGroup");
+				AcceptEntityInput(ent, "SetBodyGroup");
 			}
-			SetEntityModel(ent,mdl);
+			SetEntityModel(ent, mdl);
 			char cvarchk[32];
-			if ((StrEqual(clsname,"npc_alien_grunt",false)) || (StrEqual(clsname,"npc_alien_grunt_unarmored",false)) || (StrEqual(clsname,"monster_gargantua",false)) || (StrEqual(clsname,"npc_alien_slave",false)) || (StrEqual(clsname,"npc_ichthyosaur",false)) || (StrEqual(clsname,"monster_ichthyosaur",false)))
-				SetEntProp(ent,Prop_Data,"m_nRenderFX",0);
-			else if (StrEqual(clsname,"monster_alien_grunt",false))
+			if ((StrEqual(clsname, "npc_alien_grunt", false)) || (StrEqual(clsname,"npc_alien_grunt_unarmored",false)) || (StrEqual(clsname,"monster_gargantua",false)) || (StrEqual(clsname,"npc_alien_slave",false)) || (StrEqual(clsname,"npc_ichthyosaur",false)) || (StrEqual(clsname,"monster_ichthyosaur",false)))
+				SetEntProp(ent, Prop_Data, "m_nRenderFX", 0);
+			else if (StrEqual(clsname, "monster_alien_grunt", false))
 			{
-				SetEntProp(ent,Prop_Data,"m_nRenderFX",0);
+				SetEntProp(ent, Prop_Data, "m_nRenderFX", 0);
 				/*
 				float vecMins[3];
 				vecMins[0] = -13.0;
@@ -11940,8 +11996,8 @@ public Action resetmdl(Handle timer, Handle dp)
 				SetEntPropVector(ent, Prop_Data, "m_vecMins", vecMins);
 				*/
 			}
-			Format(cvarchk,sizeof(cvarchk),"%s_health",clsname);
-			ReplaceString(cvarchk,sizeof(cvarchk),"npc_","sk_",false);
+			Format(cvarchk, sizeof(cvarchk), "%s_health", clsname);
+			ReplaceString(cvarchk, sizeof(cvarchk), "npc_", "sk_", false);
 			Handle cvar = FindConVar(cvarchk);
 			if (cvar != INVALID_HANDLE)
 			{
@@ -11949,14 +12005,14 @@ public Action resetmdl(Handle timer, Handle dp)
 				if (maxh > 0)
 				{
 					char maxhch[8];
-					Format(maxhch,sizeof(maxhch),"%i",maxh);
-					DispatchKeyValue(ent,"max_health",maxhch);
-					if (HasEntProp(ent,Prop_Data,"m_iHealth")) SetEntProp(ent,Prop_Data,"m_iHealth",maxh);
-					if (HasEntProp(ent,Prop_Data,"m_iMaxHealth")) SetEntProp(ent,Prop_Data,"m_iMaxHealth",maxh);
+					Format(maxhch, sizeof(maxhch), "%i", maxh);
+					DispatchKeyValue(ent, "max_health", maxhch);
+					if (HasEntProp(ent, Prop_Data, "m_iHealth")) SetEntProp(ent, Prop_Data, "m_iHealth", maxh);
+					if (HasEntProp(ent, Prop_Data, "m_iMaxHealth")) SetEntProp(ent, Prop_Data, "m_iMaxHealth", maxh);
 				}
 			}
 			CloseHandle(cvar);
-			if (StrEqual(clsname,"npc_gonarch",false))
+			if (StrEqual(clsname, "npc_gonarch", false))
 			{
 				float vMins[3];
 				float vMaxs[3];
@@ -11966,14 +12022,14 @@ public Action resetmdl(Handle timer, Handle dp)
 				vMaxs[0] = 30.0;
 				vMaxs[1] = 30.0;
 				vMaxs[2] = 72.0;
-				SetEntPropVector(ent,Prop_Data,"m_vecMins",vMins);
-				SetEntPropVector(ent,Prop_Data,"m_vecMaxs",vMaxs);
-				if (FindStringInArray(precachedarr,"npc_gonarch") == -1)
+				SetEntPropVector(ent, Prop_Data, "m_vecMins", vMins);
+				SetEntPropVector(ent, Prop_Data, "m_vecMaxs", vMaxs);
+				if (FindStringInArray(precachedarr, "npc_gonarch") == -1)
 				{
 					recursion("sound/gonarch/");
-					PushArrayString(precachedarr,"npc_gonarch");
+					PushArrayString(precachedarr, "npc_gonarch");
 				}
-				if (!IsModelPrecached("*1")) PrecacheModel("*1",true);
+				if (!IsModelPrecached("*1")) PrecacheModel("*1", true);
 				int brushes = CreateEntityByName("func_brush");
 				if (brushes != -1)
 				{
@@ -12226,6 +12282,10 @@ public Action resetmdl(Handle timer, Handle dp)
 				}
 				SDKHookEx(ent,SDKHook_Think,gonarchthink);
 				SDKHookEx(ent,SDKHook_OnTakeDamage,gonarchtkdmg);
+				if (g_dhGetClawAttackRange != INVALID_HANDLE)
+				{
+					DHookEntity(g_dhGetClawAttackRange, false, ent, _, Hook_BaseZombie_GetClawAttackRange);
+				}
 			}
 			else if ((StrEqual(clsname,"npc_babycrab",false)) || (StrEqual(clsname,"npc_snark",false)) || (StrEqual(clsname,"monster_snark",false)))
 			{
@@ -12437,6 +12497,17 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				AcceptEntityInput(mdl,"kill");
 			RemoveFromArray(hounds,find);
 			RemoveFromArray(houndsmdl,find);
+			if (HasEntProp(killed,Prop_Data,"m_hEffectEntity"))
+			{
+				mdl = GetEntPropEnt(killed,Prop_Data,"m_hEffectEntity");
+				if ((mdl != 0) && (IsValidEntity(mdl)))
+				{
+					char clschk[32];
+					GetEntityClassname(mdl,clschk,sizeof(clschk));
+					if (StrEqual(clschk, "generic_actor", false))
+						AcceptEntityInput(mdl, "kill");
+				}
+			}
 			if (FindEntityByClassname(-1,"npc_houndeye") <= 0)
 			{
 				if ((IsValidEntity(matmod)) && (matmod != -1) && (matmod != 0))
@@ -12681,7 +12752,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				centlastang[killed] = 0.0;
 			}
 		}
-		else if (HasEntProp(killed,Prop_Data,"m_hEffectEntity"))
+		if (HasEntProp(killed,Prop_Data,"m_hEffectEntity"))
 		{
 			propset = GetEntPropEnt(killed,Prop_Data,"m_hEffectEntity");
 			if ((IsValidEntity(propset)) && (propset != 0))
@@ -16088,7 +16159,7 @@ public Action recallreset(Handle timer)
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
-	if (((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false))) && (!StrEqual(classname,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(classname,"npc_enemyfinder",false)) && (!StrEqual(classname,"npc_bullseye",false)) && (!StrEqual(classname,"env_xen_portal",false)) && (!StrEqual(classname,"env_xen_portal_template",false)) && (!StrEqual(classname,"npc_maker",false)) && (!StrEqual(classname,"npc_template_maker",false)) && (StrContains(classname,"info_",false) == -1) && (StrContains(classname,"game_",false) == -1) && (StrContains(classname,"trigger_",false) == -1) && (FindValueInArray(entlist,entity) == -1))
+	if (((StrContains(classname,"npc_",false) != -1) || (StrContains(classname,"monster_",false) != -1) || (StrEqual(classname,"generic_actor",false)) || (StrEqual(classname,"generic_monster",false))) && (!StrEqual(classname,"npc_enemyfinder_combinecannon",false)) && (!StrEqual(classname,"npc_enemyfinder",false)) && (!StrEqual(classname,"npc_bullseye",false)) && (!StrEqual(classname,"env_xen_portal",false)) && (!StrEqual(classname,"env_xen_portal_template",false)) && (!StrEqual(classname,"npc_maker",false)) && (!StrEqual(classname,"npc_template_maker",false)) && (!StrEqual(classname,"npc_barnacle_tongue_tip",false)) && (StrContains(classname,"info_",false) == -1) && (StrContains(classname,"game_",false) == -1) && (StrContains(classname,"trigger_",false) == -1) && (FindValueInArray(entlist,entity) == -1))
 	{
 		PushArrayCell(entlist,entity);
 		if (((StrEqual(classname,"npc_citizen",false)) || (StrEqual(classname,"npc_alyx",false))) && (!(StrContains(mapbuf,"cd",false) == 0))) SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage);
@@ -16162,6 +16233,13 @@ public void OnEntityCreated(int entity, const char[] classname)
 		if (g_dhUpdateOnRemove != INVALID_HANDLE && g_hSDKPhysConstraintDeactivate != INVALID_HANDLE)
 		{
 			DHookEntity(g_dhUpdateOnRemove, false, entity, _, Hook_PhysConstraintSystem_OnRemove);
+		}
+	}
+	else if (StrEqual(classname, "scripted_sequence", false))
+	{
+		if (g_dhAcceptInput != INVALID_HANDLE)
+		{
+			DHookEntity(g_dhAcceptInput, false, entity, _, Hook_AcceptInput_ScriptedSequence);
 		}
 	}
 	else if (StrEqual(classname,"npc_vortigaunt",false))
@@ -20319,6 +20397,72 @@ public MRESReturn Hook_PhysConstraintSystem_OnRemove(int pThis, Handle hReturn, 
 	return MRES_Ignored;
 }
 
+public MRESReturn Hook_AcceptInput_ScriptedSequence(int pThis, Handle hReturn, Handle hParams)
+{
+	if (!DHookIsNullParam(hParams, 1))
+	{
+		char szInputType[64];
+		DHookGetParamString(hParams, 1, szInputType, sizeof(szInputType));
+		if (StrEqual(szInputType, "BeginSequence", false))
+		{
+			if (HasEntProp(pThis, Prop_Data, "m_iszEntity"))
+			{
+				char szEntity[64];
+				GetEntPropString(pThis, Prop_Data, "m_iName", szEntity, sizeof(szEntity));
+				// Make sure this scripted_sequence has a name, unnamed are used for temporary things
+				if (strlen(szEntity) > 0)
+				{
+					GetEntPropString(pThis, Prop_Data, "m_iszEntity", szEntity, sizeof(szEntity));
+					if (strlen(szEntity) > 0)
+					{
+						int iEntity = -1;
+						char szTargetName[64];
+						while ((iEntity = FindEntityByClassname(iEntity, "npc_*")) != -1)
+						{
+							if (IsValidEntity(iEntity))
+							{
+								GetEntPropString(iEntity, Prop_Data, "m_iClassname", szTargetName, sizeof(szTargetName));
+								if (FindStringInArray(customentlist, szTargetName) == -1)
+									continue;
+								
+								GetEntPropString(iEntity, Prop_Data, "m_iName", szTargetName, sizeof(szTargetName));
+								// Targets are case-sensitive
+								if (StrEqual(szEntity, szTargetName, true))
+								{
+									if (HasEntProp(iEntity, Prop_Data, "m_hTargetEnt"))
+									{
+										int hTargetEnt = GetEntPropEnt(iEntity, Prop_Data, "m_hTargetEnt");
+										if (IsValidEntity(hTargetEnt))
+										{
+											GetEntPropString(hTargetEnt, Prop_Data, "m_iName", szTargetName, sizeof(szTargetName));
+											if (strlen(szTargetName) > 0)
+												break;
+										}
+										SetEntPropEnt(iEntity, Prop_Data, "m_hTargetEnt", pThis);
+									}
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return MRES_Ignored;
+}
+
+public MRESReturn Hook_BaseZombie_GetClawAttackRange(int pThis, Handle hReturn, Handle hParams)
+{
+	if (IsValidEntity(pThis))
+	{
+		DHookSetReturn(hReturn, 120.0);
+		return MRES_Supercede;
+	}
+	
+	return MRES_Ignored;
+}
+
 public void chkgeneric(int entity)
 {
 	SDKUnhook(entity, SDKHook_Spawn, chkgeneric);
@@ -21358,6 +21502,16 @@ void findentlist(int ent, char[] clsname)
 				CloseHandle(cvar);
 			}
 			if (HasEntProp(thisent,Prop_Data,"m_bloodColor")) SetEntProp(thisent,Prop_Data,"m_bloodColor",1);
+			if (HasEntProp(thisent, Prop_Data, "m_ModelName"))
+			{
+				char mdlchk[64];
+				GetEntPropString(thisent, Prop_Data, "m_ModelName", mdlchk, sizeof(mdlchk));
+				if (!StrEqual(mdlchk, "models/xenians/controller.mdl", false))
+				{
+					if (!IsModelPrecached("models/xenians/controller.mdl")) PrecacheModel("models/xenians/controller.mdl",true);
+					SetEntityModel(thisent, "models/xenians/controller.mdl");
+				}
+			}
 			SDKHookEx(thisent,SDKHook_Think,controllerthink);
 			SDKHookEx(thisent,SDKHook_OnTakeDamage,controllertkdmg);
 			PushArrayCell(controllers,thisent);
@@ -21371,6 +21525,10 @@ void findentlist(int ent, char[] clsname)
 		{
 			SDKHookEx(thisent,SDKHook_Think,gonarchthink);
 			SDKHookEx(thisent,SDKHook_OnTakeDamage,gonarchtkdmg);
+			if (g_dhGetClawAttackRange != INVALID_HANDLE)
+			{
+				DHookEntity(g_dhGetClawAttackRange, false, thisent, _, Hook_BaseZombie_GetClawAttackRange);
+			}
 			customents = true;
 		}
 		else if (StrEqual(clsofent,"monster_zombie",false))

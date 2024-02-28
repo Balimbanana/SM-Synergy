@@ -6,8 +6,8 @@
 		{
 			"CBaseEntity::AcceptInput" // CBaseEntity::AcceptInput(char const*, CBaseEntity*, CBaseEntity*, variant_t, int)
 			{
-				"windows"	"37"
-				"linux"		"38"
+				"windows"	"36"
+				"linux"		"37"
 			}
 			
 			"CBaseEntity::UpdateOnRemove" // void CBaseEntity::UpdateOnRemove()
@@ -20,6 +20,12 @@
 			{
 				"windows"	"187"
 				"linux"		"188"
+			}
+
+			"CNPC_BaseZombie::GetClawAttackRange"
+			{
+				"windows"	"611"
+				"linux"		"612"
 			}
 		}
 		
@@ -64,6 +70,15 @@
 				"hooktype"	"entity"
 				"callconv"	"thiscall"
 				"return"	"bool"
+				"this"		"entity"
+			}
+
+			"CNPC_BaseZombie::GetClawAttackRange"
+			{
+				"offset"	"CNPC_BaseZombie::GetClawAttackRange"
+				"hooktype"	"entity"
+				"callconv"	"thiscall"
+				"return"	"float"
 				"this"		"entity"
 			}
 		}

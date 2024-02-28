@@ -317,7 +317,7 @@ void NPCShootBullet(int entity, char[] curweap, float orgs[3], float angs[3], fl
 	}
 }
 
-void RunSeq(int entity, float origin[3], float angs[3], char anim[128], char entryanim[128], int moveto, bool loop)
+void RunSeq(int entity, float origin[3], float angs[3], char anim[128], char entryanim[128], int moveto, bool loop, bool bPriority = false)
 {
 	/*
 	moveto:
@@ -381,7 +381,18 @@ void RunSeq(int entity, float origin[3], float angs[3], char anim[128], char ent
 			DispatchKeyValue(scrgo,"m_iszPlay",anim);
 			DispatchKeyValue(scrgo,"m_iszEntity",targn);
 			DispatchKeyValue(scrgo,"m_fMoveTo",mvch);
-			DispatchKeyValue(scrgo,"spawnflags","144");
+			/*
+			16 Start on Spawn
+			128 Don't Teleport NPC On End
+			*/
+			if (!bPriority)
+				DispatchKeyValue(scrgo, "spawnflags", "144");
+			else
+			{
+				DispatchKeyValue(scrgo, "spawnflags", "720");
+				Format(targn, sizeof(targn), "%sscript", targn);
+				DispatchKeyValue(scrgo, "targetname", "prioscr");
+			}
 			DispatchKeyValue(scrgo,"m_bDisableNPCCollisions","1");
 			if (loop) DispatchKeyValue(scrgo,"m_bLoopActionSequence","1");
 			DispatchKeyValue(scrgo,"OnEndSequence","!self,kill,,0.1,-1");
@@ -532,19 +543,26 @@ bool CheckWithinRadius(float angle, float toang, float radius)
 }
 
 public bool TraceEntityFilter(int entity, int mask, any data){
-	if ((entity != -1) && (IsValidEntity(entity)))
+	if (IsValidEntity(entity))
 	{
 		if (IsValidEntity(data))
 		{
-			if (HasEntProp(data,Prop_Data,"m_hParent"))
+			// If my parent, ignore
+			if (HasEntProp(data, Prop_Data, "m_hParent"))
 			{
-				int parent = GetEntPropEnt(data,Prop_Data,"m_hParent");
+				int parent = GetEntPropEnt(data, Prop_Data, "m_hParent");
 				if (entity == parent) return false;
+			}
+			// If parented to me, ignore
+			if (HasEntProp(entity, Prop_Data, "m_hParent"))
+			{
+				int parent = GetEntPropEnt(entity, Prop_Data, "m_hParent");
+				if (parent == data) return false;
 			}
 		}
 		char clsname[32];
-		GetEntityClassname(entity,clsname,sizeof(clsname));
-		if ((StrEqual(clsname,"func_vehicleclip",false)) || (StrEqual(clsname,"npc_sentry_ceiling",false)) || (entity == data))
+		GetEntityClassname(entity, clsname, sizeof(clsname));
+		if ((StrEqual(clsname, "func_vehicleclip", false)) || (StrEqual(clsname, "npc_sentry_ceiling", false)) || (entity == data))
 			return false;
 	}
 	return true;
@@ -555,10 +573,17 @@ public bool TraceEntityFilterPly(int entity, int mask, any data){
 	{
 		if (IsValidEntity(data))
 		{
+			// If my parent, ignore
 			if (HasEntProp(data,Prop_Data,"m_hParent"))
 			{
-				int parent = GetEntPropEnt(data,Prop_Data,"m_hParent");
+				int parent = GetEntPropEnt(data, Prop_Data, "m_hParent");
 				if (entity == parent) return false;
+			}
+			// If parented to me, ignore
+			if (HasEntProp(entity, Prop_Data, "m_hParent"))
+			{
+				int parent = GetEntPropEnt(entity, Prop_Data, "m_hParent");
+				if (parent == data) return false;
 			}
 		}
 		if ((entity < MaxClients+1) && (entity > 0)) return false;
