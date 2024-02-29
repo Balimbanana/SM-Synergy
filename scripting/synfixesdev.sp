@@ -127,7 +127,7 @@ Handle g_dhAcceptInput;
 Handle g_dhUpdateOnRemove;
 Handle g_dhGetClawAttackRange;
 
-#define PLUGIN_VERSION "2.0068"
+#define PLUGIN_VERSION "2.0069"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -736,6 +736,7 @@ public void OnMapStart()
 		UnhookEntityOutput("npc_human_security", "OnFoundEnemy", SecFoundEnemy);
 		UnhookEntityOutput("env_entity_maker", "OnEntitySpawned", ptadditionalspawn);
 		UnhookEntityOutput("npc_template_maker", "OnSpawnNPC", OnNPCTemplateSpawn);
+		UnhookEntityOutput("npc_ichthyosaur", "OnFoundEnemy", OnIchyFoundPlayer);
 		
 		GetCurrentMap(mapbuf,sizeof(mapbuf));
 		if ((AutoFixEp2Req) && (!RestartedMap))
@@ -1208,6 +1209,7 @@ public void OnMapStart()
 		HookEntityOutput("trigger_changelevel", "OnChangeLevel", Hook_OnChangeLevel);
 		HookEntityOutput("func_physbox","OnPhysGunPunt",physpunt);
 		HookEntityOutput("prop_vehicle_jeep","PlayerOn",vehicleseatadjust);
+		HookEntityOutput("npc_ichthyosaur", "OnFoundEnemy", OnIchyFoundPlayer);
 		
 		int iEntity = -1;
 		char szNextMap[128];
@@ -3269,7 +3271,7 @@ public Action resetrot(Handle timer)
 			GetEntityClassname(i,clsname,sizeof(clsname));
 			if (StrContains(clsname,"rotating",false) != -1)
 			{
-				if ((HasEntProp(i,Prop_Data,"m_angRotation")) && (StrContains(mapbuf, "xen_c4a1a", false) == -1))
+				if ((HasEntProp(i,Prop_Data,"m_angRotation")) && (StrContains(mapbuf, "xen_c4a1a", false) == -1) && (StrContains(mapbuf, "bm_c3a2g", false) == -1))
 				{
 					float angs[3];
 					GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
@@ -16368,13 +16370,12 @@ public void OnEntityCreated(int entity, const char[] classname)
 		if (FindValueInArray(grenlist,entity) == -1)
 			PushArrayCell(grenlist,entity);
 	}
-	if ((StrEqual(classname,"npc_ichthyosaur",false)) || (StrEqual(classname,"monster_ichthyosaur",false)))
+	if (((StrEqual(classname,"npc_ichthyosaur",false)) || (StrEqual(classname,"monster_ichthyosaur",false))) && (StrContains(mapbuf, "d1_trainstation_05", false) == -1))
 	{
 		SetEntProp(entity,Prop_Data,"m_nRenderFX",6);
 		SetEntProp(entity,Prop_Data,"m_MoveType",7);
 		if (HasEntProp(entity,Prop_Data,"m_bloodColor")) SetEntProp(entity,Prop_Data,"m_bloodColor",2);
 		SDKHookEx(entity,SDKHook_Think,ichythink);
-		HookSingleEntityOutput(entity,"OnFoundEnemy",OnIchyFoundPlayer);
 	}
 	if (((StrEqual(classname,"item_healthkit",false)) || (StrEqual(classname,"item_health_drop",false)) || (StrEqual(classname,"item_battery",false)) || (StrEqual(classname,"item_ammo_pistol",false))) && (customents))
 	{
