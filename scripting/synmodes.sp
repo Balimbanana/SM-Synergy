@@ -14,7 +14,7 @@
 #include <multicolors>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.59"
+#define PLUGIN_VERSION "1.60"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synmodesupdater.txt"
 
 public Plugin myinfo = 
@@ -93,23 +93,23 @@ ConVar g_ConVarEquipmentManaged;
 
 public void OnPluginStart()
 {
-	HookEvent("round_start",roundstart,EventHookMode_Post);
-	HookEvent("round_end",roundintermission,EventHookMode_Post);
-	HookEvent("player_spawn",OnPlayerSpawn,EventHookMode_Post);
-	HookEvent("synergy_entity_death",Event_SynKilled,EventHookMode_Pre);
-	RegConsoleCmd("saysound",saysoundslist);
-	RegConsoleCmd("saysounds",saysoundslist);
-	RegConsoleCmd("hud_player_info_enable",dmblock);
-	RegConsoleCmd("changeteam",changeteam);
-	RegConsoleCmd("afk",setupafk);
-	RegAdminCmd("gamemode",setupdm,ADMFLAG_ROOT,".");
-	RegConsoleCmd("showscoresdm",scoreboardsh);
-	RegConsoleCmd("instantspawn",setinstspawn);
-	RegAdminCmd("instspawnply",spawnallply,ADMFLAG_BAN,".");
-	RegAdminCmd("sm_forcespec",ForceSpecatator,ADMFLAG_KICK,".");
-	RegAdminCmd("sm_releasespec",UndoForcedSpec,ADMFLAG_KICK,".");
+	HookEvent("round_start", roundstart, EventHookMode_Post);
+	HookEvent("round_end", roundintermission, EventHookMode_Post);
+	HookEvent("player_spawn", OnPlayerSpawn, EventHookMode_Post);
+	HookEvent("synergy_entity_death", Event_SynKilled, EventHookMode_Pre);
+	RegConsoleCmd("saysound", saysoundslist);
+	RegConsoleCmd("saysounds", saysoundslist);
+	RegConsoleCmd("hud_player_info_enable", dmblock);
+	RegConsoleCmd("changeteam", changeteam);
+	RegConsoleCmd("afk", setupafk);
+	RegAdminCmd("gamemode", setupdm, ADMFLAG_ROOT, ".");
+	RegConsoleCmd("showscoresdm", scoreboardsh);
+	RegConsoleCmd("instantspawn", setinstspawn);
+	RegAdminCmd("instspawnply", spawnallply, ADMFLAG_BAN, ".");
+	RegAdminCmd("sm_forcespec", ForceSpecatator, ADMFLAG_KICK, ".");
+	RegAdminCmd("sm_releasespec", UndoForcedSpec, ADMFLAG_KICK, ".");
 	equiparr = CreateArray(16);
-	RegConsoleCmd("spec_next",Atkspecpress);
+	RegConsoleCmd("spec_next", Atkspecpress);
 	Handle instspawn = INVALID_HANDLE;
 	instspawn = CreateConVar("sm_instspawn", "0", "Instspawn, default is 0", _, true, 0.0, true, 2.0);
 	HookConVarChange(instspawn, instspawnch);
@@ -218,7 +218,7 @@ public void OnPluginStart()
 	HookConVarChange(aggroh,aggroch);
 	aggro = GetConVarBool(aggroh);
 	CloseHandle(aggroh);
-	CreateTimer(1.0,roundtimeout,_,TIMER_REPEAT);
+	CreateTimer(1.0, roundtimeout, _, TIMER_REPEAT);
 	HookEventEx("entity_killed",Event_EntityKilled,EventHookMode_Post);
 	AutoExecConfig(true, "synmodes");
 	mpcvar = CreateConVar("sm_gamemodeset", "coop", "", FCVAR_REPLICATED|FCVAR_PRINTABLEONLY, false, 0.0, false);
@@ -283,11 +283,21 @@ public void OnEntityCreated(int entity, const char[] classname)
 	{
 		if (IsValidEntity(entity))
 		{
-			if (IsEntNetworkable(entity))
+			if (IsEntNetworkable(entity) && HasEntProp(entity, Prop_Data, "m_bShouldPatrol"))
 			{
-				CreateTimer(0.1,recheck,entity,TIMER_FLAG_NO_MAPCHANGE);
+				CreateTimer(0.1, recheck, entity, TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
+	}
+}
+
+public void OnEntityDestroyed(int entity)
+{
+	if (ignoretrigs != INVALID_HANDLE)
+	{
+		int iFindInArray = FindValueInArray(ignoretrigs, entity);
+		if (iFindInArray != -1)
+			RemoveFromArray(ignoretrigs, iFindInArray);
 	}
 }
 
@@ -2250,7 +2260,7 @@ void findentwdis(int ent, char[] clsname)
 	if ((IsValidEntity(thisent)) && (thisent >= MaxClients+1) && (thisent != -1))
 	{
 		PushArrayCell(equiparr,thisent);
-		findent(thisent++,clsname);
+		findentwdis(thisent++,clsname);
 	}
 }
 
@@ -4156,7 +4166,7 @@ void findtrigs(int ent, char[] clsname)
 public void OnClientPutInServer(int client)
 {
 	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
-	CreateTimer(1.0,joincfg,client);
+	CreateTimer(1.0, joincfg, client);
 }
 
 public Action OnTakeDamage(int victim, int& attacker, int& inflictor, float& damage, int& damagetype)
@@ -4190,29 +4200,34 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 public Action joincfg(Handle timer, int client)
 {
-	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && !IsFakeClient(client))
+	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client))
 	{
-		if (survivalact)
+		if (!IsFakeClient(client))
 		{
-			int arrindx = FindStringInArray(respawnids,SteamID[client]);
-			if (arrindx != -1)
+			if (survivalact)
 			{
-				ForcePlayerSuicide(client);
-				PrintToChat(client,"You cannot respawn yet.");
+				int arrindx = FindStringInArray(respawnids,SteamID[client]);
+				if (arrindx != -1)
+				{
+					ForcePlayerSuicide(client);
+					PrintToChat(client,"You cannot respawn yet.");
+				}
 			}
 		}
 	}
 	else if (IsClientConnected(client))
 	{
-		CreateTimer(1.0,joincfg,client,TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(1.0, joincfg, client, TIMER_FLAG_NO_MAPCHANGE);
 	}
 	return Plugin_Handled;
 }
 
 public Action EverySpawnPost(Handle timer, int client)
 {
-	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client) && !IsFakeClient(client))
+	if (IsClientConnected(client) && IsClientInGame(client) && IsPlayerAlive(client))
 	{
+		if (IsFakeClient(client))
+			return Plugin_Handled;
 		ClientCommand(client,"crosshair 1");
 		if (HasEntProp(client,Prop_Send,"m_bDisplayReticle"))
 			SetEntProp(client,Prop_Send,"m_bDisplayReticle",1);
@@ -4297,7 +4312,7 @@ public Action EverySpawnPost(Handle timer, int client)
 	}
 	else if (IsClientConnected(client))
 	{
-		CreateTimer(1.0,EverySpawnPost,client,TIMER_FLAG_NO_MAPCHANGE);
+		CreateTimer(1.0, EverySpawnPost, client, TIMER_FLAG_NO_MAPCHANGE);
 	}
 	return Plugin_Handled;
 }
@@ -4367,23 +4382,23 @@ public void OnMapStart()
 	g_iDMSoundTrack = -1;
 	canceltimer = 0;
 	hasstarted = true;
-	HookEntityOutput("trigger_once","OnTrigger",EntityOutput:trigsaves);
-	HookEntityOutput("trigger_once","OnStartTouch",EntityOutput:trigsaves);
-	HookEntityOutput("logic_relay","OnTrigger",EntityOutput:trigsaves);
-	HookEntityOutput("trigger_multiple","OnTrigger",EntityOutput:trigsaves);
-	HookEntityOutput("trigger_multiple","OnStartTouch",EntityOutput:trigsaves);
-	HookEntityOutput("trigger_coop","OnTrigger",EntityOutput:trigsaves);
-	HookEntityOutput("trigger_coop","OnStartTouch",EntityOutput:trigsaves);
-	HookEntityOutput("point_viewcontrol","OnEndFollow",EntityOutput:trigsaves);
-	HookEntityOutput("scripted_sequence","OnBeginSequence",EntityOutput:trigsaves);
-	HookEntityOutput("scripted_sequence","OnEndSequence",EntityOutput:trigsaves);
-	HookEntityOutput("scripted_scene","OnStart",EntityOutput:trigsaves);
-	HookEntityOutput("func_button","OnPressed",EntityOutput:trigsaves);
-	HookEntityOutput("func_button","OnUseLocked",EntityOutput:trigsaves);
-	HookEntityOutput("func_door","OnOpen",EntityOutput:trigsaves);
-	HookEntityOutput("func_door","OnFullyOpen",EntityOutput:trigsaves);
-	HookEntityOutput("func_door","OnClose",EntityOutput:trigsaves);
-	HookEntityOutput("func_door","OnFullyClosed",EntityOutput:trigsaves);
+	HookEntityOutput("trigger_once", "OnTrigger", trigsaves);
+	HookEntityOutput("trigger_once", "OnStartTouch", trigsaves);
+	HookEntityOutput("logic_relay", "OnTrigger", trigsaves);
+	HookEntityOutput("trigger_multiple", "OnTrigger", trigsaves);
+	HookEntityOutput("trigger_multiple", "OnStartTouch", trigsaves);
+	HookEntityOutput("trigger_coop", "OnTrigger", trigsaves);
+	HookEntityOutput("trigger_coop", "OnStartTouch", trigsaves);
+	HookEntityOutput("point_viewcontrol", "OnEndFollow", trigsaves);
+	HookEntityOutput("scripted_sequence", "OnBeginSequence", trigsaves);
+	HookEntityOutput("scripted_sequence", "OnEndSequence", trigsaves);
+	HookEntityOutput("scripted_scene", "OnStart", trigsaves);
+	HookEntityOutput("func_button", "OnPressed", trigsaves);
+	HookEntityOutput("func_button", "OnUseLocked", trigsaves);
+	HookEntityOutput("func_door", "OnOpen", trigsaves);
+	HookEntityOutput("func_door", "OnFullyOpen", trigsaves);
+	HookEntityOutput("func_door", "OnClose", trigsaves);
+	HookEntityOutput("func_door", "OnFullyClosed", trigsaves);
 	for (int i = 1;i<MaxClients+1;i++)
 	{
 		g_LastButtons[i] = 0;
@@ -4393,7 +4408,7 @@ public void OnMapStart()
 			if (IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i))
 			{
 				SDKHook(i, SDKHook_OnTakeDamage, OnTakeDamage);
-				CreateTimer(0.1,joincfg,i);
+				CreateTimer(0.1, joincfg, i);
 			}
 		}
 	}
@@ -4453,7 +4468,7 @@ void CreateTrig(float origins[3], char[] mdlnum)
 	TeleportEntity(autostrig,origins,NULL_VECTOR,NULL_VECTOR);
 	DispatchSpawn(autostrig);
 	ActivateEntity(autostrig);
-	HookSingleEntityOutput(autostrig,"OnStartTouch",EntityOutput:autostrigout,true);
+	HookSingleEntityOutput(autostrig, "OnStartTouch", autostrigout, true);
 }
 
 public Action autostrigout(const char[] output, int caller, int activator, float delay)
@@ -4463,13 +4478,13 @@ public Action autostrigout(const char[] output, int caller, int activator, float
 
 public Action trigsaves(const char[] output, int caller, int activator, float delay)
 {
-	if (survivalact)
+	if (FindValueInArray(ignoretrigs, caller) == -1 && IsValidEntity(caller))
 	{
-		if ((activator < MaxClients+1) && (activator > 0))
+		if (survivalact)
 		{
-			if ((IsPlayerAlive(activator)) && (IsValidEntity(caller)))
+			if ((activator < MaxClients+1) && (activator > 0))
 			{
-				if (FindValueInArray(ignoretrigs,caller) == -1)
+				if (IsPlayerAlive(activator))
 				{
 					char targn[64];
 					GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
@@ -4484,23 +4499,17 @@ public Action trigsaves(const char[] output, int caller, int activator, float de
 				}
 			}
 		}
-	}
-	else
-	{
-		if (IsValidEntity(caller))
+		else
 		{
-			if (FindValueInArray(ignoretrigs,caller) == -1)
-			{
-				char targn[64];
-				if (HasEntProp(caller,Prop_Data,"m_iName")) GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
-				float origin[3];
-				if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
-				else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
-				char tmpout[32];
-				Format(tmpout,sizeof(tmpout),output);
-				readoutputstp(targn,tmpout,"SetCheckPoint",origin,activator,caller);
-				readoutputstp(targn,tmpout,"ClearCheckPoint",origin,activator,caller);
-			}
+			char targn[64];
+			if (HasEntProp(caller,Prop_Data,"m_iName")) GetEntPropString(caller,Prop_Data,"m_iName",targn,sizeof(targn));
+			float origin[3];
+			if (HasEntProp(caller,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(caller,Prop_Data,"m_vecAbsOrigin",origin);
+			else if (HasEntProp(caller,Prop_Send,"m_vecOrigin")) GetEntPropVector(caller,Prop_Send,"m_vecOrigin",origin);
+			char tmpout[32];
+			Format(tmpout,sizeof(tmpout),output);
+			readoutputstp(targn,tmpout,"SetCheckPoint",origin,activator,caller);
+			readoutputstp(targn,tmpout,"ClearCheckPoint",origin,activator,caller);
 		}
 	}
 }
@@ -4512,7 +4521,7 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 	{
 		if (caller != -1)
 		{
-			if (FindValueInArray(ignoretrigs,caller) != -1) return;
+			if (FindValueInArray(ignoretrigs, caller) != -1) return;
 		}
 		char tmpoutpchk[128];
 		Format(tmpoutpchk,sizeof(tmpoutpchk),"\"%s,AddOutput,%s ",targn,output);
@@ -4532,7 +4541,12 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 				break;
 			}
 		}
-		if (arrindx == -1) return;
+		if (arrindx == -1)
+		{
+			if (caller != -1)
+				PushArrayCell(ignoretrigs, caller);
+			return;
+		}
 		char originclschar[256];
 		char clsorfixup[16][128];
 		GetArrayString(inputsarrorigincls,arrindx,originclschar,sizeof(originclschar));
@@ -4654,6 +4668,10 @@ void readoutputstp(char[] targn, char[] output, char[] input, float origin[3], i
 				}
 			}
 		}
+		else if (IsValidEntity(caller))
+		{
+			PushArrayCell(ignoretrigs,caller);
+		}
 	}
 	return;
 }
@@ -4669,7 +4687,7 @@ public Action ReHookTrigTP(Handle timer, Handle dp)
 		CloseHandle(dp);
 		if (IsValidEntity(caller))
 		{
-			HookSingleEntityOutput(caller,output,trigsaves);
+			HookSingleEntityOutput(caller, output, trigsaves);
 		}
 	}
 }

@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.59"
-			"Previous"	"1.58"
+			"Latest"  	"1.60"
+			"Previous"	"1.59"
 		}
 		
-		"Notes"	"Added 2 missing entries in /saysounds."
+		"Notes"	"A couple optimizations."
 	}
 	
 	"Files"
