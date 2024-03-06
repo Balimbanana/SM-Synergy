@@ -200,8 +200,9 @@ void sentriesthink(int entity)
 				else posepitch+=0.03;
 				if (StrEqual(cls,"npc_sentry_ceiling",false))
 				{
-					if (sentryang[1] < 180.0) angs[1] -= sentryang[1];
-					else angs[1] += sentryang[1];
+					//if (sentryang[1] < 180.0) angs[1] -= sentryang[1];
+					//else angs[1] += sentryang[1];
+					angs[1] = -90.0+sentryang[1]+(180.0*pose);
 				}
 				else angs[1] = -90.0+sentryang[1]+(180.0*pose);
 				if (angs[1] > 360.0) angs[1]-=360.0;

@@ -125,9 +125,10 @@ Handle g_hSDKPhysConstraintDeactivate;
 // DHooks
 Handle g_dhAcceptInput;
 Handle g_dhUpdateOnRemove;
+Handle g_dhEntityBlocked;
 Handle g_dhGetClawAttackRange;
 
-#define PLUGIN_VERSION "2.0069"
+#define PLUGIN_VERSION "2.0070"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -486,28 +487,29 @@ public void OnPluginStart()
 	// Causes crash on reload plugin
 	//RegConsoleCmd("whois", admblock);
 	
-	RegConsoleCmd("mp_switchteams",admblock);
-	RegConsoleCmd("lightprobe",admblock);
-	RegConsoleCmd("buildcubemaps",admblock);
-	RegConsoleCmd("npc_freeze",admblock);
-	RegConsoleCmd("npc_freeze_unselected",admblock);
-	RegConsoleCmd("sv_benchmark_force_start",admblock);
-	RegConsoleCmd("perfvisualbenchmark",admblock);
-	RegConsoleCmd("ai_dump_hints",admblock);
-	RegConsoleCmd("commentary_finishnode",admblock);
-	RegConsoleCmd("dbghist_dump",admblock);
-	RegConsoleCmd("dbghist_addline",admblock);
-	RegConsoleCmd("mm_add_item",cmdblock);
-	RegConsoleCmd("mm_add_player",cmdblock);
-	RegConsoleCmd("mm_session_info",cmdblock);
-	RegConsoleCmd("mm_message",cmdblock);
-	RegConsoleCmd("mm_stats",cmdblock);
-	RegConsoleCmd("mm_select_session",cmdblock);
-	RegConsoleCmd("kill",suicideblock);
-	RegConsoleCmd("explode",suicideblock);
-	RegConsoleCmd("flushfix",ReallowFlush);
-	AddCommandListener(flushcmd,"blckreset");
-	RegConsoleCmd("changelevel",resetgraphs);
+	RegConsoleCmd("mp_switchteams", admblock);
+	RegConsoleCmd("lightprobe", admblock);
+	RegConsoleCmd("buildcubemaps", admblock);
+	RegConsoleCmd("npc_freeze", admblock);
+	RegConsoleCmd("npc_freeze_unselected", admblock);
+	RegConsoleCmd("sv_benchmark_force_start", admblock);
+	RegConsoleCmd("perfvisualbenchmark", admblock);
+	RegConsoleCmd("ai_dump_hints", admblock);
+	RegConsoleCmd("commentary_finishnode", admblock);
+	RegConsoleCmd("dbghist_dump", admblock);
+	RegConsoleCmd("dbghist_addline", admblock);
+	RegConsoleCmd("mm_add_item", cmdblock);
+	RegConsoleCmd("mm_add_player", cmdblock);
+	RegConsoleCmd("mm_session_info", cmdblock);
+	RegConsoleCmd("mm_message", cmdblock);
+	RegConsoleCmd("mm_stats", cmdblock);
+	RegConsoleCmd("mm_select_session", cmdblock);
+	RegConsoleCmd("kill", suicideblock);
+	RegConsoleCmd("explode", suicideblock);
+	RegConsoleCmd("flushfix", ReallowFlush);
+	RegServerCmd("blckresetsrv", blckresetServer);
+	AddCommandListener(flushcmd, "blckreset");
+	RegConsoleCmd("changelevel", resetgraphs);
 	Handle rebuildnodesh = CreateConVar("rebuildnodes","0","Set force rebuild ai nodes on every map (not nav_generate).",_,true,0.0,true,1.0);
 	rebuildnodes = GetConVarBool(rebuildnodesh);
 	HookConVarChange(rebuildnodesh,rebuildnodeshch);
@@ -645,6 +647,33 @@ public Action bmcvars(Handle timer)
 		DeleteFile(savepath);
 		ServerCommand("sm plugins unload synfixes");
 	}
+	
+	if (GetMapHistorySize() > 0)
+	{
+		if (g_dhAcceptInput != INVALID_HANDLE)
+		{
+			int iEntity = -1;
+			while((iEntity = FindEntityByClassname(iEntity, "scripted_sequence")) != INVALID_ENT_REFERENCE)
+			{
+				if (IsValidEntity(iEntity))
+				{
+					DHookEntity(g_dhAcceptInput, false, iEntity, _, Hook_AcceptInput_ScriptedSequence);
+				}
+			}
+		}
+		if (g_dhEntityBlocked != INVALID_HANDLE)
+		{
+			int iEntity = -1;
+			while((iEntity = FindEntityByClassname(iEntity, "func_trackautochange")) != INVALID_ENT_REFERENCE)
+			{
+				if (IsValidEntity(iEntity))
+				{
+					DHookEntity(g_dhEntityBlocked, false, iEntity, _, Hook_EntityBlocked_TrackAutoChange);
+				}
+			}
+		}
+	}
+	
 	return Plugin_Handled;
 }
 
@@ -673,6 +702,13 @@ void LoadOffsets()
 			{
 				g_dhAcceptInput = DynamicDetour.FromConf(hGameData, "CBaseEntity::AcceptInput");
 				if (g_dhAcceptInput == INVALID_HANDLE) PrintToServer("Failed to get CBaseEntity::AcceptInput");
+			}
+			
+			iOffset = GameConfGetOffset(hGameData, "CBaseEntity::Blocked");
+			if (iOffset != -1)
+			{
+				g_dhEntityBlocked = DynamicDetour.FromConf(hGameData, "CBaseEntity::Blocked");
+				if (g_dhEntityBlocked == INVALID_HANDLE) PrintToServer("Failed to get CBaseEntity::Blocked");
 			}
 			
 			iOffset = GameConfGetOffset(hGameData, "CNPC_BaseZombie::GetClawAttackRange");
@@ -2973,6 +3009,16 @@ public Action clspawnpost(Handle timer, int client)
 
 public Action ReallowFlush(int client, int args)
 {
+	if (client == 0)
+	{
+		Handle cvar = FindConVar("sv_cheats");
+		if (cvar != INVALID_HANDLE) SetConVarBool(cvar, true);
+		CloseHandle(cvar);
+		ServerCommand("flush");
+		ServerCommand("blckresetsrv");
+		return Plugin_Handled;
+	}
+	
 	Handle cvar = FindConVar("sv_cheats");
 	if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"1");
 	CloseHandle(cvar);
@@ -2985,6 +3031,14 @@ public Action flushcmd(int client, const char[] command, int argc)
 {
 	Handle cvar = FindConVar("sv_cheats");
 	if (cvar != INVALID_HANDLE) SendConVarValue(client,cvar,"0");
+	CloseHandle(cvar);
+	return Plugin_Handled;
+}
+
+public Action blckresetServer(int args)
+{
+	Handle cvar = FindConVar("sv_cheats");
+	if (cvar != INVALID_HANDLE) SetConVarBool(cvar, false, false, false);
 	CloseHandle(cvar);
 	return Plugin_Handled;
 }
@@ -3269,7 +3323,8 @@ public Action resetrot(Handle timer)
 		{
 			char clsname[32];
 			GetEntityClassname(i,clsname,sizeof(clsname));
-			if (StrContains(clsname,"rotating",false) != -1)
+			//if (StrContains(clsname,"rotating",false) != -1)
+			if (HasEntProp(i,Prop_Data,"m_angStart"))
 			{
 				if ((HasEntProp(i,Prop_Data,"m_angRotation")) && (StrContains(mapbuf, "xen_c4a1a", false) == -1) && (StrContains(mapbuf, "bm_c3a2g", false) == -1))
 				{
@@ -3277,11 +3332,9 @@ public Action resetrot(Handle timer)
 					GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
 					if (((angs[0] > 800.0) || (angs[1] > 800.0) || (angs[2] > 800.0)) || ((angs[0] < -800.0) || (angs[1] < -800.0) || (angs[2] < -800.0)))
 					{
-						if (HasEntProp(i,Prop_Data,"m_angStart"))
-						{
-							GetEntPropVector(i,Prop_Data,"m_angStart",angs);
-							SetEntPropVector(i,Prop_Data,"m_angRotation",angs);
-						}
+						GetEntPropVector(i,Prop_Data,"m_angStart",angs);
+						SetEntPropVector(i,Prop_Data,"m_angRotation",angs);
+						
 						AcceptEntityInput(i,"StopAtStartPos");
 						AcceptEntityInput(i,"Start");
 					}
@@ -3289,16 +3342,16 @@ public Action resetrot(Handle timer)
 			}
 			else if ((HasEntProp(i,Prop_Data,"m_vecOrigin")) && (StrContains(mapbuf,"bm_c2",false) == -1) && (StrContains(clsname,"_",false) != -1) && (StrContains(clsname,"game",false) == -1) && (StrContains(clsname,"func_",false) == -1) && (StrContains(clsname,"path_",false) == -1) && (StrContains(clsname,"trigger_",false) == -1) && (StrContains(clsname,"logic_",false) == -1) && (StrContains(clsname,"ambient_generic",false) == -1) && (StrContains(clsname,"point_",false) == -1) && (StrContains(clsname,"ai_",false) == -1) && (!StrEqual(clsname,"material_modify_control",false)) && (!StrEqual(clsname,"keyframe_rope",false)) && (!StrEqual(clsname,"move_rope",false)) && (StrContains(clsname,"npc_",false) == -1) && (StrContains(clsname,"monster_",false) == -1) && (StrContains(clsname,"info_",false) == -1) && (StrContains(clsname,"env_",false) == -1) && (StrContains(clsname,"scripted",false) == -1) && (!StrEqual(clsname,"momentary_rot_button",false)) && (!StrEqual(clsname,"syn_transition_wall",false)) && (!StrEqual(clsname,"prop_dynamic",false)) && (StrContains(clsname,"light_",false) == -1))
 			{
-				float pos[3];
-				if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",pos);
-				else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",pos);
-				char fname[32];
-				GetEntPropString(i,Prop_Data,"m_iName",fname,sizeof(fname));
 				if (HasEntProp(i,Prop_Data,"m_hOwner"))
 				{
 					int owner = GetEntPropEnt(i,Prop_Data,"m_hOwner");
 					if (owner != -1) continue;
 				}
+				float pos[3];
+				if (HasEntProp(i,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(i,Prop_Data,"m_vecAbsOrigin",pos);
+				else if (HasEntProp(i,Prop_Send,"m_vecOrigin")) GetEntPropVector(i,Prop_Send,"m_vecOrigin",pos);
+				char fname[32];
+				GetEntPropString(i,Prop_Data,"m_iName",fname,sizeof(fname));
 				if ((StrContains(fname,"elevator",false) == -1) && (((TR_PointOutsideWorld(pos)) && ((pos[0] < vMins[0]) || (pos[1] < vMins[1]) && (pos[2] < vMins[2])) && !(((pos[0] <= 1.0) && (pos[0] >= -1.0)) && ((pos[1] <= 1.0) && (pos[1] >= -1.0)) && ((pos[2] <= 1.0) && (pos[2] >= -1.0))))))
 				{
 					if ((debugoowlvl) && (i>MaxClients)) PrintToServer("%i %s with name %s fell out of world, removing...",i,clsname,fname);
@@ -5703,6 +5756,8 @@ public Action centcratebreak(const char[] output, int caller, int activator, flo
 	{
 		if (HasEntProp(caller,Prop_Data,"m_iszResponseContext"))
 		{
+			if (HasEntProp(caller, Prop_Data, "m_bForceServerSideGibs"))
+				SetEntProp(caller, Prop_Data, "m_bForceServerSideGibs", 1);
 			char breakitems[128];
 			char breakitemsexpl[128][32];
 			GetEntPropString(caller,Prop_Data,"m_iszResponseContext",breakitems,sizeof(breakitems));
@@ -5795,7 +5850,8 @@ public Action createelev(const char[] output, int caller, int activator, float d
 			if ((strlen(mdlname) > 0) && (StrContains(mapbuf,"r_map3",false) == -1) && (StrContains(mapbuf,"01_spymap_ep3",false) == -1))
 			{
 				int sf = GetEntProp(caller,Prop_Data,"m_spawnflags");
-				if ((!(sf & 1<<3)) && (GetEntityCount() < 2000))
+				// Was (1<<3) but not working in all SourceMod versions
+				if ((!(sf & 4)) && (sf != 4100) && (GetEntityCount() < 2000))
 				{
 					int brushent;
 					if (StrContains(mdlname,"*",false) == 0)
@@ -7383,6 +7439,8 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							find++;
 							RemoveFromArray(passedarr,find);
 						}
+						PushArrayString(passedarr, "servergibs");
+						PushArrayString(passedarr, "1");
 						Format(cls,sizeof(cls),"prop_physics");
 					}
 					else if (StrEqual(cls,"prop_surgerybot",false))
@@ -7673,6 +7731,8 @@ void readcache(int client, char[] cache, float offsetpos[3])
 					}
 					else if (StrEqual(oldcls,"item_crate",false))
 					{
+						if (HasEntProp(ent, Prop_Data, "m_bForceServerSideGibs"))
+							SetEntProp(ent, Prop_Data, "m_bForceServerSideGibs", 1);
 						HookSingleEntityOutput(ent,"OnBreak",centcratebreak);
 					}
 					customents = true;
@@ -8393,6 +8453,8 @@ void readcache(int client, char[] cache, float offsetpos[3])
 							GetArrayString(passedarr,find,breakitems,sizeof(breakitems));
 							SetEntPropString(ent,Prop_Data,"m_iszResponseContext",breakitems);
 						}
+						if (HasEntProp(ent, Prop_Data, "m_bForceServerSideGibs"))
+							SetEntProp(ent, Prop_Data, "m_bForceServerSideGibs", 1);
 					}
 					else if (StrEqual(oldcls,"prop_surgerybot",false))
 					{
@@ -10357,6 +10419,8 @@ void readcacheexperimental(int client)
 							GetArrayString(passedarr,find,breakitems,sizeof(breakitems));
 							SetEntPropString(ent,Prop_Data,"m_iszResponseContext",breakitems);
 						}
+						if (HasEntProp(ent, Prop_Data, "m_bForceServerSideGibs"))
+							SetEntProp(ent, Prop_Data, "m_bForceServerSideGibs", 1);
 					}
 					else if (StrEqual(oldcls,"prop_surgerybot",false))
 					{
@@ -16244,6 +16308,13 @@ public void OnEntityCreated(int entity, const char[] classname)
 			DHookEntity(g_dhAcceptInput, false, entity, _, Hook_AcceptInput_ScriptedSequence);
 		}
 	}
+	else if (StrEqual(classname, "func_trackautochange", false))
+	{
+		if (g_dhEntityBlocked != INVALID_HANDLE)
+		{
+			DHookEntity(g_dhEntityBlocked, false, entity, _, Hook_EntityBlocked_TrackAutoChange);
+		}
+	}
 	else if (StrEqual(classname,"npc_vortigaunt",false))
 	{
 		CreateTimer(1.0,rechkcol,entity,TIMER_FLAG_NO_MAPCHANGE);
@@ -16426,7 +16497,6 @@ public void OnEntityDestroyed(int entity)
 		if (IsValidEntity(entity))
 		{
 			UnhookSingleEntityOutput(entity, "OnDeath", OnCDeath);
-			UnhookSingleEntityOutput(entity, "OnFoundEnemy", OnIchyFoundPlayer);
 			UnhookSingleEntityOutput(entity, "OnUser1", LogMerchPurchased);
 			UnhookSingleEntityOutput(entity, "OnUser1", MerchantUse);
 			UnhookSingleEntityOutput(entity, "OnUser2", LogMerchNotEnough);
@@ -16964,6 +17034,17 @@ public void SetupLivingEnt(int entity)
 						return;
 					}
 				}
+			}
+		}
+		else if (StrEqual(entcls, "prop_physics", false))
+		{
+			char szModel[64];
+			GetEntPropString(entity, Prop_Data, "m_ModelName", szModel, sizeof(szModel));
+			if (StrEqual(szModel, "models/props_blackmesa/tarp_crate.mdl", false))
+			{
+				DispatchKeyValue(entity, "servergibs", "1");
+				if (HasEntProp(entity, Prop_Data, "m_bForceServerSideGibs"))
+					SetEntProp(entity, Prop_Data, "m_bForceServerSideGibs", 1);
 			}
 		}
 		if (HasEntProp(entity,Prop_Data,"m_vecMins"))
@@ -18938,7 +19019,6 @@ void restoreent(Handle dp)
 				SetEntProp(ent,Prop_Data,"m_MoveType",7);
 				if (HasEntProp(ent,Prop_Data,"m_bloodColor")) SetEntProp(ent,Prop_Data,"m_bloodColor",2);
 				SDKHookEx(ent,SDKHook_Think,ichythink);
-				HookSingleEntityOutput(ent,"OnFoundEnemy",OnIchyFoundPlayer);
 				HookSingleEntityOutput(ent,"OnDeath",OnCDeath);
 			}
 			else if (StrEqual(oldcls,"npc_human_grunt",false))
@@ -19500,7 +19580,6 @@ void restoreentarr(Handle dp, int spawnonent, bool forcespawn)
 					SetEntProp(ent,Prop_Data,"m_MoveType",7);
 					if (HasEntProp(ent,Prop_Data,"m_bloodColor")) SetEntProp(ent,Prop_Data,"m_bloodColor",2);
 					SDKHookEx(ent,SDKHook_Think,ichythink);
-					HookSingleEntityOutput(ent,"OnFoundEnemy",OnIchyFoundPlayer);
 					HookSingleEntityOutput(ent,"OnDeath",OnCDeath);
 				}
 				else if ((StrEqual(oldcls,"npc_human_grunt",false)) || (StrEqual(oldcls,"npc_human_commander",false)) || (StrEqual(oldcls,"npc_human_medic",false)))
@@ -20453,6 +20532,28 @@ public MRESReturn Hook_AcceptInput_ScriptedSequence(int pThis, Handle hReturn, H
 	return MRES_Ignored;
 }
 
+public MRESReturn Hook_EntityBlocked_TrackAutoChange(int pThis, Handle hReturn, Handle hParams)
+{
+	if (!DHookIsNullParam(hParams, 1))
+	{
+		int client = DHookGetParam(hParams, 1);
+		if (IsValidEntity(client) && client > 0 && client <= MaxClients)
+		{
+			float vecOrigin[3];
+			GetEntPropVector(client, Prop_Data, "m_vecAbsOrigin", vecOrigin);
+			vecOrigin[2] += 70.0;
+			if (!TR_PointOutsideWorld(vecOrigin))
+			{
+				vecOrigin[2] -= 65.0;
+				TeleportEntity(client, vecOrigin, NULL_VECTOR, NULL_VECTOR);
+			}
+			DHookSetReturn(hReturn, 0);
+			return MRES_Supercede;
+		}
+	}
+	return MRES_Ignored;
+}
+
 public MRESReturn Hook_BaseZombie_GetClawAttackRange(int pThis, Handle hReturn, Handle hParams)
 {
 	if (IsValidEntity(pThis))
@@ -21265,7 +21366,6 @@ void findentlist(int ent, char[] clsname)
 			SetEntProp(thisent,Prop_Data,"m_MoveType",7);
 			if (HasEntProp(thisent,Prop_Data,"m_bloodColor")) SetEntProp(thisent,Prop_Data,"m_bloodColor",2);
 			SDKHookEx(thisent,SDKHook_Think,ichythink);
-			HookSingleEntityOutput(thisent,"OnFoundEnemy",OnIchyFoundPlayer);
 			HookSingleEntityOutput(thisent,"OnDeath",OnCDeath);
 		}
 		else if (StrEqual(clsofent,"npc_merchant",false))
@@ -22200,7 +22300,7 @@ public void OnButtonPressUse(int client)
 						if ((scr == -1) && (HasEntProp(targ,Prop_Data,"m_hTargetEnt")))
 						{
 							scr = GetEntPropEnt(targ,Prop_Data,"m_hTargetEnt");
-							if (IsValidEntity(scr))
+							if (IsValidEntity(scr) && (scr > MaxClients || scr < -1))
 							{
 								char tmpinf[32];
 								GetEntityClassname(scr,tmpinf,sizeof(tmpinf));

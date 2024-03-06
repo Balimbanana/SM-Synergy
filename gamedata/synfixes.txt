@@ -16,6 +16,12 @@
 				"linux"		"106"
 			}
 			
+			"CBaseEntity::Blocked" // bool CBaseEntity::Blocked(CBaseEntity*)
+			{
+				"windows"	"102"
+				"linux"		"103"
+			}
+			
 			"CPhysConstraint::Deactivate"
 			{
 				"windows"	"187"
@@ -71,6 +77,21 @@
 				"callconv"	"thiscall"
 				"return"	"bool"
 				"this"		"entity"
+			}
+			
+			"CBaseEntity::Blocked"
+			{
+				"offset"	"CBaseEntity::Blocked"
+				"hooktype"	"entity"
+				"return"	"bool"
+				"this"		"entity"
+				"arguments"
+				{
+					"pBlocker"
+					{
+						"type"	"cbaseentity"
+					}
+				}
 			}
 
 			"CNPC_BaseZombie::GetClawAttackRange"

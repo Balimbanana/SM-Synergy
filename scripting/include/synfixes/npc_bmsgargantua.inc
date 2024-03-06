@@ -20,6 +20,38 @@ void bmsgargthink(int entity)
 				if (HasEntProp(entity,Prop_Data,"m_vecAbsOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecAbsOrigin",entpos);
 				else if (HasEntProp(entity,Prop_Data,"m_vecOrigin")) GetEntPropVector(entity,Prop_Data,"m_vecOrigin",entpos);
 				if (HasEntProp(entity,Prop_Data,"m_angRotation")) GetEntPropVector(entity,Prop_Data,"m_angRotation",entangs);
+				if (IsValidEntity(mdlset))
+				{
+					if (!HasEntProp(mdlset, Prop_Data, "m_nSequence"))
+					{
+						char szTmp[64];
+						GetEntityClassname(mdlset, szTmp, sizeof(szTmp));
+						if (StrContains(szTmp, "prop_dynamic", false) != 0)
+						{
+							int iEntity = -1;
+							while((iEntity = FindEntityByClassname(iEntity, "prop_dynamic")) != INVALID_ENT_REFERENCE)
+							{
+								if (IsValidEntity(iEntity))
+								{
+									if (HasEntProp(iEntity, Prop_Data, "m_hParent"))
+									{
+										int hParent = GetEntPropEnt(iEntity, Prop_Data, "m_hParent");
+										if (hParent == entity)
+										{
+											GetEntPropString(iEntity, Prop_Data, "m_ModelName", szTmp, sizeof(szTmp));
+											if (StrEqual(szTmp, "models/xenians/garg.mdl", false))
+											{
+												mdlset = iEntity;
+												SetEntPropEnt(entity, Prop_Data, "m_hEffectEntity", iEntity);
+												break;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
 				if (!IsValidEntity(mdlset))
 				{
 					mdlset = CreateEntityByName("prop_dynamic_override");
