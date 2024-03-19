@@ -29,6 +29,7 @@ Handle g_ModifyCase = INVALID_HANDLE;
 Handle hCVAlwaysApplyGlobal = INVALID_HANDLE;
 ConVar g_ConVarEditReplaceOutputs;
 ConVar g_ConVarAddAirNodes;
+ConVar g_ConVarDHReturn;
 
 // DHooks
 DynamicHook g_hLevelInitHook;
@@ -45,7 +46,7 @@ bool RemoveGlobals = false;
 bool LogEDTErr = false;
 bool IncludeNextLines = false;
 
-#define PLUGIN_VERSION "0.79"
+#define PLUGIN_VERSION "0.80"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/edtrebuildupdater.txt"
 
 public Plugin myinfo =
@@ -109,6 +110,8 @@ public void OnPluginStart()
 	if (g_ConVarEditReplaceOutputs == INVALID_HANDLE) g_ConVarEditReplaceOutputs = CreateConVar("edt_edits_replace_outputs", "0", "If enabled, edits that contain outputs will replace outputs of the same type already on entity.", _, true, 0.0, true, 1.0);
 	g_ConVarAddAirNodes = FindConVar("edt_add_airnodes");
 	if (g_ConVarAddAirNodes == INVALID_HANDLE) g_ConVarAddAirNodes = CreateConVar("edt_add_airnodes", "0", "Adds air nodes above all ground nodes.", _, true, 0.0, true, 1.0);
+	g_ConVarDHReturn = FindConVar("edt_dhooks_return");
+	if (g_ConVarDHReturn == INVALID_HANDLE) g_ConVarDHReturn = CreateConVar("edt_dhooks_return", "0", "Sets return type of the LevelInit hook, if EDTs are not being applied to maps in a particular mod, change this to 1. Some games will crash on 1.", _, true, 0.0, true, 1.0);
 	
 	LoadGameData();
 }
@@ -204,6 +207,9 @@ public MRESReturn Hook_OnLevelInit(DHookReturn hReturn, DHookParam hParams)
 		hParams.SetString(2, szMapEntities);
 	}
 	
+	// This is required on some mods like Codename Cure, but will crash on other mods.
+	if (g_ConVarDHReturn.BoolValue)
+		return MRES_ChangedHandled;
 	return MRES_Ignored;
 }
 
@@ -575,6 +581,10 @@ bool ApplyEdits(const char[] szMapName, char szMapEntities[2097152])
 											Format(tmpwriter,sizeof(tmpwriter),"%s\n\"model\" \"*1\"",tmpwriter);
 										}
 									}
+								}
+								if (StrEqual(first, "model", false) && (StrContains(second, "\\", false) != -1))
+								{
+									ReplaceString(second, sizeof(second), "\\", "/", false);
 								}
 								if (StrEqual(first,"edt_getbspmodelfor_classname",false))
 								{
@@ -1108,6 +1118,10 @@ bool ApplyEdits(const char[] szMapName, char szMapEntities[2097152])
 													Format(edtval,sizeof(edtval),"%i",checkneg);
 													Format(edtkey,sizeof(edtkey),"\"spawnflags\"");
 												}
+												if (StrEqual(edtkey, "\"model\"", false) && (StrContains(edtval, "\\", false) != -1))
+												{
+													ReplaceString(edtval, sizeof(edtval), "\\", "/", false);
+												}
 												if (StrEqual(edtkey,"\"edt_getbspmodelfor_classname\"",false))
 												{
 													Format(edtclass,sizeof(edtclass),"%s",edtval);
@@ -1463,6 +1477,10 @@ bool ApplyEdits(const char[] szMapName, char szMapEntities[2097152])
 											if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_removespawnflags\"",false)))
 											{
 												findedit = StrContains(szMapEntitiesbuff,"\"spawnflags\"",false);
+											}
+											if (StrEqual(edtkey, "\"model\"", false) && (StrContains(edtval, "\\", false) != -1))
+											{
+												ReplaceString(edtval, sizeof(edtval), "\\", "/", false);
 											}
 											if (StrEqual(edtkey,"\"edt_getbspmodelfor_classname\"",false))
 											{
@@ -1828,6 +1846,10 @@ bool ApplyEdits(const char[] szMapName, char szMapEntities[2097152])
 										if ((StrEqual(edtkey,"\"edt_addspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_addedspawnflags\"",false)) || (StrEqual(edtkey,"\"edt_removespawnflags\"",false)))
 										{
 											findedit = StrContains(szMapEntitiesbuff,"\"spawnflags\"",false);
+										}
+										if (StrEqual(edtkey, "\"model\"", false) && (StrContains(edtval, "\\", false) != -1))
+										{
+											ReplaceString(edtval, sizeof(edtval), "\\", "/", false);
 										}
 										if (StrEqual(edtkey,"\"edt_getbspmodelfor_classname\"",false))
 										{
@@ -2275,6 +2297,10 @@ bool ApplyEdits(const char[] szMapName, char szMapEntities[2097152])
 											}
 										}
 									}
+								}
+								if (StrEqual(first, "model", false) && (StrContains(second, "\\", false) != -1))
+								{
+									ReplaceString(second, sizeof(second), "\\", "/", false);
 								}
 								if (StrEqual(first,"edt_getbspmodelfor_classname",false))
 								{

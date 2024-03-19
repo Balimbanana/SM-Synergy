@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"0.79"
-			"Previous"	"0.78"
+			"Latest"  	"0.80"
+			"Previous"	"0.79"
 		}
 		
-		"Notes"	"Added CSGO offsets and key. Increased range of CServerGameDLL interface checks."
+		"Notes"	"Added CVar edt_dhooks_return default 0 changes DHooks return type, needed on some games."
 	}
 	
 	"Files"
