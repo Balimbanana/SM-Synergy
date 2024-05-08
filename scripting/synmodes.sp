@@ -842,10 +842,45 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 				{
 					if (resetmode == 0)
 					{
-						int loadsave = CreateEntityByName("player_loadsaved");
-						DispatchSpawn(loadsave);
-						ActivateEntity(loadsave);
-						AcceptEntityInput(loadsave,"Reload");
+						char szAutosave[256];
+						Handle cvSaveDir = FindConVar("sv_savedir");
+						if (cvSaveDir != INVALID_HANDLE)
+						{
+							GetConVarString(cvSaveDir, szAutosave, sizeof(szAutosave));
+							if (StrContains(szAutosave, "\\", false) != -1)
+								ReplaceString(szAutosave, sizeof(szAutosave), "\\", "/", false);
+							if (StrContains(szAutosave, "/", false) == -1)
+								Format(szAutosave, sizeof(szAutosave), "%s/autosave.sav", szAutosave);
+							else
+								Format(szAutosave, sizeof(szAutosave), "%sautosave.sav", szAutosave);
+						}
+						else
+						{
+							Format(szAutosave, sizeof(szAutosave), "save/autosave.sav");
+						}
+						CloseHandle(cvSaveDir);
+						
+						if (!FileExists(szAutosave, true, NULL_STRING))
+						{
+							PrintToServer("sm_resetmode 0 Unable to find autosave, forcing respawn of all players...");
+							for (int i = 1;i<MaxClients+1;i++)
+							{
+								if (IsClientConnected(i))
+								{
+									if (IsClientInGame(i))
+									{
+										CreateTimer(0.1,tpclspawnnew,i,TIMER_FLAG_NO_MAPCHANGE);
+									}
+								}
+							}
+						}
+						else
+						{
+							int loadsave = CreateEntityByName("player_loadsaved");
+							DispatchSpawn(loadsave);
+							ActivateEntity(loadsave);
+							AcceptEntityInput(loadsave,"Reload");
+						}
 					}
 					else if (resetmode == 1)
 					{
@@ -1102,6 +1137,14 @@ void setupdmfor(char[] gametype, bool bSetVars)
 						SetConVarInt(cvar,999,false,false);
 					}
 					CloseHandle(cvar);
+				}
+				
+				CloseHandle(cvarset);
+				// Need to prevent SynFixes ragdoll removal so you can revive using it.
+				cvarset = FindConVar("synfixes_remove_playerragdolls");
+				if (cvarset != INVALID_HANDLE)
+				{
+					SetConVarInt(cvarset, 0, false, false);
 				}
 			}
 			else if (GetConVarInt(cvarset) < 1)
