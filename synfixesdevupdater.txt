@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"2.0070"
-			"Previous"	"2.0069"
+			"Latest"  	"2.0071"
+			"Previous"	"2.0070"
 		}
 		
-		"Notes"	"A couple fixes and changes to Black Mesa entities."
+		"Notes"	"Added vehiclerole command limit."
 	}
 	
 	"Files"

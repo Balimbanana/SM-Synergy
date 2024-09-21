@@ -69,7 +69,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20011"
+#define PLUGIN_VERSION "1.20012"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -291,6 +291,7 @@ public void OnPluginStart()
 	RegConsoleCmd("mm_select_session",cmdblock);
 	RegConsoleCmd("kill",suicideblock);
 	RegConsoleCmd("explode",suicideblock);
+	RegConsoleCmd("vehiclerole", Cmd_VehicleRole);
 	CreateTimer(10.0,dropshipchk,_,TIMER_REPEAT);
 	CreateTimer(0.5,resetclanim,_,TIMER_REPEAT);
 	CreateTimer(0.1,clticks,_,TIMER_REPEAT);
@@ -889,6 +890,21 @@ public Action suicideblock(int client, int args)
 					}
 				}
 			}
+		}
+	}
+	return Plugin_Continue;
+}
+
+public Action Cmd_VehicleRole(int client, int args)
+{
+	if (IsValidEntity(client) && client != 0 && args > 0)
+	{
+		char sRole[8];
+		GetCmdArg(1, sRole, sizeof(sRole));
+		if (StringToInt(sRole) > 7 || StringToInt(sRole) < 0)
+		{
+			PrintToChat(client, "> Vehicle role out of bounds!");
+			return Plugin_Handled;
 		}
 	}
 	return Plugin_Continue;

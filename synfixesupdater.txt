@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20011"
-			"Previous"	"1.20010"
+			"Latest"  	"1.20012"
+			"Previous"	"1.20011"
 		}
 		
-		"Notes"	"Prevention of output hook leaks."
+		"Notes"	"Added vehiclerole command limit."
 	}
 	
 	"Files"

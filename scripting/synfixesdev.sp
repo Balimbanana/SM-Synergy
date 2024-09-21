@@ -128,7 +128,7 @@ Handle g_dhUpdateOnRemove;
 Handle g_dhEntityBlocked;
 Handle g_dhGetClawAttackRange;
 
-#define PLUGIN_VERSION "2.0070"
+#define PLUGIN_VERSION "2.0071"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesdevupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -509,6 +509,7 @@ public void OnPluginStart()
 	RegConsoleCmd("flushfix", ReallowFlush);
 	RegServerCmd("blckresetsrv", blckresetServer);
 	AddCommandListener(flushcmd, "blckreset");
+	RegConsoleCmd("vehiclerole", Cmd_VehicleRole);
 	RegConsoleCmd("changelevel", resetgraphs);
 	Handle rebuildnodesh = CreateConVar("rebuildnodes","0","Set force rebuild ai nodes on every map (not nav_generate).",_,true,0.0,true,1.0);
 	rebuildnodes = GetConVarBool(rebuildnodesh);
@@ -3043,6 +3044,21 @@ public Action blckresetServer(int args)
 	return Plugin_Handled;
 }
 
+public Action Cmd_VehicleRole(int client, int args)
+{
+	if (IsValidEntity(client) && client != 0 && args > 0)
+	{
+		char sRole[8];
+		GetCmdArg(1, sRole, sizeof(sRole));
+		if (StringToInt(sRole) > 7 || StringToInt(sRole) < 0)
+		{
+			PrintToChat(client, "> Vehicle role out of bounds!");
+			return Plugin_Handled;
+		}
+	}
+	return Plugin_Continue;
+}
+
 public Action restoresound(Handle timer, int client)
 {
 	if (IsValidEntity(client))
@@ -3326,7 +3342,7 @@ public Action resetrot(Handle timer)
 			//if (StrContains(clsname,"rotating",false) != -1)
 			if (HasEntProp(i,Prop_Data,"m_angStart"))
 			{
-				if ((HasEntProp(i,Prop_Data,"m_angRotation")) && (StrContains(mapbuf, "xen_c4a1a", false) == -1) && (StrContains(mapbuf, "bm_c3a2g", false) == -1))
+				if ((HasEntProp(i,Prop_Data,"m_angRotation")) && (StrContains(mapbuf, "xen_c4a1a", false) == -1) && (StrContains(mapbuf, "sh_alchemilla", false) == -1) && (StrContains(mapbuf, "belowice_2", false) == -1) && (StrContains(mapbuf, "bm_c3a2g", false) == -1))
 				{
 					float angs[3];
 					GetEntPropVector(i,Prop_Data,"m_angRotation",angs);
@@ -4402,7 +4418,7 @@ public Action dropshipchk(Handle timer)
 					AcceptEntityInput(i,"kill");
 				}
 			}
-			if ((TrainBlockFix) && (StrEqual(clsname,"func_tracktrain",false)))
+			if ((TrainBlockFix) && (StrEqual(clsname,"func_tracktrain",false)) && (StrContains(mapbuf, "hc_t0a2", false) == -1))
 			{
 				float mins[3];
 				float maxs[3];
@@ -5851,7 +5867,7 @@ public Action createelev(const char[] output, int caller, int activator, float d
 			{
 				int sf = GetEntProp(caller,Prop_Data,"m_spawnflags");
 				// Was (1<<3) but not working in all SourceMod versions
-				if ((!(sf & 4)) && (sf != 4100) && (GetEntityCount() < 2000))
+				if ((!(sf & 4)) && !(sf & 8) && (sf != 4100) && (GetEntityCount() < 2000))
 				{
 					int brushent;
 					if (StrContains(mdlname,"*",false) == 0)
@@ -14449,6 +14465,16 @@ void findpointtp(int ent, char[] targn, int cl, float delay)
 			{
 				float nullvec[3];
 				TeleportEntity(cl,origin,angs,nullvec);
+				
+				// Doing it again anyways because of broken stuff
+				Handle dp = CreateDataPack();
+				WritePackCell(dp, cl);
+				WritePackFloat(dp,origin[0]);
+				WritePackFloat(dp,origin[1]);
+				WritePackFloat(dp,origin[2]);
+				WritePackFloat(dp,angs[0]);
+				WritePackFloat(dp,angs[1]);
+				CreateTimer(0.2,teleportdelay,dp,TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 		else if ((StrEqual(targn,enttargn,false)) && ((StrEqual(pttarget,"!player",false)) || (StrEqual(pttarget,"player",false))))
@@ -14479,6 +14505,15 @@ void findpointtp(int ent, char[] targn, int cl, float delay)
 								if (IsPlayerAlive(i))
 									TeleportEntity(i,origin,angs,nullvec);
 				}
+				
+				// Doing it again because of broken stuff, could be interference
+				Handle dp = CreateDataPack();
+				WritePackFloat(dp,origin[0]);
+				WritePackFloat(dp,origin[1]);
+				WritePackFloat(dp,origin[2]);
+				WritePackFloat(dp,angs[0]);
+				WritePackFloat(dp,angs[1]);
+				CreateTimer(0.2,teleportdelayallply,dp,TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 		else findpointtp(thisent,targn,cl,delay);
@@ -21849,7 +21884,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						if (HasEntProp(weap,Prop_Data,"m_bInReload"))
 						{
 							int bInReload = GetEntProp(weap,Prop_Data,"m_bInReload");
-							if (bInReload)
+							if (bInReload && (StrContains(mapbuf, "_spymap_ep3", false) == -1))
 							{
 								float Time = GetGameTime();
 								float flPrimaryAtk = GetEntPropFloat(weap,Prop_Send,"m_flNextPrimaryAttack");
