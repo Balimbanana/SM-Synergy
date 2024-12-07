@@ -781,7 +781,7 @@ public Action Event_EntityKilled(Handle event, const char[] name, bool Broadcast
 			if (((!dmset) && (!dmact)) && (lastspawned[killed] > MaxClients)) lastspawned[killed] = 1;
 			for (int i = lastspawned[killed]; i<MaxClients+1; i++)
 			{
-				if (i != 0)
+				if (i > 0 && i <= MaxClients)
 				{
 					if (IsClientConnected(i) && IsClientInGame(i) && IsPlayerAlive(i) && !IsFakeClient(i) && (killed != i))
 					{
