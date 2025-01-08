@@ -69,7 +69,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20012"
+#define PLUGIN_VERSION "1.20013"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -795,7 +795,44 @@ public Action stuckblck(int client, int args)
 		PrintToChat(client,"> Can't use after reaching end of level.");
 		return Plugin_Handled;
 	}
-	return Plugin_Continue;
+	
+	Handle hRandClientArr = CreateArray(128);
+	for (int i = 1; i < MaxClients+1; i++)
+	{
+		if (i != client && IsValidEntity(i) && IsPlayerAlive(i))
+		{
+			PushArrayCell(hRandClientArr, i);
+		}
+	}
+	if (GetArraySize(hRandClientArr) > 0)
+	{
+		int iTeleTo = GetArrayCell(hRandClientArr, GetRandomInt(0, GetArraySize(hRandClientArr) - 1));
+		if (IsValidEntity(iTeleTo))
+		{
+			float vecAngles[3];
+			float vecOrigin[3];
+			float vecStop[3];
+			if (HasEntProp(iTeleTo, Prop_Data, "m_angRotation")) GetEntPropVector(iTeleTo, Prop_Data, "m_angRotation", vecAngles);
+			if (HasEntProp(iTeleTo, Prop_Data, "m_vecAbsOrigin")) GetEntPropVector(iTeleTo, Prop_Data, "m_vecAbsOrigin", vecOrigin);
+			if (HasEntProp(iTeleTo, Prop_Data, "m_hVehicle"))
+			{
+				if (IsValidEntity(GetEntPropEnt(iTeleTo, Prop_Data, "m_hVehicle")))
+					vecOrigin[2] += 64.0;
+			}
+			TeleportEntity(client, vecOrigin, vecAngles, vecStop);
+			if (HasEntProp(client, Prop_Data, "m_MoveType"))
+				SetEntProp(client, Prop_Data, "m_MoveType", 2);
+			
+			int iHealth = GetEntProp(client, Prop_Data, "m_iHealth");
+			if (iHealth - 10 < 10)
+				SetEntProp(client, Prop_Data, "m_iHealth", 10);
+			else
+				SetEntProp(client, Prop_Data, "m_iHealth", iHealth - 10);
+			PrintToChat(client,"> You have been moved in exchange for a little health.");
+		}
+	}
+	CloseHandle(hRandClientArr);
+	return Plugin_Handled;
 }
 
 public Action setpropaccuracy(int client, int args)
@@ -1285,7 +1322,7 @@ public Action OnPlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
 
 public Action everyspawnpost(Handle timer, int client)
 {
-	if (IsValidEntity(client) && IsPlayerAlive(client))
+	if (IsValidEntity(client) && IsPlayerAlive(client) && !IsFakeClient(client))
 	{
 		if (longjumpactive)
 		{
@@ -1376,6 +1413,26 @@ public Action everyspawnpost(Handle timer, int client)
 			findent(MaxClients+1,"info_player_equip");
 		}
 		if ((strlen(ChapterTitle) > 0) && (!DisplayedChapterTitle[client])) CreateTimer(5.0,DisplayChapterTitle,client,TIMER_FLAG_NO_MAPCHANGE);
+		
+		// On restore, active weapon is not hidden when driving a vehicle
+		if (HasEntProp(client, Prop_Data, "m_hVehicle") && HasEntProp(client, Prop_Data, "m_hActiveWeapon"))
+		{
+			int hVehicle = GetEntPropEnt(client, Prop_Data, "m_hVehicle");
+			if (IsValidEntity(hVehicle))
+			{
+				int driver = GetEntProp(client, Prop_Data, "m_iHideHUD");
+				int running = 1;
+				if (HasEntProp(hVehicle, Prop_Data, "m_bIsOn")) running = GetEntProp(hVehicle, Prop_Data, "m_bIsOn");
+				if ((driver == 3328) && (running))
+				{
+					int hActiveWeapon = GetEntPropEnt(client, Prop_Data, "m_hActiveWeapon");
+					if (IsValidEntity(hActiveWeapon))
+					{
+						AcceptEntityInput(hActiveWeapon, "HideWeapon", hActiveWeapon);
+					}
+				}
+			}
+		}
 	}
 	else if (IsClientConnected(client)) CreateTimer(0.1,everyspawnpost,client,TIMER_FLAG_NO_MAPCHANGE);
 }
@@ -4184,18 +4241,31 @@ public void OnEntityDestroyed(int entity)
 	if (find != -1) RemoveFromArray(ignoreelevators,find);
 	if (IsValidEntity(entity))
 	{
-		if (entity > MaxClients)
+		if (entity > MaxClients && HasEntProp(entity, Prop_Data, "m_hPlayer") && HasEntProp(entity, Prop_Data, "m_bIsOn"))
 		{
 			char cls[64];
-			GetEntityClassname(entity,cls,sizeof(cls));
-			if ((StrContains(cls,"choreo",false) != -1) || (StrEqual(cls,"prop_vehicle_prisoner_pod",false)))
+			GetEntityClassname(entity, cls, sizeof(cls));
+			if ((StrContains(cls, "choreo", false) != -1) || (StrEqual(cls, "prop_vehicle_prisoner_pod", false)))
 			{
-				if (HasEntProp(entity,Prop_Data,"m_hPlayer"))
+				int ply = GetEntPropEnt(entity, Prop_Data, "m_hPlayer");
+				if ((IsValidEntity(ply)) && (ply < MaxClients+1))
 				{
-					int ply = GetEntPropEnt(entity,Prop_Data,"m_hPlayer");
-					if ((IsValidEntity(ply)) && (ply < MaxClients+1))
+					AcceptEntityInput(entity, "ExitVehicle", ply);
+				}
+			}
+			else
+			{
+				for (int i = 1; i < MaxClients+1; i++)
+				{
+					if (IsValidEntity(i) && HasEntProp(i, Prop_Data, "m_hVehicle"))
 					{
-						AcceptEntityInput(entity,"ExitVehicle",ply);
+						if (GetEntPropEnt(i, Prop_Data, "m_hVehicle") == entity)
+						{
+							if (IsValidEntity(entity))
+								AcceptEntityInput(entity, "ExitVehicle", i);
+							if (HasEntProp(i, Prop_Data, "m_MoveType"))
+								SetEntProp(i, Prop_Data, "m_MoveType", 2);
+						}
 					}
 				}
 			}

@@ -12,26 +12,32 @@
 			
 			"CBaseEntity::UpdateOnRemove" // void CBaseEntity::UpdateOnRemove()
 			{
-				"windows"	"105"
-				"linux"		"106"
+				"windows"	"106"
+				"linux"		"107"
 			}
 			
 			"CBaseEntity::Blocked" // bool CBaseEntity::Blocked(CBaseEntity*)
 			{
-				"windows"	"102"
-				"linux"		"103"
+				"windows"	"103"
+				"linux"		"104"
 			}
 			
 			"CPhysConstraint::Deactivate"
 			{
-				"windows"	"187"
-				"linux"		"188"
+				"windows"	"188"
+				"linux"		"189"
 			}
-
+			
 			"CNPC_BaseZombie::GetClawAttackRange"
 			{
-				"windows"	"611"
-				"linux"		"612"
+				"windows"	"612"
+				"linux"		"613"
+			}
+			
+			"CBaseEntity::OnRestore" // void CBaseEntity::OnRestore()
+			{
+				"windows"	"44"
+				"linux"		"45"
 			}
 		}
 		
@@ -93,13 +99,22 @@
 					}
 				}
 			}
-
+			
 			"CNPC_BaseZombie::GetClawAttackRange"
 			{
 				"offset"	"CNPC_BaseZombie::GetClawAttackRange"
 				"hooktype"	"entity"
 				"callconv"	"thiscall"
 				"return"	"float"
+				"this"		"entity"
+			}
+			
+			"CBaseEntity::OnRestore"
+			{
+				"offset"	"CBaseEntity::OnRestore"
+				"hooktype"	"entity"
+				"callconv"	"thiscall"
+				"return"	"bool"
 				"this"		"entity"
 			}
 		}
