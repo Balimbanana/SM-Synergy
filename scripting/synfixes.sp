@@ -38,6 +38,7 @@ float removertimer = 30.0;
 float centnextatk[2048];
 float centnextsndtime[2048];
 float flEntCreateTime[2048];
+float flLastStuckTime[128];
 int WeapList = -1;
 int spawneramt = 20;
 int restrictmode = 0;
@@ -303,9 +304,10 @@ public void OnMapStart()
 {
 	if (GetMapHistorySize() > 0)
 	{
-		for (int i = 1;i<65;i++)
+		for (int i = 1;i<128;i++)
 		{
 			guiderocket[i] = true;
+			flLastStuckTime[i] = 0.0;
 		}
 		char szClsGet[16];
 		for (int i = MaxClients+1;i<2048;i++)
@@ -796,6 +798,12 @@ public Action stuckblck(int client, int args)
 		return Plugin_Handled;
 	}
 	
+	if (flLastStuckTime[client] >= GetGameTime())
+	{
+		PrintToChat(client,"> Can't do that for another %1.1f seconds.", GetGameTime() - flLastStuckTime[client]);
+		return Plugin_Handled;
+	}
+	
 	Handle hRandClientArr = CreateArray(128);
 	for (int i = 1; i < MaxClients+1; i++)
 	{
@@ -809,6 +817,8 @@ public Action stuckblck(int client, int args)
 		int iTeleTo = GetArrayCell(hRandClientArr, GetRandomInt(0, GetArraySize(hRandClientArr) - 1));
 		if (IsValidEntity(iTeleTo))
 		{
+			flLastStuckTime[client] = GetGameTime() + 10.0;
+		
 			float vecAngles[3];
 			float vecOrigin[3];
 			float vecStop[3];
@@ -3617,6 +3627,7 @@ public Action cleanup(Handle timer, Handle data)
 
 public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 {
+	flLastStuckTime[client] = 0.0;
 	ClientCommand(client,"alias sv_shutdown \"echo nope\"");
 	if (bBlockEx) ClientCommand(client,"alias exec \"echo nope\"");
 	return true;
