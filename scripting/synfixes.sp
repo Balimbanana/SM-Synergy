@@ -33,6 +33,7 @@ Handle inputclasshooks = INVALID_HANDLE;
 ConVar hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeathTime;
 ConVar g_hCVFixPropJump, g_hCVFixPhysBox;
 ConVar g_hCVKillTrainBlockers;
+ConVar g_hCVReloadClientParticles;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float centnextatk[2048];
@@ -70,7 +71,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20013"
+#define PLUGIN_VERSION "1.20014"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -254,6 +255,7 @@ public void OnPluginStart()
 	g_hCVFixPropJump = CreateConVar("synfixes_fixpropjump", "1", "Attempts to fix jumping off props and moving brushes where you normally would not actually jump.", _, true, 0.0, true, 1.0);
 	g_hCVFixPhysBox = CreateConVar("synfixes_fixphysboxflags", "1", "Fixes spawnflags 4194304.", _, true, 0.0, true, 1.0);
 	g_hCVKillTrainBlockers = CreateConVar("synfixes_trainskillblockers", "1", "func_tracktrain will kill blocking players if no space is available to move them.", _, true, 0.0, true, 1.0);
+	g_hCVReloadClientParticles = CreateConVar("synfixes_reloadclientparticles", "1", "Reloads client particles on join.", _, true, 0.0, true, 1.0);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -3630,6 +3632,7 @@ public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 	flLastStuckTime[client] = 0.0;
 	ClientCommand(client,"alias sv_shutdown \"echo nope\"");
 	if (bBlockEx) ClientCommand(client,"alias exec \"echo nope\"");
+	if (g_hCVReloadClientParticles.BoolValue) ClientCommand(client, "reload_particleseffects_client");
 	return true;
 }
 

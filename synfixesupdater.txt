@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20013"
-			"Previous"	"1.20012"
+			"Latest"  	"1.20014"
+			"Previous"	"1.20013"
 		}
 		
-		"Notes"	"Added stuck teleport to a player. Added a couple vehicle checks."
+		"Notes"	"Added CVar synfixes_reloadclientparticles."
 	}
 	
 	"Files"
