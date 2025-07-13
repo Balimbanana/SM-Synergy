@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"  	"1.20014"
-			"Previous"	"1.20013"
+			"Latest"  	"1.20015"
+			"Previous"	"1.20014"
 		}
 		
-		"Notes"	"Added CVar synfixes_reloadclientparticles."
+		"Notes"	"Added CVar synfixes_fixfailedchangelevel."
 	}
 	
 	"Files"

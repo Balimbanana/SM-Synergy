@@ -34,6 +34,7 @@ ConVar hCVStuckInNPC, hCVFixWeapSnd, hCVNoAirboatPunt, hCVRemoveRagdoll, hCVDeat
 ConVar g_hCVFixPropJump, g_hCVFixPhysBox;
 ConVar g_hCVKillTrainBlockers;
 ConVar g_hCVReloadClientParticles;
+ConVar g_hCVChangelevelFix;
 float entrefresh = 0.0;
 float removertimer = 30.0;
 float centnextatk[2048];
@@ -71,7 +72,7 @@ bool BlockTripMineDamage = true;
 bool bPrevWeapRPG[128];
 bool bPrevOpen[128];
 
-#define PLUGIN_VERSION "1.20014"
+#define PLUGIN_VERSION "1.20015"
 #define UPDATE_URL "https://raw.githubusercontent.com/Balimbanana/SM-Synergy/master/synfixesupdater.txt"
 
 Menu g_hVoteMenu = null;
@@ -256,6 +257,7 @@ public void OnPluginStart()
 	g_hCVFixPhysBox = CreateConVar("synfixes_fixphysboxflags", "1", "Fixes spawnflags 4194304.", _, true, 0.0, true, 1.0);
 	g_hCVKillTrainBlockers = CreateConVar("synfixes_trainskillblockers", "1", "func_tracktrain will kill blocking players if no space is available to move them.", _, true, 0.0, true, 1.0);
 	g_hCVReloadClientParticles = CreateConVar("synfixes_reloadclientparticles", "1", "Reloads client particles on join.", _, true, 0.0, true, 1.0);
+	g_hCVChangelevelFix = CreateConVar("synfixes_fixfailedchangelevel", "1", "Attempts to fix failed changelevel.", _, true, 0.0, true, 1.0);
 	CreateTimer(60.0,resetrot,_,TIMER_REPEAT);
 	//if ((FileExists("addons/metamod/bin/server.so",false,NULL_STRING)) && (FileExists("addons/metamod/bin/metamod.2.sdk2013.so",false,NULL_STRING))) linact = true;
 	//else linact = false;
@@ -1724,6 +1726,8 @@ public Action elevatorstartpost(Handle timer, int elev)
 
 public Action mapendchg(const char[] output, int caller, int activator, float delay)
 {
+	if (!g_hCVChangelevelFix.BoolValue)
+		return Plugin_Continue;
 	if ((IsValidEntity(caller)) && (IsEntNetworkable(caller)))
 	{
 		char clschk[32];
@@ -1741,6 +1745,7 @@ public Action mapendchg(const char[] output, int caller, int activator, float de
 			CreateTimer(1.0,changeleveldelay,data);
 		}
 	}
+	return Plugin_Continue;
 }
 
 public Action changeleveldelay(Handle timer, Handle data)
@@ -3205,6 +3210,8 @@ int SearchForClass(char tmptarg[128])
 {
 	int returnent = -1;
 	findtargnbyclass(-1,"logic_*",tmptarg,returnent);
+	findtargnbyclass(-1,"npc_alyx",tmptarg,returnent);
+	findtargnbyclass(-1,"npc_barney",tmptarg,returnent);
 	if ((returnent != 0) && (returnent != -1)) return returnent;
 	findtargnbyclass(-1,"info_*",tmptarg,returnent);
 	if ((returnent != 0) && (returnent != -1)) return returnent;
@@ -3219,9 +3226,9 @@ int SearchForClass(char tmptarg[128])
 	findtargnbyclass(-1,"point_template",tmptarg,returnent);
 	if ((returnent == 0) || (returnent == -1))
 	{
-		for (int i = MaxClients+1; i<GetMaxEntities(); i++)
+		for (int i = MaxClients+1; i<2048; i++)
 		{
-			if (IsValidEntity(i) && IsEntNetworkable(i))
+			if (IsValidEntity(i))
 			{
 				if (HasEntProp(i,Prop_Data,"m_iName"))
 				{
@@ -3265,7 +3272,7 @@ int SearchForClass(char tmptarg[128])
 public void findtargnbyclass(int ent, char cls[64], char tmptarg[128], int& retent)
 {
 	int thisent = FindEntityByClassname(ent,cls);
-	if ((IsValidEntity(thisent)) && (thisent != -1))
+	if (IsValidEntity(thisent))
 	{
 		if (HasEntProp(thisent,Prop_Data,"m_iName"))
 		{
